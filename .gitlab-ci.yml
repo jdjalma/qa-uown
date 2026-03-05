@@ -88,13 +88,8 @@ test:ci:
     - install
   needs: ["install"]
   parallel: 2
-  before_script:
-    - echo "Running CI tests from tests/ci/ folder"
-    - echo "Checking environment variables..."
-    - echo "EMAIL is set: $([ -n "$EMAIL" ] && echo 'YES' || echo 'NO')"
-    - echo "UOWN_API_KEY is set: $([ -n "$UOWN_API_KEY" ] && echo 'YES' || echo 'NO')"
-    - echo "UOWN_API_AUTHORIZATION is set: $([ -n "$UOWN_API_AUTHORIZATION" ] && echo 'YES' || echo 'NO')"
   script:
+    - echo "Running CI tests from tests/ci/ folder"
     - npx playwright test --project=ci-tests --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
   after_script:
     - echo "CI test results:"
