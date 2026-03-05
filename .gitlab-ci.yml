@@ -59,6 +59,8 @@ cache:
 # ══════════════════════════════════════════════════════════════
 install:
   stage: install
+  tags:
+    - vpn  # Requer runner com acesso VPN
   image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
   script:
     - echo "Installing dependencies"
@@ -83,6 +85,8 @@ install:
 # ══════════════════════════════════════════════════════════════
 test:ci:
   stage: test
+  tags:
+    - vpn  # Requer runner com acesso VPN
   image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
   dependencies:
     - install
