@@ -67,14 +67,14 @@ install:
   stage: install
   image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
   before_script:
-    - echo "📦 Installing dependencies for environment: $TEST_ENV"
-    - echo "🔧 Node version: $(node --version)"
-    - echo "🎭 Playwright version: $PLAYWRIGHT_VERSION"
+    - echo "Installing dependencies for environment: $TEST_ENV"
+    - echo "Node version: $(node --version)"
+    - echo "Playwright version: $PLAYWRIGHT_VERSION"
   script:
     - npm ci --prefer-offline --no-audit
     - npx playwright install --with-deps chromium
   after_script:
-    - echo "✅ Dependencies installed successfully"
+    - echo "Dependencies installed successfully"
     - du -sh node_modules .playwright
   artifacts:
     paths:
@@ -96,11 +96,11 @@ lint:
   dependencies:
     - install
   before_script:
-    - echo "🔍 Running TypeScript type checking..."
+    - echo "Running TypeScript type checking..."
   script:
     - npm run lint
   after_script:
-    - echo "✅ Lint check completed"
+    - echo "Lint check completed"
   allow_failure: false
   retry:
     max: 1
@@ -120,12 +120,12 @@ test:api:
   variables:
     ENV: "$TEST_ENV"
   before_script:
-    - echo "🚀 Running API tests on environment: $ENV"
-    - echo "⚙️ Retries:$PLAYWRIGHT_RETRIES Timeout:$PLAYWRIGHT_TIMEOUT"
+    - echo "Running API tests on environment: $ENV"
+    - echo "Retries:$PLAYWRIGHT_RETRIES Timeout:$PLAYWRIGHT_TIMEOUT"
   script:
     - npm run test:api -- --retries=$PLAYWRIGHT_RETRIES
   after_script:
-    - echo "📊 Test execution completed"
+    - echo "Test execution completed"
     - if [ -f reports/test-summary.json ]; then cat reports/test-summary.json; fi
   artifacts:
     when: always
@@ -157,12 +157,12 @@ test:smoke:
   variables:
     ENV: "$TEST_ENV"
   before_script:
-    - echo "🔥 Running SMOKE tests (Critical Path)"
-    - echo "🎯 Environment:$ENV Workers:$PLAYWRIGHT_WORKERS"
+    - echo "Running SMOKE tests (Critical Path)"
+    - echo "Environment:$ENV Workers:$PLAYWRIGHT_WORKERS"
   script:
     - npm run test:smoke -- --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
   after_script:
-    - echo "📈 Smoke test results:"
+    - echo "Smoke test results:"
     - if [ -f reports/test-summary.json ]; then cat reports/test-summary.json; fi
   artifacts:
     when: always
@@ -194,7 +194,7 @@ test:origination:
   variables:
     ENV: "$TEST_ENV"
   before_script:
-    - echo "🏦 Running Origination Portal tests"
+    - echo "Running Origination Portal tests"
   script:
     - npm run test:origination -- --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
   after_script:
@@ -228,7 +228,7 @@ test:servicing:
   variables:
     ENV: "$TEST_ENV"
   before_script:
-    - echo "⚙️ Running Servicing Portal tests"
+    - echo "Running Servicing Portal tests"
   script:
     - npm run test:servicing -- --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
   after_script:
@@ -262,7 +262,7 @@ test:website:
   variables:
     ENV: "$TEST_ENV"
   before_script:
-    - echo "🌐 Running Website tests"
+    - echo "Running Website tests"
   script:
     - npm run test:website -- --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
   after_script:
@@ -292,21 +292,21 @@ quality-gate:pass-rate:
   dependencies:
     - test:smoke
   before_script:
-    - echo "🎯 Validating Quality Gates"
-    - echo "📊 Minimum Pass Rate Required: $MIN_PASS_RATE%"
+    - echo "Validating Quality Gates"
+    - echo "Minimum Pass Rate Required: $MIN_PASS_RATE%"
   script:
     - |
       if [ -f reports/test-summary.json ]; then
         PASS_RATE=$(jq -r '.passRate // 0' reports/test-summary.json)
-        echo "✅ Current Pass Rate: $PASS_RATE%"
+        echo "Current Pass Rate: $PASS_RATE%"
         if (( $(echo "$PASS_RATE < $MIN_PASS_RATE" | bc -l) )); then
-          echo "❌ QUALITY GATE FAILED: Pass rate $PASS_RATE% is below threshold $MIN_PASS_RATE%"
+          echo "QUALITY GATE FAILED: Pass rate $PASS_RATE% is below threshold $MIN_PASS_RATE%"
           exit 1
         else
-          echo "✅ QUALITY GATE PASSED: Pass rate $PASS_RATE% meets threshold"
+          echo "QUALITY GATE PASSED: Pass rate $PASS_RATE% meets threshold"
         fi
       else
-        echo "⚠️ No test summary found, skipping quality gate"
+        echo "No test summary found, skipping quality gate"
       fi
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
@@ -327,14 +327,14 @@ report:allure:
     - test:servicing
     - test:website
   before_script:
-    - echo "📊 Generating Allure Report"
+    - echo "Generating Allure Report"
     - apt-get update && apt-get install -y default-jre
     - npm install -g allure-commandline
   script:
     - allure generate reports/allure-results -o reports/allure-report --clean
-    - echo "✅ Allure report generated successfully"
+    - echo "Allure report generated successfully"
   after_script:
-    - echo "📈 Report available at: $CI_PAGES_URL"
+    - echo "Report available at: $CI_PAGES_URL"
   artifacts:
     paths:
       - reports/allure-report
@@ -357,11 +357,11 @@ sonarqube:
     paths:
       - .sonar/cache
   before_script:
-    - echo "🔍 Running SonarQube Analysis"
+    - echo "Running SonarQube Analysis"
   script:
     - sonar-scanner
   after_script:
-    - echo "✅ SonarQube analysis completed"
+    - echo "SonarQube analysis completed"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       when: always
@@ -377,18 +377,16 @@ notify:slack:
   image: curlimages/curl:latest
   dependencies: []
   before_script:
-    - echo "📧 Sending notification to Slack"
+    - echo "Sending notification to Slack"
   script:
     - |
       if [ "$CI_JOB_STATUS" == "failed" ] || [ "$CI_PIPELINE_SOURCE" == "schedule" ]; then
-        EMOJI="❌"
         COLOR="danger"
         if [ "$CI_JOB_STATUS" == "success" ]; then
-          EMOJI="✅"
           COLOR="good"
         fi
         
-        MESSAGE="$EMOJI Pipeline *$CI_PIPELINE_SOURCE* - Branch: *$CI_COMMIT_REF_NAME*\n"
+        MESSAGE="Pipeline *$CI_PIPELINE_SOURCE* - Branch: *$CI_COMMIT_REF_NAME*\n"
         MESSAGE="${MESSAGE}Status: *$CI_JOB_STATUS*\n"
         MESSAGE="${MESSAGE}Commit: $CI_COMMIT_SHORT_SHA - $CI_COMMIT_TITLE\n"
         MESSAGE="${MESSAGE}Author: $CI_COMMIT_AUTHOR\n"
@@ -398,9 +396,9 @@ notify:slack:
           curl -X POST "$SLACK_WEBHOOK_URL" \
             -H 'Content-Type: application/json' \
             -d '{"text":"'"$MESSAGE"'","color":"'"$COLOR"'"}'
-          echo "✅ Slack notification sent"
+          echo "Slack notification sent"
         else
-          echo "⚠️ SLACK_WEBHOOK_URL not configured"
+          echo "SLACK_WEBHOOK_URL not configured"
         fi
       fi
   rules:
@@ -419,13 +417,13 @@ pages:
   dependencies:
     - report:allure
   before_script:
-    - echo "🚀 Deploying reports to GitLab Pages"
+    - echo "Deploying reports to GitLab Pages"
   script:
     - mkdir -p public
     - cp -r reports/allure-report/* public/
-    - echo "✅ Reports deployed successfully"
+    - echo "Reports deployed successfully"
   after_script:
-    - echo "📊 View reports at: $CI_PAGES_URL"
+    - echo "View reports at: $CI_PAGES_URL"
   artifacts:
     paths:
       - public
@@ -448,7 +446,7 @@ test:e2e:manual:
   variables:
     ENV: "qa2"
   before_script:
-    - echo "🎯 Running MANUAL E2E tests"
+    - echo "Running MANUAL E2E tests"
   script:
     - npm run test:e2e -- --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
   after_script:
@@ -473,7 +471,7 @@ test:critical:manual:
   variables:
     ENV: "qa2"
   before_script:
-    - echo "⚡ Running MANUAL Critical tests"
+    - echo "Running MANUAL Critical tests"
   script:
     - npm run test:critical -- --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
   after_script:
