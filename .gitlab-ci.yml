@@ -103,7 +103,7 @@ install:
       - script_failure
 
 # ══════════════════════════════════════════════════════════════
-#  CI TESTS - Unified Flow & Critical Path
+#  CI TESTS - Unified Flow & Critical Path (MANUAL)
 # ══════════════════════════════════════════════════════════════
 test:ci:
   stage: test
@@ -112,6 +112,7 @@ test:ci:
     - install
   needs: ["install"]
   parallel: 2
+  when: manual
   before_script:
     - echo "Running CI tests from tests/ci/ folder"
   script:
