@@ -9,7 +9,6 @@
  * factory provides reusable device/viewport profiles and launch options
  * that can be applied per-project or per-test.
  *
- * Multi-device strategy (inspired by ui-softex):
  *  - Desktop: Chrome, Firefox, Safari (cross-browser coverage)
  *  - Mobile:  iPhone 12 Pro (iOS), Pixel 5 (Android)
  *  - Tablet:  iPad Pro 11

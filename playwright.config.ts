@@ -192,6 +192,18 @@ export default defineConfig({
     },
 
     // ════════════════════════════════════════════════════════════════
+    //  CI Tests — Critical path tests for CI/CD pipeline
+    // ════════════════════════════════════════════════════════════════
+    {
+      name: 'ci-tests',
+      testDir: './tests/ci',
+      use: {
+        ...browserProfile.contextOptions,
+        baseURL: process.env.ORIGINATION_URL,
+      },
+    },
+
+    // ════════════════════════════════════════════════════════════════
     //  Task Testing — tests from tracked GitLab issues
     // ════════════════════════════════════════════════════════════════
     {

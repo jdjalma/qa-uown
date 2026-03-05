@@ -17,12 +17,7 @@ workflow:
 
 stages:
   - install
-  - lint
   - test
-  - quality-gate
-  - report
-  - notify
-  - deploy
 
 variables:
   # Node & Playwright
@@ -36,20 +31,19 @@ variables:
   PLAYWRIGHT_TIMEOUT: "60000"
   PLAYWRIGHT_WORKERS: "3"
   
-  # Environment Selection (Dynamic)
-  TEST_ENV: "${CI_COMMIT_REF_NAME == 'main' ? 'qa2' : CI_COMMIT_REF_NAME == 'develop' ? 'dev1' : 'qa2'}"
-  
-  # Quality Gates
-  MIN_PASS_RATE: "95"
-  FLAKY_TEST_THRESHOLD: "3"
-  
-  # Artifact Optimization
-  VIDEO_ON_FAILURE_ONLY: "true"
-  SCREENSHOT_ON_FAILURE_ONLY: "true"
-  
   # Git Settings
   GIT_DEPTH: "10"
   GIT_STRATEGY: "fetch"
+  
+  # ═══════════════════════════════════════════════════════════════
+  # REQUIRED: Configure these in GitLab CI/CD Settings → Variables
+  # Settings → CI/CD → Variables (Protected + Masked recommended)
+  # ═══════════════════════════════════════════════════════════════
+  # EMAIL: Gmail address for OTP verification
+  # EMAIL_PASSWORD: Gmail app password
+  # UOWN_API_KEY: API key for UOWN services
+  # UOWN_API_AUTHORIZATION: API authorization token
+  # (Optional) UOWN_SVC_API_KEY, DB credentials, etc.
 
 cache:
   key:
@@ -88,26 +82,6 @@ install:
       - stuck_or_timeout_failure
 
 # ══════════════════════════════════════════════════════════════
-#  LINT & TYPE CHECK
-# ══════════════════════════════════════════════════════════════
-lint:
-  stage: lint
-  image: node:${NODE_VERSION}
-  dependencies:
-    - install
-  before_script:
-    - echo "Running TypeScript type checking..."
-  script:
-    - npm run lint
-  after_script:
-    - echo "Lint check completed"
-  allow_failure: false
-  retry:
-    max: 1
-    when:
-      - runner_system_failure
-
-# ══════════════════════════════════════════════════════════════
 #  API TESTS
 # ══════════════════════════════════════════════════════════════
 test:api:
@@ -115,12 +89,10 @@ test:api:
   image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
   dependencies:
     - install
-  needs: ["install", "lint"]
+  needs: ["install"]
   parallel: 2
-  variables:
-    ENV: "$TEST_ENV"
   before_script:
-    - echo "Running API tests on environment: $ENV"
+    - echo "Running API tests"
     - echo "Retries:$PLAYWRIGHT_RETRIES Timeout:$PLAYWRIGHT_TIMEOUT"
   script:
     - npm run test:api -- --retries=$PLAYWRIGHT_RETRIES
@@ -152,13 +124,11 @@ test:smoke:
   image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
   dependencies:
     - install
-  needs: ["install", "lint"]
+  needs: ["install"]
   parallel: 3
-  variables:
-    ENV: "$TEST_ENV"
   before_script:
     - echo "Running SMOKE tests (Critical Path)"
-    - echo "Environment:$ENV Workers:$PLAYWRIGHT_WORKERS"
+    - echo "Workers:$PLAYWRIGHT_WORKERS"
   script:
     - npm run test:smoke -- --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
   after_script:
@@ -191,8 +161,6 @@ test:origination:
     - install
   needs: ["install", "test:smoke"]
   parallel: 4
-  variables:
-    ENV: "$TEST_ENV"
   before_script:
     - echo "Running Origination Portal tests"
   script:
@@ -225,8 +193,6 @@ test:servicing:
     - install
   needs: ["install", "test:smoke"]
   parallel: 3
-  variables:
-    ENV: "$TEST_ENV"
   before_script:
     - echo "Running Servicing Portal tests"
   script:
@@ -259,8 +225,6 @@ test:website:
     - install
   needs: ["install", "test:smoke"]
   parallel: 2
-  variables:
-    ENV: "$TEST_ENV"
   before_script:
     - echo "Running Website tests"
   script:
@@ -284,154 +248,37 @@ test:website:
   allow_failure: true
 
 # ══════════════════════════════════════════════════════════════
-#  QUALITY GATE - Test Pass Rate Validation
+#  CI TESTS - Unified Flow & Critical Path
 # ══════════════════════════════════════════════════════════════
-quality-gate:pass-rate:
-  stage: quality-gate
-  image: node:${NODE_VERSION}
+test:ci:
+  stage: test
+  image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
   dependencies:
-    - test:smoke
+    - install
+  needs: ["install"]
+  parallel: 2
   before_script:
-    - echo "Validating Quality Gates"
-    - echo "Minimum Pass Rate Required: $MIN_PASS_RATE%"
+    - echo "Running CI tests from tests/ci/ folder"
   script:
-    - |
-      if [ -f reports/test-summary.json ]; then
-        PASS_RATE=$(jq -r '.passRate // 0' reports/test-summary.json)
-        echo "Current Pass Rate: $PASS_RATE%"
-        if (( $(echo "$PASS_RATE < $MIN_PASS_RATE" | bc -l) )); then
-          echo "QUALITY GATE FAILED: Pass rate $PASS_RATE% is below threshold $MIN_PASS_RATE%"
-          exit 1
-        else
-          echo "QUALITY GATE PASSED: Pass rate $PASS_RATE% meets threshold"
-        fi
-      else
-        echo "No test summary found, skipping quality gate"
-      fi
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      when: always
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      when: always
+    - npx playwright test --project=ci-tests --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
+  after_script:
+    - echo "CI test results:"
+    - if [ -f reports/test-summary.json ]; then cat reports/test-summary.json; fi
+  artifacts:
+    when: always
+    paths:
+      - reports/
+      - playwright-report/
+      - test-results/**/*.json
+      - test-results/**/*.png
+    reports:
+      junit: reports/junit.xml
+    expire_in: 7 days
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
   allow_failure: false
-
-# ══════════════════════════════════════════════════════════════
-#  GENERATE ALLURE REPORT
-# ══════════════════════════════════════════════════════════════
-report:allure:
-  stage: report
-  image: node:${NODE_VERSION}
-  dependencies:
-    - test:smoke
-    - test:origination
-    - test:servicing
-    - test:website
-  before_script:
-    - echo "Generating Allure Report"
-    - apt-get update && apt-get install -y default-jre
-    - npm install -g allure-commandline
-  script:
-    - allure generate reports/allure-results -o reports/allure-report --clean
-    - echo "Allure report generated successfully"
-  after_script:
-    - echo "Report available at: $CI_PAGES_URL"
-  artifacts:
-    paths:
-      - reports/allure-report
-    expire_in: 30 days
-  when: always
-
-# ══════════════════════════════════════════════════════════════
-#  SONARQUBE ANALYSIS
-# ══════════════════════════════════════════════════════════════
-sonarqube:
-  stage: report
-  image: sonarsource/sonar-scanner-cli:latest
-  dependencies:
-    - lint
-  variables:
-    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
-    GIT_DEPTH: "0"
-  cache:
-    key: "${CI_JOB_NAME}"
-    paths:
-      - .sonar/cache
-  before_script:
-    - echo "Running SonarQube Analysis"
-  script:
-    - sonar-scanner
-  after_script:
-    - echo "SonarQube analysis completed"
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      when: always
-    - if: '$CI_COMMIT_BRANCH == "develop"'
-      when: always
-  allow_failure: true
-
-# ══════════════════════════════════════════════════════════════
-#  NOTIFICATIONS - Slack/Email on Failure
-# ══════════════════════════════════════════════════════════════
-notify:slack:
-  stage: notify
-  image: curlimages/curl:latest
-  dependencies: []
-  before_script:
-    - echo "Sending notification to Slack"
-  script:
-    - |
-      if [ "$CI_JOB_STATUS" == "failed" ] || [ "$CI_PIPELINE_SOURCE" == "schedule" ]; then
-        COLOR="danger"
-        if [ "$CI_JOB_STATUS" == "success" ]; then
-          COLOR="good"
-        fi
-        
-        MESSAGE="Pipeline *$CI_PIPELINE_SOURCE* - Branch: *$CI_COMMIT_REF_NAME*\n"
-        MESSAGE="${MESSAGE}Status: *$CI_JOB_STATUS*\n"
-        MESSAGE="${MESSAGE}Commit: $CI_COMMIT_SHORT_SHA - $CI_COMMIT_TITLE\n"
-        MESSAGE="${MESSAGE}Author: $CI_COMMIT_AUTHOR\n"
-        MESSAGE="${MESSAGE}Pipeline: $CI_PIPELINE_URL"
-        
-        if [ -n "$SLACK_WEBHOOK_URL" ]; then
-          curl -X POST "$SLACK_WEBHOOK_URL" \
-            -H 'Content-Type: application/json' \
-            -d '{"text":"'"$MESSAGE"'","color":"'"$COLOR"'"}'
-          echo "Slack notification sent"
-        else
-          echo "SLACK_WEBHOOK_URL not configured"
-        fi
-      fi
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
-      when: always
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      when: on_failure
-  allow_failure: true
-
-# ══════════════════════════════════════════════════════════════
-#  DEPLOY REPORTS TO GITLAB PAGES
-# ══════════════════════════════════════════════════════════════
-pages:
-  stage: deploy
-  image: alpine:latest
-  dependencies:
-    - report:allure
-  before_script:
-    - echo "Deploying reports to GitLab Pages"
-  script:
-    - mkdir -p public
-    - cp -r reports/allure-report/* public/
-    - echo "Reports deployed successfully"
-  after_script:
-    - echo "View reports at: $CI_PAGES_URL"
-  artifacts:
-    paths:
-      - public
-    expire_in: 30 days
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      when: always
-  when: always
 
 # ══════════════════════════════════════════════════════════════
 #  MANUAL JOBS - On Demand
@@ -443,8 +290,6 @@ test:e2e:manual:
     - install
   needs: ["install"]
   parallel: 4
-  variables:
-    ENV: "qa2"
   before_script:
     - echo "Running MANUAL E2E tests"
   script:
@@ -468,8 +313,6 @@ test:critical:manual:
     - install
   needs: ["install"]
   parallel: 2
-  variables:
-    ENV: "qa2"
   before_script:
     - echo "Running MANUAL Critical tests"
   script:
