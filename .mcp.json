@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"]
+    },
+    "postman": {
+      "command": "npx",
+      "args": ["@postman/postman-mcp-server"],
+      "env": {
+        "POSTMAN_API_KEY": "${POSTMAN_API_KEY}"
+      }
+    },
+    "figma": {
+      "type": "http",
+      "url": "https://mcp.figma.com/mcp"
+    }
+  }
+}

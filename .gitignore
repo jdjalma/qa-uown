@@ -1,0 +1,33 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+blob-report/
+allure-results/
+allure-report/
+reports/
+
+# Task report artifacts (test specs are tracked, reports/screenshots are local)
+tests/taskTestingUown/*.md
+tests/taskTestingUown/screenshots/
+.auth/
+target/
+*.log
+
+# Environment files with secrets
+.env
+.env.sandbox
+.env.qa1
+.env.qa2
+.env.stg
+.env.dev1
+.env.dev2
+.env.dev3
+.env.definitive
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store

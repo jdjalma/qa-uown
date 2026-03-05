@@ -1,0 +1,21 @@
+{
+  "leadPk": ${LeadPk},
+  "bankAccountNumber": "160781900000",
+  "bankRoutingNumber": "123456780",
+  "bankAccountType": "CHECKING",
+  "bankAccountCustomerFirstName": "${FirstName}",
+  "bankAccountCustomerLastName": "${LastName}",
+  "achAutoPay": true,
+  "ccInfo": {
+    "leadPk": ${LeadPk},
+    "ccFirstName": "${FirstName}",
+    "ccLastName": "${LastName}",
+    "ccNumber": "6011000993026909",
+    "cvc": "996",
+    "ccType": "VISA",
+    "ccExp": "12/2028",
+    "autoPay": true,
+    "preAuthStatus": "SUCCESS"
+  },
+  "desiredPaymentFrequency": "WEEKLY"
+}

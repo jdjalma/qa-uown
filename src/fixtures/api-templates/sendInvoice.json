@@ -1,0 +1,45 @@
+{
+  "userName": "${merchant.username}",
+  "setupPassword": "${merchant.password}",
+  "merchantNumber": "${merchant.number}",
+  "localeString": "en_US",
+  "storeNumber": "1",
+  "selectedPaymentFrequency": "WEEKLY",
+  "accountNumber": "${LeadUuid}",
+  "invoiceNumber": "R91931",
+  "orderType": "1",
+  "merchandiseSubtotal": "800.00",
+  "discountAmount": "0.00",
+  "deliveryCharge": "50.00",
+  "installationCharge": "100.00",
+  "salesTax": "60.00",
+  "miscellaneousFees": "300.00",
+  "depositAmount": "0.00",
+  "orderTotal": "1310.00",
+  "lineItem": [
+    {
+      "lineItemLineNumber": "317",
+      "lineItemSerialNumber": "S94712065",
+      "lineItemProductNumber": "A561SKU283",
+      "lineItemProductDescription": "Ottoman",
+      "lineItemProductCategory": "Seating",
+      "lineItemType": "D",
+      "lineItemQuantityOrdered": "1",
+      "lineItemTaxAmount": "",
+      "lineItemExtendedPrice": "500.00"
+    },
+    {
+      "lineItemLineNumber": "318",
+      "lineItemSerialNumber": "M68484397",
+      "lineItemProductNumber": "A333SKU4444",
+      "lineItemProductDescription": "Recliner",
+      "lineItemProductCategory": "Seating",
+      "lineItemType": "D",
+      "lineItemQuantityOrdered": "1",
+      "lineItemUnitPrice": "300.00",
+      "lineItemBasePrice": "300.00",
+      "lineItemTaxAmount": "00.00",
+      "lineItemExtendedPrice": "300.00"
+    }
+  ]
+}

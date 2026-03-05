@@ -1,0 +1,50 @@
+{
+  "name": "fintech-playwright",
+  "version": "1.0.0",
+  "description": "UOWN QA Automation - Playwright + TypeScript",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:origination": "npx playwright test --project=origination-ui",
+    "test:servicing": "npx playwright test --project=servicing-ui",
+    "test:website": "npx playwright test --project=website-ui",
+    "test:ams": "npx playwright test --project=ams-ui",
+    "test:api": "npx playwright test --project=api-only",
+    "test:cicd": "npx playwright test --grep @cicd",
+    "test:smoke": "npx playwright test --grep @smoke",
+    "test:sanity": "npx playwright test --grep @sanity",
+    "test:regression": "npx playwright test --grep @regression",
+    "test:critical": "npx playwright test --grep @critical",
+    "test:e2e": "npx playwright test --project=origination-ui --project=servicing-ui --project=website-ui --project=ams-ui",
+    "test:website:firefox": "npx playwright test --project=website-firefox",
+    "test:website:webkit": "npx playwright test --project=website-webkit",
+    "test:website:mobile": "npx playwright test --project=website-mobile-ios --project=website-mobile-android",
+    "test:website:mobile:ios": "npx playwright test --project=website-mobile-ios",
+    "test:website:mobile:android": "npx playwright test --project=website-mobile-android",
+    "test:website:tablet": "npx playwright test --project=website-tablet",
+    "test:website:all-devices": "npx playwright test --project=website-ui --project=website-firefox --project=website-webkit --project=website-mobile-ios --project=website-mobile-android --project=website-tablet",
+    "test:cross-browser": "npx playwright test --project=website-ui --project=website-firefox --project=website-webkit",
+    "report": "npx playwright show-report reports/html",
+    "report:allure": "ALLURE=true npx playwright test && npx allure generate reports/allure-results -o reports/allure-report --clean && npx allure open reports/allure-report",
+    "report:summary": "cat reports/test-summary.json",
+    "report:clean": "rm -rf reports/* playwright-report test-results",
+    "lint": "tsc --noEmit",
+    "sonar": "npx sonar-scanner",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:reset": "docker compose down -v"
+  },
+  "devDependencies": {
+    "@playwright/mcp": "^0.0.68",
+    "@playwright/test": "^1.50.0",
+    "@postman/postman-mcp-server": "^2.7.0",
+    "@types/pg": "^8.11.0",
+    "allure-playwright": "^3.1.0",
+    "dotenv": "^16.4.0",
+    "pg": "^8.13.0",
+    "sonarqube-scanner": "^4.3.4",
+    "typescript": "^5.6.0"
+  },
+  "dependencies": {
+    "imapflow": "^1.2.10"
+  }
+}

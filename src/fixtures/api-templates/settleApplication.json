@@ -1,0 +1,6 @@
+{
+  "userName": "${merchant.username}",
+  "setupPassword": "${merchant.password}",
+  "merchantNumber": "${merchant.number}",
+  "accountNumber": "${LeadUuid}"
+}

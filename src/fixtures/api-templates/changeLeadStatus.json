@@ -1,0 +1,7 @@
+{
+  "userName": "${merchant.username}",
+  "setupPassword": "${merchant.password}",
+  "merchantNumber": "${merchant.number}",
+  "leadPk": ${LeadPk},
+  "newLeadStatus": "SIGNED"
+}

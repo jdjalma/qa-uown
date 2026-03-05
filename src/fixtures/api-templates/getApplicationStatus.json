@@ -1,0 +1,7 @@
+{
+  "userName": "${merchant.username}",
+  "setupPassword": "${merchant.password}",
+  "merchantNumber": "${merchant.number}",
+  "localeString": "en_US",
+  "accountNumber": "${LeadUuid}"
+}

@@ -1,93 +1,225 @@
-# uownAutomation
+# fintech-playwright
 
+Test automation framework for the **UOWN Leasing** fintech platform. Built with **Playwright + TypeScript**, covering API testing, E2E browser testing, and hybrid flows across four portals.
 
+## Portals
 
-## Getting started
+| Portal | Description |
+|--------|-------------|
+| **Origination** | Loan/lease application management — underwriting, contracts, e-sign, settlement, funding |
+| **Servicing** | Account management — payments (ACH/CC), transaction history, scheduled payments |
+| **Website** | Customer self-service — account view, payments, documents, contact info |
+| **AMS** | Administrative management — system configuration, user management |
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## Tech Stack
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+| Technology | Purpose |
+|------------|---------|
+| [Playwright](https://playwright.dev) | Browser automation + API testing |
+| TypeScript | Type safety |
+| PostgreSQL (pg) | Database validation |
+| Allure | Extended reporting (optional) |
+| dotenv | Environment configuration |
 
-## Add your files
+## Quick Start
 
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+```bash
+# Install dependencies
+npm install
+npx playwright install
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your credentials
+
+# Run all tests
+npm test
+
+# Run by portal
+npm run test:origination
+npm run test:servicing
+npm run test:website
+npm run test:ams
+
+# Run API-only (no browser)
+npm run test:api
+```
+
+## Project Structure
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/uown/qa/automation.git
-git branch -M main
-git push -uf origin main
+src/
+├── api/                # REST clients + typed bodies/responses
+│   ├── clients/        # BaseClient → ApplicationClient, InvoiceClient, etc.
+│   ├── bodies/         # Request payload builders
+│   └── responses/      # Response interfaces
+├── config/             # Environment config, constants
+├── support/            # Test infrastructure (fixtures, hooks, browser profiles)
+├── pages/              # Page Object Model
+│   ├── origination/    # Contract, Customer, Funding, LeaseAgreement, Overview
+│   ├── servicing/      # Customer, PaymentTransaction, AchHistory
+│   ├── website/        # WebsiteBase
+│   └── ams/            # AmsBase, Ams
+├── helpers/            # Utilities (database, date, table, validation)
+├── data/               # Test data (merchants, addresses, accounts)
+├── fixtures/           # Playwright fixtures + JSON API templates
+├── selectors/          # Centralized CSS/XPath selectors
+└── types/              # Enums and TypeScript types
+tests/
+├── api/                # API-only tests
+└── e2e/                # E2E browser tests
+    ├── origination/
+    ├── servicing/
+    ├── website/
+    └── ams/
+docs/
+├── PROJECT.md          # Architecture details
+├── TESTING.md          # Testing guide and conventions
+├── AGENTS.md           # Agent/subagent workflow documentation
+└── business-rules/     # Domain business rules (12 chapters + appendices)
 ```
 
-## Integrate with your tools
+## Running Tests
 
-* [Set up project integrations](https://gitlab.com/uown/qa/automation/-/settings/integrations)
+### By Portal
 
-## Collaborate with your team
+```bash
+npm run test:origination      # Origination portal
+npm run test:servicing        # Servicing portal
+npm run test:website          # Website portal
+npm run test:ams              # AMS portal
+npm run test:api              # API-only (no browser)
+npm run test:e2e              # All E2E portals
+```
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+### Cross-Browser & Multi-Device
 
-## Test and Deploy
+```bash
+npm run test:website:firefox          # Firefox
+npm run test:website:webkit           # Safari/WebKit
+npm run test:cross-browser            # Chrome + Firefox + WebKit
+npm run test:website:mobile           # iPhone 12 Pro + Pixel 5
+npm run test:website:mobile:ios       # iPhone 12 Pro only
+npm run test:website:mobile:android   # Pixel 5 only
+npm run test:website:tablet           # iPad Pro 11
+npm run test:website:all-devices      # All browsers + mobile + tablet
+```
 
-Use the built-in continuous integration in GitLab.
+### By Environment
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
+```bash
+ENV=sandbox npm test    # Sandbox (default)
+ENV=qa1 npm test        # QA1
+ENV=qa2 npm test        # QA2
+ENV=stg npm test        # Staging
+```
 
-***
+### By Tag
 
-# Editing this README
+```bash
+npm run test:cicd                              # Tests tagged @cicd
+npx playwright test --grep @smoke              # Custom tag filter
+```
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+## Reports
 
-## Suggestions for a good README
+```bash
+npm run report          # Open HTML report
+npm run report:summary  # View JSON summary
+npm run report:allure   # Generate and open Allure report
+npm run report:clean    # Clean all reports
+```
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+Report outputs:
+- HTML → `reports/html/`
+- JSON summary → `reports/test-summary.json`
+- Allure → `reports/allure-report/`
+- Artifacts → `reports/test-results/`
 
-## Name
-Choose a self-explaining name for your project.
+## Environment Configuration
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+Copy `.env.example` to `.env` and fill in credentials:
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+| Variable | Description |
+|----------|-------------|
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | Admin portal credentials |
+| `MANAGER_USERNAME` / `MANAGER_PASSWORD` | Manager credentials |
+| `UOWN_API_KEY` | API key for UOWN services |
+| `UOWN_API_AUTHORIZATION` | Bearer token for API auth |
+| `UOWN_DB_URL_{ENV}` | Database URL (JDBC format, auto-converted) |
+| `EMAIL` / `EMAIL_PASSWORD` | Email for OTP flows |
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+### Runtime Variables
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ENV` | `sandbox` | Target environment |
+| `WORKERS` | `1` | Parallel test workers |
+| `RETRIES` | `0` (CI: `1`) | Retry count |
+| `TIMEOUT_MULTIPLIER` | `1` | Multiply all timeouts |
+| `CI` | `false` | CI mode (headless, auto-retry) |
+| `ALLURE` | `false` | Enable Allure reporter |
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+## Architecture Highlights
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+### Test Fixtures
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+```typescript
+// E2E tests get all fixtures automatically
+import { test, expect } from '@support/base-test';
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+test('flow', async ({ page, api, db, ctx, testEnv }) => {
+  // api   → typed API clients (application, invoice, lead, etc.)
+  // db    → database query helpers
+  // ctx   → shared state (leadPk, accountPk, etc.)
+  // page  → Playwright page with auto-hooks (animations disabled, screenshot on failure)
+});
+```
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+### Page Object Model
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+```
+BasePage (abstract)
+├── LoginPage, SearchPage, MerchantPage
+├── OriginationBasePage → CustomerPage, ContractPage, FundingPage, ...
+├── ServicingBasePage → CustomerPage, PaymentTransactionPage, ...
+├── WebsiteBasePage
+└── AmsBasePage → AmsPage
+```
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+### API Client Layer
 
-## License
-For open source projects, say how it is licensed.
+```
+BaseClient (auth headers, URL resolution)
+├── ApplicationClient    # Application lifecycle
+├── InvoiceClient        # Invoice operations
+├── LeadClient           # Lead status management
+├── SettlementClient     # Lease settlement
+├── CreditCardClient     # CC operations
+└── ScheduledTaskClient  # Scheduled tasks
+```
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+### State Machine
+
+```
+UW_APPROVED → CC_AUTH_PASSED → CONTRACT_CREATED → SIGNED → SETTLED → FUNDING → FUNDED
+```
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [PROJECT.md](docs/PROJECT.md) | Architecture, setup, and environment details |
+| [TESTING.md](docs/TESTING.md) | Testing guide, conventions, and examples |
+| [AGENTS.md](docs/AGENTS.md) | Agent/subagent workflow for AI-assisted development |
+| [Business Rules](docs/business-rules/) | Domain knowledge (12 chapters + appendices) |
+| [CLAUDE.md](CLAUDE.md) | AI agent instructions and project context |
+
+## Key Conventions
+
+- **Imports:** Use path aliases (`@support/base-test`, `@pages/origination/customer.page`, etc.)
+- **Test steps:** Use `test.step()` for logical grouping
+- **Shared state:** Use `ctx` fixture across test steps
+- **Selectors:** Centralized in `src/selectors/common.selectors.ts`
+- **Test data:** Parameterized with `for...of` loops over data arrays
+- **Tags:** `@cicd`, `@smoke`, `@regression` for filtering

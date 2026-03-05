@@ -1,0 +1,112 @@
+services:
+  # --- Email Testing ---
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: uown-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"    # SMTP
+      - "8025:8025"    # Web UI
+      - "1143:1143"    # IMAP
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    volumes:
+      - mailpit-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8025/api/v1/info || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # --- Test Reporting ---
+  allure:
+    image: frankescobar/allure-docker-service:latest
+    container_name: uown-allure
+    restart: unless-stopped
+    ports:
+      - "5050:5050"    # API + UI
+    environment:
+      CHECK_RESULTS_EVERY_SECONDS: 5
+      KEEP_HISTORY: 25
+    volumes:
+      - ./reports/allure-results:/app/allure-results
+      - ./reports/allure-reports:/app/default-reports
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5050/allure-docker-service/version"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # --- Static Analysis ---
+  sonarqube:
+    image: sonarqube:lts-community
+    container_name: uown-sonarqube
+    restart: unless-stopped
+    ports:
+      - "9000:9000"    # Web UI
+    environment:
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: true
+    volumes:
+      - sonarqube-data:/opt/sonarqube/data
+      - sonarqube-extensions:/opt/sonarqube/extensions
+      - sonarqube-logs:/opt/sonarqube/logs
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9000/api/system/status | grep -q UP"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 180s
+
+  # --- Metrics ---
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: uown-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"    # Web UI
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=30d"
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'wget -qO- http://localhost:9090/-/healthy || exit 1'"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # --- Dashboards ---
+  grafana:
+    image: grafana/grafana:latest
+    container_name: uown-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"    # Web UI
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 120s
+
+volumes:
+  mailpit-data:
+  sonarqube-data:
+  sonarqube-extensions:
+  sonarqube-logs:
+  prometheus-data:
+  grafana-data:
