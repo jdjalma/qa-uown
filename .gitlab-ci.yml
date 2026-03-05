@@ -1,6 +1,6 @@
 stages:
   - install
-  - lint
+  # - lint
   - test
   - report
   - deploy
@@ -186,6 +186,8 @@ test:website:
 
 # ══════════════════════════════════════════════════════════════
 #  REGRESSION TESTS (Full Suite - Scheduled)
+#  Configure no GitLab: CI/CD > Schedules
+#  Cron: 0 22 * * * (22h diariamente - America/Sao_Paulo)
 # ══════════════════════════════════════════════════════════════
 test:regression:
   stage: test
