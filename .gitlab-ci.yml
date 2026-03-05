@@ -103,7 +103,7 @@ install:
       - script_failure
 
 # ══════════════════════════════════════════════════════════════
-#  CI TESTS - Unified Flow & Critical Path (MANUAL)
+#  CI TESTS - Unified Flow & Critical Path
 # ══════════════════════════════════════════════════════════════
 test:ci:
   stage: test
@@ -112,9 +112,8 @@ test:ci:
     - install
   needs: ["install"]
   parallel: 2
-  when: manual
   before_script:
-    - echo "Running CI tests from tests/ci/ folder"
+    - echo "Running CI tests from tests/ci/ folder (AUTOMATIC)"
   script:
     - npx playwright test --project=ci-tests --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
   after_script:
@@ -135,3 +134,34 @@ test:ci:
     when:
       - runner_system_failure
   allow_failure: false
+
+test:ci:manual:
+  stage: test
+  image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+  dependencies:
+    - install
+  needs: ["install"]
+  parallel: 2
+  when: manual
+  before_script:
+    - echo "Running CI tests from tests/ci/ folder (MANUAL)"
+  script:
+    - npx playwright test --project=ci-tests --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
+  after_script:
+    - echo "CI test results:"
+    - if [ -f reports/test-summary.json ]; then cat reports/test-summary.json; fi
+  artifacts:
+    when: always
+    paths:
+      - reports/
+      - playwright-report/
+      - test-results/**/*.json
+      - test-results/**/*.png
+    reports:
+      junit: reports/junit.xml
+    expire_in: 7 days
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
+  allow_failure: true
