@@ -1,0 +1,339 @@
+stages:
+  - install
+  - lint
+  - test
+  - report
+  - deploy
+
+variables:
+  NODE_VERSION: "20"
+  PLAYWRIGHT_VERSION: "1.50.0"
+  npm_config_cache: "$CI_PROJECT_DIR/.npm"
+  PLAYWRIGHT_BROWSERS_PATH: "$CI_PROJECT_DIR/.playwright"
+
+cache:
+  key:
+    files:
+      - package-lock.json
+  paths:
+    - .npm
+    - .playwright
+    - node_modules
+
+# ══════════════════════════════════════════════════════════════
+#  INSTALL DEPENDENCIES
+# ══════════════════════════════════════════════════════════════
+install:
+  stage: install
+  image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+  script:
+    - npm ci
+    - npx playwright install --with-deps chromium
+  artifacts:
+    paths:
+      - node_modules
+      - .playwright
+    expire_in: 1 day
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# ══════════════════════════════════════════════════════════════
+#  LINT & TYPE CHECK
+# ══════════════════════════════════════════════════════════════
+lint:
+  stage: lint
+  image: node:${NODE_VERSION}
+  dependencies:
+    - install
+  script:
+    - npm run lint
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# ══════════════════════════════════════════════════════════════
+#  API TESTS
+# ══════════════════════════════════════════════════════════════
+test:api:
+  stage: test
+  image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+  dependencies:
+    - install
+  variables:
+    ENV: "qa2"
+  script:
+    - npm run test:api
+  artifacts:
+    when: always
+    paths:
+      - reports/
+      - playwright-report/
+      - test-results/
+    reports:
+      junit: reports/junit.xml
+    expire_in: 7 days
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# ══════════════════════════════════════════════════════════════
+#  SMOKE TESTS (Critical Path)
+# ══════════════════════════════════════════════════════════════
+test:smoke:
+  stage: test
+  image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+  dependencies:
+    - install
+  variables:
+    ENV: "qa2"
+  script:
+    - npm run test:smoke
+  artifacts:
+    when: always
+    paths:
+      - reports/
+      - playwright-report/
+      - test-results/
+    reports:
+      junit: reports/junit.xml
+    expire_in: 7 days
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# ══════════════════════════════════════════════════════════════
+#  ORIGINATION TESTS
+# ══════════════════════════════════════════════════════════════
+test:origination:
+  stage: test
+  image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+  dependencies:
+    - install
+  variables:
+    ENV: "qa2"
+  script:
+    - npm run test:origination
+  artifacts:
+    when: always
+    paths:
+      - reports/
+      - playwright-report/
+      - test-results/
+    reports:
+      junit: reports/junit.xml
+    expire_in: 7 days
+  only:
+    - main
+    - develop
+  allow_failure: true
+
+# ══════════════════════════════════════════════════════════════
+#  SERVICING TESTS
+# ══════════════════════════════════════════════════════════════
+test:servicing:
+  stage: test
+  image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+  dependencies:
+    - install
+  variables:
+    ENV: "qa2"
+  script:
+    - npm run test:servicing
+  artifacts:
+    when: always
+    paths:
+      - reports/
+      - playwright-report/
+      - test-results/
+    reports:
+      junit: reports/junit.xml
+    expire_in: 7 days
+  only:
+    - main
+    - develop
+  allow_failure: true
+
+# ══════════════════════════════════════════════════════════════
+#  WEBSITE TESTS
+# ══════════════════════════════════════════════════════════════
+test:website:
+  stage: test
+  image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+  dependencies:
+    - install
+  variables:
+    ENV: "qa2"
+  script:
+    - npm run test:website
+  artifacts:
+    when: always
+    paths:
+      - reports/
+      - playwright-report/
+      - test-results/
+    reports:
+      junit: reports/junit.xml
+    expire_in: 7 days
+  only:
+    - main
+    - develop
+  allow_failure: true
+
+# ══════════════════════════════════════════════════════════════
+#  REGRESSION TESTS (Full Suite - Scheduled)
+# ══════════════════════════════════════════════════════════════
+test:regression:
+  stage: test
+  image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+  dependencies:
+    - install
+  variables:
+    ENV: "qa2"
+  script:
+    - npm run test:regression
+  artifacts:
+    when: always
+    paths:
+      - reports/
+      - playwright-report/
+      - test-results/
+    reports:
+      junit: reports/junit.xml
+    expire_in: 30 days
+  only:
+    - schedules
+  allow_failure: true
+
+# ══════════════════════════════════════════════════════════════
+#  CROSS-BROWSER TESTS (Firefox, WebKit)
+# ══════════════════════════════════════════════════════════════
+test:cross-browser:
+  stage: test
+  image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+  dependencies:
+    - install
+  variables:
+    ENV: "qa2"
+  script:
+    - npx playwright install firefox webkit
+    - npm run test:cross-browser
+  artifacts:
+    when: always
+    paths:
+      - reports/
+      - playwright-report/
+      - test-results/
+    expire_in: 7 days
+  only:
+    - schedules
+  allow_failure: true
+
+# ══════════════════════════════════════════════════════════════
+#  GENERATE ALLURE REPORT
+# ══════════════════════════════════════════════════════════════
+report:allure:
+  stage: report
+  image: node:${NODE_VERSION}
+  dependencies:
+    - test:smoke
+    - test:api
+  before_script:
+    - apt-get update && apt-get install -y default-jre
+    - npm install -g allure-commandline
+  script:
+    - allure generate reports/allure-results -o reports/allure-report --clean
+  artifacts:
+    paths:
+      - reports/allure-report
+    expire_in: 30 days
+  only:
+    - main
+    - develop
+  when: always
+
+# ══════════════════════════════════════════════════════════════
+#  SONARQUBE ANALYSIS
+# ══════════════════════════════════════════════════════════════
+sonarqube:
+  stage: report
+  image: sonarsource/sonar-scanner-cli:latest
+  dependencies:
+    - lint
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
+    GIT_DEPTH: "0"
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+  script:
+    - sonar-scanner
+  only:
+    - main
+    - develop
+  allow_failure: true
+
+# ══════════════════════════════════════════════════════════════
+#  DEPLOY REPORTS TO GITLAB PAGES
+# ══════════════════════════════════════════════════════════════
+pages:
+  stage: deploy
+  image: alpine:latest
+  dependencies:
+    - report:allure
+  script:
+    - mkdir -p public
+    - cp -r reports/allure-report/* public/
+  artifacts:
+    paths:
+      - public
+    expire_in: 30 days
+  only:
+    - main
+  when: always
+
+# ══════════════════════════════════════════════════════════════
+#  MANUAL JOBS - On Demand
+# ══════════════════════════════════════════════════════════════
+test:e2e:manual:
+  stage: test
+  image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+  dependencies:
+    - install
+  variables:
+    ENV: "qa2"
+  script:
+    - npm run test:e2e
+  artifacts:
+    when: always
+    paths:
+      - reports/
+      - playwright-report/
+      - test-results/
+    expire_in: 7 days
+  when: manual
+  allow_failure: true
+
+test:critical:manual:
+  stage: test
+  image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+  dependencies:
+    - install
+  variables:
+    ENV: "qa2"
+  script:
+    - npm run test:critical
+  artifacts:
+    when: always
+    paths:
+      - reports/
+      - playwright-report/
+      - test-results/
+    expire_in: 7 days
+  when: manual
+  allow_failure: true
