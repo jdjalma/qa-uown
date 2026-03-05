@@ -60,16 +60,13 @@ cache:
 install:
   stage: install
   image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
-  before_script:
-    - echo "Installing dependencies for environment: $TEST_ENV"
-    - echo "Node version: $(node --version)"
-    - echo "Playwright version: $PLAYWRIGHT_VERSION"
   script:
+    - echo "Installing dependencies"
+    - echo "Node version $(node --version)"
+    - echo "Playwright version $PLAYWRIGHT_VERSION"
     - npm ci --prefer-offline --no-audit
     - npx playwright install --with-deps chromium
-  after_script:
     - echo "Dependencies installed successfully"
-    - du -sh node_modules .playwright
   artifacts:
     paths:
       - node_modules
