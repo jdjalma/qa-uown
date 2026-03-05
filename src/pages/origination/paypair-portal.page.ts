@@ -749,6 +749,39 @@ export class PayPairPortalPage extends BasePage {
   }
 
   /**
+   * Complete email-based signing flow by fetching the SignWell link from email
+   * and completing the signing process in a new page context.
+   */
+  async completeEmailBasedSigning(emailHelper?: EmailHelpers, applicantEmail?: string): Promise<void> {
+    if (!emailHelper || !applicantEmail) {
+      console.log('[PayPair Email Sign] No email helper or applicant email provided — skipping email-based signing');
+      return;
+    }
+
+    console.log(`[PayPair Email Sign] Fetching SignWell link from email for ${applicantEmail}...`);
+    const signwellLink = await emailHelper.getEmailLink(applicantEmail, /signwell\.com/i, 120_000);
+
+    if (!signwellLink) {
+      console.log('[PayPair Email Sign] No SignWell link found in email — signing may need manual completion');
+      return;
+    }
+
+    console.log(`[PayPair Email Sign] SignWell link found: ${signwellLink.substring(0, 80)}...`);
+    
+    const signPage = await this.page.context().newPage();
+    await signPage.goto(signwellLink, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await sleep(3_000);
+
+    await completeSignwellFlow(signPage, 'PayPair Email Sign', async () => {
+      await clickSignAllViaLink(signPage);
+    });
+
+    await sleep(2_000);
+    await signPage.close();
+    console.log('[PayPair Email Sign] Email-based signing completed');
+  }
+
+  /**
    * Find and complete SignWell (or PandaDocs) e-sign inside the partner portal.
    * Searches all frames for the signing iframe and completes the flow.
    */

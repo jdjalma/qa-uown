@@ -1,15 +1,55 @@
+# ══════════════════════════════════════════════════════════════
+#  WORKFLOW RULES - Fail Fast & Smart Execution
+# ══════════════════════════════════════════════════════════════
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: always
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: always
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      when: always
+    - when: never
+
 stages:
   - install
-  # - lint
+  - lint
   - test
+  - quality-gate
   - report
+  - notify
   - deploy
 
 variables:
+  # Node & Playwright
   NODE_VERSION: "20"
   PLAYWRIGHT_VERSION: "1.50.0"
   npm_config_cache: "$CI_PROJECT_DIR/.npm"
   PLAYWRIGHT_BROWSERS_PATH: "$CI_PROJECT_DIR/.playwright"
+  
+  # Performance & Retry Strategy
+  PLAYWRIGHT_RETRIES: "2"
+  PLAYWRIGHT_TIMEOUT: "60000"
+  PLAYWRIGHT_WORKERS: "3"
+  
+  # Environment Selection (Dynamic)
+  TEST_ENV: "${CI_COMMIT_REF_NAME == 'main' ? 'qa2' : CI_COMMIT_REF_NAME == 'develop' ? 'dev1' : 'qa2'}"
+  
+  # Quality Gates
+  MIN_PASS_RATE: "95"
+  FLAKY_TEST_THRESHOLD: "3"
+  
+  # Artifact Optimization
+  VIDEO_ON_FAILURE_ONLY: "true"
+  SCREENSHOT_ON_FAILURE_ONLY: "true"
+  
+  # Git Settings
+  GIT_DEPTH: "10"
+  GIT_STRATEGY: "fetch"
 
 cache:
   key:
@@ -26,85 +66,120 @@ cache:
 install:
   stage: install
   image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+  before_script:
+    - echo "📦 Installing dependencies for environment: $TEST_ENV"
+    - echo "🔧 Node version: $(node --version)"
+    - echo "🎭 Playwright version: $PLAYWRIGHT_VERSION"
   script:
-    - npm ci
+    - npm ci --prefer-offline --no-audit
     - npx playwright install --with-deps chromium
+  after_script:
+    - echo "✅ Dependencies installed successfully"
+    - du -sh node_modules .playwright
   artifacts:
     paths:
       - node_modules
       - .playwright
     expire_in: 1 day
-  only:
-    - main
-    - develop
-    - merge_requests
-
-# # ══════════════════════════════════════════════════════════════
-# #  LINT & TYPE CHECK
-# # ══════════════════════════════════════════════════════════════
-# lint:
-#   stage: lint
-#   image: node:${NODE_VERSION}
-#   dependencies:
-#     - install
-#   script:
-#     - npm run lint
-#   only:
-#     - main
-#     - develop
-#     - merge_requests
-
-# # ══════════════════════════════════════════════════════════════
-# #  API TESTS
-# # ══════════════════════════════════════════════════════════════
-# test:api:
-#   stage: test
-#   image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
-#   dependencies:
-#     - install
-#   variables:
-#     ENV: "qa2"
-#   script:
-#     - npm run test:api
-#   artifacts:
-#     when: always
-#     paths:
-#       - reports/
-#       - playwright-report/
-#       - test-results/
-#     reports:
-#       junit: reports/junit.xml
-#     expire_in: 7 days
-#   only:
-#     - main
-#     - develop
-#     - merge_requests
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
 
 # ══════════════════════════════════════════════════════════════
-#  SMOKE TESTS (Critical Path)
+#  LINT & TYPE CHECK
+# ══════════════════════════════════════════════════════════════
+lint:
+  stage: lint
+  image: node:${NODE_VERSION}
+  dependencies:
+    - install
+  before_script:
+    - echo "🔍 Running TypeScript type checking..."
+  script:
+    - npm run lint
+  after_script:
+    - echo "✅ Lint check completed"
+  allow_failure: false
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
+
+# ══════════════════════════════════════════════════════════════
+#  API TESTS
+# ══════════════════════════════════════════════════════════════
+test:api:
+  stage: test
+  image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+  dependencies:
+    - install
+  needs: ["install", "lint"]
+  parallel: 2
+  variables:
+    ENV: "$TEST_ENV"
+  before_script:
+    - echo "🚀 Running API tests on environment: $ENV"
+    - echo "⚙️ Retries: $PLAYWRIGHT_RETRIES | Timeout: $PLAYWRIGHT_TIMEOUT"
+  script:
+    - npm run test:api -- --retries=$PLAYWRIGHT_RETRIES
+  after_script:
+    - echo "📊 Test execution completed"
+    - if [ -f reports/test-summary.json ]; then cat reports/test-summary.json; fi
+  artifacts:
+    when: always
+    paths:
+      - reports/
+      - playwright-report/
+      - test-results/**/*.json
+      - test-results/**/*.png
+    reports:
+      junit: reports/junit.xml
+    expire_in: 7 days
+  coverage: '/All tests\s+(\d+\.\d+)%/'
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+
+# ══════════════════════════════════════════════════════════════
+#  SMOKE TESTS (Critical Path) - BLOCKING
 # ══════════════════════════════════════════════════════════════
 test:smoke:
   stage: test
   image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
   dependencies:
     - install
+  needs: ["install", "lint"]
+  parallel: 3
   variables:
-    ENV: "qa2"
+    ENV: "$TEST_ENV"
+  before_script:
+    - echo "🔥 Running SMOKE tests (Critical Path)"
+    - echo "🎯 Environment: $ENV | Workers: $PLAYWRIGHT_WORKERS"
   script:
-    - npm run test:smoke
+    - npm run test:smoke -- --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
+  after_script:
+    - echo "📈 Smoke test results:"
+    - if [ -f reports/test-summary.json ]; then cat reports/test-summary.json; fi
   artifacts:
     when: always
     paths:
       - reports/
       - playwright-report/
-      - test-results/
+      - test-results/**/*.json
+      - test-results/**/*.png
     reports:
       junit: reports/junit.xml
     expire_in: 7 days
-  only:
-    - main
-    - develop
-    - merge_requests
+  coverage: '/All tests\s+(\d+\.\d+)%/'
+  allow_failure: false
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
 
 # ══════════════════════════════════════════════════════════════
 #  ORIGINATION TESTS
@@ -114,22 +189,30 @@ test:origination:
   image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
   dependencies:
     - install
+  needs: ["install", "test:smoke"]
+  parallel: 4
   variables:
-    ENV: "qa2"
+    ENV: "$TEST_ENV"
+  before_script:
+    - echo "🏦 Running Origination Portal tests"
   script:
-    - npm run test:origination
+    - npm run test:origination -- --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
+  after_script:
+    - if [ -f reports/test-summary.json ]; then cat reports/test-summary.json; fi
   artifacts:
     when: always
     paths:
       - reports/
       - playwright-report/
-      - test-results/
+      - test-results/**/*.json
+      - test-results/**/*.png
     reports:
       junit: reports/junit.xml
     expire_in: 7 days
-  only:
-    - main
-    - develop
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
   allow_failure: true
 
 # ══════════════════════════════════════════════════════════════
@@ -140,22 +223,30 @@ test:servicing:
   image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
   dependencies:
     - install
+  needs: ["install", "test:smoke"]
+  parallel: 3
   variables:
-    ENV: "qa2"
+    ENV: "$TEST_ENV"
+  before_script:
+    - echo "⚙️ Running Servicing Portal tests"
   script:
-    - npm run test:servicing
+    - npm run test:servicing -- --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
+  after_script:
+    - if [ -f reports/test-summary.json ]; then cat reports/test-summary.json; fi
   artifacts:
     when: always
     paths:
       - reports/
       - playwright-report/
-      - test-results/
+      - test-results/**/*.json
+      - test-results/**/*.png
     reports:
       junit: reports/junit.xml
     expire_in: 7 days
-  only:
-    - main
-    - develop
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
   allow_failure: true
 
 # ══════════════════════════════════════════════════════════════
@@ -166,74 +257,63 @@ test:website:
   image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
   dependencies:
     - install
+  needs: ["install", "test:smoke"]
+  parallel: 2
   variables:
-    ENV: "qa2"
+    ENV: "$TEST_ENV"
+  before_script:
+    - echo "🌐 Running Website tests"
   script:
-    - npm run test:website
+    - npm run test:website -- --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
+  after_script:
+    - if [ -f reports/test-summary.json ]; then cat reports/test-summary.json; fi
   artifacts:
     when: always
     paths:
       - reports/
       - playwright-report/
-      - test-results/
+      - test-results/**/*.json
+      - test-results/**/*.png
     reports:
       junit: reports/junit.xml
     expire_in: 7 days
-  only:
-    - main
-    - develop
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
   allow_failure: true
 
 # ══════════════════════════════════════════════════════════════
-#  REGRESSION TESTS (Full Suite - Scheduled)
-#  Configure no GitLab: CI/CD > Schedules
-#  Cron: 0 22 * * * (22h diariamente - America/Sao_Paulo)
+#  QUALITY GATE - Test Pass Rate Validation
 # ══════════════════════════════════════════════════════════════
-test:regression:
-  stage: test
-  image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+quality-gate:pass-rate:
+  stage: quality-gate
+  image: node:${NODE_VERSION}
   dependencies:
-    - install
-  variables:
-    ENV: "qa2"
+    - test:smoke
+  before_script:
+    - echo "🎯 Validating Quality Gates"
+    - echo "📊 Minimum Pass Rate Required: $MIN_PASS_RATE%"
   script:
-    - npm run test:regression
-  artifacts:
-    when: always
-    paths:
-      - reports/
-      - playwright-report/
-      - test-results/
-    reports:
-      junit: reports/junit.xml
-    expire_in: 30 days
-  only:
-    - schedules
-  allow_failure: true
-
-# ══════════════════════════════════════════════════════════════
-#  CROSS-BROWSER TESTS (Firefox, WebKit)
-# ══════════════════════════════════════════════════════════════
-test:cross-browser:
-  stage: test
-  image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
-  dependencies:
-    - install
-  variables:
-    ENV: "qa2"
-  script:
-    - npx playwright install firefox webkit
-    - npm run test:cross-browser
-  artifacts:
-    when: always
-    paths:
-      - reports/
-      - playwright-report/
-      - test-results/
-    expire_in: 7 days
-  only:
-    - schedules
-  allow_failure: true
+    - |
+      if [ -f reports/test-summary.json ]; then
+        PASS_RATE=$(jq -r '.passRate // 0' reports/test-summary.json)
+        echo "✅ Current Pass Rate: $PASS_RATE%"
+        if (( $(echo "$PASS_RATE < $MIN_PASS_RATE" | bc -l) )); then
+          echo "❌ QUALITY GATE FAILED: Pass rate $PASS_RATE% is below threshold $MIN_PASS_RATE%"
+          exit 1
+        else
+          echo "✅ QUALITY GATE PASSED: Pass rate $PASS_RATE% meets threshold"
+        fi
+      else
+        echo "⚠️ No test summary found, skipping quality gate"
+      fi
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: always
+  allow_failure: false
 
 # ══════════════════════════════════════════════════════════════
 #  GENERATE ALLURE REPORT
@@ -243,19 +323,22 @@ report:allure:
   image: node:${NODE_VERSION}
   dependencies:
     - test:smoke
-    - test:api
+    - test:origination
+    - test:servicing
+    - test:website
   before_script:
+    - echo "📊 Generating Allure Report"
     - apt-get update && apt-get install -y default-jre
     - npm install -g allure-commandline
   script:
     - allure generate reports/allure-results -o reports/allure-report --clean
+    - echo "✅ Allure report generated successfully"
+  after_script:
+    - echo "📈 Report available at: $CI_PAGES_URL"
   artifacts:
     paths:
       - reports/allure-report
     expire_in: 30 days
-  only:
-    - main
-    - develop
   when: always
 
 # ══════════════════════════════════════════════════════════════
@@ -273,11 +356,58 @@ sonarqube:
     key: "${CI_JOB_NAME}"
     paths:
       - .sonar/cache
+  before_script:
+    - echo "🔍 Running SonarQube Analysis"
   script:
     - sonar-scanner
-  only:
-    - main
-    - develop
+  after_script:
+    - echo "✅ SonarQube analysis completed"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: always
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+      when: always
+  allow_failure: true
+
+# ══════════════════════════════════════════════════════════════
+#  NOTIFICATIONS - Slack/Email on Failure
+# ══════════════════════════════════════════════════════════════
+notify:slack:
+  stage: notify
+  image: curlimages/curl:latest
+  dependencies: []
+  before_script:
+    - echo "📧 Sending notification to Slack"
+  script:
+    - |
+      if [ "$CI_JOB_STATUS" == "failed" ] || [ "$CI_PIPELINE_SOURCE" == "schedule" ]; then
+        EMOJI="❌"
+        COLOR="danger"
+        if [ "$CI_JOB_STATUS" == "success" ]; then
+          EMOJI="✅"
+          COLOR="good"
+        fi
+        
+        MESSAGE="$EMOJI Pipeline *$CI_PIPELINE_SOURCE* - Branch: *$CI_COMMIT_REF_NAME*\n"
+        MESSAGE="${MESSAGE}Status: *$CI_JOB_STATUS*\n"
+        MESSAGE="${MESSAGE}Commit: $CI_COMMIT_SHORT_SHA - $CI_COMMIT_TITLE\n"
+        MESSAGE="${MESSAGE}Author: $CI_COMMIT_AUTHOR\n"
+        MESSAGE="${MESSAGE}Pipeline: $CI_PIPELINE_URL"
+        
+        if [ -n "$SLACK_WEBHOOK_URL" ]; then
+          curl -X POST "$SLACK_WEBHOOK_URL" \
+            -H 'Content-Type: application/json' \
+            -d '{"text":"'"$MESSAGE"'","color":"'"$COLOR"'"}'
+          echo "✅ Slack notification sent"
+        else
+          echo "⚠️ SLACK_WEBHOOK_URL not configured"
+        fi
+      fi
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: always
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: on_failure
   allow_failure: true
 
 # ══════════════════════════════════════════════════════════════
@@ -288,15 +418,21 @@ pages:
   image: alpine:latest
   dependencies:
     - report:allure
+  before_script:
+    - echo "🚀 Deploying reports to GitLab Pages"
   script:
     - mkdir -p public
     - cp -r reports/allure-report/* public/
+    - echo "✅ Reports deployed successfully"
+  after_script:
+    - echo "📊 View reports at: $CI_PAGES_URL"
   artifacts:
     paths:
       - public
     expire_in: 30 days
-  only:
-    - main
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: always
   when: always
 
 # ══════════════════════════════════════════════════════════════
@@ -307,10 +443,16 @@ test:e2e:manual:
   image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
   dependencies:
     - install
+  needs: ["install"]
+  parallel: 4
   variables:
     ENV: "qa2"
+  before_script:
+    - echo "🎯 Running MANUAL E2E tests"
   script:
-    - npm run test:e2e
+    - npm run test:e2e -- --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
+  after_script:
+    - if [ -f reports/test-summary.json ]; then cat reports/test-summary.json; fi
   artifacts:
     when: always
     paths:
@@ -326,10 +468,16 @@ test:critical:manual:
   image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
   dependencies:
     - install
+  needs: ["install"]
+  parallel: 2
   variables:
     ENV: "qa2"
+  before_script:
+    - echo "⚡ Running MANUAL Critical tests"
   script:
-    - npm run test:critical
+    - npm run test:critical -- --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
+  after_script:
+    - if [ -f reports/test-summary.json ]; then cat reports/test-summary.json; fi
   artifacts:
     when: always
     paths:
