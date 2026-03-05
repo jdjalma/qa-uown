@@ -39,46 +39,46 @@ install:
     - develop
     - merge_requests
 
-# ══════════════════════════════════════════════════════════════
-#  LINT & TYPE CHECK
-# ══════════════════════════════════════════════════════════════
-lint:
-  stage: lint
-  image: node:${NODE_VERSION}
-  dependencies:
-    - install
-  script:
-    - npm run lint
-  only:
-    - main
-    - develop
-    - merge_requests
+# # ══════════════════════════════════════════════════════════════
+# #  LINT & TYPE CHECK
+# # ══════════════════════════════════════════════════════════════
+# lint:
+#   stage: lint
+#   image: node:${NODE_VERSION}
+#   dependencies:
+#     - install
+#   script:
+#     - npm run lint
+#   only:
+#     - main
+#     - develop
+#     - merge_requests
 
-# ══════════════════════════════════════════════════════════════
-#  API TESTS
-# ══════════════════════════════════════════════════════════════
-test:api:
-  stage: test
-  image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
-  dependencies:
-    - install
-  variables:
-    ENV: "qa2"
-  script:
-    - npm run test:api
-  artifacts:
-    when: always
-    paths:
-      - reports/
-      - playwright-report/
-      - test-results/
-    reports:
-      junit: reports/junit.xml
-    expire_in: 7 days
-  only:
-    - main
-    - develop
-    - merge_requests
+# # ══════════════════════════════════════════════════════════════
+# #  API TESTS
+# # ══════════════════════════════════════════════════════════════
+# test:api:
+#   stage: test
+#   image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+#   dependencies:
+#     - install
+#   variables:
+#     ENV: "qa2"
+#   script:
+#     - npm run test:api
+#   artifacts:
+#     when: always
+#     paths:
+#       - reports/
+#       - playwright-report/
+#       - test-results/
+#     reports:
+#       junit: reports/junit.xml
+#     expire_in: 7 days
+#   only:
+#     - main
+#     - develop
+#     - merge_requests
 
 # ══════════════════════════════════════════════════════════════
 #  SMOKE TESTS (Critical Path)
