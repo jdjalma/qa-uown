@@ -121,7 +121,7 @@ test:api:
     ENV: "$TEST_ENV"
   before_script:
     - echo "🚀 Running API tests on environment: $ENV"
-    - echo "⚙️ Retries: $PLAYWRIGHT_RETRIES | Timeout: $PLAYWRIGHT_TIMEOUT"
+    - echo "⚙️ Retries:$PLAYWRIGHT_RETRIES Timeout:$PLAYWRIGHT_TIMEOUT"
   script:
     - npm run test:api -- --retries=$PLAYWRIGHT_RETRIES
   after_script:
@@ -158,7 +158,7 @@ test:smoke:
     ENV: "$TEST_ENV"
   before_script:
     - echo "🔥 Running SMOKE tests (Critical Path)"
-    - echo "🎯 Environment: $ENV | Workers: $PLAYWRIGHT_WORKERS"
+    - echo "🎯 Environment:$ENV Workers:$PLAYWRIGHT_WORKERS"
   script:
     - npm run test:smoke -- --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
   after_script:
