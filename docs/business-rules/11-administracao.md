@@ -671,6 +671,74 @@ Sistema de chaves de API para autenticacao de servicos externos.
 
 ---
 
+## 49. Modelo de Permissoes (Portal Servicing)
+
+### O Que e
+
+O portal Servicing implementa um modelo de permissoes granular que controla quais acoes cada agente pode executar. Permissoes sao verificadas por feature + acao.
+
+### Permissoes de Visualizacao Restrita
+
+| Permissao | O Que Controla |
+|-----------|----------------|
+| `restricted.view.full.dob` | Exibicao da data de nascimento completa |
+| `restricted.view.full.ssn` | Exibicao do SSN completo |
+| `restricted.view.partial.account_number` | Exibicao mascarada do numero de conta bancaria |
+| `restricted.view.servicing_redirect` | Redirecionamento para o portal Servicing a partir do Origination |
+
+### Permissoes de Modificacao por Feature
+
+| Feature | Permissoes de Modificacao |
+|---------|--------------------------|
+| **account_sale** | `get_documents_for_sold_accounts_with_file` |
+| **ach_history** | `disable_ach_payment` |
+| **documents** | `edit_document`, `resend_stored_doc`, `upload_file_for_account`, `delete_file` |
+| **payment** | `create_or_update_ach_payment`, `make_credit_card_payment` |
+| **payment_transaction** | `reverse_payment`, `refund_payments`, `email_csv`, `download_csv` |
+| **scheduled_payments** | `create_or_update_receivable` |
+| **customer_information** | `create_or_update_primary_customer_info`, `create_or_update_employment`, `create_or_update_primary_customer_contact_info`, `create_or_update_servicing_information`, `create_or_update_bank_account`, `create_or_update_credit_card` |
+
+### Permissoes do Portal Origination
+
+| Feature | Permissoes |
+|---------|------------|
+| **customers** | `move_to_servicing`, `resend_lease`, `modify_lease`, `settle_application`, `change_lead_status`, `override_approval_amount`, `run_underwriting` |
+| **documents** | `upload_file_for_lead`, `delete_file`, `get_document_status` |
+| **funding** | `update_funding_status` |
+| **newApplication** | `send_application_to_customer` |
+| **calculator** | `get_calculator_results` |
+| **alerts** | (modify geral) |
+| **admin** | (operacoes administrativas) |
+
+### Permissoes Especiais (Restricted Modify)
+
+Permissoes adicionais necessarias para acoes criticas:
+
+| Permissao | Acao Controlada |
+|-----------|-----------------|
+| `lead_status_to_expired` | Alterar status do lead para EXPIRED |
+| `lead_status_denied_to_approved` | Reverter status DENIED para UW_APPROVED |
+| `lead_status_approved_to_signed` | Mover lead de aprovado para SIGNED sem e-sign |
+
+### Permissoes de Visualizacao Especiais
+
+| Permissao | O Que Exibe |
+|-----------|-------------|
+| `customers.view.internal_status` | Campo `internalStatus` do lead |
+| `documents.view.internal_notes` | Notas internas em documentos |
+
+### Tracking de Login (Segurança)
+
+A tabela `uown_login_attempt` registra todas as tentativas de autenticacao com:
+- `username` — usuario que tentou login
+- `success` — se o login foi bem sucedido
+- `created_date` — timestamp da tentativa
+- `ip_address` — IP de origem
+
+O index `idx_uown_login_attempt` (V20260306062454) otimiza consultas de rate limiting e auditoria de seguranca.
+
+---
+
 ## 50. Painel Administrativo
 
 ### Capacidades Principais

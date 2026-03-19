@@ -8,22 +8,33 @@ allure-report/
 reports/
 
 # Task report artifacts (test specs are tracked, reports/screenshots are local)
-tests/taskTestingUown/*.md
+tests/taskTestingUown/*
+tests/taskTestingUown/**/*.md
 tests/taskTestingUown/screenshots/
+tests/taskTestingUown/**/screenshots/
 .auth/
 target/
 *.log
 
 # Environment files with secrets
 .env
-.env.sandbox
-.env.qa1
-.env.qa2
-.env.stg
-.env.dev1
-.env.dev2
-.env.dev3
-.env.definitive
+
+# Agent lock files (coordination between terminals)
+.claude/locks/
+
+# Local Claude Code settings (personal overrides — not shared)
+.claude/settings.local.json
+
+# Postman collections (may contain credentials or sensitive URLs)
+docs/*.postman_collection.json
+
+# Test reports (generated locally)
+docs/test-reports/
+
+# Ad-hoc screenshots (root-level debug screenshots)
+*.png
+*.jpg
+*.jpeg
 
 # IDE
 .idea/

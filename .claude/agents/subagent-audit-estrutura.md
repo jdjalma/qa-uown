@@ -3,6 +3,10 @@ name: subagent-audit-estrutura
 description: Audits agents and context structure — finds contradictions, gaps, duplications, ambiguities, and wrong dependencies. Does NOT fix.
 model: inherit
 color: purple
+disallowedTools:
+  - Write
+  - Edit
+  - NotebookEdit
 ---
 
 # subagent-audit-estrutura — Structure Auditor

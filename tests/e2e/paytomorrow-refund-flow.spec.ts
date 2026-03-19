@@ -29,7 +29,7 @@
 import { test, expect } from '@fixtures/test-context.fixture.js';
 import { ConfigEnvironment } from '@config/index.js';
 import { getMerchant, getAddressForState } from '@data/index.js';
-import { TestTag, buildTags, splitTags } from '../../src/types/enums.js';
+import { TestTag, buildTags, splitTags } from '@ptypes/enums.js';
 import { LoginPage, SearchPage, OriginationCustomerPage, FundingPage,
   PayTomorrowPortalPage } from '@pages/index.js';
 import { sleep } from '@helpers/index.js';

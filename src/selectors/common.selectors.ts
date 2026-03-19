@@ -29,6 +29,7 @@ export const SELECTORS: AppSelectors = {
   // ── Filters ────────────────────────────────────────────────────────
   filterOption: "div[class*='filter__option']",
   filterOptionWithRole: '.filter__option, [role="option"]',
+  filterControl: '.filter__control',
   filtersButton: "button[class*='filterButton'], button:has-text('Filters')",
 
   // ── Modal ──────────────────────────────────────────────────────────
@@ -156,6 +157,23 @@ export const SELECTORS: AppSelectors = {
   // ── Contract Page ─────────────────────────────────────────────────
   contractViewDocumentLink: "[class*='appComplete_appComplete__link']",
   contractCheckbox: 'input[type="checkbox"]',
+
+  // ── Payment Program (completeApplication redesign — Task #1233) ──
+  paymentProgramContainer: "[class*='paymentProgramModal__paymentProgramContainer']",
+  paymentProgramLogo: '#payment-program-image',
+  paymentProgramTitle: "[class*='paymentProgram__title']:not([class*='titleWrapper'])",
+  paymentProgramSubtitle: "[class*='paymentProgram__subtitle']",
+  paymentCard: "[class*='paymentCard']:has([class*='paymentCard__button'])",
+  paymentCardTitle: "[class*='paymentCard__title']",
+  paymentCardDescription: "[class*='paymentCard__description']",
+  paymentCardPrice: "[class*='paymentCard__price']:not([class*='Container']):not([class*='Label'])",
+  paymentCardPriceLabel: "[class*='paymentCard__priceLabel']",
+  paymentCardDetailRow: "[class*='paymentCard__detailRow']",
+  paymentCardButton: "[class*='paymentCard__button']",
+  termSelectionTab: "[class*='termSelection__tab']",
+  termSelectionTabSelected: "[class*='termSelection__tabSelected']",
+  paymentProgramFooterText: "[class*='paymentProgram__footerText']",
+  paymentProgramFooterPhone: "[class*='paymentProgram__footerPhone']",
 
   // ── Completion Screen (Confetes/New Design) ──────────────────────
   completionCheckIcon: "[class*='checkIcon']",
@@ -362,4 +380,58 @@ export const SELECTORS: AppSelectors = {
   naSubmitItemLease: "button[type='submit']:has-text('Submit'), button.btn-secondary:has-text('Submit'), button:has-text('Add Item')",
   naSalesPerson: '#salesPerson',
   naInvoiceNumber: '#invoiceNumber',
+
+  // ── Payment Arrangement ─────────────────────────────────────────────
+  paymentArrangementCheckbox: '#paymentArrangement',
+  arrangementStartDateInput: '#startDate',
+  arrangementEndDateInput: '#endDate',
+  arrangementPaymentFrequencyDropdown: "xpath=//label[@for='paymentFrequency']/../div",
+  arrangementInstallmentAmountInput: (index: number) => `[id="paymentInfo[${index}].paymentAmount"]`,
+  arrangementInstallmentDateInput: (index: number) => `[id="paymentInfo[${index}].paymentDate"]`,
+
+  // ── Servicing Information Edit ─────────────────────────────────────
+  svInfoEditButton: '#ServicingInformation-edit',
+  svInfoPayFrequencyDropdown: '#payFrequency',
+  svInfoSaveButton: "button[class*='collapsableEdit__button__primary']",
+  svInfoFirstDueDateInput: '#firstDueDate, input[name="firstDueDate"]',
+  svInfoSecondDueDateInput: '#secondDueDate, input[name="secondDueDate"]',
+
+  // ── Move Due Date (Servicing — Scheduled Payments modal) ───────────
+  moveDueDateButton: "button:has-text('Move Due Date')",
+  moveDueDateScheduledSelect: "#moveFromDueDate",
+  moveDueDateNewDateInput: "input[name='numOfDaysToBeMoved']",
+
+  // ── Error Log (Origination — /errorLog) ────────────────────────────
+  elTabSendApplication: "[eventkey='sendApplication'], button[data-rr-ui-event-key='sendApplication']",
+  elTabSubmitApplication: "[eventkey='submitApplication'], button[data-rr-ui-event-key='submitApplication']",
+  elFilterFromDate: "input[name='from']",
+  elFilterToDate: "input[name='to']",
+  elFilterSearch: "input[name='search']",
+  elFilterSubmitButton: "button[type='submit'], button:has-text('Search'), button:has-text('Filter')",
+
+  // ── Merchant Settings (Origination — /merchantSetting) ─────────────
+  msDealerDiscountInput: "input[name='dealerDiscountOverride']",
+  msDealerRebateTypeSelect: "select[name='dealerRebateType']",
+  msDealerRebateOverrideInput: "input[name='dealerRebateOverride']",
+  msMerchantTableCheckbox: "input[type='checkbox']",
+  msSubmitButton: "button[type='submit']:has-text('Submit'), button:has-text('SUBMIT'), button:has-text('SAVE')",
+  msBulkConfirmButton: ".modal.show button:has-text('Confirm'), .modal.show button:has-text('Yes')",
+  msPeakCampaignIdInput: "input[name='peakCampaignId']",
+  msOffPeakCampaignIdInput: "input[name='offPeakCampaignId']",
+  msPeakCampaignIdLabel: "label[for='peakCampaignId']",
+  msOffPeakCampaignIdLabel: "label[for='offPeakCampaignId']",
+  msUwPipelineInput: "input[name='uwPipeline']",
+  msFraudThresholdInput: "input[name='fraudThreshold']",
+  msMaxApprovalAmountInput: "input[name='maxApprovalAmount']",
+  msGdsDataToggle: "button:has-text('GDS Data')",
+
+  // ── Contract page — missing employment info (planId empty in /complete URL) ──
+  /** "Next paycheck" date input shown when planId is missing in the /complete URL */
+  completeNextPaycheckInput: 'input[type="search"]',
+  /** React Select combobox for pay frequency ("How often do you get paid?") */
+  completePayFrequencyCombobox: '[class*="react-select__control"]',
+  /** Plan selection heading shown after employment info is submitted */
+  completePlanSelectionHeading: 'h2, [class*="heading"]',
+  /** "Choose Payment Program" button on the plan selection screen */
+  completeChooseProgramBtn: 'button:has-text("Choose Payment Program")',
 } as const;

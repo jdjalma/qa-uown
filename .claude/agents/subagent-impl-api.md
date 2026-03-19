@@ -22,6 +22,8 @@ Implements an API-only test (no browser) in `tests/api/`.
 
 - `context/business-rules.md` — when validating business rules via API
 - `context/environments.md` — when endpoints vary by environment
+- `docs/business-rules/appendix-g-cenarios-risco.md` — **MANDATORY** when the test calls `sendApplication` or any application creation endpoint. Defines which SSN, state, merchant and cart value to use per risk tier
+- `context/shared/common-operations.md` — **MANDATORY** when the test involves payments (CC or ACH arrangements), driving a lead to FUNDED, or any multi-step API flow. Contains exact, working code with correct function signatures
 
 ## Dependencies
 
@@ -65,10 +67,23 @@ The naming components come from:
 import { test, expect } from '@fixtures/test-context.fixture';
 
 // Standardized naming: {milestone}_{camelCaseTitle}_{issueNumber}
+// riskTier drives: SSN strategy, state, merchant, merchandiseAmount
+// Reference: docs/business-rules/appendix-g-cenarios-risco.md
+const testData = [
+  {
+    env: 'sandbox',
+    riskTier: 'low',            // low | medium | high | blocked-state
+    state: 'CA',                // per Appendix G — ONLINE merchant uses customer state
+    merchant: 'TerraceFinance', // per Appendix G
+    merchandiseAmount: 1000,
+  },
+];
+
 test.describe('R1.49.1_separateShortCodeInANewEntity_469 - sandbox/ProgressMobility', { tag: ['@cicd', '@sandbox'] }, () => {
   test('should perform action successfully', async ({ api, testEnv }) => {
     await test.step('Send request', async () => {
-      const body = { /* typed body */ };
+      // SSN: generateTestSSN(true) = approved | generateTestSSN(false) = denied (ends in 9)
+      const body = { /* typed body — fields from Appendix G for chosen riskTier */ };
       const response = await api.domainClient.action(body);
 
       expect(response.ok).toBe(true);
@@ -107,6 +122,31 @@ test.describe('R1.49.1_separateShortCodeInANewEntity_469 - sandbox/ProgressMobil
 | File | Change |
 ```
 
+## DB Persistence Validation (MANDATORY when API modifies state)
+
+When an API test calls an endpoint that creates or modifies data, ALWAYS validate DB persistence:
+
+```typescript
+await test.step('CT-02 — Validate DB persistence after API call', async () => {
+  const res = await api.account.moveDueDatesByDays(ctx.accountPk, 7);
+  expect(res.ok).toBeTruthy();
+  expect(res.status).toBe(200);
+
+  // Validate payload fields
+  expect(res.body.moveNumberOfDays).toBe(7);
+  expect(typeof res.body.isFpdChange).toBe('boolean');
+
+  // Validate DB persistence
+  const dbRecord = await db.getSingleRow(
+    'SELECT move_number_of_days FROM uown_sv_due_date_move WHERE account_pk = $1 ORDER BY pk DESC LIMIT 1',
+    [ctx.accountPk],
+  );
+  expect(dbRecord.move_number_of_days).toBe(7);
+});
+```
+
+**Applies to:** any POST/PUT endpoint that creates or modifies a DB record (payment arrangements, due date moves, frequency changes, etc.).
+
 ## Anti-patterns (NEVER DO)
 
 - Use `request` (Playwright raw) directly — use `api.domainClient.method()`
@@ -114,6 +154,7 @@ test.describe('R1.49.1_separateShortCodeInANewEntity_469 - sandbox/ProgressMobil
 - Test only happy path — include at least 1 error case (400, 404, 422)
 - Hardcode URLs or headers — clients inherit from `BaseClient`
 - Omit `test.step()` even in simple API tests
+- Assert only status code — always assert payload fields and DB persistence when the endpoint modifies state
 
 ## Checklist (DoD)
 
@@ -127,3 +168,7 @@ test.describe('R1.49.1_separateShortCodeInANewEntity_469 - sandbox/ProgressMobil
 - [ ] `tsc --noEmit` passes
 - [ ] test.describe uses standardized name: `{milestone}_{camelCaseTitle}_{number}`
 - [ ] File name follows convention: `{milestone}_{camelCaseTitle}_{number}.spec.ts`
+- [ ] **`riskTier` declared in testData** — SSN (`generateTestSSN`), state, merchant, amount all consistent with Appendix G
+- [ ] When testing `sendApplication` denial: use `riskTier: 'high'` + SSN ending in 9; assert `UW_DENIED`
+- [ ] When testing state blocking: use `riskTier: 'blocked-state'` + state NJ/VT/MN/ME + ONLINE merchant
+- [ ] **DB persistence validated** (when endpoint modifies state): query the relevant table after the API call and assert values match the response payload

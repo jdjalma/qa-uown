@@ -56,6 +56,15 @@ Recupera parte do valor em contas que provavelmente seriam charged-off (perda to
 - **Via bot Skit.ai:** Automatico atraves de arquivo de ofertas gerado pelo sweep `createSkitDelinquentOfferFileSweep`
 - **Via API:** `POST /uown/los/settleApplication` com `ApplicationSettleRequest`
 
+### Pre-Condicoes para Settlement via `settleApplication`
+
+| Condicao | Regra |
+|----------|-------|
+| Todos os itens entregues | `numberOfItemsDelivered == numberOfItems` |
+| Nenhum item cancelado | Items com status `CANCELLED` bloqueiam o settlement |
+| Nenhum item ja pago | Items com status `PAID` indicam conta ja quitada |
+| Settlement parcial | Flag `partialSettlement: boolean` permite settlement de parte dos itens |
+
 ### Controle de Concorrencia
 
 O sistema usa Hazelcast Settlement Request Map para impedir ofertas duplicadas simultaneas para o mesmo lead.
@@ -279,6 +288,49 @@ Evita que recebiveis sejam criados com datas de vencimento ja passadas ou muito 
 
 - Afeta criacao de recebiveis tanto no LOS quanto no SVC
 - Garante que o primeiro pagamento sempre caia em data futura valida
+
+---
+
+## 70. Realocacao de Pagamento (Payment Reallocation)
+
+### O Que e
+
+Funcionalidade do portal Servicing que permite mover o valor parcialmente pago de um recebivel para outro recebivel elegivel da mesma conta.
+
+### Para Que Serve
+
+Corrigir alocacoes incorretas sem precisar reverter e re-postar pagamentos. Util quando um pagamento foi alocado no recebivel errado.
+
+### Regras de Validacao
+
+| Regra | Detalhe |
+|-------|---------|
+| Valor maximo | `amount <= partialPaymentAmount` do recebivel de origem |
+| Mesmo tipo | Recebivel destino deve ter o mesmo `receivableType` do recebivel de origem |
+| Nao pode ser PAID_IN_FULL | Recebiveis com `allocationStatus = PAID_IN_FULL` nao podem ser destino |
+| Nao pode ser o mesmo | Recebivel de origem nao pode ser o mesmo que o destino |
+| Valor > 0 | O valor realocado deve ser maior que zero |
+| Comentario obrigatorio | Requer explicacao (max 500 caracteres) |
+
+### Permissao
+
+Requer `reallocate_receivable` no modelo de permissoes do Servicing.
+
+---
+
+## 71. Reset Default Schedule (KORNERSTONE)
+
+### O Que e
+
+Funcionalidade exclusiva para contas Kornerstone (`company = 'KORNERSTONE'`) que permite reiniciar o cronograma de pagamentos para o padrao configurado.
+
+### Para Que Serve
+
+Restaura os parametros padrao do cronograma quando modificacoes anteriores (mudanca de frequencia, movimentacao de due dates) tornaram o cronograma irregular.
+
+### Disponibilidade
+
+Aparece no portal Servicing apenas quando `company === 'KORNERSTONE'` — completamente oculto para contas UOWN.
 
 ---
 

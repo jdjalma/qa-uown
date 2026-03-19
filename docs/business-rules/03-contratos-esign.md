@@ -130,6 +130,34 @@ Apos o cliente assinar (ou cancelar) o contrato, o sistema precisa: redirecionar
 3. **Execucao sincrona/assincrona:** Merchants especificos executam sincrono (por ref code ou client type), demais usam `CompletableFuture`
 4. **Plano de protecao:** Iniciado assincronamente apos atualizacao de status
 
+### Fluxo de Plano de Protecao (TireAgent / BW13)
+
+Merchants com plano BW13 (ex: TireAgent) habilitam o fluxo de protecao no formulario de contrato. O comportamento difere do fluxo padrao:
+
+**Fluxo padrao (sem seguro):**
+1. Cliente aceita checkboxes de T&C
+2. Botao "PROCEED TO SIGNATURE" → vai direto para e-sign
+
+**Fluxo com seguro (BW13 — TireAgent):**
+1. Cliente aceita checkboxes de T&C
+2. Botao "See Protection Benefits" substitui "PROCEED TO SIGNATURE"
+3. Clique abre modal `PurchaseInsurance` com widget Buddy (`buddy.insure` iframe)
+4. Cliente escolhe opt-in ou opt-out no widget
+5. Botao "PROCEED TO SIGNATURE" aparece no modal de protecao → vai para e-sign
+
+**Comportamento do widget Buddy:**
+- O iframe `buddy.insure` carrega de forma assincrona — os radio buttons de opt-in/opt-out nao estao disponiveis imediatamente apos a pagina renderizar
+- Tempo de carregamento tipico: 5–12s
+- Automacao deve aguardar com loop de retentativas (5× com 3s de intervalo = 15s no total) antes de tentar clicar o radio button
+- Nao remover o loop de retentativas — sem ele o click falha silenciosamente e o teste trava no botao "PROCEED TO SIGNATURE" desabilitado
+
+**Deteccao automatica em `completeTermsAndConditions()`:**
+- Apos marcar todos os checkboxes, verifica se "See Protection Benefits" esta visivel
+- Se sim: clica no botao e chama `completeProtectionPlan(false)` (opt-out automatico)
+- Se nao: prossegue para "PROCEED TO SIGNATURE" (fluxo padrao)
+
+---
+
 ### Tela de Conclusao Pos-Assinatura (Confetes)
 
 Apos assinatura eletronica bem-sucedida, o cliente e redirecionado para a rota `/{shortCode}/complete` que exibe a tela de conclusao.
@@ -150,6 +178,52 @@ Apos assinatura eletronica bem-sucedida, o cliente e redirecionado para a rota `
 - Removido: link "View Document" (nao mais exibido)
 - Adicionado: animacao de confetti, icone de check, informacoes de contato
 - Animacao: clip-path reveal com duracao de 0.75s
+
+---
+
+### Tela de Selecao de Programa de Pagamento (MissingPaymentProgram)
+
+Quando o cliente acessa a rota `/{shortCode}/complete` **sem o parametro `planId`** na query string, o sistema exibe a tela de selecao de programa de pagamento (componente `MissingPaymentProgram`) em vez de ir direto para o formulario de CC/banco.
+
+**Quando aparece:**
+- URL sem `planId`: `/{shortCode}/complete` → tela de selecao
+- URL com `planId`: `/{shortCode}/complete?planId=WK13` → pula direto para CC/banco (backend auto-resolve o programa)
+
+**Design redesenhado (R1.50.0 — Task #1233, MR !1408):**
+
+| Elemento | Descricao |
+|----------|-----------|
+| Container | `paymentProgramModal__paymentProgramContainer` (CSS Module) |
+| Logo | Imagem UOWN (`#payment-program-image`) |
+| Titulo | "Choose the payment program that works best for you" |
+| Subtitulo | "Select the option that fits your budget" |
+| Cards de pagamento | Um card por frequencia disponivel (Weekly, Bi-Weekly, Twice a Month, Monthly) |
+| Cada card | Titulo da frequencia + descricao + preco + linhas de detalhe (Term, First Payment, Last Payment, etc.) + botao "Choose Payment Program" |
+| Tabs de termo | Tabs "X Months Terms" (ex: "13 Months Terms", "16 Months Terms") — visivel apenas quando o merchant tem ambos os termos disponiveis |
+| Rodape | "Questions? We're here to help" + telefone "(877) 353-8696" |
+
+**Labels descritivos por frequencia:**
+
+| Frequencia | Titulo do Card | Descricao |
+|------------|---------------|-----------|
+| Weekly | Weekly Payment Program | Pay more often, smaller amounts |
+| Bi-Weekly | Bi-Weekly Payment Program | Most popular |
+| Twice a Month | Twice a Month Payment Program | Lower frequency, larger payments |
+| Monthly | Monthly Payment Program | Lower frequency, larger payments |
+
+**Comportamento dos tabs de termo:**
+- Se o merchant tem apenas um termo (ex: 13 meses), os tabs nao sao renderizados
+- Se o merchant tem multiplos termos (ex: 13 e 16 meses), os tabs aparecem e o usuario pode alternar
+- A troca de tab atualiza os cards exibidos (cada termo pode ter diferentes precos/detalhes)
+- O tab ativo recebe a classe `termSelection__tabSelected`
+
+**Fluxo apos selecao:**
+1. Cliente clica "Choose Payment Program" em um card
+2. Tela de selecao desaparece
+3. Formulario de CC/banco aparece (mesmo fluxo de `completeApplication` com `planId`)
+4. Segue para T&C → e-sign → tela de conclusao (Confetes)
+
+**Bug conhecido (BUG-01):** SSN `888888888` causa NullPointerException no backend (HTTP 500). Usar SSN auto-gerado com `generateTestSSN(true)`.
 
 ---
 

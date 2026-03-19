@@ -10,3 +10,4 @@ export * from './navigation.helpers.js';
 export * from './api-setup.helpers.js';
 export * from './test-artifact.helpers.js';
 export * from './signwell.helpers.js';
+export * from './worker-id.helper.js';

@@ -7,7 +7,10 @@ import { SELECTORS } from '../../selectors/common.selectors.js';
 export class ServicingCustomerPage extends ServicingBasePage {
   readonly customerSummary = this.page.locator(SELECTORS.customerSummary);
   readonly customerStatusValue = this.page.locator(SELECTORS.customerStatusValue);
-  readonly merchantName = this.page.locator("xpath=//div[@id='customer-summary']/../following-sibling::div/div[1]/div[3]//div[@class='card-body']//*[contains(text(),'Merchant')]/parent::label/following-sibling::div/div[1]");
+  // Merchant value in the account info panel.
+  // CSS sibling combinator replaces the original fragile XPath positional traversal.
+  // Reads: within any .card-body, find a label containing "Merchant", then get the value div that follows it.
+  readonly merchantName = this.page.locator('.card-body label:has-text("Merchant") ~ div div').first();
   readonly saveButton = this.page.locator(SELECTORS.saveButton);
   readonly cancelButton = this.page.locator(SELECTORS.cancelButton);
   readonly noteInput = this.page.locator('#logNote');
@@ -99,7 +102,7 @@ export class ServicingCustomerPage extends ServicingBasePage {
       }
       return texts.join(' ');
     });
-    const statusMatch = bodyText.match(/\bStatus\s+(ACTIVE|FUNDED|FUNDING|CLOSED|SUSPENDED|DELINQUENT|SETTLED|CHARGED_OFF|APPROVED|SIGNED|CONTRACT_CREATED|PENDING|CANCELLED|CANCELED)\b/i);
+    const statusMatch = bodyText.match(/\bStatus\s+(ACTIVE|FUNDED|FUNDING|CLOSED|SUSPENDED|DELINQUENT|SETTLED_IN_FULL|SETTLED|CHARGED_OFF|APPROVED|SIGNED|CONTRACT_CREATED|PENDING|CANCELLED|CANCELED)\b/i);
     return statusMatch ? statusMatch[1].trim() : null;
   }
 
@@ -137,6 +140,10 @@ export class ServicingCustomerPage extends ServicingBasePage {
     expYear: string;
     cvc: string;
   }): Promise<void> {
+    // Dismiss any lingering modal/backdrop before clicking Add Card (same pattern as clickMakePayment)
+    await this.dismissAllModals();
+    await this.page.locator(SELECTORS.modalBackdrop).waitFor({ state: 'hidden', timeout: 3_000 }).catch(() => {});
+
     await this.addCardButton.click();
     await this.waitForModalOpen();
 
@@ -185,5 +192,60 @@ export class ServicingCustomerPage extends ServicingBasePage {
     await this.topMenuNavigateTo('cc history');
     const row = this.page.locator(SELECTORS.tableRow).filter({ hasText: amount });
     await expect(row.first()).toBeVisible({ timeout: 10_000 });
+  }
+
+  /**
+   * Changes the payment frequency via the Servicing Information edit panel.
+   * Clicks the edit pencil (#ServicingInformation-edit), selects the new frequency
+   * from the #payFrequency React Select dropdown, then clicks SAVE.
+   *
+   * @param newFrequency UI label: 'Weekly' | 'Bi-Weekly' | 'Monthly' | 'Semi-Monthly'
+   * @returns Object with { firstDueDate, secondDueDate } read from the form before saving, or empty strings if not visible
+   */
+  async changePaymentFrequencyViaUI(
+    newFrequency: 'Weekly' | 'Bi-Weekly' | 'Monthly' | 'Semi-Monthly',
+  ): Promise<{ firstDueDate: string; secondDueDate: string }> {
+    // 1. Click the edit pencil to expand the Servicing Information form
+    await this.page.locator(SELECTORS.svInfoEditButton).click();
+
+    // 2. Wait for the form to expand (dropdown becomes visible)
+    await this.page.locator(`${SELECTORS.svInfoPayFrequencyDropdown} .filter__control`).waitFor({ state: 'visible', timeout: 5_000 });
+
+    // 3. Click the React Select control to open the frequency dropdown
+    await this.page.locator(`${SELECTORS.svInfoPayFrequencyDropdown} .filter__control`).click();
+
+    // 4. Wait for options to appear
+    await this.page.locator(SELECTORS.filterOptionWithRole).first().waitFor({ state: 'visible', timeout: 5_000 });
+
+    // 5. Click the option matching newFrequency exactly
+    await this.page.locator(SELECTORS.filterOptionWithRole)
+      .filter({ hasText: newFrequency })
+      .first()
+      .click();
+
+    // 6. Read firstDueDate and secondDueDate if visible before saving
+    let firstDueDate = '';
+    let secondDueDate = '';
+
+    const firstDueDateLocator = this.page.locator(SELECTORS.svInfoFirstDueDateInput).first();
+    const secondDueDateLocator = this.page.locator(SELECTORS.svInfoSecondDueDateInput).first();
+
+    if (await firstDueDateLocator.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      firstDueDate = (await firstDueDateLocator.inputValue().catch(() => '')) ?? '';
+    }
+    if (await secondDueDateLocator.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      secondDueDate = (await secondDueDateLocator.inputValue().catch(() => '')) ?? '';
+    }
+
+    // 7. Click the SAVE button
+    await this.page.locator(SELECTORS.svInfoSaveButton).click();
+
+    // 8. Wait for spinner to clear after save
+    await this.waitForSpinner();
+
+    // 9. Check for error toast
+    await this.assertNoErrorToast('[changeFrequency] Failed to save');
+
+    return { firstDueDate, secondDueDate };
   }
 }

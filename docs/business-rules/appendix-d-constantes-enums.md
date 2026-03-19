@@ -250,7 +250,39 @@ O sistema mantem mapeamento especial para CEPs que cruzam fronteiras estaduais:
 | 89439 | CA / NV |
 | 97635 | CA / OR |
 
-### D.25 Tipos de Cliente Integrados (ClientType)
+### D.25 Categorias de Antiguidade de Conta Bancaria (BankAccountAges)
+
+Usado no portal Servicing para classificar o tempo de existencia da conta bancaria do cliente. Utilizado em avaliacao de risco ao cadastrar dados bancarios.
+
+| Valor | Descricao |
+|-------|-----------|
+| `LESS_THAN_6_MONTHS` | Menos de 6 meses |
+| `_6_TO_12_MONTHS` | De 6 a 12 meses |
+| `_1_TO_2_YEARS` | De 1 a 2 anos |
+| `_2_YEARS_OR_MORE` | 2 anos ou mais |
+| `UNKNOWN` | Nao informado / desconhecido |
+
+### D.26 Grupos de Documento (DocumentGroup)
+
+Classifica os tipos de documentos que podem ser anexados a um lead ou conta no portal Servicing.
+
+| Valor | Descricao |
+|-------|-----------|
+| `DRIVERSLICENSE` | Carteira de habilitacao / documento de identidade com foto |
+| `PAYSTUB` | Contracheque / comprovante de renda |
+| `BANKSTATEMENT` | Extrato bancario |
+| `SIGNEDPOD` | POD assinado (Proof of Delivery — comprovante de entrega) |
+| `CORRESPONDENCE` | Correspondencia generica (carta bancaria, comprovante de residencia, etc.) |
+| `LEASE` | Contrato de lease assinado |
+
+**Regras de acesso:**
+- Upload requer permissao `upload_file_for_account`
+- Edicao de metadados requer permissao `edit_document`
+- Exclusao requer permissao `delete_file`
+- Reenvio de documento armazenado requer permissao `resend_stored_doc`
+- Visibilidade ao cliente controlada por flag `isVisibleToBorrower`
+
+### D.27 Tipos de Cliente Integrados (ClientType)
 
 O sistema suporta 34 tipos de clientes/merchants, cada um com campanhas e configuracoes proprias:
 
@@ -290,6 +322,100 @@ O sistema suporta 34 tipos de clientes/merchants, cada um com campanhas e config
 | `KORNERSTONE` | Kornerstone | Senior Living |
 | `BIG_HORN_GOLF` | Big Horn Golf | Esporte/Lazer |
 | `OTHER` | Outros | Catch-all |
+
+---
+
+### D.28 Status de Item de Invoice (ItemStatus)
+
+Status de cada item de linha dentro de uma invoice.
+
+| Valor | Descricao |
+|-------|-----------|
+| `PENDING` | Item adicionado ao carrinho, aguardando entrega |
+| `DELIVERED` | Item entregue ao cliente |
+| `PAID` | Item pago (conta quitada) |
+| `CANCELLED` | Item cancelado (devolvido ou cancelado pelo merchant) |
+
+**Regra de settlement:** Para `settleApplication`, todos os itens devem estar com status `DELIVERED`. Itens `CANCELLED` ou `PAID` bloqueiam o processo.
+
+### D.29 Tipo de Invoice (InvoiceType)
+
+Classifica se a invoice e de um produto financiado ou comprado a vista.
+
+| Valor | Descricao |
+|-------|-----------|
+| `LEASE` | Produto financiado via lease-to-own |
+| `PURCHASED` | Produto comprado a vista (sem financiamento) |
+
+Usado como filtro na fila de funding e em relatorios.
+
+### D.30 Tipo de Conta Bancaria do Merchant (BankTypeEnum)
+
+Tipo de conta bancaria usada para receber funding.
+
+| Valor | Descricao |
+|-------|-----------|
+| `COMMERCIAL` | Conta bancaria comercial (business checking/savings) |
+| `INVESTMENT` | Conta de investimento |
+
+### D.31 Categorias de Produto do Merchant (MerchantCategory)
+
+Tipos de produto que um merchant pode oferecer via lease.
+
+| Valor | Descricao |
+|-------|-----------|
+| `FURNITURE` | Moveis |
+| `TIRES` | Pneus |
+| `SHED` | Galpoes / garagens pre-fabricadas |
+| `LIVINGROOM` | Sala de estar |
+| `BEDROOM` | Quarto |
+| `DININGROOM` | Sala de jantar |
+| `APPLIANCES` | Eletrodomesticos |
+| `ELECTRONICS` | Eletronicos |
+| `TIRE_PARTS` | Pecas e acessorios de pneus |
+| `AUTOMOTIVES` | Automotivos |
+| `AUTOMOTIVE_ACCESSORIES` | Acessorios automotivos |
+| `OTHER` | Outros |
+
+### D.32 Tipo de Cartao de Credito (CcOptions)
+
+Bandeiras de cartao de credito aceitas no sistema.
+
+| Valor | Descricao |
+|-------|-----------|
+| `AmericanExpress` | American Express |
+| `MasterCard` | MasterCard |
+| `Visa` | Visa |
+| `Discover` | Discover |
+| `Other` | Outras bandeiras |
+
+### D.33 Categoria de Emprestimo (LendingCategoryType)
+
+Classifica a categoria de risco do cliente para decisoes de programa e pricing.
+
+| Valor | Descricao |
+|-------|-----------|
+| `LTO` | Lease-To-Own (categoria padrao da plataforma) |
+| `PRIME` | Cliente prime (baixo risco) |
+| `NEAR_PRIME` | Cliente near-prime (risco moderado) |
+
+### D.34 Tipo de Taxa Cobravel (FeeType) — Visao Completa
+
+Tipos de taxa que podem ser adicionados manualmente por agentes no portal Servicing.
+
+| Valor | Descricao | Como Adicionar |
+|-------|-----------|----------------|
+| `PROTECTION_PLAN_FEE` | Taxa do plano de protecao Buddy Insurance | Automatico (via plano) |
+| `NSF_FEE` | Taxa de fundos insuficientes | Automatico (evento NSF) |
+| `REINSTATEMENT_FEE` | Taxa de reativacao | Manual (via Add Fee no Servicing) |
+| `MANUAL_FEE` | Taxa manual generica | Manual (via Add Fee no Servicing) |
+| `MISC_FEE` | Taxa diversa / miscelanea | Manual (via Add Fee no Servicing) |
+
+**Validacoes ao adicionar taxa manual:**
+- Data de vencimento >= hoje (nao pode ser no passado)
+- Valor > $0
+- Comentario obrigatorio (max 500 caracteres)
+- `baseAmount = totalAmount = feeAmount` (sem calculo de imposto adicional)
 
 ---
 

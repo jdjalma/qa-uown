@@ -5,14 +5,17 @@
  * Consolidates: ConfigEnvironment creation, address lookup, merchant config,
  * runId generation, and applicant/order object construction.
  */
-import { ConfigEnvironment, generateRunId, generateTestSSN, generateTestPhone } from '@config/index.js';
+import { ConfigEnvironment, type EnvName, generateRunId, generateTestSSN, generateTestPhone } from '@config/index.js';
 import { getAddressForState, type AddressData, getMerchant, type MerchantConfig } from '@data/index.js';
 import type { MerchantInfo, ApplicantInfo, OrderInfo } from '@api/bodies/index.js';
 
 // ── Options ─────────────────────────────────────────────────────────
 
 export interface BuildTestDataOptions {
-  /** Environment name (e.g. 'sandbox', 'qa1', 'stg') */
+  /**
+   * Environment name. Must be a valid EnvName — validated at runtime by ConfigEnvironment.
+   * Use EnvName type when possible (e.g. testData arrays typed with TestDataEntry).
+   */
   env: string;
   /** US state code (e.g. 'NY', 'FL', 'CA') */
   state: string;
@@ -33,14 +36,25 @@ export interface BuildTestDataOptions {
   sanitizeNames?: boolean;
   /**
    * Custom email override. If not provided, generates a unique alias via
-   * ConfigEnvironment.generateUniqueEmailAlias().
+   * ConfigEnvironment.uniqueEmailAlias.
    */
   emailOverride?: string;
+  /**
+   * Custom date of birth in MM/DD/YYYY format.
+   * Default: '01/01/1984'
+   */
+  dob?: string;
 }
 
 // ── Result ──────────────────────────────────────────────────────────
 
 export interface TestData {
+  /**
+   * ConfigEnvironment instance for this env.
+   * NOTE: In tests, prefer the `testEnv` fixture (from base-test) for page/API calls —
+   * it is scoped to the test worker. This field is useful for URL/key access in
+   * helper functions that don't have fixture access.
+   */
   env: ConfigEnvironment;
   address: AddressData;
   merchantConfig: MerchantConfig;
@@ -62,9 +76,10 @@ export function buildTestData(options: BuildTestDataOptions): TestData {
     approved = true,
     sanitizeNames = false,
     emailOverride,
+    dob = '01/01/1984',
   } = options;
 
-  const env = new ConfigEnvironment(envName);
+  const env = new ConfigEnvironment(envName as EnvName);
   const address = getAddressForState(state);
   const merchantConfig = getMerchant(merchantName);
   const runId = generateRunId();
@@ -84,14 +99,14 @@ export function buildTestData(options: BuildTestDataOptions): TestData {
   const applicant: ApplicantInfo = {
     firstName: `TestFN${nameSuffix}`,
     lastName: `TestLN${nameSuffix}`,
-    email: emailOverride ?? env.generateUniqueEmailAlias(),
+    email: emailOverride ?? env.uniqueEmailAlias,
     ssn: generateTestSSN(approved),
     phone: generateTestPhone(),
     address: address.street,
     city: address.city,
     state,
     zip: address.zipCode,
-    dob: '01/01/1984',
+    dob,
   };
 
   const order: OrderInfo = {

@@ -1,7 +1,7 @@
 import { randomInt } from 'node:crypto';
 import type { InvoiceLineItem } from './invoice.body.js';
 import { formatDateCompact } from '../../helpers/date.helpers.js';
-import { DEFAULT_TEST_IP, INVOICE_DEFAULTS, TEST_BANK } from '../../config/constants.js';
+import { DEFAULT_TEST_IP, INVOICE_DEFAULTS, TEST_BANK, TEST_CARDS } from '../../config/constants.js';
 
 export interface MerchantInfo {
   username: string;
@@ -78,6 +78,7 @@ export interface SendApplicationBody {
   orderTotal?: string;
   invoiceNumber?: string;
   lineItem?: InvoiceLineItem[];
+  programName?: string;
 }
 
 // ── getApplicationStatus ────────────────────────────────────────────
@@ -114,6 +115,7 @@ export interface SubmitApplicationBody {
   achAutoPay: boolean;
   ccInfo: SubmitApplicationCcInfo;
   desiredPaymentFrequency: string;
+  planId?: string;
 }
 
 // ── Default line items for lease applications ───────────────────────
@@ -250,6 +252,7 @@ export interface SubmitApplicationOptions {
   cvc?: string;
   ccType?: string;
   ccExp?: string;
+  ccLastName?: string;
   autoPay?: boolean;
   preAuthStatus?: string;
   bankAccountNumber?: string;
@@ -257,7 +260,9 @@ export interface SubmitApplicationOptions {
   bankAccountType?: string;
   achAutoPay?: boolean;
   desiredPaymentFrequency?: string;
+  planId?: string;
 }
+
 
 export function buildSubmitApplicationBody(
   leadPk: string | number,
@@ -266,7 +271,7 @@ export function buildSubmitApplicationBody(
   options: SubmitApplicationOptions = {},
 ): SubmitApplicationBody {
   const pk = typeof leadPk === 'string' ? parseInt(leadPk, 10) : leadPk;
-  return {
+  const body: SubmitApplicationBody = {
     leadPk: pk,
     bankAccountNumber: options.bankAccountNumber ?? TEST_BANK.DEFAULT_ACCOUNT,
     bankRoutingNumber: options.bankRoutingNumber ?? TEST_BANK.DEFAULT_ROUTING,
@@ -277,14 +282,16 @@ export function buildSubmitApplicationBody(
     ccInfo: {
       leadPk: pk,
       ccFirstName: firstName,
-      ccLastName: lastName,
-      ccNumber: options.ccNumber ?? '6011000993026909',
-      cvc: options.cvc ?? '996',
-      ccType: options.ccType ?? 'VISA',
-      ccExp: options.ccExp ?? '12/2028',
+      ccLastName: options.ccLastName ?? lastName,
+      ccNumber: options.ccNumber ?? TEST_CARDS.VISA_APPROVED.number,
+      cvc: options.cvc ?? TEST_CARDS.VISA_APPROVED.cvv,
+      ccType: options.ccType ?? 'MASTERCARD',
+      ccExp: options.ccExp ?? TEST_CARDS.VISA_APPROVED.expirationDate,
       autoPay: options.autoPay ?? true,
       preAuthStatus: options.preAuthStatus ?? 'SUCCESS',
     },
     desiredPaymentFrequency: options.desiredPaymentFrequency ?? 'WEEKLY',
   };
+  if (options.planId) body.planId = options.planId;
+  return body;
 }

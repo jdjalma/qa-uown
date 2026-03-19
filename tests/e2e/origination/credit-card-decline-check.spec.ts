@@ -15,19 +15,15 @@
 import { test, expect } from '@fixtures/test-context.fixture.js';
 import { ContractPage, OriginationCustomerPage, FundingPage } from '@pages/origination/index.js';
 import { ServicingCustomerPage } from '@pages/servicing/index.js';
-import { FundingQueueStatus, TestTag, buildTags } from '../../../src/types/enums.js';
+import { FundingQueueStatus, TestTag, buildTags } from '@ptypes/enums.js';
 import { ALL_TEST_CARDS, getDeclinedCards } from '@data/index.js';
 import { buildTestData, loginToPortalWithOptions, navigateToServicingCustomer } from '@helpers/index.js';
 import { SELECTORS } from '@selectors/index.js';
 import { TEST_BANK } from '@config/index.js';
 
 const testData = [
-  {
-    env: 'sandbox',
-    state: 'CA',
-    merchant: 'ProgressMobility',
-    tag: buildTags(TestTag.SANITY, TestTag.REGRESSION, TestTag.SANDBOX),
-  },
+  // { env: 'sandbox', state: 'CA', merchant: 'ProgressMobility', tag: buildTags(TestTag.SANITY, TestTag.REGRESSION, TestTag.SANDBOX) },
+  { env: 'qa1', state: 'NY', merchant: 'TireAgent', tag: buildTags(TestTag.SANITY, TestTag.REGRESSION, TestTag.QA1) },
   // Uncomment to run on other environments:
   // { env: 'stg', state: 'NY', merchant: 'TireAgent', tag: buildTags(TestTag.SANITY, TestTag.REGRESSION, TestTag.STG) },
 ];

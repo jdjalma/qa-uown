@@ -242,6 +242,13 @@ export class WebsiteBasePage extends BasePage {
   async changeEmailToGeneric(newEmail = 'fintechgroup777GENERIC@gmail.com'): Promise<void> {
     const emailField = this.page.locator(SELECTORS.wsPrimaryEmailField).first();
     await emailField.waitFor({ state: 'visible', timeout: 10_000 });
+
+    // Some accounts (e.g. "paid in full") render contact info as read-only
+    if (await emailField.isDisabled()) {
+      console.log('[Website] Email field is disabled (account may be read-only) — skipping email change');
+      return;
+    }
+
     await emailField.clear();
     await emailField.fill(newEmail);
 

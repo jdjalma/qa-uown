@@ -15,7 +15,7 @@
  */
 import { test, expect } from '@fixtures/test-context.fixture.js';
 import { OriginationCustomerPage, PayPairPortalPage } from '@pages/origination/index.js';
-import { TestTag, buildTags } from '../../src/types/enums.js';
+import { TestTag, buildTags } from '@ptypes/enums.js';
 import { buildTestData, loginToPortalWithOptions, sleep } from '@helpers/index.js';
 import {
   DEFAULT_TIRE_AGENT_PRODUCT,

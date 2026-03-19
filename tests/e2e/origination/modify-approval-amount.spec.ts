@@ -12,18 +12,14 @@
  */
 import { test, expect } from '@fixtures/test-context.fixture.js';
 import { OriginationCustomerPage, OverviewPage } from '@pages/origination/index.js';
-import { TestTag, buildTags } from '../../../src/types/enums.js';
+import { TestTag, buildTags } from '@ptypes/enums.js';
 import { buildTestData, loginToPortalWithOptions } from '@helpers/index.js';
 
 const MAX_APPROVAL_AMOUNT = 5000;
 
 const testData = [
-  {
-    env: 'sandbox',
-    state: 'NY',
-    merchant: 'TireAgent',
-    tag: buildTags(TestTag.SANITY, TestTag.REGRESSION, TestTag.SANDBOX),
-  },
+  // { env: 'sandbox', state: 'NY', merchant: 'TireAgent', tag: buildTags(TestTag.SANITY, TestTag.REGRESSION, TestTag.SANDBOX) },
+  { env: 'qa1', state: 'NY', merchant: 'TireAgent', tag: buildTags(TestTag.SANITY, TestTag.REGRESSION, TestTag.QA1) },
   // Uncomment to run on other environments:
   // { env: 'stg', state: 'NY', merchant: 'TireAgent', tag: buildTags(TestTag.SANITY, TestTag.REGRESSION, TestTag.STG) },
 ];

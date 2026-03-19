@@ -13,13 +13,13 @@ import { LoginPage } from '../src/pages/login.page.js';
 //   await page.context().storageState({ path: '.auth/origination.json' });
 // });
 
-// setup('authenticate for servicing', async ({ page }) => {
-//   const env = new ConfigEnvironment(process.env.ENV || 'sandbox');
-//   const loginPage = new LoginPage(page);
+setup('authenticate for servicing', async ({ page }) => {
+  const env = new ConfigEnvironment(process.env.ENV || 'sandbox');
+  const loginPage = new LoginPage(page);
 
-//   await page.goto(env.servicingUrl);
-//   const creds = env.getCredentials('manager');
-//   await loginPage.login(creds.username, creds.password);
-//   await page.waitForLoadState('networkidle');
-//   await page.context().storageState({ path: '.auth/servicing.json' });
-// });
+  await page.goto(env.servicingUrl);
+  const creds = env.getCredentials('manager');
+  await loginPage.login(creds.username, creds.password);
+  await page.waitForLoadState('networkidle');
+  await page.context().storageState({ path: '.auth/servicing.json' });
+});

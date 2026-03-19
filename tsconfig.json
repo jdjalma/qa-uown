@@ -18,7 +18,7 @@
     "baseUrl": ".",
     "paths": {
       "@config/*": ["src/config/*"],
-      "@types/*": ["src/types/*"],
+      "@ptypes/*": ["src/types/*"],
       "@data/*": ["src/data/*"],
       "@fixtures/*": ["src/fixtures/*"],
       "@helpers/*": ["src/helpers/*"],

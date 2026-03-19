@@ -193,9 +193,16 @@ export class ContractPage extends BasePage {
    *   2. "I agree to Privacy Policy, Terms and Conditions" (#isEverythingAgreed)
    */
   async completeTermsAndConditions(): Promise<void> {
-    // Wait for any checkbox to appear on the T&C page
+    // Wait for any checkbox to appear on the T&C page.
+    // Some plans/merchants skip T&C entirely and go directly to e-sign — skip if no checkbox.
     const anyCheckbox = this.page.locator(SELECTORS.contractCheckbox).first();
-    await anyCheckbox.waitFor({ state: 'visible', timeout: 30_000 });
+    const hasCheckbox = await anyCheckbox.waitFor({ state: 'visible', timeout: 90_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (!hasCheckbox) {
+      console.log('[T&C] No checkbox found — plan may not require T&C step, skipping');
+      return;
+    }
 
     // Check all visible checkboxes (covers #isConfirmedForSettlement, #isEverythingAgreed,
     // and any other T&C checkboxes regardless of their IDs)
@@ -208,11 +215,28 @@ export class ContractPage extends BasePage {
       }
     }
 
-    // Wait for the submit button to become enabled after checking boxes
-    const submitBtn = this.page.locator(SELECTORS.ptProceedToSignature).first();
-    await this.waitForButtonEnabled(submitBtn, 10);
+    // Detect which submit button is visible:
+    //   - "See Protection Benefits" → insurance flow (TireAgent BW13 plan)
+    //   - "PROCEED TO SIGNATURE" → standard flow
+    // Note: :has-text() is case-insensitive in Playwright, so we must check visibility
+    // explicitly to avoid matching the hidden insurance modal's "Proceed to signature" button.
+    const seeProtectionBtn = this.page.locator(SELECTORS.seeProtectionBenefitsBtn).first();
+    const hasInsurance = await seeProtectionBtn.isVisible({ timeout: 5_000 }).catch(() => false);
 
-    // Click "PROCEED TO SIGNATURE" button
+    if (hasInsurance) {
+      console.log('[T&C] "See Protection Benefits" detected — insurance flow');
+      await seeProtectionBtn.scrollIntoViewIfNeeded();
+      await seeProtectionBtn.click();
+      await this.assertNoErrorToast('T&C insurance button');
+      await this.waitForSpinner();
+      // Complete protection plan (opt-out) to advance to e-sign
+      await this.completeProtectionPlan(false);
+      return;
+    }
+
+    // Standard flow: "PROCEED TO SIGNATURE"
+    const submitBtn = this.page.locator(SELECTORS.ptProceedToSignature).filter({ visible: true }).first();
+    await this.waitForButtonEnabled(submitBtn, 10);
     await submitBtn.scrollIntoViewIfNeeded();
     await submitBtn.click();
 
@@ -275,127 +299,131 @@ export class ContractPage extends BasePage {
    * One MUST be selected before "PROCEED TO SIGNATURE" becomes active.
    */
   async completeProtectionPlan(optIn: boolean = true): Promise<void> {
-    // Wait for the purchase-insurance submit button (in the main page, not inside any iframe)
     const submitBtn = this.page.locator(SELECTORS.purchaseInsuranceSubmitBtn);
     await submitBtn.waitFor({ state: 'visible', timeout: 30_000 });
     console.log('[Contract] Purchase insurance page visible');
 
-    // Wait for protection plan content to render (iframes + Buddy widget)
-    await sleep(3_000);
-
-    // The opt-in/opt-out radio buttons are inside a protection plan iframe
-    // (NOT the Buddy insurance widget iframe). Search all frames for the radios.
+    // Wait for the Buddy insurance widget (buddy.insure iframe) to fully load its radios
+    // before attempting to click. Retry up to 5× with 3s delay (15s total).
     let radioClicked = false;
     const choice = optIn ? 'opt-in' : 'opt-out';
-
-    // Log all frames for diagnostic purposes
-    const frames = this.page.frames();
-    console.log(`[Contract] Page has ${frames.length} frames:`);
-    for (const f of frames) {
-      console.log(`[Contract]   frame: ${f.url().substring(0, 100) || '(empty)'}`);
-    }
-
-    // Strategy 1: Try main page with role-based locators (handles both native + ARIA radios)
-    const mainRadios = this.page.getByRole('radio');
-    const mainRadioCount = await mainRadios.count().catch(() => 0);
-    console.log(`[Contract] Main page radios (by role): ${mainRadioCount}`);
-
-    if (mainRadioCount >= 2) {
-      const targetIndex = optIn ? 0 : 1;
-      await mainRadios.nth(targetIndex).click({ force: true });
-      radioClicked = true;
-      console.log(`[Contract] Insurance ${choice}: radio clicked in main page (by role)`);
-    }
-
-    // Strategy 2: Try text-based click in main page
-    if (!radioClicked) {
-      const targetSelector = optIn ? SELECTORS.insuranceOptInCheckbox : SELECTORS.insuranceOptOutCheckbox;
-      const textEl = this.page.locator(targetSelector).first();
-      if (await textEl.isVisible({ timeout: 3_000 }).catch(() => false)) {
-        await textEl.click();
-        radioClicked = true;
-        console.log(`[Contract] Insurance ${choice}: clicked text selector in main page`);
-      }
-    }
-
-    // Strategy 3: Search each frame for radios (protection plan content is in an iframe)
-    if (!radioClicked) {
-      for (const frame of frames) {
-        if (frame === this.page.mainFrame()) continue;
-        const frameUrl = frame.url();
-        if (frameUrl.includes('buddy.insure')) continue;
-
-        // Try role-based radios
-        const radios = frame.getByRole('radio');
-        const radioCount = await radios.count().catch(() => 0);
-        console.log(`[Contract] Frame "${frameUrl.substring(0, 60)}" has ${radioCount} radios (by role)`);
-
-        if (radioCount >= 2) {
-          const targetIndex = optIn ? 0 : 1;
-          await radios.nth(targetIndex).click({ force: true });
-          radioClicked = true;
-          console.log(`[Contract] Insurance ${choice}: radio clicked in iframe`);
-          break;
-        }
-
-        // Try native input[type=radio] + input[type=checkbox]
-        const inputs = frame.locator('input[type="radio"], input[type="checkbox"]');
-        const inputCount = await inputs.count().catch(() => 0);
-        if (inputCount >= 2) {
-          console.log(`[Contract] Frame has ${inputCount} native radio/checkbox inputs`);
-          const targetIndex = optIn ? 0 : 1;
-          await inputs.nth(targetIndex).check({ force: true });
-          radioClicked = true;
-          console.log(`[Contract] Insurance ${choice}: native input checked in iframe`);
-          break;
-        }
-
-        // Try text-based click
-        const targetText = optIn ? 'I agree to the Uown Protection Plus' : 'No, continue unprotected';
-        const textEl = frame.getByText(targetText).first();
-        if (await textEl.isVisible({ timeout: 2_000 }).catch(() => false)) {
-          await textEl.click();
-          radioClicked = true;
-          console.log(`[Contract] Insurance ${choice}: clicked text in iframe`);
-          break;
+    for (let attempt = 1; attempt <= 5 && !radioClicked; attempt++) {
+      await sleep(3_000);
+      const frames = this.page.frames();
+      if (attempt === 1) {
+        console.log(`[Contract] Page has ${frames.length} frames:`);
+        for (const f of frames) {
+          console.log(`[Contract]   frame: ${f.url().substring(0, 100) || '(empty)'}`);
         }
       }
-    }
-
-    // Strategy 4: Use frameLocator on all iframes as last resort
-    if (!radioClicked) {
-      const iframes = this.page.locator('iframe');
-      const iframeCount = await iframes.count();
-      console.log(`[Contract] Trying ${iframeCount} iframes via frameLocator`);
-
-      for (let i = 0; i < iframeCount; i++) {
-        const fl = this.page.frameLocator(`iframe >> nth=${i}`);
-        const radios = fl.getByRole('radio');
-        const radioCount = await radios.count().catch(() => 0);
-        if (radioCount >= 2) {
-          const targetIndex = optIn ? 0 : 1;
-          await radios.nth(targetIndex).click({ force: true });
-          radioClicked = true;
-          console.log(`[Contract] Insurance ${choice}: radio clicked via frameLocator[${i}]`);
-          break;
-        }
-      }
+      radioClicked =
+        await this.tryClickInsuranceRadioInMainPage(optIn, choice) ||
+        await this.tryClickInsuranceRadioInFrames(frames, optIn, choice) ||
+        await this.tryClickInsuranceRadioViaFrameLocator(optIn, choice);
+      if (!radioClicked) console.log(`[Contract] Insurance radio not found on attempt ${attempt}/5 — retrying...`);
     }
 
     if (!radioClicked) {
       console.log('[Contract] WARNING: Could not find insurance radio — proceeding anyway');
     }
 
-    // Wait for the submit button to become enabled after radio selection
     await this.waitForButtonEnabled(submitBtn, 10);
-
-    // Click "PROCEED TO SIGNATURE" to advance to e-sign
     await submitBtn.scrollIntoViewIfNeeded();
     await submitBtn.click();
     console.log('[Contract] Clicked "PROCEED TO SIGNATURE" on protection plan page');
-
     await this.assertNoErrorToast('Protection plan submission');
     await this.waitForSpinner();
+  }
+
+  private async tryClickInsuranceRadioInMainPage(optIn: boolean, choice: string): Promise<boolean> {
+    const mainRadios = this.page.getByRole('radio');
+    const mainRadioCount = await mainRadios.count().catch(() => 0);
+    console.log(`[Contract] Main page radios (by role): ${mainRadioCount}`);
+    if (mainRadioCount >= 2) {
+      await mainRadios.nth(optIn ? 0 : 1).click({ force: true });
+      console.log(`[Contract] Insurance ${choice}: radio clicked in main page (by role)`);
+      return true;
+    }
+    const targetSelector = optIn ? SELECTORS.insuranceOptInCheckbox : SELECTORS.insuranceOptOutCheckbox;
+    const textEl = this.page.locator(targetSelector).first();
+    if (await textEl.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await textEl.click();
+      console.log(`[Contract] Insurance ${choice}: clicked text selector in main page`);
+      return true;
+    }
+    return false;
+  }
+
+  private async tryClickInsuranceRadioInFrames(frames: ReturnType<typeof this.page.frames>, optIn: boolean, choice: string): Promise<boolean> {
+    for (const frame of frames) {
+      if (frame === this.page.mainFrame()) continue;
+      if (await this.clickInsuranceRadioInSingleFrame(frame, optIn, choice)) return true;
+    }
+    return false;
+  }
+
+  private async clickInsuranceRadioInSingleFrame(frame: ReturnType<typeof this.page.frames>[number], optIn: boolean, choice: string): Promise<boolean> {
+    const frameUrl = frame.url();
+    const radios = frame.getByRole('radio');
+    const radioCount = await radios.count().catch(() => 0);
+    console.log(`[Contract] Frame "${frameUrl.substring(0, 60)}" has ${radioCount} radios (by role)`);
+    if (radioCount >= 2) {
+      const targetRadio = radios.nth(optIn ? 0 : 1);
+      // Use check() to properly dispatch change event (not force-click which bypasses React onChange)
+      await targetRadio.check({ force: true }).catch(async () => {
+        await targetRadio.click({ force: true });
+      });
+      await sleep(500); // let React state settle
+      // Verify it's actually checked — if not, use JS evaluate as fallback
+      const isChecked = await targetRadio.isChecked({ timeout: 2_000 }).catch(() => false);
+      if (!isChecked) {
+        console.log(`[Contract] Radio not checked after check() — trying JS evaluate`);
+        await targetRadio.evaluate((el) => {
+          (el as HTMLInputElement).click();
+          (el as HTMLInputElement).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+          (el as HTMLInputElement).dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        await sleep(300);
+      }
+      console.log(`[Contract] Insurance ${choice}: radio checked in iframe (verified: ${await targetRadio.isChecked({ timeout: 1_000 }).catch(() => '?')})`);
+      return true;
+    }
+    const inputs = frame.locator('input[type="radio"], input[type="checkbox"]');
+    const inputCount = await inputs.count().catch(() => 0);
+    if (inputCount >= 2) {
+      console.log(`[Contract] Frame has ${inputCount} native radio/checkbox inputs`);
+      const targetInput = inputs.nth(optIn ? 0 : 1);
+      await targetInput.check({ force: true });
+      await sleep(300);
+      console.log(`[Contract] Insurance ${choice}: native input checked in iframe`);
+      return true;
+    }
+    const targetText = optIn ? 'I agree to the Uown Protection Plus' : 'No, continue unprotected';
+    const textEl = frame.getByText(targetText).first();
+    if (await textEl.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      await textEl.click();
+      await sleep(300);
+      console.log(`[Contract] Insurance ${choice}: clicked text in iframe`);
+      return true;
+    }
+    return false;
+  }
+
+  private async tryClickInsuranceRadioViaFrameLocator(optIn: boolean, choice: string): Promise<boolean> {
+    const iframes = this.page.locator('iframe');
+    const iframeCount = await iframes.count();
+    console.log(`[Contract] Trying ${iframeCount} iframes via frameLocator`);
+    for (let i = 0; i < iframeCount; i++) {
+      const fl = this.page.frameLocator(`iframe >> nth=${i}`);
+      const radios = fl.getByRole('radio');
+      const radioCount = await radios.count().catch(() => 0);
+      if (radioCount >= 2) {
+        await radios.nth(optIn ? 0 : 1).click({ force: true });
+        console.log(`[Contract] Insurance ${choice}: radio clicked via frameLocator[${i}]`);
+        return true;
+      }
+    }
+    return false;
   }
 
   // ═══════════════════════════════════════════════════════════════════
@@ -691,5 +719,182 @@ export class ContractPage extends BasePage {
         await closeBtn.click();
       }
     }
+  }
+
+  // ── Missing employment info flow (planId empty in /complete URL) ─────────────
+
+  /**
+   * Check if the "missing employment info" screen is visible.
+   * This appears when the /complete URL has an empty planId (?planId=).
+   * The page asks for "Next paycheck" date before showing payment options.
+   */
+  async isMissingEmploymentScreen(): Promise<boolean> {
+    return this.page.getByRole('searchbox', { name: /next paycheck/i })
+      .isVisible({ timeout: 5_000 }).catch(() => false);
+  }
+
+  /**
+   * Fill the "Next paycheck" date on the missing employment info screen.
+   * Appears as step 1 when planId is empty in the /complete URL.
+   *
+   * @param nextPayDate - Date in MM/DD/YYYY format
+   */
+  async fillNextPaycheckDate(nextPayDate: string): Promise<void> {
+    const field = this.page.getByRole('searchbox', { name: /next paycheck/i });
+    await field.waitFor({ state: 'visible', timeout: 15_000 });
+    await field.fill(nextPayDate);
+    console.log(`[Contract] Filled "Next paycheck" = ${nextPayDate}`);
+
+    await this.page.getByRole('button', { name: /^next$/i }).click();
+    console.log('[Contract] Clicked NEXT after next paycheck');
+  }
+
+  /**
+   * Dismiss the SEON identity verification overlay if present.
+   * In sandbox environments, SEON shows a QR code modal that blocks UI interactions.
+   * We hide the iframe element via JS since we cannot interact with the cross-origin iframe content.
+   */
+  async dismissSeonOverlay(): Promise<void> {
+    const seonIframe = this.page.locator('[data-testid="seon-idv-iframe"]');
+    const visible = await seonIframe.isVisible({ timeout: 3_000 }).catch(() => false);
+    if (!visible) return;
+
+    await this.page.evaluate(() => {
+      const el = document.querySelector('[data-testid="seon-idv-iframe"]') as HTMLElement | null;
+      if (el) {
+        el.style.display = 'none';
+        el.style.pointerEvents = 'none';
+        el.style.zIndex = '-9999';
+      }
+    });
+    console.log('[Contract] SEON overlay dismissed');
+  }
+
+  /**
+   * Select pay frequency from the React Select dropdown.
+   * Appears as step 2 when planId is empty in the /complete URL.
+   *
+   * @param frequency - One of: WEEKLY, BI_WEEKLY, SEMI_MONTHLY, MONTHLY
+   */
+  async selectMissingPayFrequency(frequency: string): Promise<void> {
+    // Wait for the combobox to appear
+    const label = this.page.getByText(/how often do you get paid/i).first();
+    await label.waitFor({ state: 'visible', timeout: 15_000 });
+
+    // Dismiss SEON identity overlay before interacting with the dropdown (sandbox env)
+    await this.dismissSeonOverlay();
+
+    // Open the dropdown (React Select with any classNamePrefix uses [class*="__control"])
+    await this.page.locator('[class*="__control"]').first().click({ timeout: 10_000 });
+
+    // Select the option — enum values shown (WEEKLY, BI_WEEKLY, SEMI_MONTHLY, MONTHLY)
+    await this.page.locator(`[class*="__option"]`).filter({ hasText: frequency }).first().click({ timeout: 5_000 });
+    console.log(`[Contract] Selected pay frequency = ${frequency}`);
+
+    // Use JS click to bypass potential SEON iframe pointer-event interception (sandbox env)
+    const seonIframe = this.page.locator('[data-testid="seon-idv-iframe"]');
+    const seonPresent = await seonIframe.isVisible({ timeout: 3_000 }).catch(() => false);
+    if (seonPresent) {
+      await this.page.evaluate(() => {
+        const buttons = Array.from(document.querySelectorAll('button'));
+        const nextBtn = buttons.find(b => /^next$/i.test(b.textContent?.trim() ?? ''));
+        if (nextBtn) (nextBtn as HTMLElement).click();
+      });
+    } else {
+      await this.page.getByRole('button', { name: /^next$/i }).click();
+    }
+    console.log('[Contract] Clicked NEXT after pay frequency');
+  }
+
+  /**
+   * Wait for and assert the plan selection screen is visible.
+   * Shows "Choose the payment program that works best for you"
+   * with program cards and "Choose Payment Program" buttons.
+   */
+  async waitForPlanSelectionScreen(): Promise<void> {
+    // qa1 heading:     "Choose the payment program that works best for you"
+    // sandbox heading: "Please review and select one of the programs below."
+    await this.page.getByText(/choose the payment program|please review and select/i)
+      .first()
+      .waitFor({ state: 'visible', timeout: 30_000 });
+    console.log('[Contract] Plan selection screen visible');
+  }
+
+  /**
+   * Select a payment program on the plan selection screen.
+   * Clicks the "Choose Payment Program" button for the specified program name
+   * or falls back to the program at the given index (0-based).
+   *
+   * @param programName - Partial name of the program (e.g. 'Bi-Weekly', 'Weekly')
+   * @param index - Fallback index if programName not found (default: 0)
+   */
+  async choosePlanByName(programName: string, index = 0): Promise<void> {
+    await this.waitForPlanSelectionScreen();
+
+    // Wait for "Choose Payment Program" buttons to appear (they load async after the heading)
+    const chooseBtns = this.page.getByRole('button', { name: /choose payment program/i });
+    await chooseBtns.first().waitFor({ state: 'visible', timeout: 15_000 });
+
+    const count = await chooseBtns.count();
+    console.log(`[Contract] Plan selection: ${count} "Choose Payment Program" buttons available`);
+
+    if (programName) {
+      // Strategy A: cards already expanded (qa1 layout).
+      // Find a container that has BOTH the program name text AND a "Choose Payment Program" button,
+      // then click the button inside that container.
+      const card = this.page.locator('div, section, article').filter({
+        hasText: new RegExp(programName, 'i'),
+        has: this.page.getByRole('button', { name: /choose payment program/i }),
+      }).last(); // .last() picks the most specific element, not a wrapper
+
+      const btnInCard = card.getByRole('button', { name: /choose payment program/i }).first();
+      if (await btnInCard.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        await btnInCard.click();
+        console.log(`[Contract] Clicked "Choose Payment Program" for "${programName}" (pre-expanded)`);
+        await this.waitForSpinner();
+        return;
+      }
+
+      // Strategy B: cards collapsed (sandbox layout).
+      // Find a button with the program name to expand the card first, then click "Choose".
+      const expandBtn = this.page.getByRole('button').filter({
+        hasText: new RegExp(programName, 'i'),
+      }).first();
+      if (await expandBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        await expandBtn.click();
+        console.log(`[Contract] Expanded plan card: "${programName}"`);
+        // After expansion, "Choose Payment Program" appears — click it
+        const chooseAfterExpand = this.page.getByRole('button', { name: /choose payment program/i });
+        await chooseAfterExpand.waitFor({ state: 'visible', timeout: 10_000 });
+        await chooseAfterExpand.click();
+        console.log(`[Contract] Clicked "Choose Payment Program" after expand`);
+        await this.waitForSpinner();
+        return;
+      }
+    }
+
+    // Fallback: click by index
+    await chooseBtns.nth(index).click();
+    console.log(`[Contract] Clicked "Choose Payment Program" (index=${index})`);
+    await this.waitForSpinner();
+  }
+
+  /**
+   * Complete the full missing employment info flow when planId is empty.
+   * Combines: fillNextPaycheckDate → selectMissingPayFrequency → choosePlanByName.
+   *
+   * @param nextPayDate - Date in MM/DD/YYYY format (e.g. '04/10/2026')
+   * @param frequency - Pay frequency (WEEKLY, BI_WEEKLY, SEMI_MONTHLY, MONTHLY)
+   * @param programName - Program to select (e.g. 'Bi-Weekly', 'Weekly')
+   */
+  async completeMissingEmploymentInfo(
+    nextPayDate: string,
+    frequency: string,
+    programName = 'Bi-Weekly',
+  ): Promise<void> {
+    await this.fillNextPaycheckDate(nextPayDate);
+    await this.selectMissingPayFrequency(frequency);
+    await this.choosePlanByName(programName);
+    console.log(`[Contract] Missing employment flow complete: ${frequency} → ${programName}`);
   }
 }

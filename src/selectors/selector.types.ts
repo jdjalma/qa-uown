@@ -31,6 +31,7 @@ export interface SidebarSelectors {
 export interface FilterSelectors {
   filterOption: string;
   filterOptionWithRole: string;
+  filterControl: string;
   filtersButton: string;
 }
 
@@ -295,6 +296,28 @@ export interface ModifyLeaseSelectors {
 export interface ContractSelectors {
   contractViewDocumentLink: string;
   contractCheckbox: string;
+  completeNextPaycheckInput: string;
+  completePayFrequencyCombobox: string;
+  completePlanSelectionHeading: string;
+  completeChooseProgramBtn: string;
+}
+
+export interface PaymentProgramSelectors {
+  paymentProgramContainer: string;
+  paymentProgramLogo: string;
+  paymentProgramTitle: string;
+  paymentProgramSubtitle: string;
+  paymentCard: string;
+  paymentCardTitle: string;
+  paymentCardDescription: string;
+  paymentCardPrice: string;
+  paymentCardPriceLabel: string;
+  paymentCardDetailRow: string;
+  paymentCardButton: string;
+  termSelectionTab: string;
+  termSelectionTabSelected: string;
+  paymentProgramFooterText: string;
+  paymentProgramFooterPhone: string;
 }
 
 export interface CompletionScreenSelectors {
@@ -402,6 +425,55 @@ export interface WebsiteSelectors {
   wsContactLink: string;
 }
 
+export interface MerchantSettingSelectors {
+  msDealerDiscountInput: string;
+  msDealerRebateTypeSelect: string;
+  msDealerRebateOverrideInput: string;
+  msMerchantTableCheckbox: string;
+  msSubmitButton: string;
+  msBulkConfirmButton: string;
+  msPeakCampaignIdInput: string;
+  msOffPeakCampaignIdInput: string;
+  msPeakCampaignIdLabel: string;
+  msOffPeakCampaignIdLabel: string;
+  msUwPipelineInput: string;
+  msFraudThresholdInput: string;
+  msMaxApprovalAmountInput: string;
+  msGdsDataToggle: string;
+}
+
+export interface ServicingInformationSelectors {
+  svInfoEditButton: string;          // #ServicingInformation-edit
+  svInfoPayFrequencyDropdown: string; // #payFrequency (React Select)
+  svInfoSaveButton: string;           // collapsableEdit save button
+  svInfoFirstDueDateInput: string;    // first due date input in servicing info form
+  svInfoSecondDueDateInput: string;   // second due date input in servicing info form
+}
+
+export interface PaymentArrangementSelectors {
+  paymentArrangementCheckbox: string;                           // #paymentArrangement
+  arrangementStartDateInput: string;                            // #startDate
+  arrangementEndDateInput: string;                              // #endDate
+  arrangementPaymentFrequencyDropdown: string;                  // xpath for #paymentFrequency React Select
+  arrangementInstallmentAmountInput: (index: number) => string; // paymentInfo[n].paymentAmount
+  arrangementInstallmentDateInput: (index: number) => string;   // paymentInfo[n].paymentDate
+}
+
+export interface ErrorLogSelectors {
+  elTabSendApplication: string;
+  elTabSubmitApplication: string;
+  elFilterFromDate: string;
+  elFilterToDate: string;
+  elFilterSearch: string;
+  elFilterSubmitButton: string;
+}
+
+export interface MoveDueDateSelectors {
+  moveDueDateButton: string;
+  moveDueDateScheduledSelect: string;
+  moveDueDateNewDateInput: string;
+}
+
 /** Composite type of all selectors */
 export interface AppSelectors extends
   SpinnerSelectors,
@@ -431,7 +503,13 @@ export interface AppSelectors extends
   PayTomorrowPortalSelectors,
   PayPairPortalSelectors,
   ContractSelectors,
+  PaymentProgramSelectors,
   CompletionScreenSelectors,
   InsuranceSelectors,
   WebsiteSelectors,
-  NewApplicationSelectors {}
+  NewApplicationSelectors,
+  MerchantSettingSelectors,
+  ServicingInformationSelectors,
+  PaymentArrangementSelectors,
+  ErrorLogSelectors,
+  MoveDueDateSelectors {}

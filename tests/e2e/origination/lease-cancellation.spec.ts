@@ -20,7 +20,7 @@ import { test, expect } from '@fixtures/test-context.fixture.js';
 import { OriginationCustomerPage } from '@pages/origination/index.js';
 import { ServicingCustomerPage } from '@pages/servicing/index.js';
 import { WebsiteBasePage } from '@pages/website/index.js';
-import { TestTag, buildTags, splitTags } from '../../../src/types/enums.js';
+import { TestTag, buildTags, splitTags } from '@ptypes/enums.js';
 import type { ConfigEnvironment } from '@config/environment.js';
 import {
   buildTestData,

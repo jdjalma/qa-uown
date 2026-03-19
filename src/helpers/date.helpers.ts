@@ -34,3 +34,16 @@ export function formatDateCompact(date: Date): string {
   return formatDate(date, '');
 }
 
+/**
+ * Returns today + daysFromToday in ISO 8601 format (YYYY-MM-DD).
+ * Required for API endpoints that deserialize postingDate as Java LocalDate.
+ */
+export function calculateDateISO(daysFromToday = 0): string {
+  const target = new Date();
+  target.setDate(target.getDate() + daysFromToday);
+  const yyyy = target.getFullYear();
+  const mm = String(target.getMonth() + 1).padStart(2, '0');
+  const dd = String(target.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+

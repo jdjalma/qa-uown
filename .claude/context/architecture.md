@@ -12,8 +12,8 @@ src/
 ├── config/               # Environment, constants, test-options
 ├── support/              # base-test, config, browser-factory, hooks, reporter
 ├── pages/                # Page Object Model (hierarchy)
-├── helpers/              # database, email, date, table, validation, template-engine
-├── data/                 # merchants, state-address-mapper, test-accounts
+├── helpers/              # database, email, date, table, auth, navigation, signwell, template-engine
+├── data/                 # merchants, state-address-mapper, tire-agent, test-cards
 ├── fixtures/             # test-context.fixture + api-templates/
 ├── selectors/            # common.selectors.ts (SELECTORS const)
 └── types/                # enums, payment.types, status.types
@@ -31,14 +31,19 @@ BasePage                         # Never instantiate directly
 ├── SearchPage                   # Quick search (cross-portal)
 ├── MerchantPage                 # Merchant operations
 ├── ContractPage                 # CC/bank forms, e-sign (consumer-facing)
+├── ApplicationWizardPage        # Origination wizard (consumer-facing, extends BasePage)
 ├── PayTomorrowPortalPage        # External PayTomorrow merchant portal
 ├── PayPairPortalPage            # External PayPair portal (TireAgent, iframe nesting)
 ├── OriginationBasePage          # + origination sidebar
 │   ├── OriginationCustomerPage, OverviewPage, FundingPage
-│   ├── LeaseAgreementPage, MetricsCalculatorPage
+│   ├── LeaseAgreementPage, MetricsCalculatorPage, ProgramsPage, NewApplicationPage
+│   ├── MerchantSettingPage              # Merchant Settings bulk update (dealer discount/rebate)
+│   ├── ErrorLogPage                    # Submit/Send Application error logs (Task #1240)
 ├── ServicingBasePage            # + servicing sidebar
 │   ├── ServicingCustomerPage, PaymentTransactionPage
 │   ├── AchHistoryPage, ScheduledPaymentPage, LogPage
+│   ├── DueDateMovesHistoryPage  # History > Due Date Changes tab (Task #502)
+│   ├── FrequencyChangesHistoryPage  # History > Frequency Changes tab (Task #503)
 ├── WebsiteBasePage              # + email OTP login
 └── AmsBasePage → AmsPage        # + AMS features
 ```
@@ -59,13 +64,16 @@ ApiResponse<T> = { ok, status, statusText, headers, body: T, raw }
 
 | Client | Host | Methods |
 |--------|------|---------|
-| ApplicationClient | svc | sendApplication, getApplicationStatus, submitApplication, canContinueApplication, getFinalApprovalDetails, getMissingFields (supports planId — Task #439) |
+| ApplicationClient | svc | sendApplication, getApplicationStatus, submitApplication(leadPk, firstName, lastName, options?), canContinueApplication, getFinalApprovalDetails, getMissingFields(shortCode, { planId? }) — Task #439/#1242, authorizeCreditCard(body: AuthorizeCreditCardBody) — POST /uown/los/authorizeCreditCard; errors logged to `uown_submit_application_error_log`; requires getMissingFields first. Response types: `SubmitApplicationResponseBody` (includes `error`, `embeddedSigningUrl`, `termInMonths` — Task #1242), `MissingFieldsResponseBody` (includes `missingFields`, `calculatedFees`, `securityDeposit`, `firstPaymentDate`, `insuranceEligible`), `AuthorizeCreditCardResponseBody` (includes `authorizationCode`, `preAuthStatus`, `creditCardTransactionPk`) |
 | InvoiceClient | svc | sendInvoice |
 | LeadClient | svc | changeLeadStatus |
 | SettlementClient | svc | settleApplication |
-| CreditCardClient | origination | authorizeCreditCard |
-| ScheduledTaskClient | svc | triggerScheduledTask |
+| CreditCardClient | origination | authorizeCreditCard(body or leadPk, firstName, lastName, options?) — builder overload; `AuthorizeCreditCardResponseBody` includes `authorizationCode`, `preAuthStatus`, `creditCardTransactionPk` |
+| ScheduledTaskClient | svc | triggerScheduledTask, sendCreditCardPaymentsSweep, sendAchPaymentsSweep, getStatusDatePaymentsListSweep |
 | PaymentArrangementClient | svc | makeCreditCardPayments, createOrUpdateAchPayments |
+| AccountClient | svc | cancelAccount, getFrequencyChanges(accountPk), getNextReceivable(accountPk), getDueDateMoves(accountPk), moveDueDatesByDays(accountPk, days) |
+| MerchantClient | origination/svc | getMerchantsByRefCode, isSignedToFundingEnabled, getMerchantsByCriteria, updateMerchants, getMerchantInfo(leadPk), getSendApplicationRequestsByCriteria (svc host), getSubmitApplicationErrorLogs(from, to, options?), getMerchantApiErrorLogs(from, to, options?) — maps to `uown_merchant_api_error_log`, same params as getSubmitApplicationErrorLogs but no CC fields |
+| SvcPayoffClient | svc | getPayoffAmount(accountPk), getAccountSummary(accountPk) |
 
 ### GET with Content-Type Header
 
@@ -83,6 +91,31 @@ async getFinalApprovalDetails(leadPk: string | number): Promise<ApiResponse<T>> 
 
 Currently applies to: `getFinalApprovalDetails` (ApplicationClient).
 
+### FilterTable React-Select CSS Prefix Pattern
+
+The `FilterTable` component from `@uownleasing/common-ui` uses `filter__` as the `classNamePrefix` for all react-select elements inside filter panels. This is distinct from the send form and application wizard, which use generic (unprefixed) react-select classes.
+
+| Context | CSS class pattern | Example selector |
+|---------|-------------------|-----------------|
+| Send form / wizard | Generic react-select | `[class*='control']`, `[class*='option']` |
+| FilterTable filter panel | `filter__` prefixed | `[class*='filter__control']`, `div[class*='filter__option']` |
+
+**Key selectors for `filter__` react-selects:**
+
+| Selector key | Value | Purpose |
+|---|---|---|
+| `filterOption` | `div[class*='filter__option']` | Option items inside filter dropdown |
+| `naFilterMerchantControl` | `[class*='filter__control']` | Merchant control in New Application filter panel |
+| `naFilterMerchantInput` | `[class*='filter__control'] input` | Input inside merchant filter react-select |
+| `naFilterLocationControl` | `[class*='filter__control']` | Location control (nth(1)) in filter panel |
+
+**Backdrop overlay behavior:** When a `filter__`-prefixed react-select opens, it renders a portal element (`.filter__menu-portal`) at the `<body>` level containing a transparent backdrop that intercepts pointer events. To interact with options inside this portal:
+- Always click with `{ force: true }` on options to bypass the backdrop
+- After reading options, press `Escape` before interacting with other elements to close the portal
+- Poll `.filter__menu-portal` for `state: 'hidden'` to confirm the portal has closed
+
+**`clickSearch()` pattern:** Before clicking the Search button inside a filter panel, always press `Escape` first to close any open filter dropdown portal, then call `waitForSpinner()`.
+
 ## Fixtures (base-test.ts)
 
 | Fixture | Type | Usage |
@@ -94,6 +127,14 @@ Currently applies to: `getFinalApprovalDetails` (ApplicationClient).
 | `ctx` | TestContext | Shared state |
 | `consoleLogs` | () => string[] | Captured console errors |
 | `page` | Page | With auto-hooks |
+
+## ServicingBasePage — Key Methods
+
+| Method | Returns | Notes |
+|--------|---------|-------|
+| `isTopBarVisible()` | `Promise<boolean>` | Returns `true` if the servicing top bar is visible. Use in tests to guard navigation assertions. **Previously named `verifyTopBar()` (removed — used `expect()` internally, violating the page-object rule of not asserting inside page objects).** |
+
+All page object methods MUST return values (string, boolean, number) — never call `expect()` inside a page object. See `coding-standards.md` and `.claude/rules/page-objects.md`.
 
 ## Auto-hooks
 
@@ -107,8 +148,8 @@ Currently applies to: `getFinalApprovalDetails` (ApplicationClient).
 - `src/support/config.ts` — TestConfig singleton
 - `src/config/environment.ts` — ConfigEnvironment per env
 - `src/config/constants.ts` — Timeouts, test cards, SSN/phone generation
-- `src/selectors/common.selectors.ts` — ALL selectors (incl. 33 PayPair selectors, 5 CompletionScreen selectors)
-- `src/helpers/database.helpers.ts` — Pool + polling backoff. Methods: CRUD, waitFor*, lead*, shortCode* (migration V20260226100000), uwData* (getUwDataByLeadPk, getLambdaSegment, waitForLambdaSegment), paymentArrangement* (getPaymentArrangement, getPaymentArrangementStatus, getPaymentArrangementsByAccount, waitForPaymentArrangementStatus, paymentArrangementTableExists, getPaymentArrangementColumns, ccTransactionHasArrangementFk, achPaymentHasArrangementFk, getCcTransactionsByArrangement, getAchPaymentsByArrangement), account* (getAccountRating, getAccountStatus, waitForAccountStatus, getAccountPkByLeadPk, waitForAccountByLeadPk), pendingTransactions (getPendingCcTransactions, getPendingAchPayments, waitForCcTransactionsProcessed, waitForAchPaymentsProcessed)
+- `src/selectors/common.selectors.ts` — ALL selectors (incl. 33 PayPair selectors, 5 CompletionScreen selectors, 15 PaymentProgram selectors: `paymentProgramContainer/Logo/Title/Subtitle`, `paymentCard/Title/Description/Price/PriceLabel/DetailRow/Button`, `termSelectionTab/TabSelected`, `paymentProgramFooterText/FooterPhone` (Task #1233 completeApplication redesign), 3 Programs selectors, 1 MerchantInfoPanel selector, 11 NewApplication selectors: `naSendMerchantControl/Input/ClearBtn`, `naSendLocationControl/Input`, `naSendButton`, `naFilterMerchantControl/Input`, `naFilterLocationControl`, `naFilterSearchText/Button`, 6 ErrorLog selectors: `elTabSendApplication`, `elTabSubmitApplication`, `elFilterFromDate`, `elFilterToDate`, `elFilterSearch`, `elFilterSubmitButton`, plus shared react-select: `rsOption`, `rsMenu`, `rsSingleValue`; shared action selectors: `saveButton` = `"button:has-text('SAVE'), button >> span:has-text('SAVE')"`, `filtersButton` = `"button[class*='filterButton'], button:has-text('Filters')"` — used by `MerchantSettingPage` and any page with a Filters/Save button)
+- `src/helpers/database.helpers.ts` — Pool + polling backoff. Methods: CRUD, waitFor*, lead*, shortCode* (migration V20260226100000), uwData* (getUwDataByLeadPk, getLambdaSegment, waitForLambdaSegment), paymentArrangement* (getPaymentArrangement, getPaymentArrangementStatus, getPaymentArrangementsByAccount, waitForPaymentArrangementStatus, paymentArrangementTableExists, getPaymentArrangementColumns, ccTransactionHasArrangementFk, achPaymentHasArrangementFk, getCcTransactionsByArrangement, getAchPaymentsByArrangement), account* (getAccountRating, getAccountStatus, waitForAccountStatus, getAccountPkByLeadPk, waitForAccountByLeadPk), pendingTransactions (getPendingCcTransactions, getPendingAchPayments, waitForCcTransactionsProcessed, waitForAchPaymentsProcessed), leadApprovalTerms* (leadApprovalTermsTableExists, getLeadApprovalTermsColumns, getLeadApprovalTermsForLead, waitForLeadApprovalTerms), lead* (getLeadPkByUuid, getLeadInternalStatus), performanceIndex* (indexExistsOnTable, getIndexColumns, explainAnalyze, getTableRowEstimate — Task #449 getDataMismatchForLead optimization). **Expression index caveat:** `getIndexColumns(name)` queries `pg_attribute` and only returns named columns — it does NOT work for expression-based indexes (e.g., `UPPER(col)` or `col1 || col2`). For expression indexes, verify via `db.getSingleString('SELECT indexdef FROM pg_indexes WHERE indexname = $1', [name])` and assert on the returned DDL string. Use `isExpression: true` flag in test constants to branch the verification path (Tasks #461, #463).
 - `src/helpers/template-engine.ts` — JSON template interpolation
 - `src/pages/origination/paypair-portal.page.ts` — PayPair portal (iframe nesting, OTP intercept)
 - `src/data/tire-agent.data.ts` — TireAgent/PayPair data builders
@@ -129,3 +170,4 @@ Currently applies to: `getFinalApprovalDetails` (ApplicationClient).
 | [010](../../docs/adrs/ADR-010-custom-json-reporter.md) | Custom JSON reporter for CI | Accepted |
 | [011](../../docs/adrs/ADR-011-unified-fixture-base-test.md) | Unified fixture in base-test.ts | Accepted |
 | [012](../../docs/adrs/ADR-012-java-cucumber-migration.md) | Migration from Java/Cucumber | Accepted |
+| [013](../../docs/adrs/ADR-013-app-source-integration.md) | Application source code integration for test validation | Accepted |

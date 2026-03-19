@@ -8,6 +8,7 @@ import type {
   FinalApprovalDetailsResponseBody,
   MissingFieldsResponseBody,
 } from '../responses/application.response.js';
+import type { AuthorizeCreditCardResponseBody } from '../responses/credit-card.response.js';
 import {
   type SendApplicationBody,
   type ApplicationStatusBody,
@@ -20,6 +21,7 @@ import {
   buildApplicationStatusBody,
   buildSubmitApplicationBody,
 } from '../bodies/application.body.js';
+import type { AuthorizeCreditCardBody } from '../bodies/credit-card.body.js';
 
 export class ApplicationClient extends BaseClient {
 
@@ -105,9 +107,10 @@ export class ApplicationClient extends BaseClient {
   }
 
   /**
-   * Get missing fields for a lead using its short code.
-   * Endpoint: GET /missing-fields/{shortCode} (origination host)
-   * Called automatically during the signing flow for pre-signature validation.
+   * Get missing required fields for a lead using its short code.
+   * Endpoint: GET /uown/los/missingRequiredFields/{shortCode} (svc host)
+   * Called during the signing flow before submitApplication.
+   * IMPORTANT: When planId is provided, this also sets merchantProgramPk on the lead.
    * @param shortCode - The lead's short code identifier
    * @param options - Optional parameters (e.g. planId for program-specific missing fields)
    */
@@ -116,6 +119,16 @@ export class ApplicationClient extends BaseClient {
     options?: { planId?: string },
   ): Promise<ApiResponse<MissingFieldsResponseBody>> {
     const queryString = options?.planId ? `?planId=${encodeURIComponent(options.planId)}` : '';
-    return this.get<MissingFieldsResponseBody>(`/missing-fields/${shortCode}${queryString}`, 'origination');
+    return this.get<MissingFieldsResponseBody>(`/uown/los/missing-fields/${shortCode}${queryString}`);
+  }
+
+  /**
+   * Authorize a credit card for an existing lead.
+   * Endpoint: POST /uown/los/authorizeCreditCard
+   * Errors (e.g. CC last name mismatch) are caught by CustomExceptionHandler
+   * and logged to uown_submit_application_error_log.
+   */
+  async authorizeCreditCard(body: AuthorizeCreditCardBody): Promise<ApiResponse<AuthorizeCreditCardResponseBody>> {
+    return this.post<AuthorizeCreditCardResponseBody>('/uown/los/authorizeCreditCard', body);
   }
 }

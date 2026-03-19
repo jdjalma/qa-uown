@@ -15,7 +15,7 @@ import { test, expect } from '@fixtures/test-context.fixture.js';
 import { SearchPage, OriginationCustomerPage, ContractPage, FundingPage,
   ServicingCustomerPage, PaymentTransactionPage, AchHistoryPage,
   WebsiteBasePage } from '@pages/index.js';
-import { FundingQueueStatus, AllocationStrategy, TestTag, buildTags } from '../../src/types/enums.js';
+import { FundingQueueStatus, AllocationStrategy, TestTag, buildTags } from '@ptypes/enums.js';
 import { TEST_CARDS, TEST_BANK } from '@config/index.js';
 import { extractAccountPkFromUrl, buildCcPaymentDetails, buildTestData,
   loginToPortalWithOptions, loginToPortalIfNeeded,

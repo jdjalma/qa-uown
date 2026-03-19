@@ -4,3 +4,5 @@ export { PaymentTransactionPage } from './payment-transaction.page.js';
 export { AchHistoryPage } from './ach-history.page.js';
 export { ScheduledPaymentPage } from './scheduled-payment.page.js';
 export { LogPage } from './log.page.js';
+export { DueDateMovesHistoryPage } from './due-date-moves-history.page.js';
+export { FrequencyChangesHistoryPage } from './frequency-changes-history.page.js';

@@ -8,3 +8,4 @@ export { ScheduledTaskClient } from './scheduled-task.client.js';
 export { MerchantClient } from './merchant.client.js';
 export { AccountClient } from './account.client.js';
 export { PaymentArrangementClient } from './payment-arrangement.client.js';
+export { SvcPayoffClient } from './svc-payoff.client.js';

@@ -2,6 +2,7 @@ export interface SendApplicationResponseBody {
   appApprovalStatus?: string;
   authorizationNumber?: string;
   accountNumber?: string;
+  transactionMessage?: string;
   paymentDetailsList?: Array<{
     redirectUrl?: string;
     regularPaymentWithTax?: string;
@@ -19,6 +20,8 @@ export interface ApplicationStatusResponseBody {
   appApprovalStatus?: string;
   currentStatus?: string;
   approvedAmount?: number;
+  openToBuy?: number;
+  creditLimit?: number;
   leadUuid?: string;
   accountNumber?: string;
   leadPk?: number;
@@ -32,11 +35,25 @@ export interface ApplicationStatusResponseBody {
     planId?: string;
     termInMonths?: number;
   }>;
+  merchantDiscountPercent?: number;
+  merchantDiscountAmount?: number;
+  merchantRebatePercent?: number;
+  merchantRebateAmount?: number;
+  merchantRebateType?: string;
+  applicationFound?: boolean;
+  hasSignedLease?: boolean;
+  canContinue?: boolean;
+  fundRequestDateTime?: string;
+  fundedDateTime?: string | null;
+  amountToBeFunded?: number;
 }
 
 export interface SubmitApplicationResponseBody {
   status?: string;
   message?: string;
+  error?: string;
+  embeddedSigningUrl?: string;
+  termInMonths?: number;
 }
 
 export interface CanContinueApplicationResponseBody {

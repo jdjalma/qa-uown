@@ -54,12 +54,15 @@ export class ServicingBasePage extends BasePage {
       'items purchased': 'Items Purchased',
       'payments': 'Payments',
       'phone': 'Phone',
+      'due date changes': 'Due Date Changes',
+      'frequency changes': 'Frequency Changes',
     };
     const label = menuMap[section.toLowerCase()] || section;
 
     const historyItems = [
       'ach history', 'cc history',
       'ach', 'cc transactions', 'email', 'items purchased', 'payments', 'phone',
+      'due date changes', 'frequency changes',
     ];
     const isHistoryItem = historyItems.includes(section.toLowerCase());
 
@@ -198,8 +201,64 @@ export class ServicingBasePage extends BasePage {
     await this.clickAndWaitForSpinner(this.submitPaymentButton);
   }
 
-  async verifyTopBar(): Promise<void> {
-    const topBar = this.page.locator(SELECTORS.topBar);
-    await expect(topBar).toBeVisible();
+  /**
+   * Creates a Credit Card Payment Arrangement via the UI modal.
+   *
+   * The Servicing Portal UI does NOT expose an explicit arrangementType (SETTLEMENT/NORMAL) field.
+   * The backend determines arrangement_type automatically based on the payment covering the account balance:
+   *   - Payment arrangement amount >= account balance → SETTLEMENT
+   *   - Payment arrangement amount < account balance  → NORMAL
+   *
+   * Confirmed via manual testing 2026-03-17:
+   *   - Account 4453 (small balance ~$100): arrangement → SETTLEMENT
+   *   - Account 4438 (balance ~$2,566): partial payment → NORMAL
+   *
+   * The installment schedule auto-populates from Start Date + End Date + Frequency.
+   * CC arrangements are synchronous — they complete (SUCCESS) within the same request.
+   * Requires a card on file (uses existing card automatically).
+   * By default the modal opens with Payment Type = "ACH Payment"; this method doesn't change it.
+   * To test CC, call selectPaymentType('Credit Card Payment') before submitting,
+   * or pass a `paymentType` option.
+   */
+  async makeCcPaymentArrangement(options: {
+    startDate: string;  // MM/DD/YYYY
+    endDate: string;    // MM/DD/YYYY
+    frequency: 'Weekly' | 'BiWeekly' | 'Monthly' | 'SemiMonthly';
+    /** Payment type to select. Default: 'Credit Card Payment'. The modal default is 'ACH Payment'. */
+    paymentType?: string;
+  }): Promise<void> {
+    await this.clickMakePayment();
+
+    // Enable Payment Arrangement mode (click if not already checked)
+    const arrangementCheckbox = this.page.locator(SELECTORS.paymentArrangementCheckbox);
+    if (!await arrangementCheckbox.isChecked({ timeout: 3_000 }).catch(() => false)) {
+      await arrangementCheckbox.click();
+    }
+
+    // Fill Start / End dates
+    await this.page.locator(SELECTORS.arrangementStartDateInput).fill(options.startDate);
+    await this.page.locator(SELECTORS.arrangementEndDateInput).fill(options.endDate);
+
+    // Select Payment Frequency via React Select (click the container div, same pattern as selectPaymentType)
+    await this.page.locator(SELECTORS.arrangementPaymentFrequencyDropdown).click();
+    await this.page.locator(SELECTORS.filterOptionWithRole)
+      .filter({ hasText: options.frequency })
+      .first()
+      .click();
+
+    // Wait for installment table to auto-populate (at least 1 row)
+    await this.page.locator(SELECTORS.arrangementInstallmentAmountInput(0))
+      .waitFor({ state: 'visible', timeout: 10_000 });
+
+    // Select payment type (default: Credit Card Payment; modal default is ACH Payment)
+    const targetPaymentType = options.paymentType ?? 'Credit Card Payment';
+    await this.selectPaymentType(targetPaymentType);
+
+    // Submit and wait for spinner to clear
+    await this.clickAndWaitForSpinner(this.submitPaymentButton);
+  }
+
+  async isTopBarVisible(): Promise<boolean> {
+    return this.page.locator(SELECTORS.topBar).isVisible();
   }
 }

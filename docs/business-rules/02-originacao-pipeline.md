@@ -404,6 +404,27 @@ Resultado do skip: `decision = "ACCEPT"`, `creditLimit = loanAmount`.
 
 `approvalExpirationDate = hoje + merchant.numDaysApprovalExp dias`
 
+### Flag isEligibleForExtraInfo — Migration V20260313160247
+
+Campo adicionado ao `Uwdata` (tabela `uown_los_uwdata`) pela migracao Flyway V20260313160247. Indica se o lead e elegivel para coletar informacoes adicionais apos a decisao de UW (ex: dados extras requeridos por certos merchants ou programas antes de prosseguir para o contrato).
+
+| Campo | Tipo | Descricao |
+|-------|------|-----------|
+| `is_eligible_for_extra_info` | BOOLEAN | `true` quando o fluxo requer etapa adicional de coleta de dados pos-UW |
+
+**Impacto:** Verificado pelo frontend (origination) e pela logica de `canContinueApplication` para determinar se ha um passo extra antes da geracao do contrato.
+
+### Campo internal_decision — Migration V20260212152410
+
+Campo adicionado a tabela `uown_los_uw_info` para separar a **decisao interna** do motor de UW do **status publico** do lead.
+
+| Campo | Descricao |
+|-------|-----------|
+| `uw_status` (existente) | Status publico do lead apos UW (ex: `UW_APPROVED`, `UW_DENIED`) |
+| `internal_decision` (novo) | Decisao bruta retornada pelo motor de UW antes de qualquer ajuste de negocio |
+
+**Por que separar:** A decisao interna pode diferir do status publico quando regras de negocio (ex: override de aprovacao, skip UW) modificam o resultado apos o motor decidir. Preservar `internal_decision` garante rastreabilidade e auditoria.
+
 ### Selecao de Programa e Roteamento (13 vs 16 Meses) — Task #439
 
 Apos a decisao de credito, o underwriting avalia **routing inputs** para determinar qual fluxo e programa usar:
@@ -440,6 +461,22 @@ Apos a decisao de credito, o underwriting avalia **routing inputs** para determi
 - `buildScheduleForFrequency` agora gera `planId` = frequencia + termo
 - `SubmitApplicationService` usa `planId` para localizar o `PaymentOption` correto
 - Redirect URL atualizado para incluir `planId`
+
+**Impacto no frontend (Task #1242 — Term Month Column):**
+- Coluna "Term Month" adicionada as tabelas Overview e Leads no Origination portal
+- Fonte de dados: `uown_los_sched_summary.term_in_months` via LEFT JOIN com `uown_los_lead`
+- Valor exibe o termo **selecionado** pelo cliente (13 ou 16), nao todos os termos elegiveis
+- Leads sem `submitApplication` completado nao tem registro em `sched_summary` — coluna exibe vazio
+- O registro `sched_summary` e criado durante `submitApplication` quando o `planId` e fornecido
+- Prerequisito: `getMissingFields(shortCode, planId)` deve ser chamado antes de `submitApplication` para configurar `merchantProgramPk` no lead
+- `SubmitApplicationResponseBody` inclui campo `termInMonths` (ex: 13 ou 16) confirmando o termo selecionado
+
+**Limitacao de backend — configuracao ausente para 16 meses com frequencias nao-mensais:**
+- `getNumberOfPayments(16, WEEKLY)` / `getNumberOfPayments(16, BI_WEEKLY)` / `getNumberOfPayments(16, SEMI_MONTHLY)` lancam `SvcException` porque nao existem configuracoes `number.of.payments.16.WEEKLY`, `number.of.payments.16.BI_WEEKLY` e `number.of.payments.16.SEMI_MONTHLY` no backend
+- `getNumberOfPayments(16, MONTHLY)` usa fallback `return numberOfMonths = 16` (sem lookup de configuracao) e **funciona corretamente**
+- **Impacto em testes:** Para criar um lead com `term_in_months=16` em ambientes com essa limitacao (ex: qa1), chamar `sendInvoice` com `selectedPaymentFrequency='MONTHLY'` — isso gera `planId=MN16` sem disparar a excecao
+- **Pre-requisitos adicionais para qa1 (merchants nao-Kornerstone):** alem do `selectedPaymentFrequency='MONTHLY'`, e necessario DB-patch antes do `sendInvoice`: `eligible_terms='16'` na tabela `uown_los_uwdata` e `merchant_program_pk=207` na tabela `uown_los_lead`
+- Essa limitacao **nao existe em producao** onde o merchant Kornerstone tem todos os programas configurados nativamente
 
 ### Campanhas Peak/Off-Peak
 

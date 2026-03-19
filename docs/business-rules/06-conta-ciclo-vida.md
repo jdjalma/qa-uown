@@ -16,6 +16,9 @@ Recebiveis, auto-pay, rating letters, inadimplencia, status de conta/lead, cance
 | `EARLY_PAY_OFF` | Valor do EPO | Se EPO calculado |
 | `PROTECTION_PLAN_FEE` | Taxa do plano de protecao | Contas Kornerstone migradas |
 | `NSF_FEE` | Taxa de fundos insuficientes | Evento de NSF (ACH/CC) |
+| `REINSTATEMENT_FEE` | Taxa de reativacao de conta | Reativacao apos cancelamento ou inadimplencia severa |
+| `MANUAL_FEE` | Taxa manual lancada por agente | Cobranca administrativa manual |
+| `MISC_FEE` | Taxa diversa / miscelanea | Cobranças avulsas nao categorizadas |
 
 ### Calculo de Imposto nos Recebiveis
 
@@ -69,12 +72,20 @@ O rating letter e uma classificacao de uma unica letra que indica o **status de 
 |--------|-----------|-------------------|
 | **S** | Standard/Satisfactory (normal) | Auto-pay funciona normalmente. Processamento padrao |
 | **P** | Promise to Pay (acordo de pagamento) | **Desliga auto-pay ACH e CC**. Atribuido quando cliente faz payment arrangement via portal ou agente. Excluido de sweeps de pagamento |
-| **C** | Collections (cobranca) | **Desliga auto-pay ACH e CC**. Conta em status de cobranca ativa. Excluido de sweeps |
-| **M** | Military (SCRA/protecao militar) | **Desliga auto-pay ACH e CC**. Protecao sob Servicemembers Civil Relief Act |
-| **D** | Delinquent/Do Not Process | Retentativas diarias de CC negado sao puladas |
-| **B** | Bloqueado | Excluido de lembretes de primeiro pagamento e criacao de pagamentos recorrentes |
-| **E, F, U** | Diversos | Excluidos de email "Settled in Full" |
-| **S** | Sold (vendido) | Aplicado quando conta e vendida a comprador de divida |
+| **C** | Confirmed Bankruptcy (falencia confirmada) | **Desliga auto-pay ACH e CC**. Conta em status de cobranca ativa. Excluido de sweeps |
+| **M** | MR Money Owed / Military (SCRA/protecao militar) | **Desliga auto-pay ACH e CC**. Protecao sob Servicemembers Civil Relief Act |
+| **D** | Pending Bankruptcy (falencia pendente) | Retentativas diarias de CC negado sao puladas |
+| **B** | Discharged Bankruptcy (falencia encerrada) | Excluido de lembretes de primeiro pagamento e criacao de pagamentos recorrentes |
+| **E** | Pickup Requested (solicitacao de retirada) | Excluido de email "Settled in Full" |
+| **F** | Fraud (fraude confirmada) | Excluido de email "Settled in Full" |
+| **G** | Pickup Completed - Settlement (retirada concluida + acordo) | Conta retirada e acordo negociado |
+| **J** | Opt out payment reminders (cliente optou por nao receber lembretes) | Excluido de sweeps de lembretes de pagamento |
+| **L** | Legal (em processo juridico) | Conta em processo legal ativo |
+| **R** | DNC Dialer / Revoke (nao ligar / consentimento revogado) | Excluido de discador automatico; cliente revogou consentimento de contato |
+| **S** (Sold) | Sold (vendido) | Aplicado quando conta e vendida a comprador de divida |
+| **U** | Pickup Completed - Product (retirada concluida - produto mantido) | Produto retirado mas cliente manteve responsabilidade |
+
+> **Nota:** Os ratings que **desligam auto-pay** sao: **C, P, M**. Os que **excluem de email "Settled in Full"** sao: **E, F, U**.
 
 ### Como o Rating Muda
 
@@ -168,6 +179,13 @@ ACTIVE → (pagamento ACH enviado) → PAID_OUT_EARLY_EPO → (pagamento retorna
 **Quando acontece:** Fraude, pedido do merchant, periodo de cooling-off, acao administrativa.
 **Impacto:** `cancelledDateTime` registrado. Opcionalmente todos pagamentos reembolsados. Nenhum pagamento futuro.
 
+**Transicao CANCELLED → ACTIVE (reativacao):**
+- Requer permissao `change_account_status_cancelled_to_active` + `change_account_status`
+- Sistema exibe modal de confirmacao com avisos:
+  - "Refunded payments will NOT be cancelled"
+  - "Pending ACH refunds will be marked cancelled and Payments will be re-posted"
+- Agente deve marcar explicitamente o campo "Refund Payments" para definir se pagamentos previamente reembolsados devem ser re-lançados
+
 ### SETTLED_IN_FULL
 
 **O que significa:** A UOwn aceitou um pagamento negociado (tipicamente menor que o total devido) para encerrar a conta. Comum para contas muito inadimplentes onde um agente de IA ou humano liga para o cliente e oferece um acordo de quitacao.
@@ -219,6 +237,7 @@ ACTIVE → (pagamento ACH enviado) → PAID_OUT_EARLY_EPO → (pagamento retorna
 | `EXPIRED_CONTRACT` | Contrato expirou sem assinatura |
 | `CANCELLED_CONTRACT` | Contrato cancelado antes do funding |
 | `ORDER_CANCELLED` | Pedido/invoice do merchant cancelado |
+| `LEASE_MOD_REQUESTED` | Modificacao do lease solicitada (lead em processo de alteracao de termos) |
 
 ### Fase de Funding
 

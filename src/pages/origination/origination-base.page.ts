@@ -21,4 +21,8 @@ export class OriginationBasePage extends BasePage {
   async navigateToCustomers(): Promise<void> {
     await this.sideMenuNavigateTo('customers');
   }
+
+  async navigateToLeads(): Promise<void> {
+    await this.sideMenuNavigateTo('leads');
+  }
 }

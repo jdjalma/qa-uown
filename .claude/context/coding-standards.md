@@ -16,6 +16,8 @@ These rules apply to **all code** generated in the project. Non-negotiable.
 - Import directly from internal files — use barrel exports (`index.ts`)
 - Import from `@playwright/test` in tests — use `@support/base-test` or `@fixtures/test-context.fixture`
 - Write to `.env`, `.pem`, `node_modules/`
+- Use `body as never` or `body as unknown as X` casts to bypass type errors — fix the body builder instead
+- Use relative `../` imports — always use path aliases (see table below)
 
 ## ALWAYS
 
@@ -27,7 +29,7 @@ These rules apply to **all code** generated in the project. Non-negotiable.
 - Task tests (from GitLab issues) in `tests/taskTestingUown/`
 - `test.step()` to group logical actions
 - `ctx` to share state between steps
-- Path aliases in imports (`@pages/*`, `@api/*`, `@helpers/*`, `@support/*`)
+- Path aliases in ALL imports — never use relative `../` paths (see alias table below)
 - Barrel exports updated when creating new files
 - `tsc --noEmit` as the last step of any implementation
 - Parameterized SQL queries (`$1`, `$2`) — never concatenate
@@ -58,6 +60,39 @@ test.describe('R1.49.1_separateShortCodeInANewEntity_469 - sandbox/ProgressMobil
 ```
 
 **Flow:** `fetch-task` generates name → `spec-test` uses in SPEC → `impl-*` uses in test.describe + file name.
+
+## Path Aliases (MANDATORY — never use relative `../` imports)
+
+All imports in `tests/**` and `src/**` MUST use these aliases (defined in `tsconfig.json`):
+
+| Alias | Maps to | Example |
+|-------|---------|---------|
+| `@config/*` | `src/config/*` | `@config/constants.js` |
+| `@ptypes/*` | `src/types/*` | `@ptypes/enums.js` |
+| `@data/*` | `src/data/*` | `@data/merchants.js` |
+| `@fixtures/*` | `src/fixtures/*` | `@fixtures/test-context.fixture.js` |
+| `@helpers/*` | `src/helpers/*` | `@helpers/date.helpers.js` |
+| `@pages/*` | `src/pages/*` | `@pages/origination/index.js` |
+| `@selectors/*` | `src/selectors/*` | `@selectors/common.selectors.js` |
+| `@api/*` | `src/api/*` | `@api/bodies/application.body.js` |
+| `@api/clients` | `src/api/clients/index` | barrel export |
+| `@api/bodies` | `src/api/bodies/index` | barrel export |
+| `@api/responses` | `src/api/responses/index` | barrel export |
+| `@support/*` | `src/support/*` | `@support/base-test.js` |
+| `@support` | `src/support/index` | barrel export |
+
+**Anti-pattern (NEVER do this):**
+```typescript
+// WRONG — relative path
+import { test } from '../../../../src/support/base-test.js';
+import { CONSTANTS } from '../../../src/config/constants.js';
+
+// CORRECT — path alias
+import { test } from '@support/base-test.js';
+import { CONSTANTS } from '@config/constants.js';
+```
+
+**Note:** This applies to `tests/taskTestingUown/` subdirectories especially — deep nesting makes relative imports fragile and verbose.
 
 ## Conventions
 

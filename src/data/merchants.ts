@@ -92,6 +92,13 @@ export const MERCHANTS: Record<string, MerchantConfig> = {
     number: 'FLX22001-00010',
     refCode: 'flexxbuy',
   },
+  FifthAveFurnitureNY: {
+    fullName: '5th Ave Furniture (NY)',
+    username: 'kornerstone',
+    password: envOr('MERCHANT_FIFTH_AVE_FURNITURE_NY_PASSWORD', 'U0wn_kornerstone_4aZ9Xb'),
+    number: 'KS3015',
+    programs: ['13 month', '16 month'],
+  },
   FormPiper: {
     fullName: 'FormPiper',
     username: 'formPiper',
@@ -148,6 +155,28 @@ export const MERCHANTS: Record<string, MerchantConfig> = {
     password: envOr('MERCHANT_KORNERSTONE_PASSWORD', 'U0wn_kornerstone_4aZ9Xb'),
     number: 'GOW-0003_clone_fer_ks',
     refCode: 'kornerstone',
+  },
+  KornerstoneKS0001: {
+    fullName: 'Kornerstone (DEV1 — KS0001-777)',
+    username: 'kornerstone',
+    password: envOr('MERCHANT_KORNERSTONE_PASSWORD', 'U0wn_kornerstone_4aZ9Xb'),
+    number: 'KS0001-777',
+    refCode: 'kornerstone',
+  },
+  KornerstoneKS17371: {
+    fullName: 'Tire Agent (Sandbox — KS17371)',
+    username: 'kornerstone',
+    password: envOr('MERCHANT_KORNERSTONE_PASSWORD', 'U0wn_kornerstone_4aZ9Xb'),
+    number: 'KS17371',
+    refCode: 'kornerstone',
+  },
+  GriffinsFurniture: {
+    fullName: "Griffin's Furniture Outlet (KS5936)",
+    username: 'kornerstone',
+    password: envOr('MERCHANT_KORNERSTONE_PASSWORD', 'U0wn_kornerstone_4aZ9Xb'),
+    number: 'KS5936',
+    refCode: 'kornerstone',
+    programs: ['16 month'],
   },
   MSAPowersports: {
     fullName: 'MSA Powersports',

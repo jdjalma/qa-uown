@@ -20,6 +20,7 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
 const browserProfile = isCI() ? DESKTOP_CHROME_HEADLESS : DESKTOP_CHROME;
 
 export default defineConfig({
+  globalSetup: './src/support/global-setup.ts',
   testDir: './tests',
   fullyParallel: false,
   forbidOnly: testConfig.ci,
@@ -36,8 +37,13 @@ export default defineConfig({
 
   outputDir: 'reports/test-results',
 
+  // Global assertion timeout: applies to all expect(...).toBeVisible() etc.
+  // Higher than Playwright's default (5 s) to accommodate slow fintech pages.
+  expect: { timeout: 10_000 },
+
   use: {
-    baseURL: process.env.ORIGINATION_URL,
+    // baseURL is intentionally omitted at the global level — each project defines its own.
+    // Setting a global baseURL here would silently override projects that forget to set it.
     trace: testConfig.trace,
     screenshot: testConfig.screenshots,
     video: testConfig.video,

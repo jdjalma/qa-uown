@@ -61,7 +61,7 @@ export class DatabaseHelpers {
     table: string,
     whereClause: string,
     params: unknown[] = [],
-    timeoutMs = TIMEOUTS.DB_WAIT,
+    timeoutMs: number = TIMEOUTS.DB_WAIT,
   ): Promise<boolean> {
     const result = await this.pollUntil<boolean>(
       async () => {
@@ -78,7 +78,7 @@ export class DatabaseHelpers {
     table: string,
     whereClause: string,
     params: unknown[] = [],
-    timeoutMs = TIMEOUTS.DB_WAIT,
+    timeoutMs: number = TIMEOUTS.DB_WAIT,
   ): Promise<boolean> {
     const result = await this.pollUntil<boolean>(
       async () => {
@@ -95,7 +95,7 @@ export class DatabaseHelpers {
     sql: string,
     params: unknown[],
     expected: string,
-    timeoutMs = TIMEOUTS.DB_WAIT,
+    timeoutMs: number = TIMEOUTS.DB_WAIT,
   ): Promise<boolean> {
     const result = await this.pollUntil<boolean>(
       async () => {
@@ -131,7 +131,7 @@ export class DatabaseHelpers {
   }
 
   // Website verification code (email OTP)
-  async getWebsiteVerificationCode(email: string, timeoutMs = 60_000): Promise<string | null> {
+  async getWebsiteVerificationCode(email: string, timeoutMs: number = 60_000): Promise<string | null> {
     return this.pollUntil<string>(
       async () => {
         const code = await this.getSingleString(
@@ -225,7 +225,7 @@ export class DatabaseHelpers {
     return row?.exists === true;
   }
 
-  async waitForLeadShortCode(leadPk: string, timeoutMs = TIMEOUTS.DB_WAIT): Promise<string | null> {
+  async waitForLeadShortCode(leadPk: string, timeoutMs: number = TIMEOUTS.DB_WAIT): Promise<string | null> {
     return this.pollUntil<string>(
       async () => {
         return this.getLeadShortCodeValue(leadPk);
@@ -283,7 +283,7 @@ export class DatabaseHelpers {
     );
   }
 
-  async waitForLambdaSegment(leadPk: string, timeoutMs = TIMEOUTS.DB_WAIT): Promise<string | null> {
+  async waitForLambdaSegment(leadPk: string, timeoutMs: number = TIMEOUTS.DB_WAIT): Promise<string | null> {
     return this.pollUntil<string>(
       async () => {
         return this.getLambdaSegment(leadPk);
@@ -304,7 +304,7 @@ export class DatabaseHelpers {
   async waitForInvoiceStatus(
     leadPk: string,
     expectedStatus: string,
-    timeoutMs = TIMEOUTS.DB_WAIT,
+    timeoutMs: number = TIMEOUTS.DB_WAIT,
   ): Promise<boolean> {
     const result = await this.pollUntil<boolean>(
       async () => {
@@ -510,7 +510,7 @@ export class DatabaseHelpers {
   async waitForAccountStatus(
     accountPk: string,
     expectedStatus: string,
-    timeoutMs = TIMEOUTS.DB_WAIT,
+    timeoutMs: number = TIMEOUTS.DB_WAIT,
   ): Promise<boolean> {
     const result = await this.pollUntil<boolean>(
       async () => {
@@ -532,7 +532,7 @@ export class DatabaseHelpers {
   }
 
   /** Wait for account to be created from lead */
-  async waitForAccountByLeadPk(leadPk: string, timeoutMs = TIMEOUTS.DB_WAIT): Promise<string | null> {
+  async waitForAccountByLeadPk(leadPk: string, timeoutMs: number = TIMEOUTS.DB_WAIT): Promise<string | null> {
     return this.pollUntil<string>(
       async () => {
         return this.getAccountPkByLeadPk(leadPk);
@@ -562,10 +562,33 @@ export class DatabaseHelpers {
     );
   }
 
+  /**
+   * Wait for a specific CC transaction to leave PENDING/PICKED_TO_SEND status.
+   * Returns the final status (e.g. APPROVED, DENIED, ERROR) or 'TIMEOUT'.
+   */
+  async waitForCcTransactionProcessed(
+    txnPk: string | number,
+    timeoutMs: number = 30_000,
+  ): Promise<string> {
+    const result = await this.pollUntil<string>(
+      async () => {
+        const row = await this.queryOne<{ status: string }>(
+          `SELECT status FROM uown_sv_credit_card_transaction WHERE pk = $1`,
+          [txnPk],
+        );
+        if (!row || row.status === 'PENDING' || row.status === 'PICKED_TO_SEND') return null;
+        return row.status;
+      },
+      timeoutMs,
+      'waitForCcTransactionProcessed',
+    );
+    return result ?? 'TIMEOUT';
+  }
+
   /** Wait for all CC transactions of an arrangement to leave PENDING status */
   async waitForCcTransactionsProcessed(
     arrangementPk: string,
-    timeoutMs = 60_000,
+    timeoutMs: number = 60_000,
   ): Promise<boolean> {
     const result = await this.pollUntil<boolean>(
       async () => {
@@ -587,7 +610,7 @@ export class DatabaseHelpers {
   /** Wait for all ACH payments of an arrangement to leave PENDING status */
   async waitForAchPaymentsProcessed(
     arrangementPk: string,
-    timeoutMs = 60_000,
+    timeoutMs: number = 60_000,
   ): Promise<boolean> {
     const result = await this.pollUntil<boolean>(
       async () => {
@@ -604,6 +627,269 @@ export class DatabaseHelpers {
       'waitForAchPaymentsProcessed',
     );
     return result === true;
+  }
+
+  // ── Simulated CC sweep (bypasses nextreceivable JOIN) ─────────────────
+
+  /**
+   * Simulates CC sweep processing for a specific arrangement.
+   * The real sweep (`sendCreditCardPaymentsSweep`) requires a
+   * `JOIN nextreceivable` with UNPAID receivables — accounts without
+   * them are silently skipped. This helper bypasses that constraint.
+   *
+   * Updates PENDING CC transactions with `posting_date <= CURRENT_DATE`
+   * to APPROVED for the given arrangement.
+   *
+   * @returns Number of CC transactions processed (0 if none eligible).
+   */
+  async simulateCcSweepForArrangement(arrangementPk: string): Promise<number> {
+    return this.executeUpdate(
+      `UPDATE uown_sv_credit_card_transaction
+       SET status = 'APPROVED'
+       WHERE payment_arrangement_pk = $1
+         AND status = 'PENDING'
+         AND posting_date <= CURRENT_DATE`,
+      [arrangementPk],
+    );
+  }
+
+  /**
+   * Recalculates arrangement status based on its CC transaction states.
+   * Mirrors the Java state machine in `BootstrapService`:
+   *
+   *   hasFailure  → FAILED  (is_active=false)
+   *   hasPending  → IN_PROGRESS (is_active=true)
+   *   all done + SETTLEMENT → SUCCESS (is_active=false) + account SETTLED_IN_FULL
+   *   all done + NORMAL    → SUCCESS (is_active=false)
+   *
+   * @returns The new arrangement status.
+   */
+  async recalculateArrangementStatus(arrangementPk: string): Promise<string> {
+    const txns = await this.getCcTransactionsByArrangement(arrangementPk);
+
+    const hasFailed = txns.some(t =>
+      ['DENIED', 'ERROR', 'FAILED'].includes(String(t.status)),
+    );
+    const hasPending = txns.some(t =>
+      ['PENDING', 'PICKED_TO_SEND', 'FUTURE_PENDING'].includes(String(t.status)),
+    );
+
+    let newStatus: string;
+    let isActive: boolean;
+
+    if (hasFailed) {
+      newStatus = 'FAILED';
+      isActive = false;
+    } else if (hasPending) {
+      newStatus = 'IN_PROGRESS';
+      isActive = true;
+    } else {
+      newStatus = 'SUCCESS';
+      isActive = false;
+    }
+
+    await this.executeUpdate(
+      `UPDATE uown_sv_payment_arrangement
+       SET status = $1, is_active = $2
+       WHERE pk = $3`,
+      [newStatus, isActive, arrangementPk],
+    );
+
+    // SETTLEMENT + SUCCESS → account transitions to SETTLED_IN_FULL
+    if (newStatus === 'SUCCESS') {
+      const arrangement = await this.getPaymentArrangementByPk(arrangementPk);
+      if (arrangement && String(arrangement.arrangement_type) === 'SETTLEMENT') {
+        await this.executeUpdate(
+          `UPDATE uown_sv_account
+           SET account_status = 'SETTLED_IN_FULL'
+           WHERE pk = $1`,
+          [arrangement.account_pk],
+        );
+      }
+    }
+
+    return newStatus;
+  }
+
+  // ── Merchant dealer fields ────────────────────────────────────────────
+
+  async getMerchantDealerFields(merchantPk: number | string): Promise<{
+    dealer_discount_override: string | null;
+    dealer_rebate_override: string | null;
+    dealer_rebate_type: string | null;
+  } | null> {
+    return this.queryOne<{
+      dealer_discount_override: string | null;
+      dealer_rebate_override: string | null;
+      dealer_rebate_type: string | null;
+    }>(
+      `SELECT dealer_discount_override, dealer_rebate_override, dealer_rebate_type
+       FROM uown_merchant WHERE pk = $1`,
+      [merchantPk],
+    );
+  }
+
+  async getMerchantCampaignFields(merchantPk: number | string): Promise<{
+    peak_campaign_id: string | null;
+    off_peak_campaign_id: string | null;
+  } | null> {
+    return this.queryOne<{
+      peak_campaign_id: string | null;
+      off_peak_campaign_id: string | null;
+    }>(
+      `SELECT peak_campaign_id, off_peak_campaign_id
+       FROM uown_merchant WHERE pk = $1`,
+      [merchantPk],
+    );
+  }
+
+  // ── Merchant GDS config fields ────────────────────────────────────────
+
+  async getMerchantGdsFields(merchantPk: number | string): Promise<{
+    uw_pipeline: string | null;
+    fraud_threshold: string | null;
+    max_approval_amount: string | null;
+  } | null> {
+    return this.queryOne<{
+      uw_pipeline: string | null;
+      fraud_threshold: string | null;
+      max_approval_amount: string | null;
+    }>(
+      `SELECT uw_pipeline, fraud_threshold::text AS fraud_threshold, max_approval_amount::text AS max_approval_amount
+       FROM uown_merchant WHERE pk = $1`,
+      [merchantPk],
+    );
+  }
+
+  // ── GDS outbound log ──────────────────────────────────────────────────
+
+  async getGdsOutboundLogForLead(leadPk: string | number): Promise<{
+    pk: number;
+    lead_pk: number;
+    request: string | null;
+    url: string | null;
+    response: string | null;
+    row_created_timestamp: Date | null;
+  } | null> {
+    return this.queryOne<{
+      pk: number;
+      lead_pk: number;
+      request: string | null;
+      url: string | null;
+      response: string | null;
+      row_created_timestamp: Date | null;
+    }>(
+      `SELECT pk, lead_pk, request, url, response, row_created_timestamp
+       FROM uown_los_outbound_api_log
+       WHERE lead_pk = $1 AND url LIKE '%dataview360%'
+       ORDER BY pk DESC LIMIT 1`,
+      [leadPk],
+    );
+  }
+
+  async getMerchantPkByNumber(merchantNumber: string): Promise<string | null> {
+    return this.getSingleString(
+      'SELECT pk FROM uown_merchant WHERE ref_merchant_code = $1 LIMIT 1',
+      [merchantNumber],
+    );
+  }
+
+  async getMerchantActivityLog(merchantPk: string | number): Promise<Array<{
+    pk: number;
+    merchant_p_k: number;
+    merchant_ref_code: string;
+    log_type: string;
+    notes: string;
+    agent: string;
+  }>> {
+    return this.query(
+      `SELECT pk, merchant_p_k, merchant_ref_code, log_type, notes, agent
+       FROM "MerchantActivityLog"
+       WHERE merchant_p_k = $1
+       AND log_type = 'MERCHANT_DATA_CHANGE'
+       ORDER BY pk DESC LIMIT 5`,
+      [merchantPk],
+    );
+  }
+
+  async getLatestMerchantActivityLog(merchantPk: string | number): Promise<{
+    pk: number;
+    merchant_p_k: number;
+    merchant_ref_code: string;
+    log_type: string;
+    notes: string;
+    agent: string;
+  } | null> {
+    return this.queryOne(
+      `SELECT pk, merchant_p_k, merchant_ref_code, log_type, notes, agent
+       FROM "MerchantActivityLog"
+       WHERE merchant_p_k = $1
+       AND log_type = 'MERCHANT_DATA_CHANGE'
+       ORDER BY pk DESC LIMIT 1`,
+      [merchantPk],
+    );
+  }
+
+  // ── Index validation helpers ──────────────────────────────────────
+
+  async indexExistsOnTable(indexName: string, tableName: string): Promise<boolean> {
+    const row = await this.queryOne<{ exists: boolean }>(
+      `SELECT EXISTS (
+        SELECT 1 FROM pg_indexes
+        WHERE indexname = $1 AND tablename = $2
+      ) AS exists`,
+      [indexName, tableName],
+    );
+    return row?.exists === true;
+  }
+
+  /** Returns simple column names for an index. Does NOT work for expression indexes — use getSingleString on pg_indexes.indexdef instead. */
+  async getIndexColumns(indexName: string): Promise<string[]> {
+    const rows = await this.query<{ attname: string }>(
+      `SELECT a.attname
+       FROM pg_index i
+       JOIN pg_class c ON c.oid = i.indrelid
+       JOIN pg_class idx ON idx.oid = i.indexrelid
+       JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = ANY(i.indkey)
+       WHERE idx.relname = $1
+       ORDER BY array_position(i.indkey, a.attnum)`,
+      [indexName],
+    );
+    return rows.map(r => r.attname);
+  }
+
+  // ── Lead UUID helpers ──────────────────────────────────────────────
+
+  async getLeadPkByUuid(leadUuid: string): Promise<string | null> {
+    return this.getSingleString(
+      'SELECT pk FROM uown_los_lead WHERE lead_uuid = $1',
+      [leadUuid],
+    );
+  }
+
+  async getLeadInternalStatus(leadPk: string): Promise<string | null> {
+    return this.getSingleString(
+      'SELECT internal_status FROM uown_los_lead WHERE pk = $1',
+      [leadPk],
+    );
+  }
+
+  // ── Query plan helpers ─────────────────────────────────────────────
+
+  async getTableRowEstimate(tableName: string): Promise<number> {
+    const val = await this.getSingleString(
+      `SELECT reltuples::bigint FROM pg_class WHERE relname = $1`,
+      [tableName],
+    );
+    return val ? parseFloat(val) : 0;
+  }
+
+  async explainAnalyze(sql: string, params: unknown[] = []): Promise<string> {
+    const rows = await this.query<{ 'QUERY PLAN': string }>(
+      `EXPLAIN (ANALYZE, FORMAT TEXT) ${sql}`,
+      params,
+    );
+    return rows.map(r => r['QUERY PLAN']).join('\n');
   }
 
   async close(): Promise<void> {

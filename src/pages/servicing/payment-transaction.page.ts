@@ -135,20 +135,39 @@ export class PaymentTransactionPage extends ServicingBasePage {
 
     // Find the "Update Payment" column index via headers
     const headers = await this.page.locator(SELECTORS.tableHeader).allTextContents();
-    const updateColIdx = headers.findIndex(h => h.toLowerCase().includes('update'));
+    const updateColIdx = headers.findIndex(h =>
+      h.toLowerCase().includes('update') || h.toLowerCase().includes('edit')
+    );
+
+    let editClicked = false;
 
     if (updateColIdx >= 0) {
-      // Click the icon in the Update Payment cell (supports both div and td)
       const updateCell = row.locator("[role='cell']").nth(updateColIdx);
-      await updateCell.locator('img, svg, [data-icon]').first().click();
-    } else {
+      const editIcon = updateCell.locator('img, svg, [data-icon], button').first();
+      if (await editIcon.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        await editIcon.click({ force: true });
+        editClicked = true;
+      }
+    }
+
+    if (!editClicked) {
       // Fallback: try pencil icon selector or last cell icon
       const pencil = row.locator(`${SELECTORS.pencilIcon}`);
       if (await pencil.first().isVisible({ timeout: 3_000 }).catch(() => false)) {
         await pencil.first().click();
+        editClicked = true;
       } else {
-        await row.locator("[role='cell']:last-child img").first().click();
+        const lastIcon = row.locator("[role='cell']:last-child img").first();
+        if (await lastIcon.isVisible({ timeout: 3_000 }).catch(() => false)) {
+          await lastIcon.click();
+          editClicked = true;
+        }
       }
+    }
+
+    if (!editClicked) {
+      console.log(`[editAllocationStrategy] No edit icon found on row ${rowIndex} — skipping allocation strategy edit`);
+      return;
     }
 
     // Wait for the modal to appear

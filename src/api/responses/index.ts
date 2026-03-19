@@ -9,3 +9,4 @@ export * from './scheduled-task.response.js';
 export * from './merchant.response.js';
 export * from './account.response.js';
 export * from './payment-arrangement.response.js';
+export * from './svc-payoff.response.js';

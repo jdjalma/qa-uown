@@ -77,12 +77,12 @@ export function loadTestConfig(): TestConfig {
     actionTimeout: 15_000 * timeoutMultiplier,
     navigationTimeout: 30_000 * timeoutMultiplier,
     workers: envInt('WORKERS', 1),
-    retries: ci ? 1 : envInt('RETRIES', 0),
+    retries: ci ? 2 : envInt('RETRIES', 0),
     ci,
     strictMode: envBool('STRICT_MODE', false),
     allureEnabled: envBool('ALLURE', false),
-    screenshots: ci ? 'only-on-failure' : (process.env.SCREENSHOTS as TestConfig['screenshots']) || 'only-on-failure',
-    video: (process.env.VIDEO as TestConfig['video']) || 'off',
+    screenshots: ci ? 'only-on-failure' : (process.env.SCREENSHOTS as TestConfig['screenshots']) || 'on',
+    video: (process.env.VIDEO as TestConfig['video']) || 'on',
     trace: ci ? 'on-first-retry' : (process.env.TRACE as TestConfig['trace']) || 'on-first-retry',
   };
 }

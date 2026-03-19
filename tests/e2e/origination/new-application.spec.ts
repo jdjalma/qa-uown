@@ -19,7 +19,7 @@ import {
   OverviewPage, ServicingCustomerPage, PaymentTransactionPage, AchHistoryPage,
   WebsiteBasePage,
 } from '@pages/index.js';
-import { FundingQueueStatus, TestTag, buildTags } from '../../../src/types/enums.js';
+import { FundingQueueStatus, TestTag, buildTags } from '@ptypes/enums.js';
 import { TEST_CARDS, TEST_BANK } from '@config/index.js';
 import { SELECTORS } from '@selectors/common.selectors.js';
 import {
@@ -33,16 +33,17 @@ import { randomInt } from 'node:crypto';
 
 const testData = [
   {
-    env: 'stg',
+    env: 'qa1',
     state: 'NY',
     merchant: 'TireAgent',
     achPaymentDate: '5',
-    achPaymentAmount: '123.45',
+    achPaymentAmount: '10.45',
     ccPaymentDate: '7',
-    ccPaymentAmount: '678.90',
+    ccPaymentAmount: '10.90',
     orderTotal: '621',
-    tag: buildTags(TestTag.CRITICAL, TestTag.REGRESSION, TestTag.STG),
+    tag: buildTags(TestTag.CRITICAL, TestTag.REGRESSION, TestTag.QA1),
   },
+  // { env: 'stg', state: 'NY', merchant: 'TireAgent', achPaymentDate: '5', achPaymentAmount: '123.45', ccPaymentDate: '7', ccPaymentAmount: '678.90', orderTotal: '621', tag: buildTags(TestTag.CRITICAL, TestTag.REGRESSION, TestTag.STG) },
   // Uncomment to run on other environments:
   // { env: 'sandbox', state: 'CA', merchant: 'ProgressMobility', achPaymentDate: '5', achPaymentAmount: '123.45', ccPaymentDate: '7', ccPaymentAmount: '678.90', orderTotal: '621', tag: buildTags(TestTag.CRITICAL, TestTag.REGRESSION, TestTag.SANDBOX) },
   // { env: 'stg', state: 'CA', merchant: 'ProgressMobility', achPaymentDate: '5', achPaymentAmount: '10.00', ccPaymentDate: '7', ccPaymentAmount: '10.00', orderTotal: '621', tag: buildTags(TestTag.CRITICAL, TestTag.REGRESSION, TestTag.STG) },
@@ -92,33 +93,66 @@ for (const data of testData) {
         await page.locator(SELECTORS.naPhone).fill(applicant.phone);
         await page.waitForLoadState('networkidle').catch(() => {});
 
-        // Select merchant from dropdown
-        const dropdowns = page.locator('select.form-control, .form-control select');
-        const dropdownCount = await dropdowns.count();
-        for (let i = 0; i < dropdownCount; i++) {
-          const dropdown = dropdowns.nth(i);
+        // Select merchant from dropdown — handles both native <select> and custom React dropdowns
+        const merchantNorm = data.merchant.replace(/[\s'&]/g, '').toLowerCase();
+        let merchantSelected = false;
+
+        // Strategy A: native <select> (STG layout)
+        const nativeDropdowns = page.locator('select.form-control, .form-control select');
+        const nativeCount = await nativeDropdowns.count();
+        for (let i = 0; i < nativeCount && !merchantSelected; i++) {
+          const dropdown = nativeDropdowns.nth(i);
           const text = await dropdown.textContent().catch(() => '');
           if (text?.includes('Select a merchant') || text?.includes('Choose a merchant')) {
-            // Try to select by partial text match
             const options = dropdown.locator('option');
             const optCount = await options.count();
             for (let j = 1; j < optCount; j++) {
               const optText = (await options.nth(j).textContent())?.trim() ?? '';
-              const merchantNorm = data.merchant.replace(/[\s'&]/g, '').toLowerCase();
               const optNorm = optText.replace(/[\s'&]/g, '').toLowerCase();
               if (optNorm.includes(merchantNorm) || merchantNorm.includes(optNorm)) {
                 await dropdown.selectOption({ index: j });
-                console.log(`[NewApp] Selected merchant: "${optText}"`);
+                console.log(`[NewApp] Selected merchant (native): "${optText}"`);
                 await page.waitForLoadState('networkidle').catch(() => {});
+                merchantSelected = true;
                 break;
               }
             }
           }
         }
 
-        // Select a random location if location dropdown is present
-        for (let i = 0; i < dropdownCount; i++) {
-          const dropdown = dropdowns.nth(i);
+        // Strategy B: custom React dropdown (qa1 layout — .filter__control + .filter__option)
+        if (!merchantSelected) {
+          const controls = page.locator(SELECTORS.filterControl);
+          if (await controls.first().isVisible({ timeout: 3_000 }).catch(() => false)) {
+            await controls.first().click();
+            await page.waitForLoadState('networkidle').catch(() => {});
+            const options = page.locator(SELECTORS.filterOption);
+            const optCount = await options.count().catch(() => 0);
+            for (let j = 0; j < optCount && !merchantSelected; j++) {
+              const optText = (await options.nth(j).textContent())?.trim() ?? '';
+              const optNorm = optText.replace(/[\s'&]/g, '').toLowerCase();
+              if (optNorm.includes(merchantNorm) || merchantNorm.includes(optNorm)) {
+                await options.nth(j).click();
+                console.log(`[NewApp] Selected merchant (React): "${optText}"`);
+                merchantSelected = true;
+                await page.waitForLoadState('networkidle').catch(() => {});
+              }
+            }
+            if (!merchantSelected) {
+              await page.keyboard.press('Escape');
+            }
+          }
+        }
+
+        if (!merchantSelected) {
+          console.log(`[NewApp] WARNING: Could not find merchant "${data.merchant}" in any dropdown`);
+        }
+
+        // Select a random location — handles both native <select> and custom React dropdowns
+        // Strategy A: native <select>
+        let locationSelected = false;
+        for (let i = 0; i < nativeCount && !locationSelected; i++) {
+          const dropdown = nativeDropdowns.nth(i);
           const text = await dropdown.textContent().catch(() => '');
           if (text?.includes('choose a location') || text?.includes('Select a location')) {
             const options = dropdown.locator('option');
@@ -126,9 +160,30 @@ for (const data of testData) {
             if (optCount > 1) {
               const randomIndex = 1 + randomInt(optCount - 1);
               await dropdown.selectOption({ index: randomIndex });
-              console.log(`[NewApp] Selected location at index ${randomIndex}`);
+              console.log(`[NewApp] Selected location (native) at index ${randomIndex}`);
+              locationSelected = true;
             }
             break;
+          }
+        }
+
+        // Strategy B: custom React dropdown for location (second .filter__control)
+        if (!locationSelected) {
+          const controls = page.locator(SELECTORS.filterControl);
+          const locationCtrl = controls.nth(1);
+          if (await locationCtrl.isVisible({ timeout: 5_000 }).catch(() => false)) {
+            await locationCtrl.click();
+            await page.waitForLoadState('networkidle').catch(() => {});
+            const options = page.locator(SELECTORS.filterOption);
+            const optCount = await options.count().catch(() => 0);
+            if (optCount > 0) {
+              const randomIndex = randomInt(optCount);
+              const optText = (await options.nth(randomIndex).textContent())?.trim() ?? '';
+              await options.nth(randomIndex).click();
+              console.log(`[NewApp] Selected location (React): "${optText}"`);
+              locationSelected = true;
+              await page.waitForLoadState('networkidle').catch(() => {});
+            }
           }
         }
 

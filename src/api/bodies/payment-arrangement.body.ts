@@ -61,7 +61,7 @@ export interface CreditCardTransactionInfo {
 export interface AchPaymentInfo {
   accountPk: number;
   amount: string;
-  achPaymentDate: string;
+  postingDate: string;
   bankData: {
     routingNumber: string;
     accountNumber: string;
@@ -70,6 +70,11 @@ export interface AchPaymentInfo {
   username?: string;
   paymentArrangement?: boolean;
   comments?: string;
+  /** Required for the sendACHPaymentsSweep to pick up this payment regardless of due-date window.
+   * Payment arrangement ACH must use 'REQUEST' — without it, the sweep only picks up payments
+   * when a receivable is due within 1 day (auto-pay condition).
+   */
+  achProcessType?: string;
 }
 
 // ── Payment Arrangement DTO (request body) ────────────────────────
@@ -181,7 +186,7 @@ export function buildAchArrangementBody(options: BuildAchArrangementOptions): Pa
     achPayments: options.installments.map((inst) => ({
       accountPk: options.accountPk,
       amount: inst.amount,
-      achPaymentDate: inst.date,
+      postingDate: inst.date,
       bankData: {
         routingNumber: options.routingNumber ?? TEST_BANK.DEFAULT_ROUTING,
         accountNumber: options.accountNumber ?? TEST_BANK.DEFAULT_ACCOUNT,
@@ -190,6 +195,9 @@ export function buildAchArrangementBody(options: BuildAchArrangementOptions): Pa
       username: options.username ?? 'automation',
       paymentArrangement: true,
       comments: 'Automated test - ACH payment arrangement',
+      // REQUEST type ensures the sendACHPaymentsSweep SQL picks up this payment
+      // regardless of whether a receivable is due within 1 day (bypasses the auto-pay condition).
+      achProcessType: 'REQUEST',
     })),
   };
 }

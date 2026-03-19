@@ -15,7 +15,7 @@
  * Run: node node_modules/.bin/playwright test tests/api/lease-cancellation-api.spec.ts --project=api-only
  */
 import { test, expect } from '@fixtures/test-context.fixture.js';
-import { TestTag, buildTags, splitTags } from '../../src/types/enums.js';
+import { TestTag, buildTags, splitTags } from '@ptypes/enums.js';
 import type { ApiClients } from '@support/base-test.js';
 import type { MerchantInfo, ApplicantInfo } from '@api/bodies/index.js';
 import { buildTestData, sleep } from '@helpers/index.js';

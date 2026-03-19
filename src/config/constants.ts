@@ -3,6 +3,7 @@
  * All hard-coded values should live here.
  */
 import { randomInt } from 'node:crypto';
+import { RUN_ID } from '@helpers/worker-id.helper.js';
 
 // ── Timeouts (ms) ───────────────────────────────────────────────────
 
@@ -93,9 +94,10 @@ export function generateTestSSN(approved: boolean): string {
 
 /**
  * Generates a unique run ID to avoid timestamp collisions in parallel tests.
+ * Uses worker-scoped PID + worker index for parallel safety.
  */
 export function generateRunId(): string {
-  return `${Date.now()}-${randomInt(0, 2176782336).toString(36).padStart(6, '0')}`;
+  return `${RUN_ID}-${Date.now().toString().slice(-6)}-${randomInt(0, 46656).toString(36).padStart(3, '0')}`;
 }
 
 /**

@@ -16,7 +16,7 @@ import { test, expect } from '@fixtures/test-context.fixture.js';
 import { OriginationCustomerPage, FundingPage } from '@pages/origination/index.js';
 // Servicing page objects not used — servicing customer shows inline sections
 import { MerchantPage } from '@pages/merchant.page.js';
-import { TestTag, buildTags, splitTags } from '../../../src/types/enums.js';
+import { TestTag, buildTags, splitTags } from '@ptypes/enums.js';
 import {
   buildTestData,
   buildCcPaymentDetails,

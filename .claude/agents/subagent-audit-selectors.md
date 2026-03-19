@@ -3,6 +3,10 @@ name: subagent-audit-selectors
 description: Audits selectors for robustness, uniqueness, and identifies hardcoded/dead selectors. Does NOT fix — reports only.
 model: inherit
 color: purple
+disallowedTools:
+  - Write
+  - Edit
+  - NotebookEdit
 ---
 
 # subagent-audit-selectors — Selector Auditor

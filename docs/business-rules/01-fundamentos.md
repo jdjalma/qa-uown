@@ -353,3 +353,27 @@ Mostra: data de execucao, hostname do pod, quantidade de registros processados, 
 
 ---
 
+## Cobertura Geografica
+
+### Estados e Territorios Suportados
+
+A plataforma aceita aplicacoes de **57 localidades** — 50 estados americanos + 7 territorios:
+
+| Categoria | Localidades |
+|-----------|-------------|
+| **50 Estados** | AK, AL, AR, AZ, CA, CO, CT, DC, DE, FL, GA, HI, IA, ID, IL, IN, KS, KY, LA, MA, MD, ME, MI, MN, MO, MS, MT, NC, ND, NE, NH, NJ, NM, NV, NY, OH, OK, OR, PA, RI, SC, SD, TN, TX, UT, VA, VT, WA, WI, WV, WY |
+| **7 Territorios** | AS (Samoa Americana), GU (Guam), MP (Marianas do Norte), PR (Porto Rico), UM (Ilhas Menores dos EUA), VI (Ilhas Virgens) |
+
+### Estados Bloqueados (No Business)
+
+Configurados via `no.business.in.state` (defaults: NJ, VT, MN, ME). Ver secao de originacao para detalhes do Step 1 do pipeline.
+
+### Contatos por Marca
+
+| Marca | Email de Suporte | Horario de Atendimento |
+|-------|-----------------|------------------------|
+| **UOWN** | help@uownleasing.com | Seg-Sab 9h-22h ET; Dom 11h-21h ET |
+| **Kornerstone** | support@kornerstoneliving.com | Seg-Sab 8h-0h ET; Dom 11h-23h ET |
+
+---
+

@@ -1,79 +1,92 @@
 {
   "permissions": {
     "allow": [
-      "Read",
-      "Edit",
-      "Write",
-      "Glob",
-      "Grep",
-      "NotebookEdit",
-      "WebFetch",
-      "WebSearch",
-      "mcp__ide__*",
-      "mcp__playwright__*",
-
-      "Bash(npx tsc *)",
-      "Bash(npx playwright *)",
-      "Bash(npx eslint *)",
-      "Bash(node ./node_modules/typescript/lib/tsc.js *)",
-      "Bash(node ./node_modules/@playwright/test/cli.js *)",
-
-      "Bash(npm install *)",
-      "Bash(npm ci *)",
-      "Bash(npm run *)",
-      "Bash(npm ls *)",
-      "Bash(npm outdated *)",
-      "Bash(npm test *)",
-
-      "Bash(git status*)",
-      "Bash(git log*)",
-      "Bash(git diff*)",
-      "Bash(git branch*)",
-      "Bash(git stash*)",
-      "Bash(git checkout *)",
-      "Bash(git add *)",
-      "Bash(git show *)",
-
-      "Bash(ls *)",
-      "Bash(ls)",
-      "Bash(cat *)",
-      "Bash(head *)",
-      "Bash(tail *)",
-      "Bash(wc *)",
-      "Bash(pwd)",
-      "Bash(which *)",
-      "Bash(echo *)",
-      "Bash(mkdir *)",
-      "Bash(cp *)",
-      "Bash(mv *)",
-      "Bash(touch *)",
-      "Bash(find *)",
-      "Bash(sort *)",
-      "Bash(uniq *)",
-      "Bash(diff *)",
-      "Bash(tree *)",
-
-      "Bash(node -e *)",
-      "Bash(node --version*)",
-      "Bash(source .env*)",
-      "Bash(curl *)",
-      "Bash(jq *)",
-      "Bash(ENV=* node *)",
-      "Bash(ENV=* npx *)",
-      "Bash(PGPASSWORD=* psql *)"
+      "*"
     ],
     "deny": [
-      "Bash(git push *)",
-      "Bash(git push)",
       "Bash(git commit *)",
       "Bash(git commit)",
+      "Bash(git push *)",
+      "Bash(git push)",
       "Bash(git reset --hard*)",
       "Bash(git clean *)",
-      "Bash(rm -rf *)",
-      "Bash(rm -rf /)",
-      "Bash(sudo *)",
-      "Edit(.env)",
-      "Edit(.env.*)"
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~*)",
+      "Edit(**/.env)",
+      "Edit(**/*.pem)",
+      "Write(**/.env)",
+      "Write(**/*.pem)"
+    ]
+  },
+  "autoMemoryEnabled": true,
+  "enabledMcpjsonServers": [
+    "playwright",
+    "postman",
+    "figma"
+  ],
+  "enableAllProjectMcpServers": true,
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/jose/projects/automation/.claude/scripts/session-start.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/jose/projects/automation/.claude/scripts/pre-write-validate.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/jose/projects/automation/.claude/scripts/auto-review.sh"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/jose/projects/automation/.claude/scripts/subagent-log.sh"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/jose/projects/automation/.claude/scripts/subagent-log.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/jose/projects/automation/.claude/scripts/session-review.sh"
+          }
+        ]
+      }
     ]
   }
 }

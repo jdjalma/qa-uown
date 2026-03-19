@@ -4,7 +4,8 @@
  * Unified test fixture that combines:
  *  - Environment configuration (ConfigEnvironment)
  *  - API clients (ApplicationClient, InvoiceClient, etc.)
- *  - Database helpers (DatabaseHelpers)
+ *  - Database helpers (DatabaseHelpers) — worker-scoped (one pg pool per parallel worker)
+ *  - Email helpers (EmailHelpers) — worker-scoped (one IMAP connection per parallel worker)
  *  - E2E hooks (animations, screenshots, console logs)
  *  - Browser profiles (via context options)
  *  - Test context (shared state across steps)
@@ -19,7 +20,6 @@ import { test as base } from '@playwright/test';
 import { ConfigEnvironment } from '../config/environment.js';
 import { DatabaseHelpers } from '../helpers/database.helpers.js';
 import { EmailHelpers } from '../helpers/email.helpers.js';
-import { BaseApiClient } from '../config/base-api-client.js';
 import { ApplicationClient } from '../api/clients/application.client.js';
 import { InvoiceClient } from '../api/clients/invoice.client.js';
 import { LeadClient } from '../api/clients/lead.client.js';
@@ -29,6 +29,7 @@ import { ScheduledTaskClient } from '../api/clients/scheduled-task.client.js';
 import { MerchantClient } from '../api/clients/merchant.client.js';
 import { AccountClient } from '../api/clients/account.client.js';
 import { PaymentArrangementClient } from '../api/clients/payment-arrangement.client.js';
+import { SvcPayoffClient } from '../api/clients/svc-payoff.client.js';
 import {
   disableCssAnimations,
   captureConsoleLogs,
@@ -63,25 +64,60 @@ export interface ApiClients {
   merchant: MerchantClient;
   account: AccountClient;
   paymentArrangement: PaymentArrangementClient;
+  svcPayoff: SvcPayoffClient;
 }
 
 export interface TestFixtureOptions {
   envName: string;
 }
 
+/** Test-scoped fixtures (re-created per test). */
 export interface BaseTestFixtures {
   testEnv: ConfigEnvironment;
-  apiClient: BaseApiClient;
   api: ApiClients;
-  db: DatabaseHelpers;
-  email: EmailHelpers;
   ctx: TestContext;
   consoleLogs: () => string[];
 }
 
+/**
+ * Worker-scoped fixtures (shared across all tests in a parallel worker).
+ * `db` and `email` are expensive to create — a single connection per worker
+ * avoids per-test pg pool and IMAP session overhead.
+ *
+ * NOTE: These fixtures read ENV directly from process.env at worker startup.
+ * If you use `test.use({ envName })` to target a different environment in one
+ * describe block, `db` and `email` still connect to the global ENV. This is
+ * intentional — DB validation queries always run against the same env as API calls.
+ */
+export interface BaseWorkerFixtures {
+  db: DatabaseHelpers;
+  email: EmailHelpers;
+}
+
 // ── Test Extension ──────────────────────────────────────────────────
 
-export const test = base.extend<BaseTestFixtures & TestFixtureOptions>({
+export const test = base.extend<BaseTestFixtures & TestFixtureOptions, BaseWorkerFixtures>({
+  // --- Worker-scoped: Database ---
+  // One pg connection pool per parallel worker — not torn down between tests.
+  db: [async ({}, use) => {
+    const env = process.env.ENV || 'sandbox';
+    const cfg = new ConfigEnvironment(env);
+    const db = new DatabaseHelpers(cfg.dbConnectionString);
+    await use(db);
+    await db.close();
+  }, { scope: 'worker' }],
+
+  // --- Worker-scoped: Email (IMAP) ---
+  // One IMAP session per parallel worker — avoids repeated auth handshakes.
+  email: [async ({}, use) => {
+    const env = process.env.ENV || 'sandbox';
+    const cfg = new ConfigEnvironment(env);
+    await use(new EmailHelpers({
+      user: cfg.email,
+      password: cfg.emailPassword,
+    }));
+  }, { scope: 'worker' }],
+
   // --- Fixture option: per-describe environment override ---
   envName: ['', { option: true }],
 
@@ -89,11 +125,6 @@ export const test = base.extend<BaseTestFixtures & TestFixtureOptions>({
   testEnv: async ({ envName }, use) => {
     const env = envName || process.env.ENV || 'sandbox';
     await use(new ConfigEnvironment(env));
-  },
-
-  // --- Legacy API client (backwards compatible) ---
-  apiClient: async ({ testEnv, request }, use) => {
-    await use(new BaseApiClient(request, testEnv));
   },
 
   // --- Typed API clients ---
@@ -108,22 +139,8 @@ export const test = base.extend<BaseTestFixtures & TestFixtureOptions>({
       merchant: new MerchantClient(request, testEnv),
       account: new AccountClient(request, testEnv),
       paymentArrangement: new PaymentArrangementClient(request, testEnv),
+      svcPayoff: new SvcPayoffClient(request, testEnv),
     });
-  },
-
-  // --- Database ---
-  db: async ({ testEnv }, use) => {
-    const db = new DatabaseHelpers(testEnv.dbConnectionString);
-    await use(db);
-    await db.close();
-  },
-
-  // --- Email (IMAP) ---
-  email: async ({ testEnv }, use) => {
-    await use(new EmailHelpers({
-      user: testEnv.email,
-      password: testEnv.emailPassword,
-    }));
   },
 
   // --- Test context (shared state) ---
@@ -143,7 +160,7 @@ export const test = base.extend<BaseTestFixtures & TestFixtureOptions>({
   },
 
   // --- Console log capture ---
-  consoleLogs: async ({ page }, use, testInfo) => {
+  consoleLogs: async ({ page }, use) => {
     // Only capture for E2E tests that have a page
     let getLogs: () => string[] = () => [];
     if (page) {
@@ -153,7 +170,7 @@ export const test = base.extend<BaseTestFixtures & TestFixtureOptions>({
   },
 
   // --- Auto-hooks via page fixture override ---
-  page: async ({ page }, use, testInfo) => {
+  page: async ({ page, testEnv }, use, testInfo) => {
     // BEFORE: disable animations and set up page
     await disableCssAnimations(page);
 
@@ -163,7 +180,7 @@ export const test = base.extend<BaseTestFixtures & TestFixtureOptions>({
     // AFTER: attach artifacts on failure
     await attachScreenshotOnFailure(page, testInfo);
     await attachTestMetadata(testInfo, {
-      env: process.env.ENV || 'sandbox',
+      env: testEnv.env,
       url: page.url(),
     });
   },

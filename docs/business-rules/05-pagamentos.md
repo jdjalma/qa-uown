@@ -94,6 +94,50 @@ O consentimento de CC Peek tem comportamento diferente dependendo do portal:
 
 ---
 
+## 13a. Pagamentos por Cheque (Check Payment)
+
+### O Que e
+
+Cheques fisicos recebidos de clientes, processados manualmente por agentes via portal Servicing.
+
+### Campos Obrigatorios
+
+| Campo | Regra |
+|-------|-------|
+| `paymentDate` | Data do cheque (obrigatorio) |
+| `paymentAmount` | Valor > $0 (obrigatorio) |
+| `status` | Inicial: POSTED; evolui para CLEARED ou RETURNED |
+| `allocationStrategy` | DEFAULT, REGULAR_RECEIVABLES ou EPO_ONLY (obrigatorio) |
+
+### Status do Cheque
+
+| Status | Descricao |
+|--------|-----------|
+| `POSTED` | Cheque recebido e lancado no sistema |
+| `CLEARED` | Compensacao bancaria confirmada |
+| `RETURNED` | Cheque devolvido (sem fundos ou invalido) |
+
+### Estrategia de Alocacao
+
+Mesmas regras dos pagamentos CC/ACH:
+- **DEFAULT** — aloca em recebiveis vencidos + proximo vencimento
+- **REGULAR_RECEIVABLES** — aloca apenas em parcelas regulares (sem EPO)
+- **EPO_ONLY** — aloca somente no saldo de EPO
+
+### Restricao de Estorno/Reembolso
+
+| Tipo de Pagamento | Reverse | Refund |
+|-------------------|---------|--------|
+| `Check` | **Permitido** (com permissao `reverse_payment`) | **NÃO disponivel** |
+| `ACH_Payment` | Permitido | Permitido (parcial ou total) |
+| `CC_Payment` | Permitido | Permitido (parcial ou total) |
+
+**Regra:** Pagamentos por cheque (`Check`) so podem ser REVERTIDOS — a opcao de reembolso e ocultada no portal Servicing para esse tipo.
+
+**Reembolso parcial:** A opcao de reembolsar taxa (`refundFee`) so esta disponivel em reembolso total — em reembolso parcial, `refundFee` e forcado para `false`.
+
+---
+
 ## 13. Pagamentos ACH (Debito Bancario)
 
 ### O Que e
@@ -331,21 +375,33 @@ A avaliacao do status do arranjo segue a seguinte matriz de decisao, executada a
 | Sem falha + sem pendentes + SETTLEMENT | `SUCCESS` | `false` | Mantido | `SETTLED_IN_FULL` |
 | Sem falha + sem pendentes + NORMAL | `SUCCESS` | `false` | Mantido | Sem mudanca |
 
+### Processamento Sincrono (CC) vs Assincrono (ACH)
+
+| Metodo | Processamento | Status inicial | Status final (sucesso) | Requer sweep? |
+|--------|--------------|----------------|------------------------|--------------|
+| **CC** | **Sincrono** — transacoes processadas dentro da mesma requisicao HTTP | `NOT_STARTED` (momentaneo) | `SUCCESS` | Nao (sweep e informacional) |
+| **ACH** | **Assincrono** — pagamentos criados como PENDING; processados pela Profituity via sweeps | `NOT_STARTED` | `SUCCESS` | **Sim** (sendACHPaymentsSweep + getStatusDatePaymentsListSweep) |
+
+**Implicacao para testes:**
+- Arranjos CC: apos `makeCreditCardPayments`, o status ja e `SUCCESS` — nao aguardar sweep.
+- Arranjos ACH: apos `createOrUpdateAchPayments`, o status e `NOT_STARTED` — aguardar sweep e polling para atingir `SUCCESS`.
+
 ### Como Funciona
 
 #### Transacoes CC
 
 1. **Primeira transacao:** Cartao e autorizado e tokenizado (`authorizeAndTokenizeCard`)
 2. **Transacoes subsequentes:** Usam o mesmo token da primeira transacao
-3. Cada transacao e processada independentemente apos tokenizacao
+3. Cada transacao e processada **sincronamente** na mesma requisicao HTTP — o arranjo ja chega a `SUCCESS` antes do retorno do endpoint
 4. Username do agente registrado em cada transacao para auditoria
 5. Cada transacao CC recebe o `payment_arrangement_pk` do arranjo pai
 
 #### Pagamentos ACH
 
 1. Cada pagamento ACH recebe o username do agente atual
-2. Pagamentos sao criados ou atualizados individualmente via `createOrUpdateAchPayment`
+2. Pagamentos sao criados ou atualizados individualmente via `createOrUpdateAchPayment` com status `PENDING`
 3. Cada pagamento ACH recebe o `payment_arrangement_pk` do arranjo pai
+4. O campo `ach_process_type = 'REQUEST'` deve ser enviado para que o `sendACHPaymentsSweep` processe o pagamento independentemente de vencimento de recebivel (sem esse campo, o sweep so pega pagamentos com recebivel vencendo em D+1)
 
 ### Sweeps de Pagamento e Arranjos (Task #446)
 
@@ -364,9 +420,11 @@ Seleciona transacoes CC pendentes para envio ao gateway:
 
 Seleciona pagamentos ACH pendentes para envio ao Profituity:
 - `status = 'PENDING'`
-- `posting_date <= CURRENT_DATE + 1` (ACH tem D+1 de antecedencia)
+- `posting_date <= CURRENT_DATE + 1` (ACH tem D+1 de antecedencia) **OU** `ach_process_type = 'REQUEST'` (pagamentos de arranjo — ignoram a janela de vencimento)
 - Rating **diferente** de `B` e `C`
 - Resultado: pagamento marcado como `PICKED_TO_SEND`
+
+**Nota:** Pagamentos de arranjo ACH criados via API devem incluir `ach_process_type = 'REQUEST'`. Sem esse campo, o sweep so os processa se um recebivel esta vencendo em D+1 — em contas sem recebivel proximo, o pagamento ficaria preso em PENDING.
 
 ### Impacto no Rating
 
@@ -375,6 +433,8 @@ Se a flag `paymentArrangement = true`:
 - **previous_rating** salvo no arranjo para auditoria
 - **Auto-pay existente** e preservado e mantido
 - Se o arranjo falhar: `current_rating` volta para `null` (rating resetado)
+
+**BUG CONHECIDO (Task #446):** `AccountFinancialInfoService.updateRatingLetterAndAutoPay` registra no activity log "Rating letter changed from null to P", porem NAO persiste a entidade no branch nao-nulo. A coluna `rating` em `uown_sv_account` permanece `null` mesmo apos a criacao do arranjo. O activity log confirma que o codigo executou — o problema e a ausencia do `save()` na entidade.
 
 ### Como Disparar
 

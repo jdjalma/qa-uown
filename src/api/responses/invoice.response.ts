@@ -26,6 +26,7 @@ export interface SendInvoiceResponseBody extends BaseResponseBody {
   invoicePk?: number;
   accountNumber?: string;
   transactionStatus?: string;
+  transactionMessage?: string;
   paymentDetailsList?: PaymentDetails[];
   invoiceItems?: InvoiceLineItemResponse[];
 }

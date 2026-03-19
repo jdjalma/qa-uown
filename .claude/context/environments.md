@@ -18,6 +18,7 @@
 - Overrides: `.env.sandbox`, `.env.qa1`, etc.
 - Credentials: `{ROLE}_USERNAME`, `{ROLE}_PASSWORD` (admin, manager, readonly, merchant, supervisor, agent)
 - DB: `UOWN_DB_URL_{SUFFIX}`, `UOWN_DB_USER_{SUFFIX}`, `UOWN_DB_PASS_{SUFFIX}`
+- TMS API: `FIVE9_TMS_API_KEY` — separate API key for TMS/IVR endpoints (`/uown/tms/`) (Task #448)
 - CI: `CI=true` → headless, 1 retry, screenshots only-on-failure
 
 ## Scripts
