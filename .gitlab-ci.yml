@@ -139,7 +139,6 @@ test:ci:
 
       echo "--- Environment variables ---"
       echo "ENV=$ENV"
-      echo "SVC_API_URL:     ${!SVC_URL_VAR:-not set}" # from YAML
       SVC_URL_VAR="${ENV_UPPER}_SVC_API_URL"
       ORIG_URL_VAR="${ENV_UPPER}_ORIGINATION_URL"
       SVC_WEB_VAR="${ENV_UPPER}_SERVICING_URL"
