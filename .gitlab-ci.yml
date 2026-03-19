@@ -22,7 +22,7 @@ stages:
 variables:
   # Node & Playwright
   NODE_VERSION: "20"
-  PLAYWRIGHT_VERSION: "1.50.0"
+  PLAYWRIGHT_VERSION: "1.58.2"
   npm_config_cache: "$CI_PROJECT_DIR/.npm"
   PLAYWRIGHT_BROWSERS_PATH: "/ms-playwright"
 
