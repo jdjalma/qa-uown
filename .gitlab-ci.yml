@@ -130,20 +130,54 @@ test:ci:
   before_script:
     - echo "Running CI tests from tests/ci/ folder (MANUAL) — ENV=$ENV"
     - |
-      echo "=== DEBUG: SVC API URL ==="
+      echo "=== DEBUG: CI Environment ($ENV) ==="
       ENV_UPPER=$(echo "$ENV" | tr '[:lower:]' '[:upper:]')
+
+      echo "--- Pod egress IP ---"
+      curl -s --max-time 5 https://ifconfig.me 2>/dev/null || echo "could not determine"
+      echo ""
+
+      echo "--- Environment variables ---"
+      echo "ENV=$ENV"
+      echo "SVC_API_URL:     ${!SVC_URL_VAR:-not set}" # from YAML
       SVC_URL_VAR="${ENV_UPPER}_SVC_API_URL"
-      echo "SVC_API_URL for $ENV: ${!SVC_URL_VAR:-not set}"
-      echo "--- Testing internal SVC API connectivity ---"
+      ORIG_URL_VAR="${ENV_UPPER}_ORIGINATION_URL"
+      SVC_WEB_VAR="${ENV_UPPER}_SERVICING_URL"
+      WEB_URL_VAR="${ENV_UPPER}_WEBSITE_URL"
+      echo "${ENV_UPPER}_SVC_API_URL:     ${!SVC_URL_VAR:-NOT SET}"
+      echo "${ENV_UPPER}_ORIGINATION_URL: ${!ORIG_URL_VAR:-NOT SET}"
+      echo "${ENV_UPPER}_SERVICING_URL:   ${!SVC_WEB_VAR:-NOT SET}"
+      echo "${ENV_UPPER}_WEBSITE_URL:     ${!WEB_URL_VAR:-NOT SET}"
+      echo "UOWN_API_KEY length: ${#UOWN_API_KEY}"
+      echo "DEFAULT_MANAGER_USERNAME: ${DEFAULT_MANAGER_USERNAME:+set (${#DEFAULT_MANAGER_USERNAME} chars)}"
+      echo "EMAIL: ${EMAIL:+set}"
+
+      echo "--- Internal SVC API connectivity ---"
       curl -s -o /dev/null -w "HTTP %{http_code}" -X POST "${!SVC_URL_VAR}/uown/los/sendApplication" -H "x-api-key: $UOWN_API_KEY" -H "Content-Type: application/json" -d '{}' 2>&1 || echo "CURL FAILED"
       echo ""
-      echo "--- Testing portal connectivity ($ENV) ---"
-      curl -s -o /dev/null -w "Origination: HTTP %{http_code}" "https://origination-${ENV}.uownleasing.com" 2>&1 || echo "FAILED"
+
+      echo "--- Public portal connectivity ---"
+      curl -s -o /dev/null -w "Origination (public): HTTP %{http_code}" "https://origination-${ENV}.uownleasing.com" 2>&1 || echo "FAILED"
       echo ""
-      curl -s -o /dev/null -w "Servicing:   HTTP %{http_code}" "https://svc-website-${ENV}.uownleasing.com" 2>&1 || echo "FAILED"
+      curl -s -o /dev/null -w "Servicing (public):   HTTP %{http_code}" "https://svc-website-${ENV}.uownleasing.com" 2>&1 || echo "FAILED"
       echo ""
-      curl -s -o /dev/null -w "Website:     HTTP %{http_code}" "https://website-${ENV}.uownleasing.com" 2>&1 || echo "FAILED"
+      curl -s -o /dev/null -w "Website (public):     HTTP %{http_code}" "https://website-${ENV}.uownleasing.com" 2>&1 || echo "FAILED"
       echo ""
+
+      echo "--- Internal portal connectivity ---"
+      if [ -n "${!ORIG_URL_VAR}" ]; then
+        curl -s -o /dev/null -w "Origination (internal): HTTP %{http_code}" "${!ORIG_URL_VAR}" 2>&1 || echo "FAILED"
+        echo ""
+      fi
+      if [ -n "${!SVC_WEB_VAR}" ]; then
+        curl -s -o /dev/null -w "Servicing (internal):   HTTP %{http_code}" "${!SVC_WEB_VAR}" 2>&1 || echo "FAILED"
+        echo ""
+      fi
+      if [ -n "${!WEB_URL_VAR}" ]; then
+        curl -s -o /dev/null -w "Website (internal):     HTTP %{http_code}" "${!WEB_URL_VAR}" 2>&1 || echo "FAILED"
+        echo ""
+      fi
+
       echo "=== END DEBUG ==="
   script:
     - npx playwright test --project=ci-tests --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
