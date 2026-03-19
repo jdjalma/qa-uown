@@ -1,15 +1,3 @@
-spec:
-  inputs:
-    env:
-      description: "Ambiente para rodar os testes de regressão"
-      default: "sandbox"
-      options:
-        - sandbox
-        - qa1
-        - qa2
-
----
-
 # ══════════════════════════════════════════════════════════════
 #  WORKFLOW RULES - Fail Fast & Smart Execution
 # ══════════════════════════════════════════════════════════════
@@ -36,7 +24,7 @@ variables:
   NODE_VERSION: "20"
   PLAYWRIGHT_VERSION: "1.50.0"
   npm_config_cache: "$CI_PROJECT_DIR/.npm"
-  PLAYWRIGHT_BROWSERS_PATH: "$CI_PROJECT_DIR/.playwright"
+  PLAYWRIGHT_BROWSERS_PATH: "/ms-playwright"
 
   # Performance & Retry Strategy
   PLAYWRIGHT_RETRIES: "2"
@@ -90,9 +78,6 @@ install:
       echo "→ Installing npm dependencies..."
       npm ci --prefer-offline --no-audit --loglevel=error
     - |
-      echo "→ Installing Playwright browsers..."
-      npx playwright install chromium --with-deps
-    - |
       echo "→ Verifying installation..."
       npx playwright --version
       ls -lh node_modules/.bin/playwright || true
@@ -101,14 +86,11 @@ install:
     - echo "  INSTALLATION SUMMARY"
     - echo "════════════════════════════════════════════════════════"
     - du -sh node_modules 2>/dev/null || echo "node_modules not found"
-    - du -sh .playwright 2>/dev/null || echo ".playwright not found"
     - du -sh .npm 2>/dev/null || echo ".npm cache not found"
-    - echo "Total artifacts size:"
-    - du -sh node_modules .playwright .npm 2>/dev/null | awk '{sum+=$1} END {print sum " total"}'
+    - echo "Browsers path (pre-installed in image):" && ls /ms-playwright 2>/dev/null || true
   artifacts:
     paths:
       - node_modules/
-      - .playwright/
     expire_in: 1 day
     when: on_success
   cache:
@@ -118,7 +100,6 @@ install:
       prefix: ${CI_COMMIT_REF_SLUG}
     paths:
       - .npm/
-      - .playwright/
     policy: pull-push
   retry:
     max: 2
@@ -140,7 +121,7 @@ test:ci:
   needs: ["install"]
   when: manual
   variables:
-    ENV: $[[ inputs.env ]]
+    ENV: "sandbox"
   before_script:
     - echo "Running CI tests from tests/ci/ folder (MANUAL) — ENV=$ENV"
   script:
