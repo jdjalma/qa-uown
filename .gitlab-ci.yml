@@ -129,8 +129,15 @@ test:ci:
       ENV_UPPER=$(echo "$ENV" | tr '[:lower:]' '[:upper:]')
       SVC_URL_VAR="${ENV_UPPER}_SVC_API_URL"
       echo "SVC_API_URL for $ENV: ${!SVC_URL_VAR:-not set}"
-      echo "--- Testing internal SVC connectivity ---"
+      echo "--- Testing internal SVC API connectivity ---"
       curl -s -o /dev/null -w "HTTP %{http_code}" -X POST "${!SVC_URL_VAR}/uown/los/sendApplication" -H "x-api-key: $UOWN_API_KEY" -H "Content-Type: application/json" -d '{}' 2>&1 || echo "CURL FAILED"
+      echo ""
+      echo "--- Testing portal connectivity ---"
+      curl -s -o /dev/null -w "Origination: HTTP %{http_code}" https://origination-sandbox.uownleasing.com 2>&1 || echo "FAILED"
+      echo ""
+      curl -s -o /dev/null -w "Servicing:   HTTP %{http_code}" https://svc-website-sandbox.uownleasing.com 2>&1 || echo "FAILED"
+      echo ""
+      curl -s -o /dev/null -w "Website:     HTTP %{http_code}" https://website-sandbox.uownleasing.com 2>&1 || echo "FAILED"
       echo ""
       echo "=== END DEBUG ==="
   script:
