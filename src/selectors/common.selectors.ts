@@ -56,7 +56,7 @@ export const SELECTORS: AppSelectors = {
   tableRowById: (index: number) => `#row-${index}`,
 
   // ── Login ──────────────────────────────────────────────────────────
-  loginEmail: "input[type='email'], input[id*='email'], input[name*='email']",
+  loginEmail: "input[type='email'], input[id*='email'], input[name*='email'], input[placeholder*='email' i]",
   loginPassword: "input[type='password'], input[id*='password'], input[name*='password']",
   loginButton: "button:has-text('Login'), button:has-text('Log in'), button:has-text('Sign in'), button:has-text('LOG IN')",
 
