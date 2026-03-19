@@ -21,10 +21,12 @@ import { extractAccountPkFromUrl, buildCcPaymentDetails, buildTestData,
   loginToPortalWithOptions, loginToPortalIfNeeded,
   navigateToServicingCustomer, sleep } from '@helpers/index.js';
 
-// Parameterized test data (replaces Cucumber Examples table)
+// Dynamic environment from ENV variable (CI overrides via GitLab Variables)
+const currentEnv = process.env.ENV || 'sandbox';
+const envTag = `@${currentEnv}` as TestTag;
+
 const testData = [
-  { env: 'qa1', state: 'NY', merchant: 'TireAgent', achPaymentDate: '5', achPaymentAmount: '10.45', ccPaymentDate: '7', ccPaymentAmount: '10.90', orderTotal: '621', tag: buildTags(TestTag.CRITICAL, TestTag.REGRESSION, TestTag.CICD, TestTag.QA1) },
-  // { env: 'stg', state: 'NY', merchant: 'TireAgent', achPaymentDate: '5', achPaymentAmount: '10.00', ccPaymentDate: '7', ccPaymentAmount: '10.00', orderTotal: '6000', tag: buildTags(TestTag.CRITICAL, TestTag.REGRESSION, TestTag.CICD, TestTag.STG) },
+  { env: currentEnv, state: 'NY', merchant: 'TireAgent', achPaymentDate: '5', achPaymentAmount: '10.45', ccPaymentDate: '7', ccPaymentAmount: '10.90', orderTotal: '621', tag: buildTags(TestTag.CRITICAL, TestTag.REGRESSION, TestTag.CICD, envTag) },
 ];
 
 for (const data of testData) {
