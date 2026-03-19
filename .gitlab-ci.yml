@@ -38,15 +38,16 @@ variables:
   # ═══════════════════════════════════════════════════════════════
   # Internal cluster URLs (dev-k8s-runner — no whitelist needed)
   # ═══════════════════════════════════════════════════════════════
-  SANDBOX_ORIGINATION_URL: "http://uown-sandbox-uown-origination.uown-sandbox.svc.cluster.local"
-  SANDBOX_SERVICING_URL: "http://uown-sandbox-svc-website.uown-sandbox.svc.cluster.local"
-  SANDBOX_WEBSITE_URL: "http://uown-sandbox-uown-website.uown-sandbox.svc.cluster.local"
-  QA1_ORIGINATION_URL: "http://uown-qa1-uown-origination.uown-qa1.svc.cluster.local"
-  QA1_SERVICING_URL: "http://uown-qa1-svc-website.uown-qa1.svc.cluster.local"
-  QA1_WEBSITE_URL: "http://uown-qa1-uown-website.uown-qa1.svc.cluster.local"
-  QA2_ORIGINATION_URL: "http://uown-qa2-uown-origination.uown-qa2.svc.cluster.local"
-  QA2_SERVICING_URL: "http://uown-qa2-svc-website.uown-qa2.svc.cluster.local"
-  QA2_WEBSITE_URL: "http://uown-qa2-uown-website.uown-qa2.svc.cluster.local"
+  # Internal cluster URLs removed for all envs — falling back to public URLs (internal had RBAC 403)
+  # SANDBOX_ORIGINATION_URL: "http://uown-sandbox-uown-origination.uown-sandbox.svc.cluster.local"
+  # SANDBOX_SERVICING_URL: "http://uown-sandbox-svc-website.uown-sandbox.svc.cluster.local"
+  # SANDBOX_WEBSITE_URL: "http://uown-sandbox-uown-website.uown-sandbox.svc.cluster.local"
+  # QA1_ORIGINATION_URL: "http://uown-qa1-uown-origination.uown-qa1.svc.cluster.local"
+  # QA1_SERVICING_URL: "http://uown-qa1-svc-website.uown-qa1.svc.cluster.local"
+  # QA1_WEBSITE_URL: "http://uown-qa1-uown-website.uown-qa1.svc.cluster.local"
+  # QA2_ORIGINATION_URL: "http://uown-qa2-uown-origination.uown-qa2.svc.cluster.local"
+  # QA2_SERVICING_URL: "http://uown-qa2-svc-website.uown-qa2.svc.cluster.local"
+  # QA2_WEBSITE_URL: "http://uown-qa2-uown-website.uown-qa2.svc.cluster.local"
 
   # ═══════════════════════════════════════════════════════════════
   # REQUIRED: Configure these in GitLab CI/CD Settings → Variables
