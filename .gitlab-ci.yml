@@ -125,6 +125,21 @@ test:ci:
     ENV: "sandbox"
   before_script:
     - echo "Running CI tests from tests/ci/ folder (MANUAL) — ENV=$ENV"
+    - |
+      echo "=== DEBUG: Network & API key diagnostics ==="
+      echo "UOWN_API_KEY length: ${#UOWN_API_KEY}"
+      echo "UOWN_API_KEY first 4 chars: ${UOWN_API_KEY:0:4}..."
+      echo "UOWN_API_AUTHORIZATION length: ${#UOWN_API_AUTHORIZATION}"
+      echo "UOWN_API_AUTHORIZATION first 8 chars: ${UOWN_API_AUTHORIZATION:0:8}..."
+      echo "--- Testing DNS resolution ---"
+      nslookup svc-sandbox.uownleasing.com || echo "DNS FAILED"
+      echo "--- Testing HTTP connectivity (no API key) ---"
+      curl -s -o /dev/null -w "HTTP %{http_code} from %{remote_ip}" https://svc-sandbox.uownleasing.com/uown/los/sendApplication 2>&1 || echo "CURL FAILED"
+      echo ""
+      echo "--- Testing HTTP connectivity (with API key) ---"
+      curl -s -o /dev/null -w "HTTP %{http_code}" -X POST https://svc-sandbox.uownleasing.com/uown/los/sendApplication -H "x-api-key: $UOWN_API_KEY" -H "Authorization: $UOWN_API_AUTHORIZATION" -H "Content-Type: application/json" -d '{}' 2>&1 || echo "CURL FAILED"
+      echo ""
+      echo "=== END DEBUG ==="
   script:
     - npx playwright test --project=ci-tests --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
   after_script:
