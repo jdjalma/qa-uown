@@ -39,9 +39,9 @@ variables:
   # Internal cluster URLs (dev-k8s-runner — no whitelist needed)
   # ═══════════════════════════════════════════════════════════════
   # SVC API internal URLs (dev-k8s-runner — bypasses WAF/IP whitelist)
-  SANDBOX_SVC_API_URL: "http://uown-sandbox-uown-svc.uown-sandbox.svc.cluster.local"
-  QA1_SVC_API_URL: "http://uown-qa1-uown-svc.uown-qa1.svc.cluster.local"
-  QA2_SVC_API_URL: "http://uown-qa2-uown-svc.uown-qa2.svc.cluster.local"
+  SANDBOX_SVC_API_URL: "http://uown-sandbox-svc.uown-sandbox.svc.cluster.local"
+  QA1_SVC_API_URL: "http://uown-qa1-svc.uown-qa1.svc.cluster.local"
+  QA2_SVC_API_URL: "http://uown-qa2-svc.uown-qa2.svc.cluster.local"
   # Portal internal URLs (commented — re-enable when portal tests run in CI)
   # SANDBOX_ORIGINATION_URL: "http://uown-sandbox-uown-origination.uown-sandbox.svc.cluster.local"
   # SANDBOX_SERVICING_URL: "http://uown-sandbox-svc-website.uown-sandbox.svc.cluster.local"
