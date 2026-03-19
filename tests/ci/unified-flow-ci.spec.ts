@@ -21,10 +21,19 @@ import { extractAccountPkFromUrl, buildCcPaymentDetails, buildTestData,
   loginToPortalWithOptions, loginToPortalIfNeeded,
   navigateToServicingCustomer, sleep } from '@helpers/index.js';
 
-// Parameterized test data (replaces Cucumber Examples table)
+// Env is driven by process.env.ENV (set via CI input or local .env).
+// Defaults to 'sandbox' for local runs without ENV set.
+const ciEnv = process.env.ENV || 'sandbox';
+const envTagMap: Record<string, TestTag> = {
+  sandbox: TestTag.SANDBOX,
+  qa1: TestTag.QA1,
+  qa2: TestTag.QA2,
+  stg: TestTag.STG,
+};
+
 const testData = [
   {
-    env: 'sandbox',
+    env: ciEnv,
     state: 'NY',
     merchant: 'TireAgent',
     achPaymentDate: '5',
@@ -32,11 +41,8 @@ const testData = [
     ccPaymentDate: '7',
     ccPaymentAmount: '10.90',
     orderTotal: '621',
-    tag: buildTags(TestTag.CRITICAL, TestTag.REGRESSION, TestTag.CICD, TestTag.SANDBOX),
+    tag: buildTags(TestTag.CRITICAL, TestTag.REGRESSION, TestTag.CICD, envTagMap[ciEnv] ?? TestTag.SANDBOX),
   },
-  // Uncomment to run on other environments:
-  // { env: 'qa1', state: 'NY', merchant: 'TireAgent', achPaymentDate: '5', achPaymentAmount: '123.45', ccPaymentDate: '7', ccPaymentAmount: '678.90', orderTotal: '6000', tag: buildTags(TestTag.CRITICAL, TestTag.REGRESSION, TestTag.CICD, TestTag.QA1) },
-  // { env: 'stg', state: 'NY', merchant: 'TireAgent', achPaymentDate: '5', achPaymentAmount: '10.00', ccPaymentDate: '7', ccPaymentAmount: '10.00', orderTotal: '6000', tag: buildTags(TestTag.CRITICAL, TestTag.REGRESSION, TestTag.CICD, TestTag.STG) },
 ];
 
 for (const data of testData) {

@@ -1,3 +1,15 @@
+spec:
+  inputs:
+    env:
+      description: "Ambiente para rodar os testes de regressão"
+      default: "sandbox"
+      options:
+        - sandbox
+        - qa1
+        - qa2
+
+---
+
 # ══════════════════════════════════════════════════════════════
 #  WORKFLOW RULES - Fail Fast & Smart Execution
 # ══════════════════════════════════════════════════════════════
@@ -7,7 +19,7 @@ workflow:
       when: always
     - if: '$CI_COMMIT_BRANCH == "main"'
       when: always
-    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH == "dev"'
       when: always
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
       when: always
@@ -25,16 +37,29 @@ variables:
   PLAYWRIGHT_VERSION: "1.50.0"
   npm_config_cache: "$CI_PROJECT_DIR/.npm"
   PLAYWRIGHT_BROWSERS_PATH: "$CI_PROJECT_DIR/.playwright"
-  
+
   # Performance & Retry Strategy
   PLAYWRIGHT_RETRIES: "2"
   PLAYWRIGHT_TIMEOUT: "60000"
   PLAYWRIGHT_WORKERS: "3"
-  
+
   # Git Settings
   GIT_DEPTH: "10"
   GIT_STRATEGY: "fetch"
-  
+
+  # ═══════════════════════════════════════════════════════════════
+  # Internal cluster URLs (dev-k8s-runner — no whitelist needed)
+  # ═══════════════════════════════════════════════════════════════
+  SANDBOX_ORIGINATION_URL: "http://uown-sandbox-uown-origination.uown-sandbox.svc.cluster.local"
+  SANDBOX_SERVICING_URL: "http://uown-sandbox-svc-website.uown-sandbox.svc.cluster.local"
+  SANDBOX_WEBSITE_URL: "http://uown-sandbox-uown-website.uown-sandbox.svc.cluster.local"
+  QA1_ORIGINATION_URL: "http://uown-qa1-uown-origination.uown-qa1.svc.cluster.local"
+  QA1_SERVICING_URL: "http://uown-qa1-svc-website.uown-qa1.svc.cluster.local"
+  QA1_WEBSITE_URL: "http://uown-qa1-uown-website.uown-qa1.svc.cluster.local"
+  QA2_ORIGINATION_URL: "http://uown-qa2-uown-origination.uown-qa2.svc.cluster.local"
+  QA2_SERVICING_URL: "http://uown-qa2-svc-website.uown-qa2.svc.cluster.local"
+  QA2_WEBSITE_URL: "http://uown-qa2-uown-website.uown-qa2.svc.cluster.local"
+
   # ═══════════════════════════════════════════════════════════════
   # REQUIRED: Configure these in GitLab CI/CD Settings → Variables
   # Settings → CI/CD → Variables (Protected + Masked recommended)
@@ -108,43 +133,16 @@ install:
 test:ci:
   stage: test
   image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+  tags:
+    - dev-k8s-runner
   dependencies:
     - install
   needs: ["install"]
-  parallel: 2
-  before_script:
-    - echo "Running CI tests from tests/ci/ folder (AUTOMATIC)"
-  script:
-    - npx playwright test --project=ci-tests --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
-  after_script:
-    - echo "CI test results:"
-    - if [ -f reports/test-summary.json ]; then cat reports/test-summary.json; fi
-  artifacts:
-    when: always
-    paths:
-      - reports/
-      - playwright-report/
-      - test-results/**/*.json
-      - test-results/**/*.png
-    reports:
-      junit: reports/junit.xml
-    expire_in: 7 days
-  retry:
-    max: 1
-    when:
-      - runner_system_failure
-  allow_failure: false
-
-test:ci:manual:
-  stage: test
-  image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
-  dependencies:
-    - install
-  needs: ["install"]
-  parallel: 2
   when: manual
+  variables:
+    ENV: $[[ inputs.env ]]
   before_script:
-    - echo "Running CI tests from tests/ci/ folder (MANUAL)"
+    - echo "Running CI tests from tests/ci/ folder (MANUAL) — ENV=$ENV"
   script:
     - npx playwright test --project=ci-tests --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
   after_script:

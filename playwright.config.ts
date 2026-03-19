@@ -39,7 +39,7 @@ export default defineConfig({
 
   // Global assertion timeout: applies to all expect(...).toBeVisible() etc.
   // Higher than Playwright's default (5 s) to accommodate slow fintech pages.
-  expect: { timeout: 10_000 },
+  expect: { timeout: 5_000 },
 
   use: {
     // baseURL is intentionally omitted at the global level — each project defines its own.
