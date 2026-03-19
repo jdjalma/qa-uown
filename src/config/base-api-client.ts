@@ -44,7 +44,8 @@ export class BaseApiClient {
     if (url.startsWith('http')) {
       return url.replace(/<env>/g, this.env.env);
     }
-    return `https://svc-${this.env.env}.uownleasing.com${url.startsWith('/') ? '' : '/'}${url}`;
+    const base = this.env.svcApiUrl;
+    return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
   }
 
   async post(url: string, body?: object | string): Promise<APIResponse> {

@@ -22,6 +22,7 @@ export interface EnvironmentConfig {
   email: string;
   emailPassword: string;
   dbConnectionString: string;
+  svcApiUrl: string;
   apiKey: string;
   apiAuthorization: string;
   svcApiKey: string;
@@ -79,6 +80,10 @@ export class ConfigEnvironment {
       amsUrl: process.env[`${envUpper}_AMS_URL`]
         || process.env.AMS_URL
         || `https://ams-website-${validEnv}.uownleasing.com/`,
+      // SVC API URL: {ENV}_SVC_API_URL → SVC_API_URL → auto-generated
+      svcApiUrl: process.env[`${envUpper}_SVC_API_URL`]
+        || process.env.SVC_API_URL
+        || `https://svc-${validEnv}.uownleasing.com`,
       // Email resolution: {ENV}_EMAIL → EMAIL
       email: process.env[`${envUpper}_EMAIL`] || process.env.EMAIL || '',
       emailPassword: process.env[`${envUpper}_EMAIL_PASSWORD`] || process.env.EMAIL_PASSWORD || '',
@@ -144,6 +149,7 @@ export class ConfigEnvironment {
   get servicingUrl(): string { return this.config.servicingUrl; }
   get websiteUrl(): string { return this.config.websiteUrl; }
   get amsUrl(): string { return this.config.amsUrl; }
+  get svcApiUrl(): string { return this.config.svcApiUrl; }
   get email(): string { return this.config.email; }
   get emailPassword(): string { return this.config.emailPassword; }
   get dbConnectionString(): string { return this.config.dbConnectionString; }

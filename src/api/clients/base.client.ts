@@ -48,7 +48,7 @@ export class BaseClient {
     }
     const base = host === 'origination'
       ? `https://origination-${this.env.env}.uownleasing.com`
-      : `https://svc-${this.env.env}.uownleasing.com`;
+      : this.env.svcApiUrl;
     return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
   }
 

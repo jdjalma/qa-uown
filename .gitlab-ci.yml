@@ -38,7 +38,11 @@ variables:
   # ═══════════════════════════════════════════════════════════════
   # Internal cluster URLs (dev-k8s-runner — no whitelist needed)
   # ═══════════════════════════════════════════════════════════════
-  # Internal cluster URLs removed for all envs — falling back to public URLs (internal had RBAC 403)
+  # SVC API internal URLs (dev-k8s-runner — bypasses WAF/IP whitelist)
+  SANDBOX_SVC_API_URL: "http://uown-sandbox-uown-svc.uown-sandbox.svc.cluster.local"
+  QA1_SVC_API_URL: "http://uown-qa1-uown-svc.uown-qa1.svc.cluster.local"
+  QA2_SVC_API_URL: "http://uown-qa2-uown-svc.uown-qa2.svc.cluster.local"
+  # Portal internal URLs (commented — re-enable when portal tests run in CI)
   # SANDBOX_ORIGINATION_URL: "http://uown-sandbox-uown-origination.uown-sandbox.svc.cluster.local"
   # SANDBOX_SERVICING_URL: "http://uown-sandbox-svc-website.uown-sandbox.svc.cluster.local"
   # SANDBOX_WEBSITE_URL: "http://uown-sandbox-uown-website.uown-sandbox.svc.cluster.local"
@@ -126,18 +130,12 @@ test:ci:
   before_script:
     - echo "Running CI tests from tests/ci/ folder (MANUAL) — ENV=$ENV"
     - |
-      echo "=== DEBUG: Network & API key diagnostics ==="
-      echo "UOWN_API_KEY length: ${#UOWN_API_KEY}"
-      echo "UOWN_API_KEY first 4 chars: ${UOWN_API_KEY:0:4}..."
-      echo "UOWN_API_AUTHORIZATION length: ${#UOWN_API_AUTHORIZATION}"
-      echo "UOWN_API_AUTHORIZATION first 8 chars: ${UOWN_API_AUTHORIZATION:0:8}..."
-      echo "--- Testing DNS resolution ---"
-      nslookup svc-sandbox.uownleasing.com || echo "DNS FAILED"
-      echo "--- Testing HTTP connectivity (no API key) ---"
-      curl -s -o /dev/null -w "HTTP %{http_code} from %{remote_ip}" https://svc-sandbox.uownleasing.com/uown/los/sendApplication 2>&1 || echo "CURL FAILED"
-      echo ""
-      echo "--- Testing HTTP connectivity (with API key) ---"
-      curl -s -o /dev/null -w "HTTP %{http_code}" -X POST https://svc-sandbox.uownleasing.com/uown/los/sendApplication -H "x-api-key: $UOWN_API_KEY" -H "Authorization: $UOWN_API_AUTHORIZATION" -H "Content-Type: application/json" -d '{}' 2>&1 || echo "CURL FAILED"
+      echo "=== DEBUG: SVC API URL ==="
+      ENV_UPPER=$(echo "$ENV" | tr '[:lower:]' '[:upper:]')
+      SVC_URL_VAR="${ENV_UPPER}_SVC_API_URL"
+      echo "SVC_API_URL for $ENV: ${!SVC_URL_VAR:-not set}"
+      echo "--- Testing internal SVC connectivity ---"
+      curl -s -o /dev/null -w "HTTP %{http_code}" -X POST "${!SVC_URL_VAR}/uown/los/sendApplication" -H "x-api-key: $UOWN_API_KEY" -H "Content-Type: application/json" -d '{}' 2>&1 || echo "CURL FAILED"
       echo ""
       echo "=== END DEBUG ==="
   script:
