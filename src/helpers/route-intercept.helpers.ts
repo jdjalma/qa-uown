@@ -1,102 +1,109 @@
 /**
  * Route Intercept Helpers
  *
- * Intercepts browser requests to public UOWN URLs and redirects them to
- * internal cluster URLs when running in CI (Kubernetes runner).
+ * Intercepts browser API requests from React SPAs loaded via internal
+ * cluster URLs and redirects them to the correct backend service.
  *
- * Problem: React SPAs loaded via internal cluster URLs make AJAX calls to
- * public URLs (hardcoded in the frontend build). The WAF blocks these
- * requests from the CI runner's IP, causing the SPA to fail to render.
+ * Problem: The internal Origination/Servicing/Website Kubernetes services
+ * are frontend-only (nginx serving React). They don't have API endpoints.
+ * When the React app makes API calls using relative URLs (same origin),
+ * those calls hit the frontend service and return 404/401/403.
  *
- * Solution: Use Playwright's page.route() to intercept these requests and
- * redirect them to the corresponding internal cluster service URLs.
+ * Solution: Use Playwright's page.route() to intercept API calls from
+ * the frontend service and redirect them to the SVC API backend service.
+ *
+ * Example flow:
+ *   1. Browser loads: http://uown-sandbox-uown-origination.../customers/123
+ *   2. React calls:   POST http://uown-sandbox-uown-origination.../getCustomerInformation
+ *   3. page.route() intercepts → redirects to: http://uown-sandbox-svc.../getCustomerInformation
+ *   4. SVC API responds → React renders correctly
  */
 import type { Page } from '@playwright/test';
 import type { ConfigEnvironment } from '@config/index.js';
 
-interface UrlMapping {
-  publicPattern: RegExp;
-  internalUrl: string;
-}
+/** Known API path prefixes used by the UOWN React frontends. */
+const API_PATH_PATTERNS = [
+  '/uown/',
+  '/getCustomerInformation',
+  '/getLeadFilterOptions',
+  '/getLeadsInDateRange',
+  '/getAllClientTypes',
+  '/getLocationNamesByMerchant',
+  '/users-on-page',
+  '/api/',
+];
 
 /**
- * Builds URL mappings from the current environment config.
- * Only creates mappings when the configured URL is an internal cluster URL
- * (i.e., differs from the default public URL pattern).
+ * Checks if a URL path looks like an API call (not a static asset or page navigation).
  */
-function buildUrlMappings(env: ConfigEnvironment): UrlMapping[] {
-  const envName = env.env;
-  const mappings: UrlMapping[] = [];
-
-  // SVC API: svc-{env}.uownleasing.com → internal
-  const defaultSvcApi = `https://svc-${envName}.uownleasing.com`;
-  if (env.svcApiUrl !== defaultSvcApi) {
-    mappings.push({
-      publicPattern: new RegExp(`https://svc-${envName}\\.uownleasing\\.com`),
-      internalUrl: env.svcApiUrl,
-    });
-  }
-
-  // Origination: origination-{env}.uownleasing.com → internal
-  const defaultOrigination = `https://origination-${envName}.uownleasing.com/`;
-  if (env.originationUrl !== defaultOrigination) {
-    mappings.push({
-      publicPattern: new RegExp(`https://origination-${envName}\\.uownleasing\\.com`),
-      internalUrl: env.originationUrl.replace(/\/$/, ''),
-    });
-  }
-
-  // Servicing: svc-website-{env}.uownleasing.com → internal
-  const defaultServicing = `https://svc-website-${envName}.uownleasing.com/`;
-  if (env.servicingUrl !== defaultServicing) {
-    mappings.push({
-      publicPattern: new RegExp(`https://svc-website-${envName}\\.uownleasing\\.com`),
-      internalUrl: env.servicingUrl.replace(/\/$/, ''),
-    });
-  }
-
-  // Website: website-{env}.uownleasing.com → internal
-  const defaultWebsite = `https://website-${envName}.uownleasing.com/`;
-  if (env.websiteUrl !== defaultWebsite) {
-    mappings.push({
-      publicPattern: new RegExp(`https://website-${envName}\\.uownleasing\\.com`),
-      internalUrl: env.websiteUrl.replace(/\/$/, ''),
-    });
-  }
-
-  return mappings;
+function isApiCall(url: string): boolean {
+  const path = new URL(url).pathname;
+  return API_PATH_PATTERNS.some(pattern => path.startsWith(pattern) || path.includes(pattern));
 }
 
 /**
- * Sets up route interception on a Playwright page to redirect public UOWN
- * URLs to internal cluster URLs. Only activates when internal URLs are
- * configured (via {ENV}_*_URL environment variables).
+ * Checks if a URL is an internal cluster URL (.svc.cluster.local).
+ */
+function isInternalUrl(url: string): boolean {
+  return url.includes('.svc.cluster.local');
+}
+
+/**
+ * Sets up route interception on a Playwright page to redirect API calls
+ * from frontend-only internal services to the SVC API backend.
  *
- * Call this once per page, before navigating to any UOWN portal.
+ * Only activates when internal URLs are configured (detected by
+ * .svc.cluster.local in the portal URLs).
  *
  * @example
  * ```typescript
  * await setupRouteIntercept(page, env);
- * await page.goto(env.originationUrl); // works with internal URL
+ * await page.goto(env.originationUrl); // React API calls get redirected
  * ```
  */
 export async function setupRouteIntercept(page: Page, env: ConfigEnvironment): Promise<void> {
-  const mappings = buildUrlMappings(env);
+  // Only activate when using internal cluster URLs
+  const portalUrls = [env.originationUrl, env.servicingUrl, env.websiteUrl];
+  const hasInternalPortals = portalUrls.some(url => isInternalUrl(url));
 
-  if (mappings.length === 0) return; // No internal URLs configured — nothing to intercept
+  if (!hasInternalPortals) return;
 
-  await page.route('**/*.uownleasing.com/**', async (route) => {
-    const originalUrl = route.request().url();
+  const svcApiBase = env.svcApiUrl.replace(/\/$/, '');
 
-    for (const mapping of mappings) {
-      if (mapping.publicPattern.test(originalUrl)) {
-        const newUrl = originalUrl.replace(mapping.publicPattern, mapping.internalUrl);
-        await route.continue({ url: newUrl });
-        return;
-      }
+  // Build list of internal frontend origins to intercept
+  const internalOrigins = portalUrls
+    .filter(url => isInternalUrl(url))
+    .map(url => {
+      const parsed = new URL(url);
+      return `${parsed.protocol}//${parsed.host}`;
+    });
+
+  // Intercept all requests to internal cluster URLs
+  await page.route('**/*.svc.cluster.local/**', async (route) => {
+    const request = route.request();
+    const originalUrl = request.url();
+    const method = request.method();
+
+    // Only intercept API calls, not page navigations or static assets
+    if (method === 'GET' && request.resourceType() === 'document') {
+      await route.continue();
+      return;
     }
 
-    // No mapping matched — continue with original URL
+    // Check if this is an API call from a frontend service
+    const isFromFrontend = internalOrigins.some(origin => originalUrl.startsWith(origin));
+
+    if (isFromFrontend && isApiCall(originalUrl)) {
+      // Replace the frontend origin with the SVC API origin
+      const parsed = new URL(originalUrl);
+      const frontendOrigin = `${parsed.protocol}//${parsed.host}`;
+      const newUrl = originalUrl.replace(frontendOrigin, svcApiBase);
+
+      console.log(`[RouteIntercept] ${method} ${parsed.pathname} → ${svcApiBase}`);
+      await route.continue({ url: newUrl });
+      return;
+    }
+
     await route.continue();
   });
 }
