@@ -85,6 +85,13 @@ for (const data of testData) {
       let alreadySettledOrFunded = false;
 
       await test.step('Login to origination portal and verify status', async () => {
+        // Debug: log all failed network requests to diagnose login issues in CI
+        page.on('response', (response) => {
+          if (response.status() >= 400) {
+            console.log(`[Network] ${response.status()} ${response.request().method()} ${response.url()}`);
+          }
+        });
+
         await loginToPortalWithOptions(page, env.originationUrl, env);
 
         // Navigate directly to the customer page by leadPk (more reliable than search)
