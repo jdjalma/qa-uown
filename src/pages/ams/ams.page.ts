@@ -33,8 +33,8 @@ export class AmsPage extends AmsBasePage {
     expect(phone).toBe(expected);
   }
 
-  async openUserProfile(username: string): Promise<void> {
-    await this.selectUserByUsername(username);
+  async openUserProfile(): Promise<void> {
+    await this.clickRowByIndex(0);
     await expect(this.userProfile).toBeVisible();
   }
 }

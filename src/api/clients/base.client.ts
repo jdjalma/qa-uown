@@ -76,4 +76,15 @@ export class BaseClient {
     const response = await this.getRaw(url, host);
     return parseResponse<T>(response);
   }
+
+  protected async put<T>(url: string, body?: object | string, host?: ApiHost): Promise<ApiResponse<T>> {
+    const resolvedUrl = this.resolveUrl(url, host);
+    const data = typeof body === 'string' ? JSON.parse(body) : body;
+    const response = await this.request.put(resolvedUrl, {
+      headers: { ...this.headers, 'Content-Type': 'application/json' },
+      data,
+      timeout: 120_000,
+    });
+    return parseResponse<T>(response);
+  }
 }

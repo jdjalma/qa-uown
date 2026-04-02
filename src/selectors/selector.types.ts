@@ -512,4 +512,32 @@ export interface AppSelectors extends
   ServicingInformationSelectors,
   PaymentArrangementSelectors,
   ErrorLogSelectors,
-  MoveDueDateSelectors {}
+  MoveDueDateSelectors,
+  AmsUserSelectors {}
+
+export interface AmsUserSelectors {
+  amsRdtTable: string;
+  amsRdtTableRow: string;
+  amsRdtTableBody: string;
+  amsRdtPagination: string;
+  amsPaginationNextButton: string;
+  amsPaginationPrevButton: string;
+  amsUsersSearchInput: string;
+  amsEditProfileButton: string;
+  amsUserFirstNameInput: string;
+  amsUserLastNameInput: string;
+  amsUserEmailInput: string;
+  amsUserPhoneInput: string;
+  amsSaveButton: string;
+  amsCancelButton: string;
+  amsEditUserCard: string;
+  amsAssocPageSubmit: string;
+  amsUsersSelectionInfo: string;
+  amsMerchantsSelectionInfo: string;
+  amsAssocUsersTableContainer: string;
+  amsAssocMerchantsTableContainer: string;
+  amsAssocSelectAllCheckbox: string;
+  amsAssocRowCheckbox: string;
+  amsAssocMerchantsSearch: string;
+  amsSuccessToast: string;
+}

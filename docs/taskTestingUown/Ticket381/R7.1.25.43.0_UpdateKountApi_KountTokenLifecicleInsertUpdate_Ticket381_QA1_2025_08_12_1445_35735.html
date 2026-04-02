@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>UownUnifiedFlow – Test Report</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <style>
+        body { 
+            background: #f7f7fb; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .card { 
+            border-radius: 16px; 
+            box-shadow: 0 2px 24px 0 #aeacbe1f; 
+            border: none;
+        }
+        h1, h2 { font-weight: bold; }
+        .summary-table th { background: #6b4bb6 !important; color: #fff !important; }
+        .summary-table tr { background: #f7f7fb; }
+        .table-responsive { margin-bottom: 2rem; }
+        .filterOutput { width: 100%; max-width: 420px; margin: 1rem 0; }
+        .btn-successful { background: #00b67a !important; }
+        .btn-partial { background: #f9a825 !important; }
+        .btn-unsuccessful { background: #e74c3c !important; }
+        .btn-all { background: #343a40 !important; }
+        .successful { background: #e7ffe8 !important; }
+        .partiallySuccessful { background: #fff8e1 !important; }
+        .unsuccessful { background: #ffeaea !important; }
+        .insight-card { border-left: 8px solid #6b4bb6;}
+        .stat-number { font-size: 2.3rem; font-weight: bold;}
+        .stat-label { font-size: 1.1rem; color: #6c757d;}
+        #detailedDataTable tbody tr:hover { background: #f1ebfa; }
+
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .btn-action {
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .btn-steps {
+            background: #28a745;
+            color: white;
+        }
+        .btn-steps:hover {
+            background: #218838;
+            color: white;
+        }
+        .btn-details {
+            background: #007bff;
+            color: white;
+        }
+        .btn-details:hover {
+            background: #0056b3;
+            color: white;
+        }
+        .btn-api {
+            background: #17a2b8;
+            color: white;
+        }
+        .btn-api:hover {
+            background: #138496;
+            color: white;
+        }
+
+        #detailedDataTable {
+            font-size: 0.85rem;
+        }
+        #detailedDataTable th {
+            background: #6b4bb6 !important;
+            color: white !important;
+            font-weight: 600;
+            text-align: center;
+            vertical-align: middle;
+            padding: 12px 8px;
+        }
+        #detailedDataTable td {
+            vertical-align: middle;
+            padding: 10px 8px;
+            text-align: center;
+        }
+        .run-number-cell {
+            font-weight: bold;
+            color: #6b4bb6;
+            min-width: 120px;
+        }
+        .result-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+        .result-successful {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .result-partial {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .result-failed {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        details {
+            cursor: pointer;
+        }
+        details summary {
+            background: #e9ecef;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+            font-weight: 500;
+            color: #495057;
+        }
+        details summary:hover {
+            background: #dee2e6;
+        }
+        details[open] summary {
+            background: #6b4bb6;
+            color: white;
+            border-color: #6b4bb6;
+        }
+
+        @media (max-width: 768px) {
+            .action-buttons {
+                flex-direction: column;
+                gap: 3px;
+            }
+            .btn-action {
+                width: 100%;
+                font-size: 0.75rem;
+            }
+            #detailedDataTable {
+                font-size: 0.75rem;
+            }
+            #detailedDataTable th,
+            #detailedDataTable td {
+                padding: 6px 4px;
+            }
+        }
+
+        /* Lightweight modal styles (no external JS required) */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: min(900px, 92vw);
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .modal-header-lite {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .modal-title-lite {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .modal-body-lite {
+            padding: 16px;
+            overflow: auto;
+        }
+        .btn-close-lite {
+            border: none;
+            background: transparent;
+            font-size: 1.25rem;
+            cursor: pointer;
+            line-height: 1;
+            color: #6c757d;
+        }
+        .btn-close-lite:hover { color: #000; }
+    </style>
+</head>
+<body>
+<div class="container mt-4">
+    <!-- HEADER -->
+    <div class="text-center mb-2">
+        <h1 class="fw-bold" style="font-size:2.2rem; margin-bottom: .2rem;">
+            UownUnifiedFlow_QA1_2025_08_12_1445_35735 – Test Report
+        </h1>
+        <div class="mt-2 mb-1">
+            <span class="badge bg-info text-dark px-3 py-2 me-2" style="font-size:1.05rem;">
+                <i class="bi bi-server"></i> Environment: QA
+            </span>
+        </div>
+        <div class="mt-1 text-muted" style="font-size:1rem;">
+            <i class="bi bi-calendar-event"></i> Generated on: 2025/08/12 at 14:54
+        </div>
+    </div>
+
+    <div class="row mb-4 g-4">
+        <div class="col-md-3">
+            <div class="card p-3 insight-card">
+                <div class="text-center">
+                    <i class="bi bi-list-task text-primary mb-2" style="font-size: 1.5rem;"></i>
+                    <div class="stat-number">1</div>
+                    <div class="stat-label">Total Executions</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 insight-card" style="border-color:#00b67a;">
+                <div class="text-center">
+                    <i class="bi bi-check-circle text-success mb-2" style="font-size: 1.5rem;"></i>
+                    <div class="stat-number text-success">1</div>
+                    <div class="stat-label">Successful</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 insight-card" style="border-color:#f9a825;">
+                <div class="text-center">
+                    <i class="bi bi-exclamation-triangle text-warning mb-2" style="font-size: 1.5rem;"></i>
+                    <div class="stat-number text-warning">0</div>
+                    <div class="stat-label">Partially Successful</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 insight-card" style="border-color:#e74c3c;">
+                <div class="text-center">
+                    <i class="bi bi-x-circle text-danger mb-2" style="font-size: 1.5rem;"></i>
+                    <div class="stat-number text-danger">0</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card p-3">
+                <h5 class="text-center mb-3"><i class="bi bi-pie-chart"></i> Results Distribution</h5>
+                <div id="dataPie" style="width:100%; min-height:340px;"></div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card p-3">
+                <h5 class="text-center mb-3"><i class="bi bi-bar-chart"></i> Results Comparison</h5>
+                <div id="dataBar" style="width:100%; min-height:340px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card p-3 mb-4">
+        <h2 class="text-center mb-3"><i class="bi bi-clipboard-data"></i> <u>Summary</u></h2>
+        <div class="table-responsive">
+            <table id="summaryDataTable" class="table summary-table">
+                <thead>
+                <tr>
+                    <th style="width:60%;"><i class="bi bi-flag"></i> Result</th>
+                    <th style="width:40%;"><i class="bi bi-hash"></i> Count</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr><td>Successful</td><td><span class="badge bg-success">1</span></td></tr>
+                <tr><td>Partially Successful</td><td><span class="badge bg-warning">0</span></td></tr>
+                <tr><td>Failed</td><td><span class="badge bg-danger">0</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card p-3 mb-4">
+        <h2 class="text-center mb-3"><i class="bi bi-table"></i> <u>Detailed Results</u></h2>
+        <div class="mb-2 text-center text-secondary"><small><i class="bi bi-info-circle"></i> Note: filters will currently overwrite each other.</small></div>
+        <div class="mb-3 d-flex flex-wrap gap-2 justify-content-center">
+            <button name="displayAll" class="btn btn-all text-white"><i class="bi bi-list"></i> Display All</button>
+            <button name="displaySuccessful" class="btn btn-successful text-white"><i class="bi bi-check-circle"></i> Display Only Successful</button>
+            <button name="displayPartial" class="btn btn-partial text-white"><i class="bi bi-exclamation-triangle"></i> Display Only Partially Successful</button>
+            <button name="displayUnsuccessful" class="btn btn-unsuccessful text-white"><i class="bi bi-x-circle"></i> Display Only Failed</button>
+        </div>
+        <div class="mb-3 d-flex justify-content-center">
+            <input type="text" id="filterOutputDetailedData" class="form-control filterOutput" target_table="detailedDataTable" onkeyup="filterOutput(this);" placeholder="🔍 Search through all fields...">
+        </div>
+        <div class="table-responsive">
+            <table id="detailedDataTable" class="table table-hover table-bordered table-sm">
+                <thead>
+                <tr>
+                    <th><i class="bi bi-hash"></i> Run / Actions</th>
+                    <th><i class="bi bi-server"></i> Environment</th>
+                    <th><i class="bi bi-clock"></i> Start Time</th>
+                    <th><i class="bi bi-arrow-right-circle"></i> Lead Source</th>
+                    <th><i class="bi bi-building"></i> Merchant Name</th>
+                    <th><i class="bi bi-tag"></i> Merchant Id</th>
+                    <th><i class="bi bi-key"></i> Lead Pk</th>
+                    <th><i class="bi bi-person-badge"></i> Account Pk</th>
+                    <th><i class="bi bi-globe"></i> Website Account Pk</th>
+                    <th><i class="bi bi-geo-alt"></i> State</th>
+                    <th><i class="bi bi-mailbox"></i> Zip Code</th>
+                    <th><i class="bi bi-geo"></i> City</th>
+                    <th><i class="bi bi-calendar-date"></i> ACH Payment Date</th>
+                    <th><i class="bi bi-currency-dollar"></i> ACH Payment Amount</th>
+                    <th><i class="bi bi-calendar-date"></i> CC Payment Date</th>
+                    <th><i class="bi bi-currency-dollar"></i> CC Payment Amount</th>
+                    <th><i class="bi bi-file-text"></i> Application Type</th>
+                    <th><i class="bi bi-browser-chrome"></i> Browser</th>
+                    <th><i class="bi bi-clock-history"></i> End Time</th>
+                    <th><i class="bi bi-chat-text"></i> Comments</th>
+                    <th><i class="bi bi-flag"></i> Result</th>
+                    <th><i class="bi bi-code-slash"></i> API Details</th>
+                </tr>
+<tr><td class="run-number-cell"><div class="d-flex flex-column align-items-center gap-2"><span class="badge bg-primary fs-6">1</span><div class="action-buttons"><button class="btn btn-action btn-steps" onclick="showStepsForRun(1)" title="View test execution steps"><i class="bi bi-list-check"></i> Steps</button></div></div></td><td><i class="bi bi-server text-info"></i> qa1</td><td><i class="bi bi-clock text-secondary"></i> 2025-08-12 14:45:20</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td><i class="bi bi-geo-alt text-warning"></i> Not yet specified</td><td>Not yet specified</td><td>Not yet specified</td><td>--</td><td><span class="text-muted">0</span></td><td>--</td><td><span class="text-muted">0</span></td><td>Not yet specified</td><td><i class="bi bi-browser-chrome text-success"></i> chrome</td><td><i class="bi bi-clock text-secondary"></i> 2025-08-12 14:45:35</td><td>--</td><td><span class="result-badge result-successful"><i class="bi bi-check-circle"></i> Successful</span></td><td><span class="text-muted"><i class="bi bi-dash"></i> No API details</span></td></tr>
+</table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Test Steps (vanilla) -->
+<div class="modal-overlay" id="stepsModal" role="dialog" aria-modal="true" aria-labelledby="stepsModalLabel">
+    <div class="modal-card">
+        <div class="modal-header-lite">
+            <h5 class="modal-title-lite" id="stepsModalLabel">
+                <i class="bi bi-list-check"></i> Test Execution Steps
+            </h5>
+            <button class="btn-close-lite" aria-label="Close" onclick="closeStepsModal()">×</button>
+        </div>
+        <div class="modal-body-lite" id="stepsModalBody">
+            <div class="text-center">
+                <div class="spinner-border text-primary" role="status" style="width: 2rem; height: 2rem; border-width: .25rem;"></div>
+                <p class="mt-2">Loading steps...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    google.charts.load('current', {'packages':['corechart','bar']});
+    google.charts.setOnLoadCallback(drawChart);
+
+    function drawChart() {
+        var chartData = [
+            ['Result', 'Count'],
+            ['Successful', 1],
+        ['Partially Successful', 0],
+        ['Failed', 0]
+    ];
+        var chartColors = ['#00b67a', '#f9a825', '#e74c3c'];
+
+        var pieData = google.visualization.arrayToDataTable(chartData);
+        var pieOptions = {
+            colors: chartColors,
+            legend: { position: 'top', alignment: 'center', textStyle: {fontSize: 14} },
+            chartArea: {width:'85%', height:'70%'},
+            backgroundColor: 'transparent'
+        };
+        var pieChart = new google.visualization.PieChart(document.getElementById('dataPie'));
+        pieChart.draw(pieData, pieOptions);
+
+        var barData = google.visualization.arrayToDataTable(chartData);
+        var barOptions = {
+            colors: chartColors,
+            legend: { position: 'none' },
+            chartArea: {width:'80%', height:'70%'},
+            hAxis: {minValue: 0, format: '0', title: 'Count'},
+            vAxis: {title: 'Result'},
+            backgroundColor: 'transparent'
+        };
+        var barChart = new google.visualization.BarChart(document.getElementById('dataBar'));
+        barChart.draw(barData, barOptions);
+    }
+</script>
+
+<script type="text/javascript">
+    var showAll = document.getElementsByName("displayAll");
+    var showSuccessful = document.getElementsByName("displaySuccessful");
+    var showPartial = document.getElementsByName("displayPartial");
+    var showUnsuccessful = document.getElementsByName("displayUnsuccessful");
+
+    for (var i = 0; i < showAll.length; i++) { showAll[i].addEventListener("click", filterDetailedTable);}
+    for (var i = 0; i < showSuccessful.length; i++) { showSuccessful[i].addEventListener("click", filterDetailedTable);}
+    for (var i = 0; i < showPartial.length; i++) { showPartial[i].addEventListener("click", filterDetailedTable);}
+    for (var i = 0; i < showUnsuccessful.length; i++) { showUnsuccessful[i].addEventListener("click", filterDetailedTable);}
+
+    function filterDetailedTable() {
+        var table = document.getElementById("detailedDataTable");
+        var tr = table.getElementsByTagName("tr");
+        var n_td;
+        var verdict;
+        switch(this.name) {
+            case "displayAll":
+                for (var i = 1; i < tr.length; i++) { tr[i].style.display = ""; }
+                break;
+            case "displaySuccessful":
+                filterButton("Successful"); break;
+            case "displayPartial":
+                filterButton("Partially Successful"); break;
+            case "displayUnsuccessful":
+                for (var i = 1; i < tr.length; i++) {
+                    n_td = tr[i].getElementsByTagName("td").length;
+                    verdict = tr[i].getElementsByTagName("td")[n_td - 2].innerText;
+                    if (verdict != "Successful" && verdict != "Partially Successful") {
+                        tr[i].style.display = "";
+                    } else {
+                        tr[i].style.display = "none";
+                    }
+                }
+                break;
+        }
+    }
+    function filterButton(filterValue) {
+        var table = document.getElementById("detailedDataTable");
+        var tr = table.getElementsByTagName("tr");
+        var n_td;
+        var verdict;
+        for (var i = 1; i < tr.length; i++) {
+            n_td = tr[i].getElementsByTagName("td").length;
+            verdict = tr[i].getElementsByTagName("td")[n_td - 2].innerText;
+            if (verdict == filterValue) {
+                tr[i].style.display = "";
+            } else {
+                tr[i].style.display = "none";
+            }
+        }
+    }
+    function filterOutput(callingElement) {
+        var filterId = callingElement.getAttribute("id");
+        var tableId = callingElement.getAttribute("target_table");
+        var table = document.getElementById(tableId);
+        var filter = document.getElementById(filterId).value.toUpperCase();
+        var tr = table.getElementsByTagName("tr");
+        var n_td, filterFound, cellValue;
+        for (var i = 1; i < tr.length; i++) {
+            filterFound = false;
+            n_td = tr[i].getElementsByTagName("td").length;
+            for (var x = 0; x < n_td; x++) {
+                cellValue = tr[i].getElementsByTagName("td")[x].innerText;
+                if (cellValue && cellValue.toUpperCase().indexOf(filter) > -1) {
+                    filterFound = true; break;
+                }
+            }
+            tr[i].style.display = filterFound ? "" : "none";
+        }
+    }
+</script>
+
+<script>
+    /*
+     * Function to display steps for each run using a vanilla modal
+     * The runNumber argument is the execution number (1 for first, 2 for second, etc)
+     */
+    function showStepsForRun(runNumber) {
+        const modalEl = document.getElementById('stepsModal');
+        if (!window.CUCUMBER_MESSAGES || !Array.isArray(window.CUCUMBER_MESSAGES) || window.CUCUMBER_MESSAGES.length === 0) {
+            document.getElementById('stepsModalBody').innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> Cucumber steps JSON not found!</div>';
+            openStepsModal();
+            return;
+        }
+        const messages = window.CUCUMBER_MESSAGES;
+
+        const pickles = messages.filter(msg => msg.pickle).map(msg => msg.pickle);
+        const testCases = messages.filter(msg => msg.testCase).map(msg => msg.testCase);
+        const testCasesStarted = messages.filter(msg => msg.testCaseStarted).map(msg => msg.testCaseStarted);
+        const testStepsFinished = messages.filter(msg => msg.testStepFinished).map(msg => msg.testStepFinished);
+
+        const testCaseStarted = testCasesStarted[runNumber-1];
+        if (!testCaseStarted) {
+            document.getElementById('stepsModalBody').innerHTML = '<div class="alert alert-warning"><i class="bi bi-info-circle"></i> Execution not found!</div>';
+            openStepsModal();
+            return;
+        }
+        const testCase = testCases.find(tc => tc.id === testCaseStarted.testCaseId);
+
+        const stepsStatus = {};
+        testStepsFinished
+            .filter(sf => sf.testCaseStartedId === testCaseStarted.id)
+            .forEach(sf => {
+                stepsStatus[sf.testStepId] = sf.testStepResult.status;
+            });
+
+        const pickle = pickles.find(p => p.id === testCase.pickleId);
+        const steps = (pickle?.steps || []).map(pStep => {
+            const testStep = (testCase.testSteps || []).find(ts => ts.pickleStepId === pStep.id);
+            return {
+                text: pStep.text,
+                status: testStep ? (stepsStatus[testStep.id] || 'UNDEFINED') : 'UNDEFINED'
+            };
+        });
+
+        let html = '<div class="step-list">';
+        steps.forEach((s, index) => {
+            let badge = '';
+            if (s.status === 'PASSED') {
+                badge = '<span class="badge bg-success me-2"><i class="bi bi-check-circle"></i> PASSED</span>';
+            } else if (s.status === 'FAILED') {
+                badge = '<span class="badge bg-danger me-2"><i class="bi bi-x-circle"></i> FAILED</span>';
+            } else {
+                badge = `<span class=\"badge bg-secondary me-2\"><i class=\"bi bi-question-circle\"></i> ${s.status}</span>`;
+            }
+            html += `<div class=\"d-flex align-items-start mb-3 p-3 border rounded\">`
+                 +   `<span class=\"badge bg-primary me-3 fs-6\">${index + 1}</span>`
+                 +   `<div class=\"flex-grow-1\">`
+                 +       `<div class=\"mb-2\">${badge}</div>`
+                 +       `<div class=\"step-text\">${s.text}</div>`
+                 +   `</div>`
+                 + `</div>`;
+        });
+        html += '</div>';
+        document.getElementById('stepsModalBody').innerHTML = html;
+        openStepsModal();
+    }
+
+    function openStepsModal() {
+        const modalEl = document.getElementById('stepsModal');
+        if (modalEl) modalEl.classList.add('show');
+    }
+    function closeStepsModal() {
+        const modalEl = document.getElementById('stepsModal');
+        if (modalEl) modalEl.classList.remove('show');
+    }
+
+    // Close modal when clicking outside the card (on the overlay)
+    document.addEventListener('DOMContentLoaded', function() {
+        const overlay = document.getElementById('stepsModal');
+        if (overlay) {
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay) {
+                    closeStepsModal();
+                }
+            });
+        }
+    });
+</script>
+<script>window.SCENARIOS_REPORT = [{"scenario":"Insert a valid token and verify not expired in \"qa1\"","steps":[{"text":"I set the environment to \"qa1\", project to \"uown\", subdomain to \"origination\", navigate to login","status":"PASSED"},{"text":"I set the browser to \"chrome\", stealth mode if the following argument is yes: \"yes\"","status":"PASSED"},{"text":"Timeout multiplier is set to: \"2\"","status":"PASSED"},{"text":"Relevant variables are reset","status":"PASSED"},{"text":"UownCreateAccount Relevant variables are reset","status":"PASSED"},{"text":"Window is closed - 'always', 'on success', 'never': \"never\"","status":"PASSED"},{"text":"Write test results to a data file if the following argument is yes: \"yes\"","status":"PASSED"},{"text":"Screenshots are taken - 'always', 'on success', 'on failure', 'never': \"always\"","status":"PASSED"},{"text":"Presentation mode is on if the following argument is yes: \"yes\"","status":"PASSED"},{"text":"Checks are enabled if the following argument is yes: \"yes\"","status":"PASSED"},{"text":"Strict mode is enabled if the following argument is yes: \"no\"","status":"PASSED"},{"text":"DDMM Dates are processed in reverse if the following argument is yes: \"yes\"","status":"PASSED"},{"text":"Servicing is enabled if the following argument is yes: \"yes\"","status":"PASSED"},{"text":"Website is enabled if the following argument is yes: \"yes\"","status":"PASSED"},{"text":"Begin UownUnifiedFlow","status":"PASSED"},{"text":"I insert a mock Kount token valid for 90 minutes","status":"PASSED"},{"text":"I assert Kount token exists for env client and is not expired within 30 seconds","status":"PASSED"},{"text":"I capture baseline of latest Kount token timestamp and value","status":"PASSED"},{"text":"I update latest Kount token row to refresh access token","status":"PASSED"},{"text":"I assert Kount token row updated for env client where \"updated_at\" newer than \"created_at\" within 30 seconds","status":"PASSED"},{"text":"I assert latest Kount token newer than baseline and access_token changed within 30 seconds","status":"PASSED"},{"text":"Test is successful","status":"PASSED"}]}];</script>
+<script>window.CUCUMBER_MESSAGES = [{"pickle":{"id":"c1e0f1ce-b02d-45d2-bd65-1f202d8de87f","uri":"file:///D:/projects/legacy-java-cucumber/ui_automation/src/test/resources/uownfeatures/templates/specific_tickets/R7.1.25.43.0_UpdateKountApi_KountTokenLifecicleInsertUpdate_Ticket381.feature","name":"Insert a valid token and verify not expired in \"qa1\"","language":"en","steps":[{"text":"I set the environment to \"qa1\", project to \"uown\", subdomain to \"origination\", navigate to login","id":"782d1b07-d45b-446d-afa3-ac083ad3092e","astNodeIds":["18928206-eafa-4fe0-b8ce-1159a6198fb8","26425a70-0013-44c6-9fff-a670153de748"]},{"text":"I set the browser to \"chrome\", stealth mode if the following argument is yes: \"yes\"","id":"5d6a1668-8e35-47da-a5b4-c1684cf4004b","astNodeIds":["3ca5c4a1-5134-4a63-bcab-6166872bc328","26425a70-0013-44c6-9fff-a670153de748"]},{"text":"Timeout multiplier is set to: \"2\"","id":"5ebe92ce-a017-4a34-aa6a-d48b905c434a","astNodeIds":["b4b0a898-f924-49e0-8144-c6246e8a173b","26425a70-0013-44c6-9fff-a670153de748"]},{"text":"Relevant variables are reset","id":"502038f0-d5ac-4847-bdeb-372e05478833","astNodeIds":["0ecc822b-64a9-49f2-8590-7c087e6436fd","26425a70-0013-44c6-9fff-a670153de748"]},{"text":"UownCreateAccount Relevant variables are reset","id":"1acf171c-c6a9-4d3a-bdea-26c626f27697","astNodeIds":["9f5426b6-5153-46c3-988b-4bb09e968caf","26425a70-0013-44c6-9fff-a670153de748"]},{"text":"Window is closed - \u0027always\u0027, \u0027on success\u0027, \u0027never\u0027: \"never\"","id":"d9760612-1147-4b5e-99c5-c989330bc7b5","astNodeIds":["fa5e1a56-8af0-4a7a-8c14-e6e7cfc0d770","26425a70-0013-44c6-9fff-a670153de748"]},{"text":"Write test results to a data file if the following argument is yes: \"yes\"","id":"e9a8c021-32ea-42df-8dc8-5efaba1788b5","astNodeIds":["7d2d3276-e91e-4c1b-8684-9c4049eeb967","26425a70-0013-44c6-9fff-a670153de748"]},{"text":"Screenshots are taken - \u0027always\u0027, \u0027on success\u0027, \u0027on failure\u0027, \u0027never\u0027: \"always\"","id":"46d5aa05-0fe8-468a-b9f1-a3e8695416a5","astNodeIds":["12208f7f-91e9-439c-90e7-d2b1cb31b5d7","26425a70-0013-44c6-9fff-a670153de748"]},{"text":"Presentation mode is on if the following argument is yes: \"yes\"","id":"a5275eb2-e625-4a96-a7fa-7582ad4a5ac0","astNodeIds":["07d5f269-45db-4e0a-8573-ae1ad4b679de","26425a70-0013-44c6-9fff-a670153de748"]},{"text":"Checks are enabled if the following argument is yes: \"yes\"","id":"92c718f7-b9d1-4afe-9e24-17d689be42e3","astNodeIds":["b6bdc546-807f-4e40-b6c7-7f05357519f4","26425a70-0013-44c6-9fff-a670153de748"]},{"text":"Strict mode is enabled if the following argument is yes: \"no\"","id":"9d9a3174-5904-4c74-913f-acb55ace0452","astNodeIds":["d85c1047-6b10-47ca-90a3-0df0988944f9","26425a70-0013-44c6-9fff-a670153de748"]},{"text":"DDMM Dates are processed in reverse if the following argument is yes: \"yes\"","id":"3a4263ec-d871-4732-b98f-8e3bad9347b8","astNodeIds":["b8142289-2715-4532-ba4a-dfae2c2aebdb","26425a70-0013-44c6-9fff-a670153de748"]},{"text":"Servicing is enabled if the following argument is yes: \"yes\"","id":"a5dd42e7-9786-47bf-bd8c-b9c59e01ae1e","astNodeIds":["8bbda778-c5c2-4567-8c34-ba85511cefe1","26425a70-0013-44c6-9fff-a670153de748"]},{"text":"Website is enabled if the following argument is yes: \"yes\"","id":"73b939d9-34c0-47ec-ba7f-a246810c8d5c","astNodeIds":["a57121d1-6ede-4f25-853f-62d967b7bf38","26425a70-0013-44c6-9fff-a670153de748"]},{"text":"Begin UownUnifiedFlow","id":"444a62cf-a192-4ff5-8dcd-696eaa6c4692","astNodeIds":["1a8c0f3a-e715-4ba3-a98a-ea569739c96d","26425a70-0013-44c6-9fff-a670153de748"]},{"text":"I insert a mock Kount token valid for 90 minutes","id":"f4a10ee2-b31a-4689-a9a1-1278c4dd4765","astNodeIds":["79f9226f-f940-4b6a-8ac1-ced6804a06a3","26425a70-0013-44c6-9fff-a670153de748"]},{"text":"I assert Kount token exists for env client and is not expired within 30 seconds","id":"f3a609f5-5316-415d-a802-5af28ec27cad","astNodeIds":["5115cbd7-a16b-4232-acfe-077f5ea560c1","26425a70-0013-44c6-9fff-a670153de748"]},{"text":"I capture baseline of latest Kount token timestamp and value","id":"bf70582c-4389-4561-b67c-bba62ed53692","astNodeIds":["b1cfca1a-0acb-4a62-991a-71bb8f2e739b","26425a70-0013-44c6-9fff-a670153de748"]},{"text":"I update latest Kount token row to refresh access token","id":"fbf3c01a-0df3-4577-96ba-6c2e581e6e76","astNodeIds":["a0d02661-226d-48b0-b251-f97be9377564","26425a70-0013-44c6-9fff-a670153de748"]},{"text":"I assert Kount token row updated for env client where \"updated_at\" newer than \"created_at\" within 30 seconds","id":"a354105f-f34b-4213-9aa7-eb1654ccf63a","astNodeIds":["8f989203-1887-4d06-9b7f-508f31774fe0","26425a70-0013-44c6-9fff-a670153de748"]},{"text":"I assert latest Kount token newer than baseline and access_token changed within 30 seconds","id":"f5b122e6-fea9-481e-b79b-929a10e69071","astNodeIds":["dfb203a0-2c12-4627-aaa3-459e1b87f820","26425a70-0013-44c6-9fff-a670153de748"]},{"text":"Test is successful","id":"fcd7f4b3-1a11-44d1-9365-5a2f63d01ee3","astNodeIds":["1a093aa4-fd03-4ab2-a816-e5419cac9dd4","26425a70-0013-44c6-9fff-a670153de748"]}],"tags":[{"name":"@UOWNQa1","astNodeId":"f6a2150f-f17a-4db8-86dc-47c4238452fa"}],"astNodeIds":["4e922e23-220a-40db-aa9f-701562dcd8d9","26425a70-0013-44c6-9fff-a670153de748"]}},{"testCase":{"id":"7a4f27db-7cf6-49a2-980c-ffc14abb7664","pickleId":"c1e0f1ce-b02d-45d2-bd65-1f202d8de87f","testSteps":[{"id":"d06e45fc-f06c-40c0-9691-4da979b79801","hookId":"8526c9a7-7bf8-4ed4-afbb-38bbfcbed1b9"},{"id":"670bd57a-5e8a-47a5-a8ea-5277d80e8d2e","pickleStepId":"782d1b07-d45b-446d-afa3-ac083ad3092e","stepDefinitionIds":["12649146-0f93-4726-89c3-e2ce8ef43d8c"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":25,"value":"\"qa1\""}},{"parameterTypeName":"anonymous","group":{"start":43,"value":"\"uown\""}},{"parameterTypeName":"anonymous","group":{"start":64,"value":"\"origination\""}},{"parameterTypeName":"anonymous","group":{"start":91,"value":"login"}}]}]},{"id":"85e59d30-1136-4ef3-bb52-9d7f2a9bf1e5","pickleStepId":"5d6a1668-8e35-47da-a5b4-c1684cf4004b","stepDefinitionIds":["85dae44e-7741-4c50-b37e-9f5e8598762c"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":22,"value":"chrome"}},{"parameterTypeName":"anonymous","group":{"start":79,"value":"yes"}}]}]},{"id":"a127e56e-22de-4075-ae1a-563f1276c777","pickleStepId":"5ebe92ce-a017-4a34-aa6a-d48b905c434a","stepDefinitionIds":["892cadea-6e29-4494-8ab8-f722784d96fb"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":31,"value":"2"}}]}]},{"id":"1b65b455-ed18-45bf-a62e-4c6abfb2e797","pickleStepId":"502038f0-d5ac-4847-bdeb-372e05478833","stepDefinitionIds":["3c00e0f8-6ef0-4a0b-a90d-d1f481ea78ee"],"stepMatchArgumentsLists":[{}]},{"id":"ad2bf9ec-72f6-4bc6-91bc-7955daf9eba2","pickleStepId":"1acf171c-c6a9-4d3a-bdea-26c626f27697","stepDefinitionIds":["ba97ebea-6a97-4e31-b392-a3a9c6b61571"],"stepMatchArgumentsLists":[{}]},{"id":"6042390e-d8c6-4dbe-bfcd-8a52c9ae764e","pickleStepId":"d9760612-1147-4b5e-99c5-c989330bc7b5","stepDefinitionIds":["150898b6-aa68-4d9b-bec8-660cc9de20ec"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":53,"value":"never"}}]}]},{"id":"c9e0729c-6e2c-4549-bb68-d4368fe3ea72","pickleStepId":"e9a8c021-32ea-42df-8dc8-5efaba1788b5","stepDefinitionIds":["e1fc53f0-0fc0-4a71-aba1-b8fc4bb4802a"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":69,"value":"yes"}}]}]},{"id":"3a436a08-d082-4bb3-b9ea-896831d1f04d","pickleStepId":"46d5aa05-0fe8-468a-b9f1-a3e8695416a5","stepDefinitionIds":["c6375dd8-4d3c-43e9-801e-e37810f9197a"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":72,"value":"always"}}]}]},{"id":"b4da6b2a-c9de-4fcd-a4d0-f27e9ea3baf3","pickleStepId":"a5275eb2-e625-4a96-a7fa-7582ad4a5ac0","stepDefinitionIds":["ac1d0e9f-267a-4156-a05e-1fd54ab806ae"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":59,"value":"yes"}}]}]},{"id":"37b3a732-3a29-4bbd-87ea-2ee5252faefc","pickleStepId":"92c718f7-b9d1-4afe-9e24-17d689be42e3","stepDefinitionIds":["7845e045-2090-47aa-8833-51f403d1e2bb"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":54,"value":"yes"}}]}]},{"id":"672d1eb6-ab50-484c-bdb7-1506cb32e41b","pickleStepId":"9d9a3174-5904-4c74-913f-acb55ace0452","stepDefinitionIds":["fc8fd2e9-251e-4187-baac-4561e612ca68"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"string","group":{"start":57,"value":"\"no\"","children":[{"start":58,"value":"no","children":[{}]},{"children":[{}]}]}}]}]},{"id":"84d00c56-c108-4abe-8548-7924d8f041d3","pickleStepId":"3a4263ec-d871-4732-b98f-8e3bad9347b8","stepDefinitionIds":["cae2b9c9-738b-49f5-a644-2288e6768409"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"string","group":{"start":70,"value":"\"yes\"","children":[{"start":71,"value":"yes","children":[{}]},{"children":[{}]}]}}]}]},{"id":"89ef7945-b242-4ad0-96d5-a82d899104b7","pickleStepId":"a5dd42e7-9786-47bf-bd8c-b9c59e01ae1e","stepDefinitionIds":["754b4eb3-193a-4ba5-93c8-9fdd8d19674d"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"string","group":{"start":55,"value":"\"yes\"","children":[{"start":56,"value":"yes","children":[{}]},{"children":[{}]}]}}]}]},{"id":"ac7cf588-a2b9-4b20-bb8e-452618957b7c","pickleStepId":"73b939d9-34c0-47ec-ba7f-a246810c8d5c","stepDefinitionIds":["f43bec5a-f996-4b83-9cb1-531f4ed8d277"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"string","group":{"start":53,"value":"\"yes\"","children":[{"start":54,"value":"yes","children":[{}]},{"children":[{}]}]}}]}]},{"id":"0ce34a4d-5822-4a09-893f-633b00d4e1eb","pickleStepId":"444a62cf-a192-4ff5-8dcd-696eaa6c4692","stepDefinitionIds":["1c9523ae-9432-4c5d-b82b-12e696b97d1d"],"stepMatchArgumentsLists":[{}]},{"id":"bd76c0ae-78c1-4357-90ed-8a202203f2c6","pickleStepId":"f4a10ee2-b31a-4689-a9a1-1278c4dd4765","stepDefinitionIds":["68daffe8-c4fd-4019-8e97-d54746f79c5d"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"int","group":{"start":38,"value":"90"}}]}]},{"id":"2a24aae6-d924-4f2e-b1d5-933d3b949065","pickleStepId":"f3a609f5-5316-415d-a802-5af28ec27cad","stepDefinitionIds":["9e2a863b-c077-4459-9f74-c313c70b5c4d"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"int","group":{"start":69,"value":"30"}}]}]},{"id":"e0cb1185-c78d-4a26-9ac7-e7ea3cf2f271","pickleStepId":"bf70582c-4389-4561-b67c-bba62ed53692","stepDefinitionIds":["af6038f5-9575-41cf-a872-287483e0cabe"],"stepMatchArgumentsLists":[{}]},{"id":"a99d7706-f469-4e6c-8396-bc55c1c17929","pickleStepId":"fbf3c01a-0df3-4577-96ba-6c2e581e6e76","stepDefinitionIds":["e6afca2b-cea0-4fad-8bba-a85d0ebd3e47"],"stepMatchArgumentsLists":[{}]},{"id":"9ebeca5b-e506-4c7d-b265-5781b0562374","pickleStepId":"a354105f-f34b-4213-9aa7-eb1654ccf63a","stepDefinitionIds":["4399d443-6320-435b-8b34-58f0967fd707"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"string","group":{"start":54,"value":"\"updated_at\"","children":[{"start":55,"value":"updated_at","children":[{}]},{"children":[{}]}]}},{"parameterTypeName":"string","group":{"start":78,"value":"\"created_at\"","children":[{"start":79,"value":"created_at","children":[{}]},{"children":[{}]}]}},{"parameterTypeName":"int","group":{"start":98,"value":"30"}}]}]},{"id":"0a5cda3f-7750-493d-bc78-fd6dfdad49ee","pickleStepId":"f5b122e6-fea9-481e-b79b-929a10e69071","stepDefinitionIds":["2899b907-de5f-46d4-a824-9b3f0ee43ab8"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"int","group":{"start":80,"value":"30"}}]}]},{"id":"77881727-cbe3-4bac-bb25-0adf54c3183c","pickleStepId":"fcd7f4b3-1a11-44d1-9365-5a2f63d01ee3","stepDefinitionIds":["f7ea38b1-6db4-4665-b6ff-b278e917945a"],"stepMatchArgumentsLists":[{}]},{"id":"2bc401c8-ac2d-4fad-8e7b-9f2c01f847f2","hookId":"64e7db6e-8468-4a47-81f6-ea5c023d56a3"}]}},{"testCaseStarted":{"timestamp":{"seconds":"1755020713","nanos":871565600},"testCaseId":"7a4f27db-7cf6-49a2-980c-ffc14abb7664","id":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":15637500}},"timestamp":{"seconds":"1755020713","nanos":897362900},"testStepId":"d06e45fc-f06c-40c0-9691-4da979b79801","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":30770500}},"timestamp":{"seconds":"1755020713","nanos":944378400},"testStepId":"670bd57a-5e8a-47a5-a8ea-5277d80e8d2e","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"seconds":"6","nanos":93341400}},"timestamp":{"seconds":"1755020720","nanos":38727000},"testStepId":"85e59d30-1136-4ef3-bb52-9d7f2a9bf1e5","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{}},"timestamp":{"seconds":"1755020720","nanos":39726300},"testStepId":"a127e56e-22de-4075-ae1a-563f1276c777","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":2000900}},"timestamp":{"seconds":"1755020720","nanos":41727200},"testStepId":"1b65b455-ed18-45bf-a62e-4c6abfb2e797","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":999500}},"timestamp":{"seconds":"1755020720","nanos":42726700},"testStepId":"ad2bf9ec-72f6-4bc6-91bc-7955daf9eba2","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{}},"timestamp":{"seconds":"1755020720","nanos":42726700},"testStepId":"6042390e-d8c6-4dbe-bfcd-8a52c9ae764e","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{}},"timestamp":{"seconds":"1755020720","nanos":42726700},"testStepId":"c9e0729c-6e2c-4549-bb68-d4368fe3ea72","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{}},"timestamp":{"seconds":"1755020720","nanos":42726700},"testStepId":"3a436a08-d082-4bb3-b9ea-896831d1f04d","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{}},"timestamp":{"seconds":"1755020720","nanos":42726700},"testStepId":"b4da6b2a-c9de-4fcd-a4d0-f27e9ea3baf3","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":466500}},"timestamp":{"seconds":"1755020720","nanos":44700200},"testStepId":"37b3a732-3a29-4bbd-87ea-2ee5252faefc","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{}},"timestamp":{"seconds":"1755020720","nanos":44700200},"testStepId":"672d1eb6-ab50-484c-bdb7-1506cb32e41b","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":998700}},"timestamp":{"seconds":"1755020720","nanos":46239900},"testStepId":"84d00c56-c108-4abe-8548-7924d8f041d3","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":1002300}},"timestamp":{"seconds":"1755020720","nanos":47242200},"testStepId":"89ef7945-b242-4ad0-96d5-a82d899104b7","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{}},"timestamp":{"seconds":"1755020720","nanos":47748300},"testStepId":"ac7cf588-a2b9-4b20-bb8e-452618957b7c","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":999900}},"timestamp":{"seconds":"1755020720","nanos":51753800},"testStepId":"0ce34a4d-5822-4a09-893f-633b00d4e1eb","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"seconds":"3","nanos":557988700}},"timestamp":{"seconds":"1755020723","nanos":609742500},"testStepId":"bd76c0ae-78c1-4357-90ed-8a202203f2c6","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"seconds":"2","nanos":31282000}},"timestamp":{"seconds":"1755020725","nanos":641563800},"testStepId":"2a24aae6-d924-4f2e-b1d5-933d3b949065","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"seconds":"2","nanos":30047100}},"timestamp":{"seconds":"1755020727","nanos":672394500},"testStepId":"e0cb1185-c78d-4a26-9ac7-e7ea3cf2f271","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"seconds":"1","nanos":6521300}},"timestamp":{"seconds":"1755020728","nanos":678915800},"testStepId":"a99d7706-f469-4e6c-8396-bc55c1c17929","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"seconds":"1","nanos":13367700}},"timestamp":{"seconds":"1755020729","nanos":692795500},"testStepId":"9ebeca5b-e506-4c7d-b265-5781b0562374","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"seconds":"2","nanos":38161400}},"timestamp":{"seconds":"1755020731","nanos":731463300},"testStepId":"0a5cda3f-7750-493d-bc78-fd6dfdad49ee","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"seconds":"4","nanos":995200}},"timestamp":{"seconds":"1755020735","nanos":732980900},"testStepId":"77881727-cbe3-4bac-bb25-0adf54c3183c","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":534535100}},"timestamp":{"seconds":"1755020736","nanos":268307000},"testStepId":"2bc401c8-ac2d-4fad-8e7b-9f2c01f847f2","testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}},{"testCaseFinished":{"timestamp":{"seconds":"1755020736","nanos":268307000},"testCaseStartedId":"17a1841f-8144-4b92-9222-7b776dd68dda"}}];</script>
+</body>
+</html>

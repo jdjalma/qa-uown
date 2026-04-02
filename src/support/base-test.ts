@@ -30,6 +30,7 @@ import { MerchantClient } from '../api/clients/merchant.client.js';
 import { AccountClient } from '../api/clients/account.client.js';
 import { PaymentArrangementClient } from '../api/clients/payment-arrangement.client.js';
 import { SvcPayoffClient } from '../api/clients/svc-payoff.client.js';
+import { AmsClient } from '../api/clients/ams.client.js';
 import {
   disableCssAnimations,
   captureConsoleLogs,
@@ -65,6 +66,7 @@ export interface ApiClients {
   account: AccountClient;
   paymentArrangement: PaymentArrangementClient;
   svcPayoff: SvcPayoffClient;
+  ams: AmsClient;
 }
 
 export interface TestFixtureOptions {
@@ -140,6 +142,7 @@ export const test = base.extend<BaseTestFixtures & TestFixtureOptions, BaseWorke
       account: new AccountClient(request, testEnv),
       paymentArrangement: new PaymentArrangementClient(request, testEnv),
       svcPayoff: new SvcPayoffClient(request, testEnv),
+      ams: new AmsClient(request, testEnv),
     });
   },
 

@@ -1,35 +1,36 @@
 import { BasePage } from '../base.page.js';
+import { SELECTORS } from '../../selectors/common.selectors.js';
 
+/**
+ * AmsBasePage — base for AMS portal pages.
+ *
+ * The AMS users table uses react-data-table-component (.rdt_Table / .rdt_TableRow),
+ * NOT native <table> elements.
+ */
 export class AmsBasePage extends BasePage {
-  readonly usersTable = this.page.locator('table, .users-table');
-  readonly searchField = this.page.locator('#searchField, input[placeholder*="Search"]');
-  readonly searchButton = this.page.locator('button:has-text("Search")');
-  readonly rolesFilter = this.page.locator('[data-filter="roles"], #rolesFilter');
-  readonly lockedFilter = this.page.locator('[data-filter="locked"], #lockedFilter');
+  /** Main react-data-table-component table */
+  readonly rdtTable = this.page.locator(SELECTORS.amsRdtTable).first();
+  readonly rdtTableBody = this.page.locator(SELECTORS.amsRdtTableBody).first();
+
+  async waitForTable(): Promise<void> {
+    await this.rdtTable.waitFor({ state: 'visible', timeout: 20_000 });
+  }
+
+  async getTableRowCount(): Promise<number> {
+    return this.page.locator(SELECTORS.amsRdtTableRow).count();
+  }
+
+  async clickRowByIndex(index: number): Promise<void> {
+    const row = this.page.locator(SELECTORS.amsRdtTableRow).nth(index);
+    await row.waitFor({ state: 'visible' });
+    await row.click();
+  }
+
+  async getRowText(index: number): Promise<string> {
+    return this.page.locator(SELECTORS.amsRdtTableRow).nth(index).innerText();
+  }
 
   async isAmsLoginPage(): Promise<boolean> {
-    return this.isElementPresent('#loginEmail, [name="email"]', 3_000);
-  }
-
-  async filterUsers(searchTerm?: string, roles?: string, locked?: string): Promise<void> {
-    if (searchTerm) {
-      await this.searchField.fill(searchTerm);
-    }
-    if (roles) {
-      await this.selectReactOption('[data-filter="roles"]', roles);
-    }
-    if (locked) {
-      await this.selectReactOption('[data-filter="locked"]', locked);
-    }
-    await this.clickAndWaitForSpinner(this.searchButton);
-  }
-
-  async selectFirstUser(): Promise<void> {
-    await this.clickAndWaitForSpinner(this.page.locator('tbody tr:first-child').first());
-  }
-
-  async selectUserByUsername(username: string): Promise<void> {
-    const row = this.page.locator(`tbody tr:has-text("${username}")`);
-    await this.clickAndWaitForSpinner(row.first());
+    return this.isElementPresent('input[name="loginEmail"]', 3_000);
   }
 }
