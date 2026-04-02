@@ -1,1 +1,0 @@
-Test data not established, Result:Funding transaction returned 12 records.

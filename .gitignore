@@ -26,7 +26,7 @@ target/
 .claude/settings.local.json
 
 # Postman collections (may contain credentials or sensitive URLs)
-docs/*.postman_collection.json
+docs/
 
 # Test reports (generated locally)
 docs/test-reports/
