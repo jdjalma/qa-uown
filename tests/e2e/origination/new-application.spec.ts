@@ -53,7 +53,10 @@ for (const data of testData) {
   test.describe(`New Application - ${data.env} ${data.state}/${data.merchant}`, { tag: data.tag.split(' ') }, () => {
     test.use({ envName: data.env });
 
-    test(`Creating Uown account via UI in "${data.env}"`, async ({ page, api, email, ctx }) => {
+    test(`Creating Uown account via UI in "${data.env}"`, async ({ page, api, email, ctx, merchantConfig: mSetup }) => {
+      await test.step('Ensure merchant config', async () => {
+        await mSetup.configureByName(data.merchant, 'lifecycle');
+      });
       const { env, address, merchant, applicant, order } = buildTestData({
         env: data.env,
         state: data.state,

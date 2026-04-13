@@ -1,8 +1,13 @@
 ---
 name: subagent-docs-update
 description: Updates project documentation (business rules, TESTING.md, CLAUDE.md, ADRs). MANDATORY in EVERY pipeline — ALWAYS the last agent.
-model: inherit
+model: sonnet
 color: cyan
+maxTurns: 20
+effort: low
+disallowedTools:
+  - Bash
+  - NotebookEdit
 ---
 
 # subagent-docs-update — Documentation Updater

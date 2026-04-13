@@ -33,6 +33,11 @@ export interface FilterSelectors {
   filterOptionWithRole: string;
   filterControl: string;
   filtersButton: string;
+  filterMenuPortal: string;
+  filterPlaceholder: string;
+  filterSingleValue: string;
+  filterClearIndicator: string;
+  filterMultiValueLabel: string;
 }
 
 export interface ModalSelectors {
@@ -72,6 +77,7 @@ export interface SearchSelectors {
   searchInputLegacy: string;
   searchTypeDropdown: string;
   searchButton: string;
+  searchResultAccountLink: string;
 }
 
 export interface CustomerSummarySelectors {
@@ -95,6 +101,11 @@ export interface CreditCardSelectors {
   ccCvc: string;
   ccExpMonthInput: string;
   ccExpYearInput: string;
+  // One-time card form (payment arrangement modal)
+  otCardFirstName: string;
+  otCardLastName: string;
+  otCardExpiresOn: string;
+  otCardSecurityCode: string;
 }
 
 export interface BankSelectors {
@@ -330,6 +341,8 @@ export interface CompletionScreenSelectors {
 
 export interface NewApplicationSelectors {
   // Origination portal "New Application" form
+  naNewApplicationLink: string;
+  naSubmitNewApplicationBtn: string;
   naEmailAddress: string;
   naPhone: string;
   naMerchantDropdown: string;
@@ -407,6 +420,14 @@ export interface WebsiteSelectors {
   // Email change
   wsPrimaryEmailField: string;
 
+  // Phone update — Update Contact Info page
+  wsPhoneAreaCodeInput: string;
+  wsPhoneNumberInput: string;
+  wsSaveChangesButton: string;
+  wsSuccessMessage: string;
+  wsErrorMessage: string;
+  wsUpdatePhoneSection: string;
+
   // ACH payment
   wsOtherAmountRadio: string;
   wsPaymentAmountField: string;
@@ -474,6 +495,117 @@ export interface MoveDueDateSelectors {
   moveDueDateNewDateInput: string;
 }
 
+// ── Task #442 — Send Invite / Podium (Servicing — Account Summary) ─────────
+export interface InvitationSelectors {
+  invitationIcon: string;       // #invitation (envelope icon in account summary bar)
+}
+
+// ── Task #505 — Opt Out AI (Servicing — Primary Contact / Mobile Phone) ────
+export interface OptOutAiSelectors {
+  primaryContactEditButton: string;
+  primaryContactSaveButton: string;
+  optOutAiCheckbox: string;
+  doNotCallCheckbox: string;
+  primaryContactSection: string;
+  mobilePhoneSection: string;
+  optOutAiReasonModal: string;
+  optOutAiReasonTextbox: string;
+  optOutAiReasonSaveButton: string;
+}
+
+// ── Origination — Leads Table Filters ─────────────────────────────────────────
+export interface LeadsTableSelectors {
+  leadsFromDateInput: string;
+  leadsToDateInput: string;
+  leadsLeadPkInput: string;
+  leadsEmailInput: string;
+  leadsSsnInput: string;
+  leadsAccountPkInput: string;
+  leadsPhoneInput: string;
+  leadsCustomerNameInput: string;
+  leadsStateDropdown: string;
+  leadsLeadStatusDropdown: string;
+  leadsInvoiceNumberInput: string;
+}
+
+// ── Origination — Sales Rep / Merchant Info panel (Customer page) ──────────────
+export interface SalesRepPanelSelectors {
+  salesRepEditButton: string;   // CollapsableEditLayout edit trigger — #SalesRep-edit
+  salesRepSaveButton: string;   // CollapsableEditLayout primary save button (scoped to panel)
+}
+
+// ── Origination — Open to Buy page ────────────────────────────────────────────
+export interface OpenToBuySelectors {
+  openToBuyNavLink: string;         // Sidebar link to /openToBuy
+  openToBuyExportCsvButton: string; // Export / CSV button on Open to Buy page
+}
+
+// ── Servicing — CC History / Edit Pending CC Payment Modal ────────────────────
+export interface CcHistorySelectors {
+  ccEditPencilIcon: string;
+  ccEditModal: string;
+  ccEditModalTitle: string;
+  ccEditPostingDate: string;
+  ccEditAmount: string;
+  ccEditComment: string;
+  ccEditSaveButton: string;
+  ccEditCancelButton: string;
+  ccEditRemoveButton: string;
+}
+
+// ── Origination — CCBIN (Send Application) ───────────────────────────────────
+export interface CcBinSelectors {
+  naCcBinField: string;
+  naCcBinImage: string;
+  naCcBinInstructionText: string;
+}
+
+// ── AMS — Users list, User Details & Merchant Association (Task #74) ────────
+export interface AmsUserSelectors {
+  // Users list (/users) — react-data-table-component
+  amsRdtTable: string;
+  amsRdtTableRow: string;
+  amsRdtTableBody: string;
+  amsRdtPagination: string;
+  amsPaginationNextButton: string;
+  amsPaginationPrevButton: string;
+  amsUsersSearchInput: string;
+  // User Details (/users/[username])
+  amsEditProfileButton: string;
+  amsUserFirstNameInput: string;
+  amsUserLastNameInput: string;
+  amsUserEmailInput: string;
+  amsUserPhoneInput: string;
+  amsSaveButton: string;
+  amsCancelButton: string;
+  amsEditUserCard: string;
+  // Associate Merchants (/associate-users-to-merchants)
+  amsAssocPageSubmit: string;
+  amsUsersSelectionInfo: string;
+  amsMerchantsSelectionInfo: string;
+  amsAssocUsersTableContainer: string;
+  amsAssocMerchantsTableContainer: string;
+  amsAssocSelectAllCheckbox: string;
+  amsAssocRowCheckbox: string;
+  amsAssocMerchantsSearch: string;
+  // Toast
+  amsSuccessToast: string;
+  // Confirmation modal
+  amsAssocConfirmButton: string;
+  // Log Activity table (/users/[username]) — only rdt_Table on user details page
+  amsLogActivityRow: string;
+  amsLogActivityCell: string;
+  // Edit User Merchants card (/users/[username])
+  amsEditUserMerchantsButton: string;
+  amsUserMerchantsCardToggle: string;
+  amsUserMerchantsCardCollapse: string;
+  amsUserMerchantsSelectControl: string;
+  amsUserMerchantsSelectInput: string;
+  amsUserMerchantsSelectOption: string;
+  amsUserMerchantsTag: string;
+  amsUserMerchantsSaveButton: string;
+}
+
 /** Composite type of all selectors */
 export interface AppSelectors extends
   SpinnerSelectors,
@@ -513,7 +645,14 @@ export interface AppSelectors extends
   PaymentArrangementSelectors,
   ErrorLogSelectors,
   MoveDueDateSelectors,
-  AmsUserSelectors {}
+  AmsUserSelectors,
+  InvitationSelectors,
+  OptOutAiSelectors,
+  LeadsTableSelectors,
+  SalesRepPanelSelectors,
+  OpenToBuySelectors,
+  CcHistorySelectors,
+  CcBinSelectors {}
 
 export interface AmsUserSelectors {
   amsRdtTable: string;

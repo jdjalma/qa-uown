@@ -19,7 +19,7 @@ import { FundingQueueStatus, AllocationStrategy, TestTag, buildTags } from '@pty
 import { TEST_CARDS, TEST_BANK } from '@config/index.js';
 import { extractAccountPkFromUrl, buildCcPaymentDetails, buildTestData,
   loginToPortalWithOptions, loginToPortalIfNeeded,
-  navigateToServicingCustomer, sleep, setupRouteIntercept } from '@helpers/index.js';
+  navigateToServicingCustomer, sleep } from '@helpers/index.js';
 
 // Dynamic environment from ENV variable (CI overrides via GitLab Variables)
 const currentEnv = process.env.ENV || 'sandbox';
@@ -33,10 +33,10 @@ for (const data of testData) {
   test.describe(`Unified Flow - ${data.env} ${data.state}/${data.merchant}`, { tag: data.tag.split(' ') }, () => {
     test.use({ envName: data.env });
 
-    test(`Creating Uown account in "${data.env}"`, async ({ page, api, testEnv, email, ctx }) => {
-      // Intercept public UOWN URLs and redirect to internal cluster URLs (CI only)
-      await setupRouteIntercept(page, testEnv);
-
+    test(`Creating Uown account in "${data.env}"`, async ({ page, api, testEnv, email, ctx, merchantConfig: mSetup }) => {
+      await test.step('Ensure merchant config', async () => {
+        await mSetup.configureByName(data.merchant, 'lifecycle');
+      });
       const { env, address, merchant, applicant, order } = buildTestData({
         env: data.env,
         state: data.state,

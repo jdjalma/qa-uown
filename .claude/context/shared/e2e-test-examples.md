@@ -90,7 +90,7 @@ for (const data of testData) {
 ## 3. Task Test Structure (GitLab issues)
 
 ```typescript
-// File: tests/taskTestingUown/{testName}/{testName}.spec.ts
+// File: docs/taskTestingUown/{testName}/{testName}.spec.ts
 // Project: task-testing (even for DB-only tests — NOT api-only)
 import { test, expect } from '@fixtures/test-context.fixture.js';
 import { TestTag, buildTags, splitTags } from '@ptypes/enums.js';

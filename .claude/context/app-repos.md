@@ -21,7 +21,6 @@ The UOWN Leasing platform source code lives in sibling directories under `projec
 | **los-common** | Java shared lib | R1.49.1 | `../los-common/` | `src/main/java/com/uownleasing/los/common/` |
 | **svc-common** | Java shared lib | R1.49.1 | `../svc-common/` | `src/main/java/com/uownleasing/svc/common/` |
 | **configuration** | Config | main | `../configuration/` | Root (FAQ.md, README.md) |
-| **fintech-qaautomation** | Legacy Java/Cucumber | dev | `../fintech-qaautomation/` | `src/test/` |
 
 > **All paths are relative to fintech-playwright root.** Use `../svc/` etc. in Grep/Glob/Read tool calls.
 
@@ -109,15 +108,6 @@ Grep pattern: ComponentName         path: ../website/components/  glob: *.{js,js
 Grep pattern: ComponentName         path: ../ams-website/components/  glob: *.{js,jsx,ts,tsx}
 ```
 
-### Legacy Java Tests
-
-Compare with existing Java/Cucumber tests:
-
-```
-Grep pattern: Scenario.*flow_name   path: ../fintech-qaautomation/src/test/  glob: *.feature
-Grep pattern: @Given.*step_name     path: ../fintech-qaautomation/src/test/  type: java
-```
-
 ### Configuration / Feature Flags
 
 ```
@@ -130,7 +120,7 @@ Grep pattern: FEATURE_              path: ../svc/src/main/java/com/uownleasing/s
 | Source | Path | Complements |
 |--------|------|-------------|
 | **Postman collection** | `docs/UOWN Leasing API Documentation (FULL API).postman_collection.json` | Endpoint contracts → verify against svc controllers |
-| **DB schema doc** | `docs/database-schema-qa2.md` | Table structure → verify against Flyway migrations in svc |
+| **DB schema doc** | `docs/database-schema.md` | Table structure → verify against Flyway migrations in svc |
 | **Business rules** | `docs/business-rules/` | Business logic → verify against service implementations |
 | **Appendix C** | `docs/business-rules/appendix-c-tabelas-banco.md` | DB tables → verify against entity classes in svc |
 
@@ -140,7 +130,7 @@ Before any task analysis, the orchestrator runs `git pull --ff-only` on all repo
 
 ```bash
 # Executed by orchestrator in Phase 0a
-for repo in svc origination servicing website ams ams-website payment-gateway uwengine ccverification common los-common svc-common configuration fintech-qaautomation; do
+for repo in svc origination servicing website ams ams-website payment-gateway uwengine ccverification common los-common svc-common configuration; do
   git -C "../$repo" pull --ff-only 2>&1 || echo "WARN: $repo sync failed (using stale)"
 done
 ```

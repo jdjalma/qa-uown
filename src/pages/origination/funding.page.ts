@@ -14,18 +14,53 @@ export class FundingPage extends OriginationBasePage {
   }
 
   async expandFilters(): Promise<void> {
+    // Wait for any loading overlay to clear before interacting with filters
+    await this.waitForSpinner();
+
     // Check if filter section is already expanded (search button visible)
     const searchBtn = this.page.locator("button:has-text('Search')").first();
     const isExpanded = await searchBtn.isVisible({ timeout: 1_000 }).catch(() => false);
     if (!isExpanded) {
       const filtersBtn = this.page.locator("button:has-text('Filters')").first();
       if (await filtersBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-        await filtersBtn.click();
+        await filtersBtn.click({ force: true });
         await searchBtn.waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {
           console.log('[Funding] Search button did not appear after expanding filters');
         });
       }
     }
+  }
+
+  /**
+   * Selects a merchant from the Merchant single-select filter.
+   * Funding page uses label[@for]+sibling div pattern with filter__dropdown-indicator.
+   */
+  async filterByMerchant(merchantName: string): Promise<void> {
+    await this.expandFilters();
+    await this.selectFilterOption(
+      [
+        "xpath=//label[@for='merchantName']/following-sibling::div//div[contains(@class, 'filter__dropdown-indicator')]",
+        "xpath=//*[text()='Merchant']/following-sibling::div//div[contains(@class, 'filter__dropdown-indicator')]",
+        "xpath=//*[text()='Merchant']/following-sibling::div//div[contains(@class, 'control')]",
+      ],
+      merchantName,
+    );
+  }
+
+  /**
+   * Selects a location from the Location single-select filter.
+   * Same label+sibling pattern as merchant.
+   */
+  async filterByLocation(locationName: string): Promise<void> {
+    await this.expandFilters();
+    await this.selectFilterOption(
+      [
+        "xpath=//label[@for='locationName']/following-sibling::div//div[contains(@class, 'filter__dropdown-indicator')]",
+        "xpath=//*[text()='Location']/following-sibling::div//div[contains(@class, 'filter__dropdown-indicator')]",
+        "xpath=//*[text()='Location']/following-sibling::div//div[contains(@class, 'control')]",
+      ],
+      locationName,
+    );
   }
 
   /**

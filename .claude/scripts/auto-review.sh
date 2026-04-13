@@ -41,7 +41,7 @@ IS_HELPER=false
 [[ "$FILE_PATH" == *".spec.ts" ]]            && IS_SPEC=true
 [[ "$FILE_PATH" == */src/pages/* ]]          && IS_PAGE_OBJECT=true
 [[ "$FILE_PATH" == */src/api/clients/* ]]    && IS_API_CLIENT=true
-[[ "$FILE_PATH" == */tests/taskTestingUown/* ]] && IS_TASK_TEST=true
+[[ "$FILE_PATH" == */docs/taskTestingUown/* ]] && IS_TASK_TEST=true
 [[ "$FILE_PATH" == */src/helpers/* ]]        && IS_HELPER=true
 
 ERRORS=()
@@ -118,7 +118,7 @@ if $IS_SPEC; then
 fi
 
 # ════════════════════════════════════════════════════════════════════
-# TASK TESTS (tests/taskTestingUown/)
+# TASK TESTS (docs/taskTestingUown/)
 # ════════════════════════════════════════════════════════════════════
 if $IS_TASK_TEST && $IS_SPEC; then
 
@@ -132,7 +132,7 @@ if $IS_TASK_TEST && $IS_SPEC; then
 
   # Deve estar em subdiretório com mesmo nome: taskTestingUown/{name}/{name}.spec.ts
   if [[ "$PARENT_DIR" != "$FNAME" ]]; then
-    ERRORS+=("🔴 STRUCTURE [$(basename "$FILE_PATH")]: task test deve estar em tests/taskTestingUown/{name}/{name}.spec.ts (subdiretório)")
+    ERRORS+=("🔴 STRUCTURE [$(basename "$FILE_PATH")]: task test deve estar em docs/taskTestingUown/{name}/{name}.spec.ts (subdiretório)")
   fi
 
 fi

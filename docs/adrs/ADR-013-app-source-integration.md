@@ -54,6 +54,5 @@ Key design decisions:
 
 ## References
 - `.claude/context/app-repos.md` — repository catalog
-- ADR-012 (Java/Cucumber migration — references `fintech-qaautomation` repo)
 - `docs/UOWN Leasing API Documentation (FULL API).postman_collection.json` — Postman collection
-- `docs/database-schema-qa2.md` — DB schema reference
+- `docs/database-schema.md` — DB schema reference

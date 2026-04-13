@@ -5,3 +5,8 @@ export * from './settlement.body.js';
 export * from './credit-card.body.js';
 export * from './account.body.js';
 export * from './payment-arrangement.body.js';
+export * from './svc-phone.body.js';
+export * from './svc-email.body.js';
+export * from './svc-contact.body.js';
+export * from './ams-user.body.js';
+export * from './merchant-config.body.js';

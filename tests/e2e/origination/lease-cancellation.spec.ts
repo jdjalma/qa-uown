@@ -114,7 +114,7 @@ for (const data of approvedCancellationData) {
   test.describe(`Invoice Cancellation at APPROVED - ${data.env}`, { tag: splitTags(data.tag) }, () => {
     test.use({ envName: data.env });
 
-    test('Cancel invoice items at APPROVED and verify INVOICE_CANCELED status', async ({ page, api, ctx }) => {
+    test('Cancel invoice items at APPROVED and verify INVOICE_CANCELED status', async ({ page, api, ctx, merchantConfig: mSetup }) => {
       test.setTimeout(300_000);
       const { env, merchant, applicant } = buildTestData({
         env: data.env,
@@ -122,6 +122,10 @@ for (const data of approvedCancellationData) {
         merchant: data.merchant,
         orderTotal: '800',
         orderDescription: 'Invoice cancellation test',
+      });
+
+      await test.step('Ensure merchant config', async () => {
+        await mSetup.configureByName(data.merchant, 'lifecycle');
       });
 
       await test.step('Setup application at APPROVED with invoice', async () => {
@@ -209,7 +213,7 @@ for (const data of signedCancellationData) {
   test.describe(`Lease Cancellation at SIGNED - ${data.env}`, { tag: splitTags(data.tag) }, () => {
     test.use({ envName: data.env });
 
-    test('Cancel lease at SIGNED and verify UW_APPROVED status', async ({ page, api, ctx }) => {
+    test('Cancel lease at SIGNED and verify UW_APPROVED status', async ({ page, api, ctx, merchantConfig: mSetup }) => {
       test.setTimeout(300_000);
       const { env, merchant, applicant } = buildTestData({
         env: data.env,
@@ -217,6 +221,10 @@ for (const data of signedCancellationData) {
         merchant: data.merchant,
         orderTotal: '800',
         orderDescription: 'Signed cancellation test',
+      });
+
+      await test.step('Ensure merchant config', async () => {
+        await mSetup.configureByName(data.merchant, 'lifecycle');
       });
 
       await test.step('Setup application with payment info via API', async () => {
@@ -271,7 +279,7 @@ for (const data of fundingNoRefundData) {
   test.describe(`Lease Cancellation at FUNDING (no refund) - ${data.env}`, { tag: splitTags(data.tag) }, () => {
     test.use({ envName: data.env });
 
-    test('Cancel lease at FUNDING after payments in servicing + customer portal, no refund', async ({ page, api, email, ctx }) => {
+    test('Cancel lease at FUNDING after payments in servicing + customer portal, no refund', async ({ page, api, email, ctx, merchantConfig: mSetup }) => {
       test.setTimeout(600_000);
       const { env, merchant, applicant, address } = buildTestData({
         env: data.env,
@@ -279,6 +287,10 @@ for (const data of fundingNoRefundData) {
         merchant: data.merchant,
         orderTotal: '800',
         orderDescription: 'Funding cancellation no refund test',
+      });
+
+      await test.step('Ensure merchant config', async () => {
+        await mSetup.configureByName(data.merchant, 'lifecycle');
       });
 
       await test.step('Setup application to FUNDING via API', async () => {
@@ -361,7 +373,7 @@ for (const data of fundingWithRefundData) {
   test.describe(`Lease Cancellation at FUNDING (with refund) - ${data.env}`, { tag: splitTags(data.tag) }, () => {
     test.use({ envName: data.env });
 
-    test('Cancel lease at FUNDING after payments in servicing + customer portal, with refund', async ({ page, api, email, ctx }) => {
+    test('Cancel lease at FUNDING after payments in servicing + customer portal, with refund', async ({ page, api, email, ctx, merchantConfig: mSetup }) => {
       test.setTimeout(600_000);
       const { env, merchant, applicant, address } = buildTestData({
         env: data.env,
@@ -369,6 +381,10 @@ for (const data of fundingWithRefundData) {
         merchant: data.merchant,
         orderTotal: '800',
         orderDescription: 'Funding cancellation with refund test',
+      });
+
+      await test.step('Ensure merchant config', async () => {
+        await mSetup.configureByName(data.merchant, 'lifecycle');
       });
 
       await test.step('Setup application to FUNDING via API', async () => {

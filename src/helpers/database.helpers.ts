@@ -542,6 +542,38 @@ export class DatabaseHelpers {
     );
   }
 
+  /** Get a single CC transaction by PK */
+  async getCcTransactionByPk(txPk: string | number): Promise<Record<string, unknown> | null> {
+    return this.queryOne(
+      `SELECT * FROM uown_sv_credit_card_transaction WHERE pk = $1`,
+      [txPk],
+    );
+  }
+
+  /** Get all CC transactions for an account (ordered by pk DESC) */
+  async getCcTransactionsByAccount(accountPk: string | number): Promise<Array<Record<string, unknown>>> {
+    return this.query(
+      `SELECT * FROM uown_sv_credit_card_transaction
+       WHERE account_pk = $1
+       ORDER BY pk DESC`,
+      [accountPk],
+    );
+  }
+
+  /** Get the latest activity log entry for an account matching a search term */
+  async getLatestActivityLog(
+    accountPk: string | number,
+    searchTerm: string,
+  ): Promise<Record<string, unknown> | null> {
+    return this.queryOne(
+      `SELECT * FROM uown_sv_activity_log
+       WHERE account_pk = $1 AND LOWER(notes) LIKE LOWER($2)
+       ORDER BY row_created_timestamp DESC
+       LIMIT 1`,
+      [accountPk, `%${searchTerm}%`],
+    );
+  }
+
   /** Get pending CC transactions for an account (sweep criteria) */
   async getPendingCcTransactions(accountPk: string): Promise<Array<Record<string, unknown>>> {
     return this.query(
@@ -862,7 +894,7 @@ export class DatabaseHelpers {
 
   async getLeadPkByUuid(leadUuid: string): Promise<string | null> {
     return this.getSingleString(
-      'SELECT pk FROM uown_los_lead WHERE lead_uuid = $1',
+      'SELECT pk FROM uown_los_lead WHERE uuid = $1',
       [leadUuid],
     );
   }

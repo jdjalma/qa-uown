@@ -2,7 +2,7 @@
  * Browser / Driver Factory
  *
  * Centralized browser configuration profiles for E2E tests.
- * Migrated from Browser.java in fintech-qaautomation which managed
+ * Migrated from Browser.java in the legacy Java/Cucumber project which managed
  * WebDriver initialization, proxy setup, and device emulation.
  *
  * In Playwright, browser management is handled by the config, but this

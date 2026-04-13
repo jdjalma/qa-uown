@@ -79,6 +79,8 @@ export interface SendApplicationBody {
   invoiceNumber?: string;
   lineItem?: InvoiceLineItem[];
   programName?: string;
+  mainBankAccountNumber?: string;
+  mainBankRoutingNumber?: string;
 }
 
 // ── getApplicationStatus ────────────────────────────────────────────

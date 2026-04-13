@@ -172,6 +172,48 @@ expect(accountStatus).toBe('SETTLED_IN_FULL');
 
 ---
 
+## CC Payment Arrangement — One-Time Card (UI)
+
+> When filling the one-time card form in the Make Payment modal, the **Expires On** field is
+> `input[type="month"]` and requires `YYYY-MM` format. Other formats cause `Error: Malformed value`.
+
+```typescript
+// Convert MM/YY or full year before filling
+const fullYear = expYear.length === 2 ? `20${expYear}` : expYear;
+await page.locator("input[placeholder='Expires On']").fill(`${fullYear}-${expMonth}`);
+// Example: expMonth='12', expYear='28' → fills '2028-12'
+```
+
+When a Servicing account already has a card on file, `makeCcPaymentArrangement()` defaults to
+"Use existing card information". Pass `ccDetails` to switch to the one-time card form:
+
+```typescript
+await servicingBasePage.makeCcPaymentArrangement({
+  startDate: calculateDate(0),
+  endDate: calculateDate(30),
+  frequency: 'Monthly',
+  ccDetails: {
+    firstName: 'John',
+    lastName: 'Doe',
+    cardNumber: VALID_TEST_CARDS[0].cardNumber,
+    cvc: VALID_TEST_CARDS[0].cvv,
+    expMonth: '12',
+    expYear: '28',   // 2-digit or 4-digit — method normalizes internally
+  },
+});
+```
+
+Selectors added in Task #483 (`CreditCardSelectors`):
+
+| Selector key | Selector | Notes |
+|---|---|---|
+| `otCardFirstName` | `input[placeholder='First Name']` | One-time card form |
+| `otCardLastName` | `input[placeholder='Last Name']` | One-time card form |
+| `otCardExpiresOn` | `input[placeholder='Expires On']` | `type="month"` — use `YYYY-MM` |
+| `otCardSecurityCode` | `input[placeholder='Card Security Code']` | CVV/CVC |
+
+---
+
 ## ACH Payment Arrangement
 
 > **IMPORTANTE:** ACH é **assíncrono** — `createOrUpdateAchPayments` cria entradas NOT_STARTED.

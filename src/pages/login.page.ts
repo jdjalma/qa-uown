@@ -17,7 +17,9 @@ export class LoginPage extends BasePage {
   }
 
   async isLoginPage(): Promise<boolean> {
-    return this.isElementPresent(SELECTORS.loginEmail, 3_000);
+    const hasEmail = await this.isElementPresent(SELECTORS.loginEmail, 3_000);
+    if (!hasEmail) return false;
+    return this.page.locator(SELECTORS.loginPassword).first().isVisible({ timeout: 1_000 }).catch(() => false);
   }
 
   async isLoggedIn(): Promise<boolean> {

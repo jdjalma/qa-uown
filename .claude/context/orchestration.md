@@ -9,20 +9,20 @@
 | Agent | Required | Optional |
 |-------|----------|----------|
 | fetch-task | — | business-rules |
-| spec-test | business-rules, test-patterns, architecture | environments, glossary, app-repos |
-| impl-e2e | coding-standards, test-patterns, architecture | business-rules, environments, app-repos |
-| impl-api | coding-standards, architecture | business-rules, environments, app-repos |
+| spec-test | business-rules, test-patterns, architecture, **user-stories/jornada-completa-lease.md** | environments, glossary, app-repos |
+| impl-e2e | coding-standards, test-patterns, architecture, **business-rules** (+ relevant chapter from docs/business-rules/) | environments, app-repos |
+| impl-api | coding-standards, architecture, **business-rules** (+ relevant chapter from docs/business-rules/) | environments, app-repos |
 | impl-api-client | coding-standards, architecture | environments |
 | impl-page-object | coding-standards, architecture | test-patterns |
 | impl-db-validation | architecture, environments | coding-standards, business-rules, app-repos |
 | refactor-page-object | coding-standards, architecture | test-patterns |
-| debug-flaky | coding-standards, test-patterns, environments | architecture, business-rules |
-| audit-selectors | coding-standards, architecture | test-patterns |
-| audit-estrutura | INDEX, coding-standards | all (as needed) |
-| data-merchant | coding-standards | business-rules |
-| data-template | coding-standards, architecture | business-rules |
-| data-test-accounts | coding-standards | environments |
-| validate-results | test file path, environment, task requirements | business-rules, architecture, Postman collection, app-repos |
+| debug-flaky | coding-standards, test-patterns, environments, **business-rules** (+ relevant chapter) | architecture |
+| audit (selectors mode) | coding-standards, architecture | test-patterns |
+| audit (structure mode) | INDEX, coding-standards | all (as needed) |
+| data (merchant mode) | coding-standards | business-rules |
+| data (template mode) | coding-standards, architecture | business-rules |
+| data (accounts mode) | coding-standards | environments |
+| validate-results | test file path, environment, task requirements, **business-rules** (+ relevant chapter) | architecture, Postman collection, app-repos, user-stories/jornada-completa-lease.md |
 | docs-update (pre-analysis) | INDEX, business-rules, task description | environments, glossary, architecture, app-repos |
 | docs-update (post-pipeline) | INDEX, business-rules, architecture, test-patterns | environments, glossary |
 
@@ -44,7 +44,7 @@ spec-test ───────────────────────�
      ▼                                          │
 ┌────────────────── PARALLEL ──────────────┐    │
 │ impl-page-object   impl-api-client       │    │
-│ data-template      impl-db-validation    │    │
+│ data (template)    impl-db-validation    │    │
 └──────────┬───────────────┬───────────────┘    │
            │               │                    │
            ▼               ▼                    │
@@ -64,12 +64,12 @@ spec-test ───────────────────────�
       (ALWAYS LAST)
 
 Maintenance (no pre-analysis — works on existing code):
-  debug-flaky → (audit-selectors) → tsc → docs-update
+  debug-flaky → (audit selectors mode) → tsc → docs-update
   refactor-page-object → tsc → docs-update
-  audit-selectors / audit-estrutura → docs-update
+  audit (selectors | structure) → docs-update
 
 Data:
-  docs-update [PRE-ANALYSIS] → data-merchant / data-template / data-test-accounts → docs-update [POST]
+  docs-update [PRE-ANALYSIS] → data (merchant | template | accounts) → docs-update [POST]
 ```
 
 ## Phase 0 — Sync & Source Detection
@@ -79,13 +79,13 @@ Data:
 Before any task analysis, sync all 14 application repos:
 
 ```bash
-for repo in svc origination servicing website ams ams-website payment-gateway uwengine ccverification common los-common svc-common configuration fintech-qaautomation; do
+for repo in svc origination servicing website ams ams-website payment-gateway uwengine ccverification common los-common svc-common configuration; do
   git -C "../$repo" pull --ff-only 2>&1 || echo "WARN: $repo sync failed (using stale)"
 done
 ```
 
 - Uses `--ff-only` to avoid merge conflicts. Failures are logged but do NOT block the pipeline.
-- **Conditional DB schema refresh**: when the task involves DB changes (keywords: migration, table, column, entity, flyway), regenerate `docs/database-schema-qa2.md`.
+- **Conditional DB schema refresh**: when the task involves DB changes (keywords: migration, table, column, entity, flyway), regenerate `docs/database-schema.md`.
 - See `.claude/context/app-repos.md` for the full repo catalog and search patterns.
 
 ### Step 0b — Fetch task (conditional)
@@ -134,23 +134,23 @@ For each step:
 ## Phase 5 — Validation
 
 1. `tsc --noEmit` — if it fails, fix and re-validate.
-2. `validate-results` — execute the test, validate results against task requirements (consults business rules, Postman collection, app source code), produce formatted scenario report, **and generate the task report artifact** (`.md` file in `tests/taskTestingUown/`).
+2. `validate-results` — execute the test, validate results against task requirements (consults business rules, Postman collection, app source code), produce formatted scenario report, **and generate the task report artifact** (`.md` file in `docs/taskTestingUown/`).
 
 ### Task Report Artifact
 
-The `.md` report lives alongside the test in `tests/taskTestingUown/` and **MUST be updated after every test execution**.
+The `.md` report lives in `docs/taskTestingUown/` and **MUST be updated after every test execution**.
 
 | Field | Value |
 |-------|-------|
-| **Location** | `tests/taskTestingUown/{testName}.md` |
-| **Content** | Task description (from GitLab) + scenario results (PASS/FAIL with real data) + validation summary |
-| **Gitignored** | Yes (`tests/taskTestingUown/*.md` in `.gitignore`) |
+| **Location** | `docs/taskTestingUown/{testName}/{testName}-report.md` |
+| **Content** | Task description (from GitLab) + scenario results (PASS/FAIL with real data) + evidence PKs + bugs (if any) + validation summary |
+| **Gitignored** | Yes (`docs/taskTestingUown/` in `.gitignore`) |
 
 | Trigger | Who updates |
 |---------|-------------|
 | Pipeline Phase 5 (`validate-results`) | The agent writes/updates the `.md` with real execution data |
-| Manual execution | The **orchestrator** (CLAUDE.md) updates the `.md` after parsing test output |
-| Re-execution on different environment | Update `.md` with latest execution data (overwrites previous) |
+| Manual execution (user runs test directly) | **Always delegate to `subagent-validate-results`** — the orchestrator MUST NOT write the `.md` directly, even after seeing test output. The agent reads `e2e-test-report-standard.md` and applies the full checklist. |
+| Re-execution on different environment | **Always delegate to `subagent-validate-results`** — update `.md` with latest execution data. |
 
 Update rules:
 1. **Parse the test output** — extract leadPk, contractUrl, ENVIRONMENT_NAME, IS_PRODUCTION, pass/fail, duration
@@ -173,7 +173,7 @@ Report to the user:
    Files created: N | changed: N
    tsc: OK/FAIL
    Docs pre-analysis: updated N files | no changes needed
-   Task report: tests/taskTestingUown/{testName}.md
+   Task report: docs/taskTestingUown/{testName}/{testName}-report.md
    Next steps: [suggested actions]
 ```
 

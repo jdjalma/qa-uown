@@ -289,3 +289,73 @@ Pagina (dw93bg.paypair.com)
 
 ---
 
+## 47. Podium (Gestao de Avaliacoes de Clientes)
+
+### O Que e
+
+Podium e uma plataforma de **gestao de reputacao e avaliacoes online** (reviews). A integracao permite que agentes do portal Servicing enviem convites de avaliacao diretamente para clientes, sem sair da interface da UOwn.
+
+### Para Que Serve
+
+Facilitar a coleta de avaliacoes de clientes satisfeitos via Google, Yelp e outras plataformas gerenciadas pelo Podium. O agente nao precisa copiar emails nem usar o portal Podium separadamente.
+
+### Como o Agente Usa
+
+1. **Acesso ao modal Send Invite:** Na pagina de Customer Information do portal Servicing, o agente clica no icone de envelope (`#invitation`) na barra lateral esquerda
+2. **Botao Send Podium Link:** Visivel dentro do modal apenas para usuarios com a permissao `send_podium_link` (permissao `customer_information.modify.send_podium_link`)
+3. **Confirmacao:** O agente clica em "Send Podium Link" e confirma no modal de confirmacao ("Please Confirm" / "Continue")
+4. **Feedback:** Toast verde "Podium invitation sent successfully." confirma o envio
+
+### Como Funciona Tecnicamente
+
+**Endpoint:** `POST /uown/svc/accounts/{accountPk}/podium-link`
+
+**Backend:**
+1. Valida que existe um cliente primario para a conta (`No primary customer found for this account.` se nao existir)
+2. Obtem ou renova o token OAuth2 Podium via ciclo de vida gerenciado automaticamente
+3. Envia o convite via API Podium para o email/telefone do cliente primario
+4. Registra a chamada em `sv_outbound_api_log` (schema SVC separado)
+
+**Autenticacao com Podium (OAuth2):**
+- Token armazenado em `uown_podium_token` (`access_token`, `refresh_token`, `expiration_time`)
+- O sistema renova automaticamente o token antes de cada chamada se necessario
+- Flyway migration: `V20260317121000__create_podium_token_table.sql`
+
+### Controle de Acesso
+
+| Permissao | Papel |
+|-----------|-------|
+| `send_podium_link` | Necessaria para ver/usar o botao no modal Send Invite |
+| Usuarios sem a permissao | Modal Send Invite pode estar acessivel, mas o botao "Send Podium Link" nao e renderizado |
+
+### Estrutura de Banco de Dados
+
+**Tabela `uown_podium_token`:**
+
+| Coluna | Tipo | Descricao |
+|--------|------|-----------|
+| `pk` | bigint | PK auto-incremento |
+| `access_token` | text | Token OAuth2 ativo |
+| `refresh_token` | text | Token de renovacao |
+| `expiration_time` | timestamp | Data/hora de expiracao do access_token |
+| `tenant_id` | bigint | FK para tenant |
+| `row_created_timestamp` | timestamp | Audit: criacao |
+| `row_updated_timestamp` | timestamp | Audit: ultima atualizacao |
+
+**Tabela `sv_outbound_api_log`** (schema SVC separado):
+Registra cada chamada de saida para o Podium com `url`, `call_type`, `request` e `response`. Nao e acessivel via conexao DB dos testes (schema boundary).
+
+### Tratamento de Erros
+
+| Situacao | Resposta da API |
+|----------|----------------|
+| `accountPk` inexistente | HTTP 400 -- `"No primary customer found for this account."` |
+| Token expirado | Sistema renova automaticamente antes de chamar o Podium |
+| Erro na API Podium | HTTP 5xx com mensagem de erro do Podium |
+
+### Milestone
+
+RU03.26.1.50.0 -- Task #442 (`uownSvcPodiumApiIntegration`)
+
+---
+

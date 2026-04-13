@@ -2,7 +2,7 @@
  * E2E Test Hooks
  *
  * Lifecycle hooks for Playwright E2E tests, migrated from
- * CommonSteps.java @Before / @After hooks in fintech-qaautomation.
+ * CommonSteps.java @Before / @After hooks in the legacy Java/Cucumber project.
  *
  * Provides:
  *  - CSS animation disabling for faster, deterministic tests

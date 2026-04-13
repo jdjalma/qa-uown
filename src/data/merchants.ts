@@ -9,6 +9,8 @@ export interface MerchantConfig {
   websiteUrl?: string;
   websiteUsername?: string;
   websitePassword?: string;
+  /** Per-environment overrides — merged on top of base config when env matches. */
+  envOverrides?: Record<string, Partial<Omit<MerchantConfig, 'envOverrides'>>>;
 }
 
 /**
@@ -95,8 +97,19 @@ export const MERCHANTS: Record<string, MerchantConfig> = {
   FifthAveFurnitureNY: {
     fullName: '5th Ave Furniture (NY)',
     username: 'kornerstone',
-    password: envOr('MERCHANT_FIFTH_AVE_FURNITURE_NY_PASSWORD', 'U0wn_kornerstone_4aZ9Xb'),
+    password: envOr('MERCHANT_FIFTH_AVE_FURNITURE_NY_PASSWORD', 'U0wn_Kornerstone_012c'),
     number: 'KS3015',
+    programs: ['13 month', '16 month'],
+    envOverrides: {
+      qa1: { password: envOr('MERCHANT_FIFTH_AVE_FURNITURE_NY_QA1_PASSWORD', 'U0wn_kornerstone_4aZ9Xb') },
+      qa2: { password: envOr('MERCHANT_FIFTH_AVE_FURNITURE_NY_QA2_PASSWORD', 'U0wn_kornerstone_4aZ9Xb') },
+    },
+  },
+  ComfortZoneMattress: {
+    fullName: 'Comfort Zone Mattress & Home Decor',
+    username: 'kornerstone',
+    password: envOr('MERCHANT_COMFORT_ZONE_PASSWORD', 'U0wn_Kornerstone_012c'),
+    number: 'KS3023',
     programs: ['13 month', '16 month'],
   },
   FormPiper: {
@@ -148,6 +161,7 @@ export const MERCHANTS: Record<string, MerchantConfig> = {
     password: envOr('MERCHANT_TERRACE_FINANCE_PASSWORD', 'U0wn_terraceFinance_xJ9z4p'),
     number: 'OL90202-0001',
     refCode: 'terraceFinance',
+    programs: ['13 month', '16 month'],
   },
   Kornerstone: {
     fullName: 'Kornerstone',
@@ -188,8 +202,12 @@ export const MERCHANTS: Record<string, MerchantConfig> = {
   },
 };
 
-export function getMerchant(name: string): MerchantConfig {
+export function getMerchant(name: string, env?: string): MerchantConfig {
   const merchant = MERCHANTS[name];
   if (!merchant) throw new Error(`Unknown merchant: ${name}. Available: ${Object.keys(MERCHANTS).join(', ')}`);
+  if (env && merchant.envOverrides?.[env]) {
+    const { envOverrides: _, ...base } = merchant;
+    return { ...base, ...merchant.envOverrides[env] };
+  }
   return merchant;
 }

@@ -28,10 +28,8 @@ export interface BuildTestDataOptions {
   /** Whether the SSN should produce an APPROVED result (default: true) */
   approved?: boolean;
   /**
-   * Sanitize name suffix to alpha-only characters.
-   * Use this when the names will be typed into fields that reject non-alpha chars
-   * (e.g. contract page CC/bank name fields).
-   * Default: false
+   * @deprecated No longer needed — names are always alpha-only now.
+   * Kept for backwards compatibility; has no effect.
    */
   sanitizeNames?: boolean;
   /**
@@ -74,14 +72,13 @@ export function buildTestData(options: BuildTestDataOptions): TestData {
     orderTotal,
     orderDescription = 'Test',
     approved = true,
-    sanitizeNames = false,
     emailOverride,
     dob = '01/01/1984',
   } = options;
 
   const env = new ConfigEnvironment(envName as EnvName);
   const address = getAddressForState(state);
-  const merchantConfig = getMerchant(merchantName);
+  const merchantConfig = getMerchant(merchantName, envName);
   const runId = generateRunId();
 
   const merchant: MerchantInfo = {
@@ -90,11 +87,8 @@ export function buildTestData(options: BuildTestDataOptions): TestData {
     number: merchantConfig.number,
   };
 
-  // Build name suffix — optionally sanitized to alpha-only
-  let nameSuffix = runId;
-  if (sanitizeNames) {
-    nameSuffix = runId.replace(/[^a-zA-Z]/g, '').slice(0, 8) || 'abcdef';
-  }
+  // Name suffix is always alpha-only (no numbers/hyphens) — required by application name fields
+  const nameSuffix = runId.replace(/[^a-zA-Z]/g, '').slice(0, 8) || 'abcdef';
 
   const applicant: ApplicantInfo = {
     firstName: `TestFN${nameSuffix}`,

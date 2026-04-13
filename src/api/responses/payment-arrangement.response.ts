@@ -88,3 +88,66 @@ export interface PaymentArrangementAchResponseBody extends BaseResponseBody {
   arrangementType?: ArrangementType;
   achPayments?: AchPaymentResult[];
 }
+
+// ── GET /uown/svc/accounts/{accountPk}/payment-arrangements ──────────
+
+/** Single arrangement item returned in the paginated list. Maps to SvPaymentArrangement entity. */
+export interface PaymentArrangementListItem {
+  pk: number;
+  accountPk: number;
+  startDate: string;
+  endDate: string;
+  amount: number;
+  arrangementType: string;
+  paymentType: string;
+  username: string;
+  previousRating: string | null;
+  currentRating: string;
+  status: string;
+  notes: string | null;
+  active: boolean;
+  rowCreatedTimestamp: string;
+  rowUpdatedTimestamp: string | null;
+}
+
+/** Spring Data Page wrapper for arrangement list. */
+export interface PaymentArrangementListResponse {
+  content: PaymentArrangementListItem[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+  first: boolean;
+  last: boolean;
+  empty: boolean;
+}
+
+// ── GET /uown/svc/payment-arrangements/{pk}/payments ─────────────────
+
+/** ACH payment projection for display. */
+export interface PaymentArrangementAchDisplay {
+  paymentPk: number;
+  postingDate: string;
+  amount: number;
+  status: string;
+  type: string;
+  errorMessage: string | null;
+  accountNumber: string; // masked ****XXXX
+}
+
+/** CC payment projection for display. */
+export interface PaymentArrangementCcDisplay {
+  paymentPk: number;
+  postingDate: string;
+  amount: number;
+  fee: number;
+  status: string;
+  vendor: string;
+  card: string; // masked ****XXXX
+}
+
+/** Response wrapper for arrangement payments. */
+export interface PaymentArrangementPaymentsResponse {
+  ach: PaymentArrangementAchDisplay[];
+  cc: PaymentArrangementCcDisplay[];
+}

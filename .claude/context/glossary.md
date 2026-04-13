@@ -2,7 +2,7 @@
 
 # Glossary — Java/Cucumber → TypeScript/Playwright
 
-Mapping of terms from the legacy project (`fintech-qaautomation`, Java/Cucumber) to the current project (`fintech-playwright`, TypeScript/Playwright).
+Mapping of terms from the legacy Java/Cucumber project to the current project (`fintech-playwright`, TypeScript/Playwright).
 
 ---
 

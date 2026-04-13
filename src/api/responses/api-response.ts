@@ -14,7 +14,12 @@ export async function parseResponse<T>(response: APIResponse): Promise<ApiRespon
   const contentType = response.headers()['content-type'] || '';
 
   if (contentType.includes('application/json')) {
-    body = await response.json() as T;
+    try {
+      body = await response.json() as T;
+    } catch {
+      // Server declared application/json but sent non-JSON body (e.g. plain-text error)
+      body = (await response.text()) as unknown as T;
+    }
   } else {
     body = (await response.text()) as unknown as T;
   }

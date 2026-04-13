@@ -194,6 +194,253 @@ export class ServicingCustomerPage extends ServicingBasePage {
     await expect(row.first()).toBeVisible({ timeout: 10_000 });
   }
 
+  // ── Task #505 — Opt Out AI ─────────────────────────────────────────────
+
+  /**
+   * Navigates to the Primary Contact section via the left nav menu.
+   * Handles the "Customer Information Confirmation" modal that may appear, then
+   * dismisses any other open modal/backdrop before clicking.
+   */
+  async navigateToPrimaryContact(): Promise<void> {
+    // Wait for the page content to stabilize before interacting
+    await this.waitForSpinner();
+    // Handle "Customer Information Confirmation" modal (appears intermittently)
+    const confirmBtn = this.page.getByRole('button', { name: 'CONFIRM' });
+    if (await confirmBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await confirmBtn.click();
+      await this.waitForSpinner();
+    }
+    await this.dismissAllModals();
+    await this.page.locator(SELECTORS.modalBackdrop).waitFor({ state: 'hidden', timeout: 3_000 }).catch(() => {});
+    await this.sideMenuNavigateTo('Primary Contact');
+    await this.waitForSpinner();
+  }
+
+  /**
+   * Returns true if the "Opt Out AI" checkbox in the Mobile Phone section is visible.
+   */
+  async isOptOutAiVisible(): Promise<boolean> {
+    const checkbox = this.page.locator(SELECTORS.optOutAiCheckbox).first();
+    return checkbox.isVisible({ timeout: 5_000 }).catch(() => false);
+  }
+
+  /**
+   * Returns the checked state of the "Opt Out AI" checkbox in the Mobile Phone section.
+   */
+  async isOptOutAiChecked(): Promise<boolean> {
+    const checkbox = this.page.locator(SELECTORS.optOutAiCheckbox).first();
+    return checkbox.isChecked({ timeout: 5_000 }).catch(() => false);
+  }
+
+  /**
+   * Enters edit mode for the Primary Contact section by clicking the edit pencil.
+   * Waits until the Opt Out AI checkbox becomes enabled (not disabled).
+   */
+  async enterPrimaryContactEditMode(): Promise<void> {
+    const editBtn = this.page.locator(SELECTORS.primaryContactEditButton);
+    await editBtn.waitFor({ state: 'visible', timeout: 5_000 });
+    await editBtn.click();
+    // Wait until the checkbox is no longer disabled
+    const checkbox = this.page.locator(SELECTORS.optOutAiCheckbox).first();
+    await checkbox.waitFor({ state: 'visible', timeout: 5_000 });
+    await this.page.waitForFunction(
+      (sel: string) => {
+        const el = document.querySelector(sel) as HTMLInputElement | null;
+        return el != null && !el.disabled;
+      },
+      '#optOutAiMobile',
+      { timeout: 5_000 },
+    );
+  }
+
+  /**
+   * Toggles the "Opt Out AI" checkbox, handles the reason modal (only appears when enabling),
+   * saves, and waits for toast.
+   * - Enable (check): edit mode → click checkbox → reason modal → fill reason → Save modal → SAVE section → toast
+   * - Disable (uncheck): edit mode → click checkbox → no modal → SAVE section → toast
+   * Returns the toast message text (empty string if no toast appeared).
+   */
+  async toggleOptOutAi(reason = 'Automated test toggle'): Promise<string> {
+    // Enter edit mode so checkboxes become enabled
+    await this.enterPrimaryContactEditMode();
+
+    // Click the checkbox
+    const checkbox = this.page.locator(SELECTORS.optOutAiCheckbox).first();
+    await checkbox.click();
+
+    // Reason modal only appears when ENABLING (checking) — not when disabling
+    const reasonTextbox = this.page.locator(SELECTORS.optOutAiReasonTextbox).first();
+    const modalAppeared = await reasonTextbox.isVisible({ timeout: 3_000 }).catch(() => false);
+
+    if (modalAppeared) {
+      await reasonTextbox.fill(reason);
+      const modalSaveBtn = this.page.locator(SELECTORS.optOutAiReasonSaveButton).first();
+      await modalSaveBtn.click();
+      // Wait for modal to close
+      const modal = this.page.locator(SELECTORS.optOutAiReasonModal);
+      await modal.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
+    }
+
+    // Click SAVE on the Primary Contact section to persist changes
+    const sectionSaveBtn = this.page.getByRole('button', { name: 'SAVE' });
+    if (await sectionSaveBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await sectionSaveBtn.click();
+    }
+
+    // Wait for toast
+    const toast = this.page.locator(SELECTORS.toastBody).first();
+    await toast.waitFor({ state: 'visible', timeout: 8_000 }).catch(() => {});
+    const text = await toast.textContent().catch(() => '');
+    return text?.trim() ?? '';
+  }
+
+  /**
+   * Sets the "Opt Out AI" checkbox to the desired state.
+   * Only clicks if the current state differs from the target.
+   * Returns the toast message text (empty string if no click was needed).
+   */
+  async setOptOutAi(enable: boolean): Promise<string> {
+    const isChecked = await this.isOptOutAiChecked();
+    if (isChecked !== enable) {
+      return this.toggleOptOutAi();
+    }
+    return '';
+  }
+
+  // ── End Task #505 ──────────────────────────────────────────────────────
+
+  // ── Task #442 — Send Invite / Podium ──────────────────────────────────
+
+  /**
+   * Opens the Send Invite modal by clicking the envelope icon (#invitation).
+   * Dismisses any lingering modals/backdrops first.
+   *
+   * New flow (RU03.26.1.50.0): clicking the envelope first shows a
+   * "Customer Information Confirmation" modal (CONFIRM/CANCEL). After CONFIRM,
+   * the InviteModal with Trustpilot/CustomerPortal/Podium options appears.
+   */
+  async openSendInviteModal(): Promise<void> {
+    // Wait for the envelope icon first — this confirms React has fully mounted the account
+    // page and the useEffect that conditionally shows VerifyCustomerInformationModal has run.
+    // Checking for the modal BEFORE this causes a timing race where the modal hasn't appeared
+    // yet, the check returns false, and then the modal appears mid-InviteModal animation.
+    const envelopeIcon = this.page.locator(SELECTORS.invitationIcon);
+    await envelopeIcon.waitFor({ state: 'visible', timeout: 10_000 });
+
+    // The "Customer Information Confirmation" modal auto-appears when an account page loads.
+    // It MUST be closed via its "Confirm" button — not dismissAllModals() — because only
+    // handleConfirm() sets isVerified: true in utilityStore, preventing React from
+    // continuously re-showing the modal (which destabilises the InviteModal animation).
+    const verifyModal = this.page.locator('.modal').filter({ hasText: 'Customer Information Confirmation' }).first();
+    if (await verifyModal.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await verifyModal.getByRole('button', { name: 'Confirm' }).click();
+      await verifyModal.waitFor({ state: 'hidden', timeout: 8_000 }).catch(() => {});
+      await this.page.locator(SELECTORS.modalBackdrop).waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
+    }
+
+    await this.dismissAllModals();
+    await this.page.locator(SELECTORS.modalBackdrop).waitFor({ state: 'hidden', timeout: 3_000 }).catch(() => {});
+
+    // The React onClick handler is on the FontAwesomeIcon (SVG) inside #invitation.
+    // The SVG has pointer-events: none (FontAwesome default), so a normal click() on
+    // the div does NOT reach the SVG's React event handler. Use dispatchEvent('click')
+    // directly on the SVG to bypass pointer-events and trigger the React handler.
+    await this.page.locator('#invitation svg').dispatchEvent('click');
+
+    // InviteModal is conditionally rendered by React — wait for a unique button to appear.
+    await this.page.getByRole('button', { name: 'Send TrustPilot Invite' })
+      .waitFor({ state: 'visible', timeout: 8_000 });
+  }
+
+  /**
+   * Returns true if the "Send Podium Link" button is visible inside an open InviteModal.
+   * Call openSendInviteModal() first.
+   */
+  async isPodiumLinkButtonVisible(): Promise<boolean> {
+    return this.page.getByRole('button', { name: 'Send Podium Link' })
+      .isVisible({ timeout: 10_000 }).catch(() => false);
+  }
+
+  /**
+   * Executes the full "Send Podium Link" UI flow:
+   *   1. dispatchEvent click on #invitation svg (bypasses pointer-events: none) → InviteModal opens
+   *   2. Clicks "Send Podium Link" in InviteModal → ConfirmationModal opens, InviteModal closes
+   *   3. Clicks CONFIRM in ConfirmationModal → API call → toast
+   *
+   * Returns the toast text.
+   */
+  async sendPodiumLink(): Promise<string> {
+    // Wait for the envelope icon FIRST — confirms React fully mounted and useEffect ran.
+    // Checking VerifyCustomerInfoModal BEFORE this causes a timing race: the modal hasn't
+    // rendered yet → check returns false → modal appears later during InviteModal animation
+    // → InviteModal button becomes unstable / detached.
+    const envelopeIcon = this.page.locator(SELECTORS.invitationIcon);
+    await envelopeIcon.waitFor({ state: 'visible', timeout: 10_000 });
+
+    // The "Customer Information Confirmation" modal auto-appears when an account page loads.
+    // It MUST be closed via its "Confirm" button — not dismissAllModals() — because only
+    // handleConfirm() sets isVerified: true in utilityStore, preventing React from
+    // continuously re-showing the modal (which destabilises the InviteModal animation).
+    const verifyModal = this.page.locator('.modal').filter({ hasText: 'Customer Information Confirmation' }).first();
+    if (await verifyModal.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await verifyModal.getByRole('button', { name: 'Confirm' }).click();
+      await verifyModal.waitFor({ state: 'hidden', timeout: 8_000 }).catch(() => {});
+      await this.page.locator(SELECTORS.modalBackdrop).waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
+    }
+
+    await this.dismissAllModals();
+    await this.page.locator(SELECTORS.modalBackdrop).waitFor({ state: 'hidden', timeout: 3_000 }).catch(() => {});
+
+    // Open InviteModal — retry envelope click up to 3 times because in some environments
+    // (STG) the first dispatchEvent('click') fires before React has attached the onClick
+    // handler to the SVG, resulting in a no-op.
+    const sendPodiumBtn = this.page.getByRole('button', { name: 'Send Podium Link' });
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      await this.page.locator('#invitation svg').dispatchEvent('click');
+      const appeared = await sendPodiumBtn.waitFor({ state: 'visible', timeout: 5_000 }).then(() => true).catch(() => false);
+      if (appeared) break;
+      console.log(`[sendPodiumLink] Envelope click attempt ${attempt} — InviteModal not visible, retrying`);
+    }
+
+    // Use dispatchEvent instead of click() to bypass actionability checks — in some
+    // environments (STG) React re-renders can detach the button mid-click, causing
+    // "element was detached from the DOM" timeout errors.
+    await sendPodiumBtn.waitFor({ state: 'visible', timeout: 8_000 });
+    await sendPodiumBtn.dispatchEvent('click');
+
+    // After clicking "Send Podium Link", React unmounts InviteModal and mounts
+    // ConfirmationModal. Wait for the Send Podium Link button to detach (InviteModal gone)
+    // before looking for the ConfirmationModal's Continue button — this prevents Playwright
+    // from matching a button in the wrong (closing) modal during the transition.
+    await sendPodiumBtn.waitFor({ state: 'detached', timeout: 5_000 }).catch(() => {});
+
+    // ConfirmationModal opens (confirmation-modal/index.tsx), title="Please Confirm",
+    // primaryButtonText="Continue". Scope to the specific modal to avoid ambiguity.
+    // Use dispatchEvent to bypass Bootstrap fade-in animation stability checks — the modal
+    // content is stable enough for the event to fire even while animating.
+    const confirmModal = this.page.locator('.modal').filter({ hasText: 'Please Confirm' });
+    await confirmModal.waitFor({ state: 'visible', timeout: 8_000 });
+    await confirmModal.getByRole('button', { name: 'Continue' }).dispatchEvent('click');
+
+    const toast = this.page.locator(SELECTORS.toastBody).first();
+    await toast.waitFor({ state: 'visible', timeout: 15_000 });
+    const text = await toast.textContent().catch(() => '');
+    return text?.trim() ?? '';
+  }
+
+  /**
+   * Closes the Send Invite modal if it's open.
+   */
+  async closeSendInviteModal(): Promise<void> {
+    const closeBtn = this.page.locator(`${SELECTORS.modalShow} ${SELECTORS.modalClose}`).first();
+    if (await closeBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      await closeBtn.click();
+      await this.page.locator(SELECTORS.modalShow).first().waitFor({ state: 'hidden', timeout: 3_000 }).catch(() => {});
+    }
+  }
+
+  // ── End Task #442 ──────────────────────────────────────────────────────
+
   /**
    * Changes the payment frequency via the Servicing Information edit panel.
    * Clicks the edit pencil (#ServicingInformation-edit), selects the new frequency
@@ -205,7 +452,8 @@ export class ServicingCustomerPage extends ServicingBasePage {
   async changePaymentFrequencyViaUI(
     newFrequency: 'Weekly' | 'Bi-Weekly' | 'Monthly' | 'Semi-Monthly',
   ): Promise<{ firstDueDate: string; secondDueDate: string }> {
-    // 1. Click the edit pencil to expand the Servicing Information form
+    // 1. Wait for the Servicing Information edit pencil to be visible (page content loaded)
+    await this.page.locator(SELECTORS.svInfoEditButton).waitFor({ state: 'visible', timeout: 30_000 });
     await this.page.locator(SELECTORS.svInfoEditButton).click();
 
     // 2. Wait for the form to expand (dropdown becomes visible)
@@ -237,13 +485,35 @@ export class ServicingCustomerPage extends ServicingBasePage {
       secondDueDate = (await secondDueDateLocator.inputValue().catch(() => '')) ?? '';
     }
 
-    // 7. Click the SAVE button
+    // 7. Set up response listener BEFORE clicking SAVE to avoid race condition.
+    const saveResponsePromise = this.page.waitForResponse(
+      r => (r.request().method() === 'PUT' || r.request().method() === 'POST')
+        && r.url().includes('/svc/'),
+      { timeout: 60_000 },
+    ).catch(() => null);
+
+    // 8. Click the SAVE button
     await this.page.locator(SELECTORS.svInfoSaveButton).click();
 
-    // 8. Wait for spinner to clear after save
+    // 9. Wait for the save API response.
+    const saveRes = await saveResponsePromise;
+    if (saveRes) {
+      console.log(`[changeFrequency] Save API: ${saveRes.request().method()} ${saveRes.url()} → ${saveRes.status()}`);
+    } else {
+      console.warn('[changeFrequency] No save API response captured within 60s');
+    }
+
+    // 10. Wait for the edit panel to collapse (SAVE button hidden).
+    // In stg the frontend spinner may stay visible long after the API response returns 200.
+    // The backend save is already confirmed by waitForResponse above — this is cosmetic.
+    await this.page.locator(SELECTORS.svInfoSaveButton)
+      .waitFor({ state: 'hidden', timeout: 15_000 })
+      .catch(() => console.warn('[changeFrequency] SAVE button still visible after 15s — backend save already confirmed'));
+
+    // 11. Wait for any remaining global spinner (full-page loader + Bootstrap spinners)
     await this.waitForSpinner();
 
-    // 9. Check for error toast
+    // 12. Check for error toast
     await this.assertNoErrorToast('[changeFrequency] Failed to save');
 
     return { firstDueDate, secondDueDate };

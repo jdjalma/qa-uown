@@ -30,7 +30,14 @@ import { MerchantClient } from '../api/clients/merchant.client.js';
 import { AccountClient } from '../api/clients/account.client.js';
 import { PaymentArrangementClient } from '../api/clients/payment-arrangement.client.js';
 import { SvcPayoffClient } from '../api/clients/svc-payoff.client.js';
+import { SvcPhoneClient } from '../api/clients/svc-phone.client.js';
+import { SvcEmailClient } from '../api/clients/svc-email.client.js';
+import { SvcContactClient } from '../api/clients/svc-contact.client.js';
 import { AmsClient } from '../api/clients/ams.client.js';
+import { LosPartnerAuthClient } from '../api/clients/los-partner-auth.client.js';
+import { LosPartnerApplicationClient } from '../api/clients/los-partner-application.client.js';
+import { SeonClient } from '../api/clients/seon.client.js';
+import { MerchantConfigurator } from './merchant-configurator.js';
 import {
   disableCssAnimations,
   captureConsoleLogs,
@@ -66,7 +73,13 @@ export interface ApiClients {
   account: AccountClient;
   paymentArrangement: PaymentArrangementClient;
   svcPayoff: SvcPayoffClient;
+  svcPhone: SvcPhoneClient;
+  svcEmail: SvcEmailClient;
+  svcContact: SvcContactClient;
   ams: AmsClient;
+  losPartnerAuth: LosPartnerAuthClient;
+  losPartnerApplication: LosPartnerApplicationClient;
+  seon: SeonClient;
 }
 
 export interface TestFixtureOptions {
@@ -77,6 +90,7 @@ export interface TestFixtureOptions {
 export interface BaseTestFixtures {
   testEnv: ConfigEnvironment;
   api: ApiClients;
+  merchantConfig: MerchantConfigurator;
   ctx: TestContext;
   consoleLogs: () => string[];
 }
@@ -142,8 +156,21 @@ export const test = base.extend<BaseTestFixtures & TestFixtureOptions, BaseWorke
       account: new AccountClient(request, testEnv),
       paymentArrangement: new PaymentArrangementClient(request, testEnv),
       svcPayoff: new SvcPayoffClient(request, testEnv),
+      svcPhone: new SvcPhoneClient(request, testEnv),
+      svcEmail: new SvcEmailClient(request, testEnv),
+      svcContact: new SvcContactClient(request, testEnv),
       ams: new AmsClient(request, testEnv),
+      losPartnerAuth: new LosPartnerAuthClient(request, testEnv),
+      losPartnerApplication: new LosPartnerApplicationClient(request, testEnv),
+      seon: new SeonClient(request, testEnv),
     });
+  },
+
+  // --- Merchant configurator (setup/teardown via API) ---
+  merchantConfig: async ({ api }, use) => {
+    const configurator = new MerchantConfigurator(api.merchant);
+    await use(configurator);
+    await configurator.restoreAll();
   },
 
   // --- Test context (shared state) ---

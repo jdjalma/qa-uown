@@ -9,7 +9,12 @@
       "Bash(git push *)",
       "Bash(git push)",
       "Bash(git reset --hard*)",
+      "Bash(git reset --soft*)",
       "Bash(git clean *)",
+      "Bash(git checkout -- *)",
+      "Bash(git rebase*)",
+      "Bash(git branch -D*)",
+      "Bash(git branch -d*)",
       "Bash(rm -rf /*)",
       "Bash(rm -rf ~*)",
       "Edit(**/.env)",
@@ -43,6 +48,10 @@
           {
             "type": "command",
             "command": "bash /home/jose/projects/automation/.claude/scripts/pre-write-validate.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash /home/jose/projects/automation/.claude/scripts/lock-selectors.sh"
           }
         ]
       }
@@ -54,6 +63,10 @@
           {
             "type": "command",
             "command": "bash /home/jose/projects/automation/.claude/scripts/auto-review.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash /home/jose/projects/automation/.claude/scripts/unlock-selectors.sh"
           }
         ]
       }

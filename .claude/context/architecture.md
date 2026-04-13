@@ -25,27 +25,43 @@ tests/
 
 ## Page Object Hierarchy
 
+> **Source of truth.** Other files (`rules/page-objects.md`, `subagent-impl-page-object.md`) reference this section — do not duplicate the tree elsewhere.
+
 ```
-BasePage                         # Never instantiate directly
-├── LoginPage                    # Shared login (Origination/Servicing)
-├── SearchPage                   # Quick search (cross-portal)
-├── MerchantPage                 # Merchant operations
-├── ContractPage                 # CC/bank forms, e-sign (consumer-facing)
-├── ApplicationWizardPage        # Origination wizard (consumer-facing, extends BasePage)
-├── PayTomorrowPortalPage        # External PayTomorrow merchant portal
-├── PayPairPortalPage            # External PayPair portal (TireAgent, iframe nesting)
-├── OriginationBasePage          # + origination sidebar
-│   ├── OriginationCustomerPage, OverviewPage, FundingPage
-│   ├── LeaseAgreementPage, MetricsCalculatorPage, ProgramsPage, NewApplicationPage
-│   ├── MerchantSettingPage              # Merchant Settings bulk update (dealer discount/rebate)
-│   ├── ErrorLogPage                    # Submit/Send Application error logs (Task #1240)
-├── ServicingBasePage            # + servicing sidebar
-│   ├── ServicingCustomerPage, PaymentTransactionPage
-│   ├── AchHistoryPage, ScheduledPaymentPage, LogPage
-│   ├── DueDateMovesHistoryPage  # History > Due Date Changes tab (Task #502)
-│   ├── FrequencyChangesHistoryPage  # History > Frequency Changes tab (Task #503)
-├── WebsiteBasePage              # + email OTP login
-└── AmsBasePage → AmsPage        # + AMS features
+BasePage                              # Never instantiate directly — src/pages/base.page.ts
+├── LoginPage                         # Shared login (Origination/Servicing)
+├── SearchPage                        # Quick search (cross-portal)
+├── MerchantPage                      # Merchant operations
+├── ContractPage                      # CC/bank forms, e-sign (consumer-facing)
+├── ApplicationWizardPage             # Origination wizard (consumer-facing)
+├── PayTomorrowPortalPage             # External PayTomorrow merchant portal — src/pages/origination/
+├── PayPairPortalPage                 # External PayPair portal (TireAgent, iframe nesting) — src/pages/origination/
+├── OriginationBasePage               # + origination sidebar — src/pages/origination/
+│   ├── OriginationCustomerPage       # Customer detail
+│   ├── OverviewPage                  # Application overview
+│   ├── FundingPage                   # Funding actions
+│   ├── LeaseAgreementPage            # Lease agreement
+│   ├── MetricsCalculatorPage         # Metrics calculator
+│   ├── ProgramsPage                  # Programs/plans selection
+│   ├── LeadsPage                     # Leads list (Task #1242)
+│   ├── MerchantSettingPage           # Merchant Settings bulk update (dealer discount/rebate)
+│   ├── ErrorLogPage                  # Submit/Send Application error logs (Task #1240)
+│   └── OpenToBuyPage                # Open to Buy — Merchant/Location filters (Task #1205)
+├── ServicingBasePage                 # + servicing sidebar — src/pages/servicing/
+│   ├── ServicingCustomerPage         # Customer detail + Opt Out AI (Task #505)
+│   ├── PaymentTransactionPage        # Payment transactions
+│   ├── AchHistoryPage                # ACH history
+│   ├── ScheduledPaymentPage          # Scheduled payments
+│   ├── LogPage                       # Activity log
+│   ├── ServicingSearchPage           # Customer search
+│   ├── PaymentArrangementPage        # Payment arrangements (Task #500)
+│   ├── DueDateMovesHistoryPage       # History > Due Date Changes (Task #502)
+│   └── FrequencyChangesHistoryPage   # History > Frequency Changes (Task #503)
+├── WebsiteBasePage                   # + email OTP login
+└── AmsBasePage                        # react-data-table-component base, row helpers
+    ├── AmsPage                        # Main AMS portal (login, users list) — src/pages/ams/ams.page.ts
+    ├── AmsUserMerchantsPage           # /associate-users-to-merchants (bulk assign) — src/pages/ams/ams-user-merchants.page.ts
+    └── AmsUserDetailsPage             # /users/[username] (details + Log Activity) — src/pages/ams/ams-user-details.page.ts (Task #74)
 ```
 
 ## API Client Architecture
@@ -73,7 +89,10 @@ ApiResponse<T> = { ok, status, statusText, headers, body: T, raw }
 | PaymentArrangementClient | svc | makeCreditCardPayments, createOrUpdateAchPayments |
 | AccountClient | svc | cancelAccount, getFrequencyChanges(accountPk), getNextReceivable(accountPk), getDueDateMoves(accountPk), moveDueDatesByDays(accountPk, days) |
 | MerchantClient | origination/svc | getMerchantsByRefCode, isSignedToFundingEnabled, getMerchantsByCriteria, updateMerchants, getMerchantInfo(leadPk), getSendApplicationRequestsByCriteria (svc host), getSubmitApplicationErrorLogs(from, to, options?), getMerchantApiErrorLogs(from, to, options?) — maps to `uown_merchant_api_error_log`, same params as getSubmitApplicationErrorLogs but no CC fields |
+| SvcContactClient | svc | getContactInfo(accountPk), createOrUpdateContactInfo(body), sendVerificationCode(phoneOrEmail, company?) — phone/email contact update; `phonePK`/`customerPK` use capital K; `phoneNumber` is number (Java Long) (Task #146) |
 | SvcPayoffClient | svc | getPayoffAmount(accountPk), getAccountSummary(accountPk) |
+| LosPartnerAuthClient | svc | authorize(username, password) → GetApiKeyResponse, createApiUser(body) → CreateApiUserResponse — Bearer token issuance for merchant LOS API (Task #482) |
+| LosPartnerApplicationClient | svc | createApplication(body?, apiVersion?), searchApplicationStatus(body?), createInvoice(id, body?), settleApplication(id, body?), addLease(id, body?) — Bearer token via setBearerToken(token)/clearBearerToken(); apiVersion=null omits X-API-Version header (tests DefaultLosApiVersionRequestWrapper injection) (Task #482) |
 
 ### GET with Content-Type Header
 
@@ -148,7 +167,7 @@ All page object methods MUST return values (string, boolean, number) — never c
 - `src/support/config.ts` — TestConfig singleton
 - `src/config/environment.ts` — ConfigEnvironment per env
 - `src/config/constants.ts` — Timeouts, test cards, SSN/phone generation
-- `src/selectors/common.selectors.ts` — ALL selectors (incl. 33 PayPair selectors, 5 CompletionScreen selectors, 15 PaymentProgram selectors: `paymentProgramContainer/Logo/Title/Subtitle`, `paymentCard/Title/Description/Price/PriceLabel/DetailRow/Button`, `termSelectionTab/TabSelected`, `paymentProgramFooterText/FooterPhone` (Task #1233 completeApplication redesign), 3 Programs selectors, 1 MerchantInfoPanel selector, 11 NewApplication selectors: `naSendMerchantControl/Input/ClearBtn`, `naSendLocationControl/Input`, `naSendButton`, `naFilterMerchantControl/Input`, `naFilterLocationControl`, `naFilterSearchText/Button`, 6 ErrorLog selectors: `elTabSendApplication`, `elTabSubmitApplication`, `elFilterFromDate`, `elFilterToDate`, `elFilterSearch`, `elFilterSubmitButton`, plus shared react-select: `rsOption`, `rsMenu`, `rsSingleValue`; shared action selectors: `saveButton` = `"button:has-text('SAVE'), button >> span:has-text('SAVE')"`, `filtersButton` = `"button[class*='filterButton'], button:has-text('Filters')"` — used by `MerchantSettingPage` and any page with a Filters/Save button)
+- `src/selectors/common.selectors.ts` — ALL selectors (incl. 33 PayPair selectors, 5 CompletionScreen selectors, 15 PaymentProgram selectors: `paymentProgramContainer/Logo/Title/Subtitle`, `paymentCard/Title/Description/Price/PriceLabel/DetailRow/Button`, `termSelectionTab/TabSelected`, `paymentProgramFooterText/FooterPhone` (Task #1233 completeApplication redesign), 3 Programs selectors, 1 MerchantInfoPanel selector, 11 NewApplication selectors: `naSendMerchantControl/Input/ClearBtn`, `naSendLocationControl/Input`, `naSendButton`, `naFilterMerchantControl/Input`, `naFilterLocationControl`, `naFilterSearchText/Button`, 6 ErrorLog selectors: `elTabSendApplication`, `elTabSubmitApplication`, `elFilterFromDate`, `elFilterToDate`, `elFilterSearch`, `elFilterSubmitButton`, plus shared react-select: `rsOption`, `rsMenu`, `rsSingleValue`; shared action selectors: `saveButton` = `"button:has-text('SAVE'), button >> span:has-text('SAVE')"`, `filtersButton` = `"button[class*='filterButton'], button:has-text('Filters')"` — used by `MerchantSettingPage` and any page with a Filters/Save button; 15 AMS selectors added in Task #74: `amsRdtTable` = `'.rdt_Table'`, `amsRdtTableRow` = `'.rdt_TableRow'`, `amsRdtPagination` = `'.rdt_Pagination'`, `amsPaginationNextButton` = `'button[aria-label="Next Page"]'`, `amsUsersSelectionInfo` = `'[class*="selectable-users-table_selectionInfo"]'`, `amsMerchantsSelectionInfo` = `'[class*="selectable-merchants-table_selectionInfo"]'`, `amsAssocPageSubmit` = `'button:has-text("Submit")'`, `amsAssocRowCheckbox` = `'input[name="select-row-undefined"]'`, `amsSuccessToast` = `'.Toastify__toast--success, .toast-success, .alert-success'`, `amsAssocConfirmButton` = `'.modal-footer button:has-text("Confirm")'`, `amsLogActivityRow` = `'.rdt_TableRow'`, `amsLogActivityCell` = `'[class*="rdt_TableCell"]'`, `amsEditUserMerchantsButton` = `'span#EditUserMerchants-edit'`, `amsUserMerchantsCardToggle`, `amsUserMerchantsCardCollapse`, `amsUserMerchantsSelectControl` = `'#merchants .filter__control'`, `amsUserMerchantsSelectInput` = `'#merchants .filter__input'`, `amsUserMerchantsSelectOption` = `'[class*="customOptionStyles__CSG9m"]'`, `amsUserMerchantsTag`, `amsUserMerchantsSaveButton` = `'.card:has(#merchants) button[class*="collapsableEdit__button__primary"]'`)
 - `src/helpers/database.helpers.ts` — Pool + polling backoff. Methods: CRUD, waitFor*, lead*, shortCode* (migration V20260226100000), uwData* (getUwDataByLeadPk, getLambdaSegment, waitForLambdaSegment), paymentArrangement* (getPaymentArrangement, getPaymentArrangementStatus, getPaymentArrangementsByAccount, waitForPaymentArrangementStatus, paymentArrangementTableExists, getPaymentArrangementColumns, ccTransactionHasArrangementFk, achPaymentHasArrangementFk, getCcTransactionsByArrangement, getAchPaymentsByArrangement), account* (getAccountRating, getAccountStatus, waitForAccountStatus, getAccountPkByLeadPk, waitForAccountByLeadPk), pendingTransactions (getPendingCcTransactions, getPendingAchPayments, waitForCcTransactionsProcessed, waitForAchPaymentsProcessed), leadApprovalTerms* (leadApprovalTermsTableExists, getLeadApprovalTermsColumns, getLeadApprovalTermsForLead, waitForLeadApprovalTerms), lead* (getLeadPkByUuid, getLeadInternalStatus), performanceIndex* (indexExistsOnTable, getIndexColumns, explainAnalyze, getTableRowEstimate — Task #449 getDataMismatchForLead optimization). **Expression index caveat:** `getIndexColumns(name)` queries `pg_attribute` and only returns named columns — it does NOT work for expression-based indexes (e.g., `UPPER(col)` or `col1 || col2`). For expression indexes, verify via `db.getSingleString('SELECT indexdef FROM pg_indexes WHERE indexname = $1', [name])` and assert on the returned DDL string. Use `isExpression: true` flag in test constants to branch the verification path (Tasks #461, #463).
 - `src/helpers/template-engine.ts` — JSON template interpolation
 - `src/pages/origination/paypair-portal.page.ts` — PayPair portal (iframe nesting, OTP intercept)
@@ -169,5 +188,4 @@ All page object methods MUST return values (string, boolean, number) — never c
 | [009](../../docs/adrs/ADR-009-json-template-engine.md) | JSON template engine for request bodies | Accepted |
 | [010](../../docs/adrs/ADR-010-custom-json-reporter.md) | Custom JSON reporter for CI | Accepted |
 | [011](../../docs/adrs/ADR-011-unified-fixture-base-test.md) | Unified fixture in base-test.ts | Accepted |
-| [012](../../docs/adrs/ADR-012-java-cucumber-migration.md) | Migration from Java/Cucumber | Accepted |
 | [013](../../docs/adrs/ADR-013-app-source-integration.md) | Application source code integration for test validation | Accepted |

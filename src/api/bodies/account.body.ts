@@ -1,3 +1,25 @@
+/**
+ * Request body for POST /uown/svc/getAccountsByCriteria (Task #501).
+ * All fields optional — null/blank means "no filter" (blankToNull in backend).
+ * merchantName and location use exact case-insensitive match (SQL LOWER() = LOWER()).
+ */
+export interface AccountSearchCriteriaBody {
+  fromDate?: string;
+  toDate?: string;
+  pageNumber?: string;
+  maxResults?: string;
+  ssn?: string;
+  refAccountId?: string | null;
+  email?: string;
+  accountPk?: string | null;
+  phoneNumber?: string;
+  givenName?: string;
+  last4CC?: string;
+  company?: string;
+  merchantName?: string;
+  location?: string;
+}
+
 export interface CancelAccountBody {
   accountPk: number;
   comment: string;

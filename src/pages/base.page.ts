@@ -67,6 +67,9 @@ export abstract class BasePage {
   // --- Navigation ---
 
   async sideMenuNavigateTo(section: string): Promise<void> {
+    // Wait for any loading overlay to clear before interacting with sidebar
+    await this.waitForSpinner();
+
     // Try the specific sidebar__menu-item selector first, then broader sidebar text matching
     const menuItem = this.page.locator(SELECTORS.sidebarItem).filter({ hasText: new RegExp(section, 'i') });
     if (await menuItem.first().isVisible({ timeout: 3_000 }).catch(() => false)) {
@@ -187,9 +190,11 @@ export abstract class BasePage {
         (el as HTMLElement).style.display = 'none';
         el.classList.remove('show');
       });
-      document.body.classList.remove('modal-open');
-      document.body.style.removeProperty('overflow');
-      document.body.style.removeProperty('padding-right');
+      if (document.body) {
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+      }
     });
   }
 }

@@ -50,6 +50,7 @@ for (const data of reduceValueData) {
         api,
         db,
         ctx,
+        merchantConfig: mSetup,
       }) => {
         test.setTimeout(300_000);
         const { env, merchant, applicant } = buildTestData({
@@ -58,6 +59,10 @@ for (const data of reduceValueData) {
           merchant: data.merchant,
           orderTotal: "800",
           orderDescription: "Modify lease reduce value test",
+        });
+
+        await test.step('Ensure merchant config', async () => {
+          await mSetup.configureByName(data.merchant, 'lifecycle');
         });
 
         let approvedAmount: number;
@@ -167,8 +172,12 @@ for (const data of increaseValueData) {
         page,
         api,
         ctx,
+        merchantConfig: mSetup,
       }) => {
         test.setTimeout(300_000);
+        await test.step('Ensure merchant config', async () => {
+          await mSetup.configureByName(data.merchant, 'lifecycle');
+        });
         const { env, merchant, applicant } = buildTestData({
           env: data.env,
           state: data.state,
@@ -300,8 +309,12 @@ for (const data of apiModifyData) {
       test('Modify lease via sendInvoice with orderType "1" — response has paymentDetailsList and transactionStatus', async ({
         api,
         ctx,
+        merchantConfig: mSetup,
       }) => {
         test.setTimeout(300_000);
+        await test.step('Ensure merchant config', async () => {
+          await mSetup.configureByName(data.merchant, 'lifecycle');
+        });
         const { merchant, applicant } = buildTestData({
           env: data.env,
           state: data.state,
@@ -391,8 +404,12 @@ for (const data of minimumAmountData) {
         page,
         api,
         ctx,
+        merchantConfig: mSetup,
       }) => {
         test.setTimeout(300_000);
+        await test.step('Ensure merchant config', async () => {
+          await mSetup.configureByName(data.merchant, 'lifecycle');
+        });
         const { env, merchant, applicant } = buildTestData({
           env: data.env,
           state: data.state,
@@ -476,8 +493,12 @@ for (const data of fundingModifyData) {
         api,
         db,
         ctx,
+        merchantConfig: mSetup,
       }) => {
         test.setTimeout(300_000);
+        await test.step('Ensure merchant config', async () => {
+          await mSetup.configureByName(data.merchant, 'lifecycle');
+        });
         const { env, merchant, applicant } = buildTestData({
           env: data.env,
           state: data.state,

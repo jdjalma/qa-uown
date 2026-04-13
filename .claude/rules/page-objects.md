@@ -7,25 +7,17 @@ paths:
 
 ## Hierarchy (MANDATORY — extends always required)
 
-```
-BasePage                         # Never instantiate directly
-├── LoginPage
-├── SearchPage
-├── MerchantPage
-├── ContractPage
-├── PayTomorrowPortalPage
-├── PayPairPortalPage
-├── OriginationBasePage
-│   ├── OriginationCustomerPage, OverviewPage, FundingPage
-│   ├── LeaseAgreementPage, MetricsCalculatorPage
-│   ├── MerchantSettingPage, ErrorLogPage
-├── ServicingBasePage
-│   ├── ServicingCustomerPage, PaymentTransactionPage
-│   ├── AchHistoryPage, ScheduledPaymentPage, LogPage
-│   ├── DueDateMovesHistoryPage, FrequencyChangesHistoryPage
-├── WebsiteBasePage
-└── AmsBasePage → AmsPage
-```
+> **Full tree:** `context/architecture.md` §Page Object Hierarchy (source of truth).
+
+Quick base-class lookup:
+
+| Portal | Base class |
+|--------|-----------|
+| Origination | `OriginationBasePage` |
+| Servicing | `ServicingBasePage` |
+| Website | `WebsiteBasePage` |
+| AMS | `AmsBasePage` |
+| Cross-portal / external | `BasePage` |
 
 ## Rules
 

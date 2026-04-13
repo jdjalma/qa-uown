@@ -1,8 +1,11 @@
 ---
 name: subagent-refactor-page-object
 description: Refactors an existing page object (selectors, waiters, dead code, typing).
-model: inherit
+model: opus
 color: red
+maxTurns: 50
+disallowedTools:
+  - NotebookEdit
 ---
 
 # subagent-refactor-page-object — Page Object Refactorer
@@ -26,7 +29,7 @@ Refactors an existing page object applying improvements to selectors, waiters, d
 
 | Prerequisite | Successors |
 |--------------|------------|
-| None (or subagent-audit-selectors if prior audit) | subagent-docs-update (if significant change) |
+| None (or subagent-audit selectors mode if prior audit) | subagent-docs-update (if significant change) |
 
 ## Steps
 

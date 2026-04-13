@@ -23,7 +23,8 @@ export class AmsBasePage extends BasePage {
   async clickRowByIndex(index: number): Promise<void> {
     const row = this.page.locator(SELECTORS.amsRdtTableRow).nth(index);
     await row.waitFor({ state: 'visible' });
-    await row.click();
+    // Cell 1 contains <a class="blue-link" href="/users/[username]"> — the Next.js navigation link
+    await row.locator('a.blue-link').first().click();
   }
 
   async getRowText(index: number): Promise<string> {

@@ -26,7 +26,7 @@ These rules apply to **all code** generated in the project. Non-negotiable.
 - API clients in `src/api/clients/`, bodies in `bodies/`, responses in `responses/`
 - Test data in `src/data/`
 - E2E tests in `tests/e2e/{portal}/`, API tests in `tests/api/`
-- Task tests (from GitLab issues) in `tests/taskTestingUown/`
+- Task tests (from GitLab issues) in `docs/taskTestingUown/`
 - `test.step()` to group logical actions
 - `ctx` to share state between steps
 - Path aliases in ALL imports — never use relative `../` paths (see alias table below)
@@ -92,7 +92,7 @@ import { test } from '@support/base-test.js';
 import { CONSTANTS } from '@config/constants.js';
 ```
 
-**Note:** This applies to `tests/taskTestingUown/` subdirectories especially — deep nesting makes relative imports fragile and verbose.
+**Note:** This applies to `docs/taskTestingUown/` subdirectories especially — deep nesting makes relative imports fragile and verbose.
 
 ## Conventions
 

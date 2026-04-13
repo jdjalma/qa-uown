@@ -1,12 +1,17 @@
 ---
 name: subagent-fetch-task
 description: Fetches a GitLab issue by URL and structures it as input for orchestration. Does NOT write code.
-model: inherit
+model: sonnet
 color: blue
-disallowedTools:
-  - Write
-  - Edit
-  - NotebookEdit
+maxTurns: 10
+effort: low
+tools:
+  - Read
+  - Glob
+  - Grep
+  - WebFetch
+  - Bash
+  - Task
 ---
 
 # subagent-fetch-task — Task Fetcher

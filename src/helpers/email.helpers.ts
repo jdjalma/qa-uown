@@ -8,6 +8,11 @@ export interface EmailHelperConfig {
   port?: number;
 }
 
+export interface EmailContent {
+  subject: string;
+  body: string;
+}
+
 export class EmailHelpers {
   private config: EmailHelperConfig;
   private authFailed = false;
@@ -54,6 +59,29 @@ export class EmailHelpers {
       timeoutMs,
       'Link',
       (attempt) => this.fetchFromInbox(recipientEmail, attempt, (body) => this.extractLinkFromBody(body, pattern)),
+    );
+  }
+
+  /**
+   * Searches inbox for an email matching the given subject pattern and returns
+   * the full decoded HTML body and subject line.
+   *
+   * @param recipientEmail - The email address to search for
+   * @param subjectPattern - Regex or string to match against the email subject
+   * @param timeoutMs - Maximum time to poll (default 150s)
+   * @returns Object with subject and body, or null if not found
+   */
+  async getEmailContent(
+    recipientEmail: string,
+    subjectPattern: string | RegExp,
+    timeoutMs = 150_000,
+  ): Promise<EmailContent | null> {
+    const pattern = typeof subjectPattern === 'string' ? new RegExp(subjectPattern, 'i') : subjectPattern;
+    return this.pollInbox<EmailContent>(
+      recipientEmail,
+      timeoutMs,
+      'EmailContent',
+      (attempt) => this.fetchFromInboxBySubject(recipientEmail, attempt, pattern),
     );
   }
 
@@ -183,6 +211,81 @@ export class EmailHelpers {
     }
   }
 
+  /**
+   * Fetches emails by TO address and matches subject against a regex pattern.
+   * Returns the full decoded body of the most recent match.
+   */
+  private async fetchFromInboxBySubject(
+    recipientEmail: string,
+    attempt: number,
+    subjectPattern: RegExp,
+  ): Promise<EmailContent | null> {
+    const client = new ImapFlow({
+      host: this.config.host!,
+      port: this.config.port!,
+      secure: true,
+      auth: { user: this.config.user, pass: this.config.password },
+      logger: false,
+    });
+
+    try {
+      await client.connect();
+      const lock = await client.getMailboxLock('INBOX');
+
+      try {
+        // Search by TO + recent date (subject filtering done client-side for regex support)
+        const since = new Date(Date.now() - 10 * 60 * 1000);
+        let uids: number[] = [];
+        try {
+          const result = await client.search({ to: recipientEmail, since });
+          uids = result || [];
+        } catch {
+          try {
+            const result = await client.search({ since });
+            uids = result || [];
+          } catch {
+            return null;
+          }
+        }
+
+        if (attempt <= 3 || attempt % 5 === 0) {
+          console.log(`[Email] attempt=${attempt} Subject search returned ${uids.length} UIDs for ${recipientEmail}`);
+        }
+        if (uids.length === 0) return null;
+
+        let latestResult: EmailContent | null = null;
+        let latestDate = new Date(0);
+
+        for await (const msg of client.fetch(uids, { source: true, envelope: true })) {
+          const subject = msg.envelope?.subject || '';
+          const msgDate = msg.envelope?.date || new Date(0);
+
+          if (!subjectPattern.test(subject)) continue;
+
+          const decoded = this.decodeQuotedPrintable(msg.source?.toString() || '');
+
+          if (attempt <= 3) {
+            console.log(`[Email] Subject match: seq=${msg.seq} Subject="${subject}" Date=${msgDate.toISOString()}`);
+          }
+
+          if (msgDate > latestDate) {
+            latestResult = { subject, body: decoded };
+            latestDate = msgDate;
+          }
+        }
+
+        return latestResult;
+      } finally {
+        lock.release();
+      }
+    } catch (err) {
+      this.handleImapError(err);
+      return null;
+    } finally {
+      await client.logout().catch(() => {});
+    }
+  }
+
   // ── IMAP search strategies ────────────────────────────────────────
 
   /**
@@ -205,7 +308,7 @@ export class EmailHelpers {
 
     // Strategy 2: Search by TO + recent date (catches any email type)
     try {
-      const since = new Date(Date.now() - 15 * 60 * 1000);
+      const since = new Date(Date.now() - 5 * 60 * 1000);
       const result = await client.search({ to: recipientEmail, since });
       if (result && result.length > 0) return result;
     } catch {
@@ -214,7 +317,7 @@ export class EmailHelpers {
 
     // Strategy 3: Last resort — search by date only
     try {
-      const since = new Date(Date.now() - 15 * 60 * 1000);
+      const since = new Date(Date.now() - 5 * 60 * 1000);
       const result = await client.search({ since });
       return result || [];
     } catch {
@@ -246,10 +349,12 @@ export class EmailHelpers {
       if (match) return match[1];
     }
 
-    // Pattern 2: standalone 6-digit number (common in minimal OTP emails)
-    // Look for a 6-digit number that's not part of a longer number
-    const standaloneMatch = body.match(/(?<!\d)(\d{6})(?!\d)/);
-    if (standaloneMatch) return standaloneMatch[1];
+    // Pattern 2: standalone 6-digit number — only if body has verification context.
+    // Without this guard, account numbers from "Payment Receipt" emails match the regex.
+    if (/verif|one.?time|otp|login\s*code/i.test(body)) {
+      const standaloneMatch = body.match(/(?<!\d)(\d{6})(?!\d)/);
+      if (standaloneMatch) return standaloneMatch[1];
+    }
 
     return null;
   }

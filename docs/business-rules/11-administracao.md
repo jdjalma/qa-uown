@@ -760,3 +760,52 @@ O index `idx_uown_login_attempt` (V20260306062454) otimiza consultas de rate lim
 
 ---
 
+## 51. Portal AMS — Associacao de Merchants a Usuarios (Task #74, R1.51.0)
+
+### O Que e
+
+O portal AMS (Account Management System) possui uma pagina dedicada para associar merchants a usuarios internos em lote: `/associate-users-to-merchants`. Esta funcionalidade permite que administradores atribuam quais merchants um usuario AMS pode acessar.
+
+### Endpoints Envolvidos
+
+| Endpoint | Metodo | Descricao |
+|----------|--------|-----------|
+| `POST /user/addMerchantsToUsers` | POST | Associa merchants a usuarios em lote (bulk assign) |
+| `PUT /user/{username}` | PUT | Atualiza dados do usuario (dispara Log Activity) |
+| `GET /user/{username}` | GET | Consulta detalhes do usuario |
+
+### Regra de Negocio: Log Activity
+
+- `POST /user/addMerchantsToUsers` **NAO** gera entrada no Log Activity do usuario.
+- A UI "Edit User Merchants" (card accordion em `/users/[username]`) **tambem NAO** gera entrada no Log Activity.
+- Apenas `PUT /user/{username}` (updateUser) gera uma entrada com tipo `"UPDATED user info: {...}"` no Log Activity.
+- O Log Activity e exibido na pagina `/users/[username]` como uma tabela `react-data-table-component` com 4 colunas: `date`, `type`, `userId`, `notes`.
+
+### Regra de Negocio: Edit User Merchants (UI)
+
+O card "Edit User Merchants" na pagina `/users/[username]` permite editar diretamente a lista de merchants de um usuario:
+
+- A operacao e de **OVERWRITE** — substitui toda a lista de merchants do usuario. Nao e aditiva.
+- Fluxo: expandir o card (chevron no cabecalho) → clicar no icone de lapis (`span#EditUserMerchants-edit`) → selecionar merchants no React Select `#merchants` → clicar em SAVE.
+- Ao entrar em modo de edicao, `span#EditUserMerchants-edit` e removido do DOM; o botao SAVE deve ser localizado via `.card:has(#merchants)`.
+- As opcoes do React Select sao renderizadas em um portal — navegar via ArrowDown+Enter.
+- Esta acao **NAO** gera entrada no Log Activity (confirmado via CT-E2E-07, tarefa #74).
+
+### Fluxo de Associacao em Lote (UI — `/associate-users-to-merchants`)
+
+1. Usuario navega para `/associate-users-to-merchants`
+2. Seleciona usuarios na tabela esquerda (paginada)
+3. Seleciona merchants na tabela direita (paginada)
+4. Clica em "Submit" — abre modal Bootstrap de confirmacao
+5. Clica em "Confirm" no modal
+6. Toast de sucesso exibido (`.Toastify__toast--success`)
+
+A operacao via `POST /user/addMerchantsToUsers` e **aditiva** — nunca remove associacoes existentes.
+
+### Observacoes Tecnicas
+
+- Ambas as tabelas de `/associate-users-to-merchants` usam `react-data-table-component` (`.rdt_Table`). O container de paginacao (`.rdt_Pagination`) e sibling do `.rdt_Table`, nao filho — escopo obrigatorio por `nth(0)` / `nth(1)` para nao misturar tabelas.
+- A tabela de merchants carrega de forma assincrona apos a tabela de usuarios — aguardar primeiro row de ambas as tabelas antes de interagir.
+
+---
+

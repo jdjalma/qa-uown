@@ -6,3 +6,6 @@ export { ScheduledPaymentPage } from './scheduled-payment.page.js';
 export { LogPage } from './log.page.js';
 export { DueDateMovesHistoryPage } from './due-date-moves-history.page.js';
 export { FrequencyChangesHistoryPage } from './frequency-changes-history.page.js';
+export { PaymentArrangementPage } from './payment-arrangement.page.js';
+export { ServicingSearchPage } from './servicing-search.page.js';
+export { CreditCardHistoryPage } from './credit-card-history.page.js';

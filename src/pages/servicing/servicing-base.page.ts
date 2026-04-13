@@ -46,6 +46,7 @@ export class ServicingBasePage extends BasePage {
       'payment transaction': 'Payment Transaction',
       'due amounts': 'Due Amounts',
       'scheduled payments': 'Scheduled Payment',
+      'payment arrangement': 'Payment Arrangement',
       'ach history': 'ACH',
       'cc history': 'CC Transactions',
       'ach': 'ACH',
@@ -226,6 +227,17 @@ export class ServicingBasePage extends BasePage {
     frequency: 'Weekly' | 'BiWeekly' | 'Monthly' | 'SemiMonthly';
     /** Payment type to select. Default: 'Credit Card Payment'. The modal default is 'ACH Payment'. */
     paymentType?: string;
+    /** Optional CC details for manual card entry instead of card on file. */
+    ccDetails?: {
+      cardNumber: string;
+      cvc: string;
+      expMonth: string;   // '09' / '12'
+      expYear: string;    // '28' / '2028'
+      /** Cardholder first name — must match customer first name (CC last-name check). */
+      firstName: string;
+      /** Cardholder last name — must match customer last name (CC last-name check). */
+      lastName: string;
+    };
   }): Promise<void> {
     await this.clickMakePayment();
 
@@ -235,9 +247,17 @@ export class ServicingBasePage extends BasePage {
       await arrangementCheckbox.click();
     }
 
-    // Fill Start / End dates
-    await this.page.locator(SELECTORS.arrangementStartDateInput).fill(options.startDate);
-    await this.page.locator(SELECTORS.arrangementEndDateInput).fill(options.endDate);
+    // Fill Start / End dates — wait for startDate to be visible after checkbox enables the section.
+    // Use pressSequentially + Tab to trigger React's onChange/onBlur events reliably.
+    const startDateLocator = this.page.locator(SELECTORS.arrangementStartDateInput);
+    await startDateLocator.waitFor({ state: 'visible', timeout: 5_000 });
+    await startDateLocator.click();
+    await startDateLocator.pressSequentially(options.startDate, { delay: 50 });
+    await startDateLocator.press('Tab');
+    const endDateLocator = this.page.locator(SELECTORS.arrangementEndDateInput);
+    await endDateLocator.click();
+    await endDateLocator.pressSequentially(options.endDate, { delay: 50 });
+    await endDateLocator.press('Tab');
 
     // Select Payment Frequency via React Select (click the container div, same pattern as selectPaymentType)
     await this.page.locator(SELECTORS.arrangementPaymentFrequencyDropdown).click();
@@ -253,6 +273,34 @@ export class ServicingBasePage extends BasePage {
     // Select payment type (default: Credit Card Payment; modal default is ACH Payment)
     const targetPaymentType = options.paymentType ?? 'Credit Card Payment';
     await this.selectPaymentType(targetPaymentType);
+
+    // Fill CC details if provided (manual card entry instead of card on file)
+    if (options.ccDetails) {
+      // When account has a card on file, modal shows "Use existing card" (checked) and
+      // "Use one-time card information" radios. Click the one-time radio to reveal manual fields.
+      const oneTimeRadio = this.page.getByRole('radio', { name: 'Use one-time card information' });
+      if (await oneTimeRadio.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        await oneTimeRadio.click();
+      }
+      // One-time card form: First Name, Last Name, Card Number, Expires On (MM/YY), Security Code
+      await this.page.locator(SELECTORS.otCardFirstName).waitFor({ state: 'visible', timeout: 5_000 });
+      await this.page.locator(SELECTORS.otCardFirstName).fill(options.ccDetails.firstName);
+      await this.page.locator(SELECTORS.otCardLastName).fill(options.ccDetails.lastName);
+      await this.ccNumber.fill(options.ccDetails.cardNumber);
+      // Expires On is type="month" input — requires YYYY-MM format (e.g., "2028-12")
+      const fullYear = options.ccDetails.expYear.length === 2
+        ? `20${options.ccDetails.expYear}`
+        : options.ccDetails.expYear;
+      await this.page.locator(SELECTORS.otCardExpiresOn).fill(
+        `${fullYear}-${options.ccDetails.expMonth}`,
+      );
+      await this.page.locator(SELECTORS.otCardSecurityCode).fill(options.ccDetails.cvc);
+      // Use current address to auto-fill billing address
+      const useCurrentAddr = this.page.getByRole('checkbox', { name: 'Use current address' });
+      if (await useCurrentAddr.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        await useCurrentAddr.check();
+      }
+    }
 
     // Submit and wait for spinner to clear
     await this.clickAndWaitForSpinner(this.submitPaymentButton);

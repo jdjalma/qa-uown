@@ -122,6 +122,8 @@ export interface BuildCcArrangementOptions {
   useCardOnFile?: boolean;
   /** Allocation strategy (default: REGULAR_RECEIVABLES) */
   allocationStrategy?: string;
+  /** Charge fee on each CC transaction (default: true — Ticket363) */
+  chargeFee?: boolean;
   /** Array of { amount, date } for each installment */
   installments: Array<{ amount: string; date: string }>;
 }
@@ -142,7 +144,7 @@ export function buildCcArrangementBody(options: BuildCcArrangementOptions): Paym
       saveCardToFile: false,
       ccAction: 'SALE',
       ccTransactionType: 'REQUEST',
-      chargeFee: true,
+      chargeFee: options.chargeFee ?? true,
       ccInfo: {
         ccFirstName: options.ccFirstName ?? '',
         ccLastName: options.ccLastName ?? '',
@@ -165,6 +167,17 @@ export function buildCcArrangementBody(options: BuildCcArrangementOptions): Paym
       },
     })),
   };
+}
+
+// ── Update CC Transaction DTO (PUT /uown/svc/payments/credit-cards/{pk}) ─
+
+export type CcTransactionStatus = 'PENDING' | 'CANCELLED';
+
+export interface UpdateCcTransactionBody {
+  amount: number;
+  postingDate: string; // ISO YYYY-MM-DD (@FutureOrPresent)
+  status: CcTransactionStatus;
+  comment?: string; // max 500 chars, defaults to "" on backend
 }
 
 export interface BuildAchArrangementOptions {

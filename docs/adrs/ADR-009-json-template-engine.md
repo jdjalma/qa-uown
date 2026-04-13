@@ -43,7 +43,7 @@ const body = buildRequestBody('submitApplication', {
 - Two patterns (templates + builders) may cause confusion
 
 **Mitigations:**
-- `subagent-data-template` agent standardizes creation
+- `subagent-data` (template mode) standardizes creation
 - CLAUDE.md documents when to use each approach
 - Template engine validates unsubstituted variables at runtime
 

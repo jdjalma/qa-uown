@@ -31,6 +31,11 @@ export const SELECTORS: AppSelectors = {
   filterOptionWithRole: '.filter__option, [role="option"]',
   filterControl: '.filter__control',
   filtersButton: "button[class*='filterButton'], button:has-text('Filters')",
+  filterMenuPortal: '.filter__menu-portal',
+  filterPlaceholder: "div[class*='filter__placeholder']",
+  filterSingleValue: "div[class*='filter__single-value']",
+  filterClearIndicator: '.filter__clear-indicator',
+  filterMultiValueLabel: "div[class*='filter__multi-value__label']",
 
   // ── Modal ──────────────────────────────────────────────────────────
   modalContent: '.modal-content',
@@ -85,6 +90,11 @@ export const SELECTORS: AppSelectors = {
   ccCvc: '#cvc',
   ccExpMonthInput: '#ccExpMonth input',
   ccExpYearInput: '#ccExpYear input',
+  // One-time card form fields (payment arrangement modal — shown after "Use one-time card information" radio)
+  otCardFirstName: "input[placeholder='First Name']",
+  otCardLastName: "input[placeholder='Last Name']",
+  otCardExpiresOn: "input[placeholder='Expires On']",
+  otCardSecurityCode: "input[placeholder='Card Security Code']",
 
   // ── Bank / ACH fields ──────────────────────────────────────────────
   bankRoutingNumber: '#bankRoutingNumber',
@@ -312,7 +322,7 @@ export const SELECTORS: AppSelectors = {
   wsEmailInput: "input[type='email'], input[name='email'], input[placeholder*='email' i]",
   wsVerificationCodeInput: "input[name='code'], input[placeholder*='code' i], input[type='tel']",
   wsSubmitButton: "button[type='submit'], button:has-text('Submit'), button:has-text('Continue'), button:has-text('Verify')",
-  wsResendCodeButton: "button:has-text('Resend'), a:has-text('Resend')",
+  wsResendCodeButton: "button:has-text('Resend'), a:has-text('Resend'), :text-is(\"Didn't get a code?\"), :has-text('Resend code')",
 
   wsMakePaymentButton: 'button:has-text("Make a Payment"), button:has-text("Pay Now")',
   wsAccountNumber: '[data-field="accountNumber"], .account-number',
@@ -324,6 +334,14 @@ export const SELECTORS: AppSelectors = {
   wsAccountSummaryLink: 'a:has-text("Account Summary"), a:has-text("Summary"), [href*="summary"]',
 
   wsPrimaryEmailField: '#primaryEmail, input[name="primaryEmail"], input[type="email"]',
+
+  // Phone update — Update Contact Info page
+  wsPhoneAreaCodeInput: '#areaCode, input[name="areaCode"], input[placeholder*="Area" i]',
+  wsPhoneNumberInput: '#phoneNumber, input[name="phoneNumber"], input[placeholder*="Phone" i]',
+  wsSaveChangesButton: 'button:has-text("Save Changes"), button[type="submit"]:has-text("Save")',
+  wsSuccessMessage: '.alert-success, .success-message, [class*="success"]:has-text("saved"), [class*="success"]:has-text("updated"), .toast-success',
+  wsErrorMessage: '.alert-danger, .error-message, [class*="error"], .modal-body:has-text("could not find")',
+  wsUpdatePhoneSection: 'form[data-section="phone"], .phone-section, [class*="phone"]',
 
   wsOtherAmountRadio: '#other',
   wsPaymentAmountField: '#other, input[name="paymentAmount"], input[type="number"]',
@@ -339,6 +357,8 @@ export const SELECTORS: AppSelectors = {
   wsContactLink: 'a:has-text("Contact"), [href*="contact"]',
   // ── New Application / Application Wizard ─────────────────────────────
   // Origination portal "New Application" form
+  naNewApplicationLink: '#newApplication, a[href*="newApplication"], a[href*="new-application"]',
+  naSubmitNewApplicationBtn: '.btn-secondary',
   naEmailAddress: "input[name='custEmailAddress']",
   naPhone: "input[name='phone']",
   naMerchantDropdown: '.form-control',
@@ -396,10 +416,26 @@ export const SELECTORS: AppSelectors = {
   svInfoFirstDueDateInput: '#firstDueDate, input[name="firstDueDate"]',
   svInfoSecondDueDateInput: '#secondDueDate, input[name="secondDueDate"]',
 
+  // ── Search Results ──────────────────────────────────────────────────
+  searchResultAccountLink: "a[href*='/customer-information/']",
+
   // ── Move Due Date (Servicing — Scheduled Payments modal) ───────────
   moveDueDateButton: "button:has-text('Move Due Date')",
   moveDueDateScheduledSelect: "#moveFromDueDate",
   moveDueDateNewDateInput: "input[name='numOfDaysToBeMoved']",
+
+  // ── Origination - Leads Table Filters ──────────────────────────────
+  leadsFromDateInput: "input[placeholder='MM/DD/YYYY']:first-of-type, input[name='from']",
+  leadsToDateInput: "input[placeholder='MM/DD/YYYY']:last-of-type, input[name='to']",
+  leadsLeadPkInput: "input[placeholder*='LeadPk'], input[placeholder*='Lead PK'], input[placeholder*='leadPk']",
+  leadsEmailInput: "input[placeholder*='email' i]",
+  leadsSsnInput: "input[placeholder*='ssn' i]",
+  leadsAccountPkInput: "input[placeholder*='AccountPK'], input[placeholder*='Account PK']",
+  leadsPhoneInput: "input[placeholder*='Phone']",
+  leadsCustomerNameInput: "input[placeholder*='Customer Name']",
+  leadsStateDropdown: "input[placeholder*='state' i]",
+  leadsLeadStatusDropdown: "input[placeholder*='status' i], input[placeholder*='Lead Status' i]",
+  leadsInvoiceNumberInput: "input[placeholder='Search by Invoice Number']",
 
   // ── Error Log (Origination — /errorLog) ────────────────────────────
   elTabSendApplication: "[eventkey='sendApplication'], button[data-rr-ui-event-key='sendApplication']",
@@ -435,7 +471,31 @@ export const SELECTORS: AppSelectors = {
   /** "Choose Payment Program" button on the plan selection screen */
   completeChooseProgramBtn: 'button:has-text("Choose Payment Program")',
 
-  // 25002500 AMS Portal (react-data-table-component) 250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500
+  // ── Task #442 — Send Invite / Podium (Servicing — Account Summary) ────────
+  invitationIcon: '#invitation',
+
+  // ── Sales Rep / Merchant Info panel (Origination Customer page) ───────────
+  salesRepEditButton: '#MerchantInfo-edit',
+  salesRepSaveButton: ".collapsableEdit__button__primary, button[class*='collapsableEdit__button__primary']",
+
+  // ── Open to Buy (Origination) ──────────────────────────────────────────────
+  openToBuyNavLink: "a[href*='openToBuy'], a:has-text('Open to Buy'), #openToBuy",
+  openToBuyExportCsvButton: "button:has-text('Export'), button:has-text('CSV'), a:has-text('Export CSV')",
+
+  // ── Task #505 — Opt Out AI (Servicing — Primary Contact / Mobile Phone) ──
+  primaryContactEditButton: '#PrimaryContact-edit',
+  primaryContactSaveButton: "button[class*='collapsableEdit__button__primary']",
+  optOutAiCheckbox: '#optOutAiMobile, label:has-text("Opt Out AI") input[type="checkbox"], input[name="optOutAiMobile"]',
+  doNotCallCheckbox: '#doNotCallMobile, label:has-text("Do Not Call") input[type="checkbox"], input[name="doNotCallMobile"]',
+  primaryContactSection: '[data-section="primary-contact"], .primary-contact-panel, section:has-text("Primary Contact")',
+  mobilePhoneSection: '[data-section="mobile-phone"], section:has-text("Mobile Phone")',
+  // Reason modal that appears when toggling Opt Out AI checkbox
+  optOutAiReasonModal: 'dialog, [role="dialog"]',
+  optOutAiReasonTextbox: 'dialog textarea, [role="dialog"] textarea',
+  optOutAiReasonSaveButton: 'dialog button:has-text("Save"), [role="dialog"] button:has-text("Save")',
+
+  // ── AMS — Users list (/users) ─────────────────────────────────────
+  // Table uses react-data-table-component (divs, NOT <table>)
   amsRdtTable: '.rdt_Table',
   amsRdtTableRow: '.rdt_TableRow',
   amsRdtTableBody: '.rdt_TableBody',
@@ -443,6 +503,9 @@ export const SELECTORS: AppSelectors = {
   amsPaginationNextButton: 'button[aria-label="Next Page"]',
   amsPaginationPrevButton: 'button[aria-label="Previous Page"]',
   amsUsersSearchInput: 'input[name="search"]',
+
+  // ── AMS — User Details (/users/[username]) ────────────────────────
+  // Edit triggers: pencil icon spans per card section
   amsEditProfileButton: 'span#EditUserProfile-edit',
   amsUserFirstNameInput: 'input[name="firstName"]',
   amsUserLastNameInput: 'input[name="lastName"]',
@@ -451,6 +514,8 @@ export const SELECTORS: AppSelectors = {
   amsSaveButton: 'button:has-text("SAVE")',
   amsCancelButton: 'button:has-text("CANCEL")',
   amsEditUserCard: '#employmentForm',
+
+  // ── AMS — Associate Merchants (/associate-users-to-merchants) ─────
   amsAssocPageSubmit: 'button:has-text("Submit")',
   amsUsersSelectionInfo: '[class*="selectable-users-table_selectionInfo"]',
   amsMerchantsSelectionInfo: '[class*="selectable-merchants-table_selectionInfo"]',
@@ -459,5 +524,40 @@ export const SELECTORS: AppSelectors = {
   amsAssocSelectAllCheckbox: 'input[name="select-all-rows"]',
   amsAssocRowCheckbox: 'input[name="select-row-undefined"]',
   amsAssocMerchantsSearch: 'input[placeholder*="merchant" i]',
+
+  // ── AMS — Toast (reuse global toastSuccess) ───────────────────────
   amsSuccessToast: '.Toastify__toast--success, .toast-success, .alert-success',
+  amsAssocConfirmButton: '.modal-footer button:has-text("Confirm")',
+  amsLogActivityRow: '.rdt_TableRow',
+  amsLogActivityCell: '[class*="rdt_TableCell"]',
+
+  // ── AMS — Edit User Merchants card (/users/[username]) ──────────────
+  // Card header scoped by the pencil span ID (unique per card)
+  amsEditUserMerchantsButton: 'span#EditUserMerchants-edit',
+  amsUserMerchantsCardToggle: '.card-header:has(span#EditUserMerchants-edit) #toggle-collapse',
+  amsUserMerchantsCardCollapse: '.card:has(span#EditUserMerchants-edit) .collapse',
+  amsUserMerchantsSelectControl: '#merchants .filter__control',
+  amsUserMerchantsSelectInput: '#merchants .filter__input',
+  amsUserMerchantsSelectOption: '[class*="customOptionStyles__CSG9m"]',
+  // Tags in read-only view: scoped to the readOnly container inside the merchants card
+  amsUserMerchantsTag: '.card:has(span#EditUserMerchants-edit) [class*="tag__snNpm"]',
+  // Save/cancel scoped to merchants card
+  // When in edit mode, span#EditUserMerchants-edit is removed from DOM; scope by #merchants (visible only in edit mode)
+  amsUserMerchantsSaveButton: '.card:has(#merchants) button[class*="collapsableEdit__button__primary"]',
+
+  // ── CC History / Edit Modal ────────────────────────────────────
+  ccEditPencilIcon: 'svg[data-icon="pencil-alt"], svg[data-icon="pencil"], svg[data-icon="pen-to-square"]',
+  ccEditModal: '#editPendingCCForm, .modal:has(#editPendingCCForm)',
+  ccEditModalTitle: '.modal-title',
+  ccEditPostingDate: '#editPendingCCForm input[name="postingDate"], #editPendingCCForm [name="postingDate"]',
+  ccEditAmount: '#editPendingCCForm input[name="amount"], #editPendingCCForm [name="amount"]',
+  ccEditComment: '#editPendingCCForm textarea[name="comment"], #editPendingCCForm [name="comment"]',
+  ccEditSaveButton: '#editPendingCCForm button[type="submit"], .modal:has(#editPendingCCForm) button:has-text("SAVE")',
+  ccEditCancelButton: '.modal:has(#editPendingCCForm) button:has-text("Close"), .modal:has(#editPendingCCForm) button:has-text("Cancel"):not(:has-text("CANCEL"))',
+  ccEditRemoveButton: '.modal:has(#editPendingCCForm) .btn-danger, .modal:has(#editPendingCCForm) button:has-text("Cancel"):last-of-type',
+
+  // ── CCBIN (Send Application) ─────────────────────────────────
+  naCcBinField: '#mainCreditCardBin',
+  naCcBinImage: 'img[src*="ccbin"]',
+  naCcBinInstructionText: '.ccBinContainer span, [class*="ccBinContainer"] span',
 } as const;

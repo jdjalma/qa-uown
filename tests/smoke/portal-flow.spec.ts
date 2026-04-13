@@ -40,8 +40,13 @@ for (const data of testData) {
       page,
       api,
       ctx,
+      merchantConfig: mSetup,
     }) => {
       test.setTimeout(420_000); // 7 min — includes portal UI + e-sign flow
+
+      await test.step('Ensure merchant config', async () => {
+        await mSetup.configureByName(data.merchant, 'lifecycle');
+      });
 
       const { env, merchant, applicant, order } = buildTestData({
         env: data.env,

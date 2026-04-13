@@ -749,6 +749,198 @@ export class OriginationCustomerPage extends OriginationBasePage {
     return entries;
   }
 
+  // ── Sales Rep / Merchant Info Panel ──────────────────────────────
+
+  /**
+   * Returns the Sales Rep panel container scoped by the SalesRep id prefix.
+   * The CollapsableEditLayout renders with id-based elements (#SalesRep-edit, etc.).
+   * We scope to the nearest ancestor that contains the edit button.
+   */
+  private getSalesRepPanel() {
+    return this.page
+      .locator('section, div')
+      .filter({ has: this.page.locator(SELECTORS.salesRepEditButton) })
+      .first();
+  }
+
+  /** Returns the Merchant filter container scoped within the Sales Rep panel. */
+  private getSalesRepMerchantContainer() {
+    return this.getSalesRepPanel().locator("label:has-text('Merchant')").locator('..');
+  }
+
+  /** Returns the Merchant `.filter__control` within the Sales Rep panel. */
+  private getSalesRepMerchantControl() {
+    return this.getSalesRepMerchantContainer().locator(SELECTORS.filterControl).first();
+  }
+
+  /** Returns the Location filter container scoped within the Sales Rep panel. */
+  private getSalesRepLocationContainer() {
+    return this.getSalesRepPanel().locator("label:has-text('Location')").locator('..');
+  }
+
+  /** Returns the Location `.filter__control` within the Sales Rep panel. */
+  private getSalesRepLocationControl() {
+    return this.getSalesRepLocationContainer().locator(SELECTORS.filterControl).first();
+  }
+
+  /**
+   * Opens the Sales Rep panel edit mode by clicking the edit button.
+   * Only works when lead status is UW_APPROVED or CONTRACT_CREATED.
+   */
+  async openSalesRepEdit(): Promise<void> {
+    const editButton = this.page.locator(SELECTORS.salesRepEditButton);
+    await editButton.waitFor({ state: 'visible', timeout: 10_000 });
+    await editButton.click();
+
+    // Wait for the edit form to become active — the filter control becomes visible
+    await this.getSalesRepMerchantControl()
+      .or(this.getSalesRepPanel().locator(SELECTORS.filterPlaceholder).first())
+      .waitFor({ state: 'visible', timeout: 5_000 });
+    console.log('[SalesRep] Edit mode opened');
+  }
+
+  /**
+   * Sets the merchant in the Sales Rep panel (edit mode must be open).
+   * Clears current selection first if needed, then types and selects the merchant.
+   */
+  async setSalesRepMerchant(merchantName: string): Promise<void> {
+    const container = this.getSalesRepMerchantContainer();
+
+    // Clear existing selection if present
+    const clearIndicator = container.locator(SELECTORS.filterClearIndicator).first();
+    if (await clearIndicator.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      await clearIndicator.click();
+    }
+
+    // Click the control to open the dropdown
+    const control = this.getSalesRepMerchantControl();
+    await control.click();
+
+    // Type the merchant name to search
+    const input = control.locator('input').first();
+    await input.fill(merchantName);
+
+    // Wait for and select the matching option
+    const option = this.page.locator(SELECTORS.filterOption)
+      .filter({ hasText: merchantName }).first();
+    await option.waitFor({ state: 'visible', timeout: 5_000 });
+    await option.click({ force: true });
+
+    // Wait for the menu portal to close
+    await this.page.locator(SELECTORS.filterMenuPortal)
+      .waitFor({ state: 'hidden', timeout: 3_000 }).catch(() => {});
+
+    console.log(`[SalesRep] Merchant set to "${merchantName}"`);
+  }
+
+  /**
+   * Sets the location in the Sales Rep panel (edit mode must be open, merchant must be set first).
+   */
+  async setSalesRepLocation(locationName: string): Promise<void> {
+    const container = this.getSalesRepLocationContainer();
+
+    // Clear existing selection if present
+    const clearIndicator = container.locator(SELECTORS.filterClearIndicator).first();
+    if (await clearIndicator.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      await clearIndicator.click();
+    }
+
+    // Click the control to open the dropdown
+    const control = this.getSalesRepLocationControl();
+    await control.click();
+
+    // Type the location name to search
+    const input = control.locator('input').first();
+    await input.fill(locationName);
+
+    // Wait for and select the matching option
+    const option = this.page.locator(SELECTORS.filterOption)
+      .filter({ hasText: locationName }).first();
+    await option.waitFor({ state: 'visible', timeout: 5_000 });
+    await option.click({ force: true });
+
+    // Wait for the menu portal to close
+    await this.page.locator(SELECTORS.filterMenuPortal)
+      .waitFor({ state: 'hidden', timeout: 3_000 }).catch(() => {});
+
+    console.log(`[SalesRep] Location set to "${locationName}"`);
+  }
+
+  /**
+   * Saves the Sales Rep panel changes by clicking the primary save button.
+   * Waits for the success toast notification.
+   * Returns the toast message text.
+   */
+  async saveSalesRepPanel(): Promise<string> {
+    const saveButton = this.getSalesRepPanel().locator(SELECTORS.salesRepSaveButton).first();
+    await saveButton.waitFor({ state: 'visible', timeout: 5_000 });
+    await saveButton.click();
+
+    // Wait for the save button to disappear (panel collapses back to view mode)
+    await saveButton.waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => {
+      console.warn('[SalesRep] Save button still visible after 15s');
+    });
+
+    await this.waitForSpinner();
+
+    // Capture toast message
+    const toastText = await this.captureAndDismissToast(10_000);
+    console.log(`[SalesRep] Toast: "${toastText}"`);
+    await this.waitForSpinner();
+
+    return toastText;
+  }
+
+  /**
+   * Returns the currently displayed merchant value in the Sales Rep panel (read mode).
+   * In view mode, reads from the filter__single-value element.
+   * Falls back to label-adjacent text if single-value is not present.
+   */
+  async getSalesRepMerchantValue(): Promise<string> {
+    const container = this.getSalesRepMerchantContainer();
+
+    // In edit mode: read from filter__single-value
+    const singleValue = container.locator(SELECTORS.filterSingleValue).first();
+    if (await singleValue.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      return this.getTextContent(singleValue);
+    }
+
+    // In view mode: the label "Merchant" is followed by the value text
+    const viewValue = this.getSalesRepPanel()
+      .locator("xpath=//*[normalize-space(text())='Merchant']/following-sibling::*[1]")
+      .first();
+    if (await viewValue.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      return this.getTextContent(viewValue);
+    }
+
+    return '';
+  }
+
+  /**
+   * Returns the currently displayed location value in the Sales Rep panel (read mode).
+   * In view mode, reads from the filter__single-value element.
+   * Falls back to label-adjacent text if single-value is not present.
+   */
+  async getSalesRepLocationValue(): Promise<string> {
+    const container = this.getSalesRepLocationContainer();
+
+    // In edit mode: read from filter__single-value
+    const singleValue = container.locator(SELECTORS.filterSingleValue).first();
+    if (await singleValue.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      return this.getTextContent(singleValue);
+    }
+
+    // In view mode: the label "Location" is followed by the value text
+    const viewValue = this.getSalesRepPanel()
+      .locator("xpath=//*[normalize-space(text())='Location']/following-sibling::*[1]")
+      .first();
+    if (await viewValue.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      return this.getTextContent(viewValue);
+    }
+
+    return '';
+  }
+
   async validateCustomerInfo(expected: {
     firstName?: string;
     lastName?: string;

@@ -2,20 +2,17 @@
  * Protection Plan Cancellation — E2E test covering protection plan sweep after lease cancellation.
  *
  * Flow:
- *   1. Enable insurance on merchant config
+ *   1. Enable insurance on merchant config (via API — auto-restored on teardown)
  *   2. Create application → SIGNED → settle → FUNDING → FUNDED
  *   3. Make CC payment
  *   4. Cancel lease with refund
  *   5. Trigger cancelProtectionPlanSweep scheduled task
  *   6. Verify logs, refund in payment transactions
- *   7. Cleanup: disable insurance on merchant
  *
  * Run: node node_modules/.bin/playwright test tests/e2e/origination/protection-plan-cancellation.spec.ts
  */
 import { test, expect } from '@fixtures/test-context.fixture.js';
 import { OriginationCustomerPage, FundingPage } from '@pages/origination/index.js';
-// Servicing page objects not used — servicing customer shows inline sections
-import { MerchantPage } from '@pages/merchant.page.js';
 import { TestTag, buildTags, splitTags } from '@ptypes/enums.js';
 import {
   buildTestData,
@@ -42,7 +39,7 @@ for (const data of testData) {
   test.describe(`Protection Plan Cancellation - ${data.env}/${data.merchant}`, { tag: splitTags(data.tag) }, () => {
     test.use({ envName: data.env });
 
-    test('Full protection plan cancellation flow with sweep', async ({ page, api, ctx }) => {
+    test('Full protection plan cancellation flow with sweep', async ({ page, api, ctx, merchantConfig: mConfig }) => {
       test.setTimeout(600_000); // 10 min — full FUNDED flow + sweep
       const { env, merchant, applicant, address, merchantConfig } = buildTestData({
         env: data.env,
@@ -53,22 +50,13 @@ for (const data of testData) {
       });
 
       // ═══════════════════════════════════════════════════════════════
-      //  PHASE 1: Enable insurance on merchant config
+      //  PHASE 1: Enable insurance on merchant config (via API)
+      //  Restore is automatic — fixture teardown calls restoreAll()
       // ═══════════════════════════════════════════════════════════════
 
-      await test.step('Login to origination and enable Offer Insurance on merchant', async () => {
-        await loginToPortal(page, env.originationUrl, env);
-
-        // Navigate to merchant config page
-        const merchantUrl = `${env.originationUrl}merchant/${merchantConfig.number}`;
-        await page.goto(merchantUrl, { waitUntil: 'domcontentloaded' });
-        await page.waitForLoadState('networkidle').catch(() => {});
-
-        const merchantPage = new MerchantPage(page);
-        await merchantPage.waitForSpinner();
-        await merchantPage.setOfferInsurance(true);
-        const toast = await merchantPage.saveMerchantConfig();
-        console.log(`[Phase 1] Merchant save toast: "${toast}"`);
+      await test.step('Enable Offer Insurance on merchant via API', async () => {
+        await mConfig.configureByName(data.merchant, 'withInsurance');
+        console.log(`[Phase 1] Offer Insurance enabled via API for ${data.merchant}`);
       });
 
       // ═══════════════════════════════════════════════════════════════
@@ -185,22 +173,7 @@ for (const data of testData) {
         await sleep(5_000);
       });
 
-      // ═══════════════════════════════════════════════════════════════
-      //  CLEANUP: Disable insurance on merchant
-      // ═══════════════════════════════════════════════════════════════
-
-      await test.step('Cleanup: disable Offer Insurance on merchant', async () => {
-        await loginToPortal(page, env.originationUrl, env);
-        const merchantUrl = `${env.originationUrl}merchant/${merchantConfig.number}`;
-        await page.goto(merchantUrl, { waitUntil: 'domcontentloaded' });
-        await page.waitForLoadState('networkidle').catch(() => {});
-
-        const merchantPage = new MerchantPage(page);
-        await merchantPage.waitForSpinner();
-        await merchantPage.setOfferInsurance(false);
-        const toast = await merchantPage.saveMerchantConfig();
-        console.log(`[Cleanup] Merchant save toast: "${toast}"`);
-      });
+      // Cleanup: merchantConfig fixture teardown auto-restores offerInsurance
     });
   });
 }

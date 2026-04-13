@@ -43,8 +43,12 @@ for (const data of testData) {
   test.describe(`TireAgent Unified Flow - ${data.env} ${data.state}/${data.merchant}`, { tag: data.tag.split(' ') }, () => {
     test.use({ envName: data.env });
 
-    test(`Creating Uown account via PayPair portal in "${data.env}"`, async ({ page, ctx }) => {
+    test(`Creating Uown account via PayPair portal in "${data.env}"`, async ({ page, ctx, merchantConfig: mSetup }) => {
       test.setTimeout(720_000); // 12 min — PayPair flow is multi-step
+
+      await test.step('Ensure merchant config', async () => {
+        await mSetup.configureByName(data.merchant, 'lifecycle');
+      });
 
       const { env, address, merchant, applicant, order } = buildTestData({
         env: data.env,

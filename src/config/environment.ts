@@ -28,6 +28,8 @@ export interface EnvironmentConfig {
   apiAuthorization: string;
   svcApiKey: string;
   tmsApiKey: string;
+  losPartnerUsername: string;
+  losPartnerPassword: string;
 }
 
 /**
@@ -97,6 +99,8 @@ export class ConfigEnvironment {
       // svcApiKey falls back to apiKey when UOWN_SVC_API_KEY is not set (same key in most envs)
       svcApiKey: process.env.UOWN_SVC_API_KEY || process.env.UOWN_API_KEY || '',
       tmsApiKey: process.env.FIVE9_TMS_API_KEY || '',
+      losPartnerUsername: process.env.LOS_PARTNER_USERNAME || '',
+      losPartnerPassword: process.env.LOS_PARTNER_PASSWORD || '',
     };
 
     this.emailBase = this.config.email;
@@ -162,6 +166,8 @@ export class ConfigEnvironment {
   get apiAuthorization(): string { return this.config.apiAuthorization; }
   get svcApiKey(): string { return this.config.svcApiKey; }
   get tmsApiKey(): string { return this.config.tmsApiKey; }
+  get losPartnerUsername(): string { return this.config.losPartnerUsername; }
+  get losPartnerPassword(): string { return this.config.losPartnerPassword; }
 
   getCredentials(role: UserRole): Credentials {
     const creds = this.credentials.get(role);

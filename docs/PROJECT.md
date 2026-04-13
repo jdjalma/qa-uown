@@ -4,7 +4,7 @@
 
 Test automation framework for the UOWN Leasing fintech platform, covering API testing and E2E browser testing across four portals: Origination, Servicing, Website, and AMS.
 
-Migrated from the Java/Cucumber-based `fintech-qaautomation` project to Playwright + TypeScript for better developer experience, faster execution, and native API testing support.
+Migrated from a legacy Java/Cucumber project to Playwright + TypeScript for better developer experience, faster execution, and native API testing support.
 
 ## Tech Stack
 
@@ -60,7 +60,7 @@ fintech-playwright/
 │   │   ├── tire-agent.data.ts  # PayPair portal data (product, config, JSON builders)
 │   │   ├── state-address-mapper.ts # US state addresses
 │   │   └── test-accounts.ts    # Account persistence
-│   ├── fixtures/               # Playwright fixtures & templates
+│   ├── fixtures/               # Playwright fixures & templates
 │   │   ├── test-context.fixture.ts # API-only test fixture
 │   │   └── api-templates/      # JSON request templates
 │   ├── types/                  # Enums and types

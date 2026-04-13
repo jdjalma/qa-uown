@@ -18,17 +18,17 @@ import { buildTestData, loginToPortalWithOptions } from '@helpers/index.js';
 const MAX_APPROVAL_AMOUNT = 5000;
 
 const testData = [
-  // { env: 'sandbox', state: 'NY', merchant: 'TireAgent', tag: buildTags(TestTag.SANITY, TestTag.REGRESSION, TestTag.SANDBOX) },
+  { env: 'sandbox', state: 'NY', merchant: 'TireAgent', tag: buildTags(TestTag.SANITY, TestTag.REGRESSION, TestTag.SANDBOX) },
   { env: 'qa1', state: 'NY', merchant: 'TireAgent', tag: buildTags(TestTag.SANITY, TestTag.REGRESSION, TestTag.QA1) },
   // Uncomment to run on other environments:
-  // { env: 'stg', state: 'NY', merchant: 'TireAgent', tag: buildTags(TestTag.SANITY, TestTag.REGRESSION, TestTag.STG) },
+  { env: 'stg', state: 'NY', merchant: 'TireAgent', tag: buildTags(TestTag.SANITY, TestTag.REGRESSION, TestTag.STG) },
 ];
 
 for (const data of testData) {
   test.describe(`Modify Approval Amount - ${data.env} ${data.state}/${data.merchant}`, { tag: data.tag.split(' ') }, () => {
     test.use({ envName: data.env });
 
-    test(`Creating Uown account in "${data.env}"`, async ({ page, api, ctx }) => {
+    test(`Creating Uown account in "${data.env}"`, async ({ page, api, ctx, merchantConfig: mSetup }) => {
       const { env, merchant, applicant, order } = buildTestData({
         env: data.env,
         state: data.state,
@@ -38,6 +38,11 @@ for (const data of testData) {
         sanitizeNames: true,
       });
       test.setTimeout(300_000); // 5 min timeout
+
+      // Ensure merchant has the expected maxApprovalAmount (test depends on this exact value)
+      await test.step('Ensure merchant config', async () => {
+        await mSetup.configureByName(data.merchant, { ...({ maxApprovalAmount: MAX_APPROVAL_AMOUNT, fraudThreshold: 900 }) });
+      });
 
       // ═══════════════════════════════════════════════════════════════
       //  PHASE 1: ACCOUNT CREATION via API

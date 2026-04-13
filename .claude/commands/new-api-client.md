@@ -45,7 +45,7 @@ Invocar em paralelo quando necessário:
 ```
 # Paralelo (independentes)
 Agent(subagent-impl-api-client, ...)
-Agent(subagent-data-template, ...)   # se precisar de JSON templates
+Agent(subagent-data, ...)            # se precisar de JSON templates (template mode)
 ```
 
 Prompt para `subagent-impl-api-client`:

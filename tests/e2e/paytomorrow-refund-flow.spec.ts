@@ -51,8 +51,13 @@ for (const data of testData) {
       page,
       api,
       ctx,
+      merchantConfig: mSetup,
     }) => {
       test.setTimeout(900_000); // 15 minutes — multi-portal, email polling, external site
+
+      await test.step('Ensure merchant config', async () => {
+        await mSetup.configureByName(data.merchant, 'lifecycle');
+      });
 
       const env = new ConfigEnvironment(data.env);
       const merchantConfig = getMerchant(data.merchant);

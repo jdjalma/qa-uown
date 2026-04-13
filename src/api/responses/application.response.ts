@@ -3,6 +3,8 @@ export interface SendApplicationResponseBody {
   authorizationNumber?: string;
   accountNumber?: string;
   transactionMessage?: string;
+  creditLimit?: number;
+  isEligibleForExtraInfo?: boolean;
   paymentDetailsList?: Array<{
     redirectUrl?: string;
     regularPaymentWithTax?: string;
@@ -72,6 +74,7 @@ export interface FinalApprovalDetailsResponseBody {
   nextPayDate?: string;
   payFrequency?: string;
   employer?: string;
+  maxApprovalAmount?: number;
 }
 
 export interface MissingFieldsResponseBody {

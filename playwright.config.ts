@@ -210,15 +210,28 @@ export default defineConfig({
     },
 
     // ════════════════════════════════════════════════════════════════
-    //  Task Testing — tests from tracked GitLab issues
+    //  Smoke Tests — end-to-end smoke tests (tests/smoke/)
     // ════════════════════════════════════════════════════════════════
     {
-      name: 'task-testing',
-      testDir: './tests/taskTestingUown',
+      name: 'smoke',
+      testDir: './tests/smoke',
       use: {
         ...browserProfile.contextOptions,
         baseURL: process.env.ORIGINATION_URL,
       },
+    },
+
+    // ════════════════════════════════════════════════════════════════
+    //  Task Testing — tests from tracked GitLab issues
+    // ════════════════════════════════════════════════════════════════
+    {
+      name: 'task-testing',
+      testDir: './docs/taskTestingUown',
+      use: {
+        ...browserProfile.contextOptions,
+        baseURL: process.env.ORIGINATION_URL,
+      },
+      dependencies: ['auth-servicing'],
     },
   ],
 });

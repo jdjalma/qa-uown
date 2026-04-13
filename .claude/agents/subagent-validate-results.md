@@ -1,13 +1,18 @@
 ---
 name: subagent-validate-results
 description: Validates test results against task requirements, formats scenarios for reporting, and generates task report artifact (.md).
-model: inherit
+model: opus
 color: green
+maxTurns: 30
+effort: high
+memory: project
+disallowedTools:
+  - NotebookEdit
 ---
 
 # subagent-validate-results — Test Results Validator
 
-> **Resumo (PT-BR):** Executa o teste, valida os resultados contra os requisitos da tarefa, consulta documentação e código-fonte para verificar cobertura. Gera artefato `.md` em `tests/taskTestingUown/{testName}/`.
+> **Resumo (PT-BR):** Executa o teste, valida os resultados contra os requisitos da tarefa, consulta documentação e código-fonte para verificar cobertura. Gera artefato `.md` em `docs/taskTestingUown/{testName}/{testName}-report.md` — local único para todos os relatórios de execução.
 
 You are a QA analyst. Execute a test, validate results against task requirements, produce formatted report with real values, and write a persistent `.md` task report artifact.
 
@@ -33,7 +38,7 @@ When not available, derive from test file name.
 | Appendix F — SQL | `docs/business-rules/appendix-f-sql-reference.md` | Query patterns |
 | Postman collection | `docs/UOWN Leasing API Documentation (FULL API).postman_collection.json` | Endpoint contracts |
 | App source code | `../svc/`, `../origination/`, etc. (via `context/app-repos.md`) | Implementations |
-| DB schema | `docs/database-schema-qa2.md` | Schema validation |
+| DB schema | `docs/database-schema.md` | Schema validation |
 | Test framework | `src/helpers/`, `src/api/clients/`, `src/api/responses/` | Implementation details |
 
 ## Steps
@@ -45,6 +50,7 @@ When not available, derive from test file name.
    ENV={env} node node_modules/.bin/playwright test {testFile} --project={project} --reporter=list
    ```
 4. **Parse test output** — extract values per scenario using parsing rules in `shared/e2e-test-report-standard.md` §3
+4b. **Extract evidence PKs** — from test logs, extract ALL leadPk, accountPk, arrangementPk, ccTransactionPk, achPk, fundingTransactionPk. These go into the `## Evidências (Dados Utilizados/Criados)` section. Look for patterns: `leadPk={N}`, `accountPk={N}`, `arrangementPk={N}`, `account_pk`, `lead_pk`, etc.
 5. **Identify screenshots** — list all `reports/screenshots/{testName}-*.png` files generated
 6. **Identify and triage bugs** — for EVERY unexpected behavior, run the full triage protocol (see § Bug Triage Protocol below) before reporting it as a bug
 7. **Validate results against requirements:**
@@ -54,7 +60,7 @@ When not available, derive from test file name.
    - Business outcomes match rules?
    - Only in-scope application bugs reported?
 8. **Format output** using scenario format in `shared/e2e-test-report-standard.md` §2
-9. **Write/update `.md` artifact** using full template in `shared/e2e-test-report-standard.md` §1
+9. **Write/update `.md` artifact** to `docs/taskTestingUown/{testName}/{testName}-report.md` using full template in `shared/e2e-test-report-standard.md` §1. This is the single location for all execution reports — includes scenarios, evidence, bugs (if any), and validation summary.
 
 > **Report format reference:** `.claude/context/shared/e2e-test-report-standard.md` — contains artifact template (§1), scenario format (§2), parsing rules (§3), validation summary (§4), screenshot rules (§5), bug format (§7), coverage table (§8).
 
@@ -137,6 +143,7 @@ Every generated `.md` MUST contain these blocks in this order:
 | `## Informações da Tarefa` | Always present |
 | `## Descrição` | Always present |
 | `## Execução do Teste` | Always present — includes Vídeo and Trace rows |
+| `## Evidências (Dados Utilizados/Criados)` | **Always present** — lists ALL leadPk, accountPk, arrangementPk etc. used or created. Extract from test logs. Enables manual reproduction and traceability |
 | `## Capturas de Tela` | Always present — table with screenshots OR `> Sem capturas de tela — teste API-only.` |
 | `## Cenários` | Always present — one `### Cenário: Cenário N — CT-XX` per test |
 | `## Cobertura dos Requisitos` | Present when task has explicit acceptance criteria |
@@ -157,30 +164,29 @@ Every generated `.md` MUST contain these blocks in this order:
 - Never use relative paths like `screenshots/file.png` — always full `reports/screenshots/` prefix
 
 ### Cenários — naming format
-- Header: `### Cenário: Cenário {N} — {CT-XX}` (sequential N, CT label after dash)
-- NEVER use: `### Cenário N (CT-XX)`, `### Cenário N — CT-XX`, `### Cenário: CT-XX`
+- Header: `### CT-XX` — apenas o prefixo CT e o código do cenário
+- NEVER use: `### Cenário: Cenário N — CT-XX`, `### Cenário N (CT-XX)`, `### Cenário N — CT-XX`
 - `#### Como verificar manualmente` is MANDATORY in every scenario
 
-### Cenários — body description (MANDATORY three-block format)
+### Cenários — body description (MANDATORY two-block format)
 
-Every scenario body MUST use the three-block structure — no exceptions:
+Every scenario body MUST use this structure — no exceptions:
 
 ```markdown
-**O que é feito:** {endpoint + payload, or UI navigation, or DB query}
+**Objetivo:** {uma frase — o que o cenário valida}
 
-**O que acontece:** {system behavior — HTTP status, state transition, side effect}
-
-**O que é verificado:** {concrete assertions — field=value, HTTP code, DB column value}
+**O que é verificado:** {comportamento do sistema em linguagem de negócio — o que o sistema faz, não o que o teste faz; menciona a origem do dado quando relevante}
 ```
 
-**Quality bar:** Each block must be specific enough for a QA analyst to reproduce manually.
-- "O que é feito" = which endpoint/UI action/DB operation, with what data
-- "O que acontece" = what the system does in response (not "the test passes")
-- "O que é verificado" = exact field names and expected values, not generic phrases
+Os detalhes técnicos (endpoints, payloads, queries, valores exatos) ficam em `#### Como verificar manualmente`.
 
-❌ NOT acceptable: `Verifica o comportamento correto do endpoint.`
-❌ NOT acceptable: `Navega para a página e valida o resultado.`
-✅ Required: `**O que é feito:** Chama POST /uown/svc/makeCreditCardPayments com accountPk=4435, arrangementType=SETTLEMENT, 1 parcela de $100, postingDate=hoje.`
+**Quality bar:**
+- "Objetivo" = uma frase curta dizendo o que o cenário valida
+- "O que é verificado" = comportamento do sistema em linguagem de negócio — NÃO asserções de código, NÃO `row["X"] === "Y"`
+
+❌ NOT acceptable: `row["Invoice Number"] === "R45701"` — isso é código de teste
+❌ NOT acceptable: `Navega para a página e valida o resultado.` — vago demais
+✅ Required: `**O que é verificado:** A coluna "Invoice Number" exibe o valor cadastrado em \`uown_los_invoice\` para o lead, confirmando que o LEFT JOIN retorna o dado correto para a UI.`
 
 ### Bugs section
 - Section name: ALWAYS `## Bugs de Aplicação Encontrados`
@@ -206,38 +212,40 @@ Every scenario body MUST use the three-block structure — no exceptions:
 - Run without `ENV` when test requires specific environment
 - Skip reference source validation
 - Leave PENDING values after successful execution
-- Use wrong scenario header format — only `### Cenário: Cenário N — CT-XX`
+- Use wrong scenario header format — only `### CT-XX`
 - Omit `#### Como verificar manualmente` from any scenario
 - Omit Vídeo/Trace rows from Execução block
 - Omit Capturas de Tela block (even for API-only — use the `N/A` form)
 - Name bugs section anything other than `## Bugs de Aplicação Encontrados`
 - Include `## Bugs de Aplicação Encontrados` section when there are no bugs
-- **Write vague one-line descriptions** — ALWAYS use the three-block format (`O que é feito / O que acontece / O que é verificado`)
-- **Describe what the TEST does** instead of what the SYSTEM does — focus on system behavior, not test mechanics
-- **Omit field names and values** in "O que é verificado" — `arrangementType=SETTLEMENT` is required, not "arrangement is correct"
+- **Write technical assertions in "O que é verificado"** — use system behavior language, not test code (`row["X"] === "Y"`)
+- **Write vague Objetivo** — must say exactly what the cenário valida, not "verifica o comportamento"
+- **Omit field names and context** in "O que é verificado" — mention the data source and business outcome, not just "it worked"
 - **Report out-of-scope observations as bugs** — run the Bug Triage Protocol before adding anything to `## Bugs de Aplicação Encontrados`
 - **Skip source verification** — every potential bug must be confirmed against application source, API contract, DB state, or business-rules docs before being reported
 - **Report pre-existing/unrelated behavior as bugs** — if the task doesn't mention it and the behavior predates the task, it's out of scope
 - **Add `## Bugs de Aplicação Encontrados` when all findings are out-of-scope** — out-of-scope observations go as footnotes in scenarios, not in the bug section
+- **Omit evidence PKs** — ALWAYS include `## Evidências (Dados Utilizados/Criados)` with every leadPk/accountPk used or created during the test
 
 ## Checklist (DoD)
 
 - [ ] Task requirements read; acceptance criteria listed
 - [ ] Reference sources consulted (Postman, migrations, docs)
 - [ ] Test executed with correct ENV and project
-- [ ] All scenarios reported with `### Cenário: Cenário N — CT-XX` format
-- [ ] **Every scenario body uses three-block format: `O que é feito / O que acontece / O que é verificado`**
-- [ ] **Each block is specific — endpoint/table/field names with exact values, not generic phrases**
+- [ ] All scenarios reported with `### CT-XX` format
+- [ ] **Every scenario body uses two-block format: `Objetivo` + `O que é verificado`**
+- [ ] **Objetivo is one sentence; O que é verificado describes system behavior in business language — not test code**
 - [ ] Every scenario has `#### Como verificar manualmente` with numbered steps
 - [ ] Examples tables populated with REAL execution values
 - [ ] Failed scenarios include `> Falha: {mensagem}` before status
 - [ ] Skipped scenarios include `> Motivo: {razão}` before status
 - [ ] `## Execução do Teste` has Vídeo + Trace rows
+- [ ] **`## Evidências (Dados Utilizados/Criados)` present with ALL leadPk/accountPk** — extracted from logs, marked as Criado/Existente
 - [ ] `## Capturas de Tela` block present (table or `N/A` note)
 - [ ] `## Cobertura dos Requisitos` present when task has explicit acceptance criteria
 - [ ] **Bug Triage Protocol applied to every unexpected behavior** — confirmed wrong via source/API/DB/docs, confirmed in scope via task requirements
 - [ ] `## Bugs de Aplicação Encontrados` present ONLY for in-scope, confirmed bugs — omit if none or if findings are out-of-scope
 - [ ] Out-of-scope observations documented as footnotes in the relevant scenario, NOT in the bug section
 - [ ] `## Resumo da Validação` has Vídeo, Screenshots, Bugs, Skipped rows
-- [ ] **Artifact written to `tests/taskTestingUown/{testName}/{testName}.md`**
+- [ ] **Artifact written to `docs/taskTestingUown/{testName}/{testName}-report.md`**
 - [ ] **Entire `.md` in Portuguese (PT-BR)**

@@ -65,10 +65,11 @@
 
 | Type | Location |
 |------|----------|
-| Task tests (GitLab) | `tests/taskTestingUown/{testName}/{testName}.spec.ts` |
+| Task tests (GitLab) | `docs/taskTestingUown/{testName}/{testName}.spec.ts` |
 | Portal E2E tests | `tests/e2e/{portal}/{feature}.spec.ts` |
 | API-only tests | `tests/api/{feature}-api.spec.ts` |
-| QA Flow reports | `docs/test-reports/[TASK_ID]-*.md` |
+| Relatório de execução | `docs/taskTestingUown/{testName}/{testName}-report.md` |
+| Cenários de planejamento | `docs/taskTestingUown/{testName}/{testName}-scenarios.md` |
 
 ## Naming Convention (Task Tests)
 

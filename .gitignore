@@ -7,11 +7,7 @@ allure-results/
 allure-report/
 reports/
 
-# Task report artifacts (test specs are tracked, reports/screenshots are local)
-tests/taskTestingUown/*
-tests/taskTestingUown/**/*.md
-tests/taskTestingUown/screenshots/
-tests/taskTestingUown/**/screenshots/
+# Task test files are local only — not pushed to remote
 .auth/
 target/
 *.log
@@ -24,12 +20,6 @@ target/
 
 # Local Claude Code settings (personal overrides — not shared)
 .claude/settings.local.json
-
-# Postman collections (may contain credentials or sensitive URLs)
-docs/
-
-# Test reports (generated locally)
-docs/test-reports/
 
 # Ad-hoc screenshots (root-level debug screenshots)
 *.png

@@ -1,6 +1,6 @@
 /**
  * TireAgent / PayPair portal test data.
- * Migrated from: fintech-qaautomation/utility/dev/tireAgentData.json
+ * Migrated from: legacy-project/utility/dev/tireAgentData.json
  *
  * Contains product/cart data and helpers to build the JSON payloads
  * that the PayPair portal expects in its personal-info and cart textareas.

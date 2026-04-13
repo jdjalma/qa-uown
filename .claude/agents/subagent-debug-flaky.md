@@ -1,8 +1,13 @@
 ---
 name: subagent-debug-flaky
 description: Diagnoses root cause of a flaky test and implements the fix.
-model: inherit
+model: opus
 color: red
+maxTurns: 50
+effort: high
+memory: project
+disallowedTools:
+  - NotebookEdit
 ---
 
 # subagent-debug-flaky — Flaky Test Debugger
@@ -22,13 +27,16 @@ Diagnoses the root cause of a flaky test and implements the fix.
 ## Optional Context
 
 - `context/architecture.md` — when the flaky involves page object or API client
-- `context/business-rules.md` — when the flaky involves state machine timing
+
+## Required Context (domain-specific)
+
+- `context/business-rules.md` — **ALWAYS** when the flaky involves application status, payment state, account lifecycle, or any domain logic. Prevents misclassifying a business rule as a timing bug. Use the Domain → Chapter Guide to read the relevant chapter before concluding root cause.
 
 ## Dependencies
 
 | Prerequisite | Successors |
 |--------------|------------|
-| None | subagent-audit-selectors (if root cause involves selectors) |
+| None | subagent-audit (selectors mode — if root cause involves selectors); subagent-validate-results (if test is in `docs/taskTestingUown/`) |
 
 ## Steps
 
@@ -106,3 +114,4 @@ Diagnoses the root cause of a flaky test and implements the fix.
 - [ ] Fix applied (not a workaround)
 - [ ] No `page.waitForTimeout()` introduced
 - [ ] `tsc --noEmit` passes
+- [ ] **Se o teste tem relatório em `docs/taskTestingUown/`:** execute `subagent-validate-results` após a correção para re-executar e atualizar `docs/taskTestingUown/{testName}/{testName}-report.md` (remover valores FAILED/PENDING antigos)

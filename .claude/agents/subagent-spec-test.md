@@ -1,12 +1,16 @@
 ---
 name: subagent-spec-test
 description: Generates a test SPEC (steps, data, validations). Does NOT write code.
-model: inherit
+model: opus
 color: green
-disallowedTools:
-  - Write
-  - Edit
-  - NotebookEdit
+maxTurns: 20
+effort: high
+memory: project
+tools:
+  - Read
+  - Glob
+  - Grep
+  - Task
 ---
 
 # subagent-spec-test — Test Planner
@@ -22,13 +26,14 @@ Generate a complete test SPEC for the described flow. **Does NOT write code** �
 1. `context/business-rules.md`
 2. `context/test-patterns.md`
 3. `context/architecture.md`
+4. `docs/user-stories/jornada-completa-lease.md` — **MANDATORY**. Maps the complete user journey (application → funding → servicing → payments → EPO → refunds) with lease business risks per phase. Every CT must be grounded in a real user flow and consider the associated lease risks.
 
 ## Optional Context
 
 - `context/environments.md` — when the test targets a specific environment or needs custom timeouts
 - `context/glossary.md` — when referencing a flow migrated from Java/Cucumber
 - `context/app-repos.md` — when the task involves specific endpoints, DB tables, or UI components (search source code for implementation details)
-- `docs/database-schema-qa2.md` — when the task involves DB validation or new tables
+- `docs/database-schema.md` — when the task involves DB validation or new tables
 - Postman collection (`docs/UOWN Leasing API Documentation (FULL API).postman_collection.json`) — when the task involves API endpoints
 - `docs/business-rules/appendix-g-cenarios-risco.md` — **MANDATORY** when the flow involves `sendApplication` or any application creation step. Defines which SSN, state, merchant and cart value to use per risk tier (low/medium/high)
 
@@ -43,6 +48,11 @@ Generate a complete test SPEC for the described flow. **Does NOT write code** �
 ## Steps
 
 1. Read `context/business-rules.md` and relevant `docs/business-rules/` chapters
+1b. **Read `docs/user-stories/jornada-completa-lease.md`** — identify which US(s) from the jornada the task falls under. Extract:
+    - The **user flow** (what the persona does step-by-step)
+    - The **lease risks** mapped to that flow (fraud, credit, compliance, financial, operational, revenue)
+    - The **agent insights** (what the Servicing agent sees/decides)
+    Use these to inform CT design: each CT should validate a step from the real user flow AND cover at least one mapped lease risk as an edge case or negative scenario.
 2. Search existing tests in `tests/e2e/` and `tests/api/` (avoid duplication)
 2b. **Consult application source code** via `context/app-repos.md`:
     - Endpoints → search controllers in `../svc/src/main/java/.../rest/`
@@ -132,6 +142,18 @@ When the task does NOT come from GitLab, the orchestrator provides the naming co
 - Number: [iid]
 - Standardized Name: `{milestone}_{camelCaseTitle}_{iid}`
 - File Name: `{milestone}_{camelCaseTitle}_{iid}.spec.ts`
+
+## User Story Mapping
+> Source: `docs/user-stories/jornada-completa-lease.md`
+
+| Field | Value |
+|-------|-------|
+| US ID(s) | [e.g., US-SVC-02, US-PAY-01] |
+| Phase | [Originacao / Servicing / Pagamentos / Reembolsos / Modificacoes] |
+| Persona | [Cliente / Agente UOwn / Sistema] |
+| User Flow | [1-3 sentence summary of what the persona does] |
+| Lease Risks Addressed | [list risk IDs from the US, e.g., R1-Overpayment, R3-EPO triggered involuntarily] |
+| Risk Coverage in CTs | [map which CTs cover which risks — e.g., CT-03 covers R1, CT-05 covers R3] |
 
 ## Preconditions
 | Item | Detail |
@@ -240,3 +262,4 @@ If NO to both → **do not include the CT**. Extra scenarios for "consistency ch
 - [ ] **Risk Tier Decision table filled** — riskTier, SSN strategy, state, merchant, cart value all explicitly justified (when flow involves application creation)
 - [ ] State-specific EPO/tax rules identified if the chosen state has special behavior (CA, NC, TX, NJ, etc.)
 - [ ] **Every CT maps to a task requirement** — verify each planned scenario is explicitly required by the task description or Testing Steps
+- [ ] **User Story Mapping filled** — US ID(s), phase, persona, user flow summary, lease risks addressed, and risk coverage mapped to specific CTs. Source: `docs/user-stories/jornada-completa-lease.md`

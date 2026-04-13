@@ -1,8 +1,11 @@
 ---
 name: subagent-impl-page-object
 description: Creates a page object following the BasePage > PortalBase > Page hierarchy.
-model: inherit
+model: opus
 color: orange
+maxTurns: 30
+disallowedTools:
+  - NotebookEdit
 ---
 
 # subagent-impl-page-object — Page Object Implementer
@@ -32,31 +35,17 @@ Can run in **PARALLEL** with: `subagent-impl-api-client`, `subagent-impl-e2e`
 
 ## Hierarchy
 
-```
-BasePage                         # Never instantiate directly
-├── LoginPage                    # Shared (cross-portal)
-├── SearchPage                   # Shared (cross-portal)
-├── MerchantPage                 # Root level (cross-portal)
-├── ContractPage                 # Consumer-facing (extends BasePage directly)
-├── PayTomorrowPortalPage        # External portal (extends BasePage)
-├── PayPairPortalPage            # External portal (extends BasePage)
-├── OriginationBasePage          # + origination sidebar
-│   ├── OriginationCustomerPage
-│   ├── OverviewPage, FundingPage
-│   ├── LeaseAgreementPage, MetricsCalculatorPage
-├── ServicingBasePage             # + servicing sidebar
-│   ├── ServicingCustomerPage, PaymentTransactionPage
-│   ├── AchHistoryPage, ScheduledPaymentPage, LogPage
-├── WebsiteBasePage               # + email OTP login
-└── AmsBasePage → AmsPage
-```
+> **Source of truth:** `context/architecture.md` §Page Object Hierarchy — always read it before creating a new page object to get the current, complete tree.
 
-> **Base classes by portal:**
-> - Origination: `OriginationBasePage` (`origination-base.page.ts`)
-> - Servicing: `ServicingBasePage` (`servicing-base.page.ts`)
-> - Website: `WebsiteBasePage` (`website-base.page.ts`)
-> - AMS: `AmsBasePage` (`ams-base.page.ts`)
-> - Cross-portal/external: `BasePage` (`base.page.ts`)
+**Base class by portal (quick reference):**
+
+| Portal | Base class | File |
+|--------|-----------|------|
+| Origination | `OriginationBasePage` | `origination-base.page.ts` |
+| Servicing | `ServicingBasePage` | `servicing-base.page.ts` |
+| Website | `WebsiteBasePage` | `website-base.page.ts` |
+| AMS | `AmsBasePage` | `ams-base.page.ts` |
+| Cross-portal / external | `BasePage` | `base.page.ts` |
 
 ## Steps
 

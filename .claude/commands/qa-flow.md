@@ -24,7 +24,7 @@ $ARGUMENTS
 
 2. **Sync repos** (OBRIGATÓRIO):
 ```bash
-for repo in svc origination servicing website ams ams-website payment-gateway uwengine ccverification common los-common svc-common configuration fintech-qaautomation; do
+for repo in svc origination servicing website ams ams-website payment-gateway uwengine ccverification common los-common svc-common configuration; do
   git -C "../$repo" pull --ff-only 2>&1 || echo "WARN: $repo sync failed (using stale)"
 done
 ```
@@ -39,9 +39,8 @@ done
 □ Fase 5 — Implementar testes faltantes (agents paralelos)
 □ Fase 6 — Refatorar código de testes (DRY + padrões)
 □ Fase 7 — Executar testes e corrigir falhas
-□ Fase 8 — Gerar relatório de erros identificados
-□ Fase 9 — Gerar relatório de execução de testes
-□ Fase 10 — Atualizar documentação dos agents
+□ Fase 8 — Confirmar relatório de execução (gerado pelo validate-results na Fase 7)
+□ Fase 9 — Atualizar documentação dos agents
 ```
 
 4. **Se URL GitLab foi fornecida**, invocar `subagent-fetch-task`:
@@ -152,7 +151,7 @@ Usar `.claude/context/app-repos.md` para localizar:
 - Edge cases
 - Cross-domain (efeitos colaterais)
 
-**Salvar em:** `docs/test-reports/[TASK_ID]-test-scenarios.md`
+**Salvar em:** `docs/taskTestingUown/{testName}/{testName}-scenarios.md`
 
 **Apresentar ao usuário para revisão antes de prosseguir.**
 
@@ -188,7 +187,7 @@ O SPEC gerado serve como input para a Fase 5 (implementação).
 Buscar testes existentes relacionados à feature:
 ```
 Glob: tests/e2e/**/*<feature>*.spec.ts
-Glob: tests/taskTestingUown/**/*<feature>*.spec.ts
+Glob: docs/taskTestingUown/**/*<feature>*.spec.ts
 Glob: tests/api/**/*<feature>*.spec.ts
 Grep: "descrição do cenário" em tests/
 ```
@@ -224,7 +223,7 @@ Seguir protocolo em `.claude/context/shared/agent-coordination.md`:
 |-------------|-------|:---------:|
 | Novo page object | `subagent-impl-page-object` | Sim |
 | Novo API client | `subagent-impl-api-client` | Sim |
-| JSON template | `subagent-data-template` | Sim |
+| JSON template | `subagent-data (template mode)` | Sim |
 | DB validation | `subagent-impl-db-validation` | Sim |
 | Teste E2E | `subagent-impl-e2e` | Após dependências |
 | Teste API | `subagent-impl-api` | Após dependências |
@@ -235,7 +234,7 @@ Seguir protocolo em `.claude/context/shared/agent-coordination.md`:
 # ROUND 1: Artefatos independentes — TODOS em uma única mensagem:
 Agent(subagent-impl-page-object, "...")
 Agent(subagent-impl-api-client, "...")
-Agent(subagent-data-template, "...")
+Agent(subagent-data (template mode), "...")
 Agent(subagent-impl-db-validation, "...")
 
 # Aguardar ROUND 1 completar antes de ROUND 2
@@ -259,7 +258,7 @@ Agent(subagent-impl-api, "... SPEC: [...] Artefatos disponíveis: [...]")
 
 ```
 Pattern:   {milestone}_{camelCaseTitle}_{taskNumber}
-Location:  tests/taskTestingUown/{testName}/{testName}.spec.ts
+Location:  docs/taskTestingUown/{testName}/{testName}.spec.ts
 Project:   task-testing
 ```
 
@@ -311,7 +310,7 @@ Executar → Analisar falhas → Corrigir → Re-executar
 **Comando de execução:**
 ```bash
 # Task tests
-npx playwright test tests/taskTestingUown/<testName>/ --project=task-testing --reporter=list
+npx playwright test docs/taskTestingUown/<testName>/ --project=task-testing --reporter=list
 
 # Portal E2E tests
 npx playwright test tests/e2e/<portal>/<feature>.spec.ts --project=<portal>-ui --reporter=list
@@ -337,74 +336,35 @@ Agent(subagent_type="subagent-validate-results", prompt="...")
 
 ---
 
-### Fases 8 e 9 — PARALELO: Relatório de Erros + Relatório de Execução
+### Fase 8 — Confirmar Relatório de Execução
 
-> **Objetivo:** Gerar ambos os relatórios **ao mesmo tempo** — são independentes após os testes passarem.
+> **Objetivo:** O relatório completo já foi gerado pelo `subagent-validate-results` na Fase 7. Esta fase confirma o artefato e o apresenta ao usuário.
 
-**Marcar ambas como `in_progress`.**
+**Marcar como `in_progress`.**
 
-**Lançar em um único bloco paralelo:**
+O `subagent-validate-results` (Fase 7) já escreveu `docs/taskTestingUown/{testName}/{testName}-report.md` com:
+- Metadados da task e execução
+- Evidências (leadPk, accountPk, arrangementPk, etc.)
+- Todos os cenários (PASSOU/FALHOU) com `O que é feito / O que acontece / O que é verificado`
+- Screenshots referenciados
+- `## Bugs de Aplicação Encontrados` (se houver)
+- `## Resumo da Validação`
 
-```
-# PARALELO — uma única mensagem com ambos os relatórios:
-# (escrever arquivos distintos — sem conflito)
-Write("docs/test-reports/[ID]-bugs.md", ...)
-Write("docs/test-reports/[ID]-test-report.md", ...)
-```
-
-Ou se delegar para subagents:
-```
-Agent(subagent-validate-results, "gerar test-report.md")
-# + escrever bugs.md diretamente
+**Verificar o relatório gerado:**
+```bash
+cat docs/taskTestingUown/{testName}/{testName}-report.md
 ```
 
-#### Fase 8 — Relatório de Erros Identificados
+Se o relatório estiver incompleto ou com valores PENDING → reinvocar `subagent-validate-results`.
 
-**IMPORTANTE:** Documenta bugs na APLICAÇÃO (backend/API), NÃO erros nos testes.
+> **Não há arquivo separado de bugs** — bugs ficam na seção `## Bugs de Aplicação Encontrados` do relatório principal.
+> **Formato obrigatório:** `.claude/context/shared/e2e-test-report-standard.md`
 
-**Formato:** Seguir `.claude/context/shared/e2e-test-report-standard.md` seção "Bug Report".
-
-```markdown
-# Relatório de Erros Identificados — [Feature/Task]
-
-> **Task:** #NNN (GitLab)
-> **Data:** YYYY-MM-DD
-> **Total de erros:** N
-
-## BUG-01 — [Título descritivo]
-
-### Status: OPEN
-### Severity: Critical / High / Medium / Low
-
-**Descrição:** [Esperado vs. real]
-**Cenário que detectou:** CT-XX
-**Evidência:** API response [status + body] / DB state [query + result]
-**Causa provável:** [Análise técnica]
-```
-
-**Salvar em:** `docs/test-reports/[TASK_ID]-bugs.md`
-(Se não houver erros: "Nenhum erro de aplicação identificado.")
-
-#### Fase 9 — Relatório de Execução de Testes
-
-**Seguir obrigatoriamente:** `.claude/context/shared/e2e-test-report-standard.md`
-
-**Regra de ouro:** Cada cenário responde: **O que é feito → O que acontece → O que é verificado**.
-
-**Conteúdo obrigatório:**
-1. Metadados (task, data, branch, ambiente, Playwright project)
-2. Resumo executivo (total, passaram, falharam, taxa, tempo)
-3. Tabela de cenários por US
-4. Falhas detalhadas (se houver)
-5. Conclusão e próximos passos
-
-**Salvar em:** `docs/test-reports/[TASK_ID]-test-report.md`
-
-**Marcar ambas como `completed`.**
+**Marcar como `completed`.**
 
 ---
 
-### Fase 10 — Atualizar Documentação dos Agents
+### Fase 9 — Atualizar Documentação dos Agents
 
 > **Objetivo:** Garantir que a documentação reflita o estado real do projeto após o qa-flow.
 
@@ -460,15 +420,14 @@ Ao concluir TODAS as fases, apresentar ao usuário:
 | Fase | Status | Artefato |
 |------|:------:|----------|
 | 1. Análise | Y/N | (contexto interno) |
-| 2. Cenários | Y/N | `docs/test-reports/[ID]-test-scenarios.md` |
+| 2. Cenários | Y/N | `docs/taskTestingUown/[ID]-test-scenarios.md` |
 | 3. SPEC | Y/N | (output do spec-test) |
 | 4. Cobertura | Y/N | (mapeamento interno) |
 | 5. Implementação | Y/N | `tests/{type}/{feature}.spec.ts` |
 | 6. Refatoração | Y/N | (DRY + padrões aplicados) |
 | 7. Execução | Y/N | N/N testes passando |
-| 8. Erros | Y/N | `docs/test-reports/[ID]-bugs.md` |
-| 9. Relatório | Y/N | `docs/test-reports/[ID]-test-report.md` |
-| 10. Docs | Y/N | `shared/e2e-agent-responsibilities.md` |
+| 8. Relatório | Y/N | `docs/taskTestingUown/{testName}/{testName}-report.md` |
+| 9. Docs | Y/N | `.claude/context/shared/e2e-agent-responsibilities.md` |
 
 ### Métricas
 - **Cenários planejados:** NN

@@ -5,3 +5,16 @@ export interface AuthorizeCreditCardResponseBody extends BaseResponseBody {
   preAuthStatus?: string;
   creditCardTransactionPk?: number;
 }
+
+export interface CcTransaction {
+  pk: number;
+  accountPk: number;
+  amount: number;
+  postingDate: string;
+  status: string;
+  comment: string;
+  rowCreatedTimestamp: string;
+  creditCardTransactionInfo?: {
+    pk: number;
+  };
+}

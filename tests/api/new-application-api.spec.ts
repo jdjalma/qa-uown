@@ -18,7 +18,7 @@ import { buildTestData, sleep } from "@helpers/index.js";
 // Parameterized test data (replaces Cucumber Examples table)
 const testData = [
   {
-    env: "sandbox",
+    env: "stg",
     state: "CA",
     merchant: "TireAgent",
     orderTotal: "6000",
@@ -39,7 +39,14 @@ for (const data of testData) {
 
       test(`Full lifecycle to FUNDED: ${data.env}/${data.state}/${data.merchant}`, async ({
         api,
+        merchantConfig: mSetup,
       }) => {
+        test.setTimeout(300_000);
+
+        await test.step('Ensure merchant config', async () => {
+          await mSetup.configureByName(data.merchant, 'lifecycle');
+        });
+
         const { merchant, applicant } = buildTestData({
           env: data.env,
           state: data.state,
@@ -53,10 +60,14 @@ for (const data of testData) {
           leadUuid: string;
           leadPk: number;
           approvedAmount: number;
+          shortCode: string;
+          planId: string;
         } = {
           leadUuid: "",
           leadPk: 0,
           approvedAmount: 0,
+          shortCode: "",
+          planId: "",
         };
 
         await test.step("Create new application via API (pre-qualification)", async () => {
@@ -143,6 +154,35 @@ for (const data of testData) {
           expect(
             response.ok,
             `sendInvoice responded with ${response.status}`,
+          ).toBeTruthy();
+
+          const redirectUrl =
+            response.body.paymentDetailsList?.[0]?.redirectUrl ?? "";
+          expect(redirectUrl, "redirectUrl should not be empty").toBeTruthy();
+
+          const url = new URL(redirectUrl);
+          const pathParts = url.pathname.split("/").filter(Boolean);
+          ctx.shortCode = pathParts[0];
+          ctx.planId = url.searchParams.get("planId") ?? "";
+
+          expect(ctx.shortCode, "shortCode should not be empty").toBeTruthy();
+
+          test
+            .info()
+            .annotations.push(
+              { type: "shortCode", description: ctx.shortCode },
+              { type: "planId", description: ctx.planId },
+            );
+        });
+
+        await test.step("Call getMissingFields to set merchantProgramPk", async () => {
+          const response = await api.application.getMissingFields(
+            ctx.shortCode,
+            ctx.planId ? { planId: ctx.planId } : undefined,
+          );
+          expect(
+            response.ok,
+            `getMissingFields responded with ${response.status}`,
           ).toBeTruthy();
         });
 

@@ -35,7 +35,7 @@ Absolute rule: **never** hardcode selectors in tests or page objects.
 
 **Positive:**
 - UI change = update a single file
-- Selector auditing possible (`subagent-audit-selectors`)
+- Selector auditing possible (`subagent-audit (selectors mode)`)
 - Consistency: all tests use the same selectors
 - Dead selectors easily identifiable
 
@@ -45,7 +45,7 @@ Absolute rule: **never** hardcode selectors in tests or page objects.
 
 **Mitigations:**
 - Organization by portal within the object
-- `subagent-audit-selectors` agent for periodic maintenance
+- `subagent-audit (selectors mode)` agent for periodic maintenance
 - IDE autocomplete resolves the indirection
 
 ## References

@@ -1,8 +1,11 @@
 ---
 name: subagent-impl-db-validation
 description: Creates DB validation queries and polling helpers with exponential backoff.
-model: inherit
+model: opus
 color: orange
+maxTurns: 30
+disallowedTools:
+  - NotebookEdit
 ---
 
 # subagent-impl-db-validation — DB Validation Implementer
@@ -23,7 +26,7 @@ Creates PostgreSQL validation queries and polling helpers.
 - `context/coding-standards.md` — for general conventions
 - `context/business-rules.md` — when validating state transitions (state machine)
 - `context/app-repos.md` — for locating Flyway migrations and entity classes in application repos
-- `docs/database-schema-qa2.md` — for current DB schema reference
+- `docs/database-schema.md` — for current DB schema reference
 
 ## Dependencies
 
@@ -36,7 +39,7 @@ Can run in **PARALLEL** with: `subagent-impl-e2e`, `subagent-impl-api`
 ## Steps
 
 1. Read `src/helpers/database.helpers.ts` — understand API: `pollUntil<T>()`, `query()`, pool management
-1.5. **Consult DB schema doc** (`docs/database-schema-qa2.md`) — verify table structure, column names, and data types before writing queries
+1.5. **Consult DB schema doc** (`docs/database-schema.md`) — verify table structure, column names, and data types before writing queries
 1.6. **Consult Flyway migrations** — use `context/app-repos.md` search patterns to find the migration SQL in `../svc/src/main/resources/db/migration/` for the target table(s). Verify column names, FK constraints, and indexes match the schema doc
 2. Identify table(s) and condition to validate
 3. Implement query/polling

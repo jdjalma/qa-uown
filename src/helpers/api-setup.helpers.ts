@@ -64,6 +64,14 @@ export interface ApiSetupOptions {
    */
   skipCreditCardAuth?: boolean;
   /**
+   * Skip the sendInvoice call (step 3).
+   * Use when sendApplication already includes order data — calling sendInvoice
+   * again regenerates the payment plan and invalidates the already-extracted
+   * contractUrl (redirectUrl), causing "Invalid link" on the consumer portal.
+   * Default: false
+   */
+  skipInvoice?: boolean;
+  /**
    * Submit CC + bank info via API (submitApplication endpoint) instead of
    * relying on the contract URL. This is more reliable as it bypasses the
    * consumer-facing form which can show "Invalid link" errors.
@@ -305,6 +313,7 @@ export async function setupApplicationViaApi(
     extractContractUrl = false,
     skipCreditCardAuth = false,
     submitPaymentInfoViaApi = false,
+    skipInvoice = false,
   } = options;
 
   const result: ApiSetupResult = { leadPk: '', leadUuid: '' };
@@ -334,11 +343,15 @@ export async function setupApplicationViaApi(
     expect(status?.toLowerCase()).toContain('approved');
   }
 
-  // 3. Send invoice
-  const invoiceResponse = await api.invoice.sendInvoice(merchant, result.leadUuid, {
-    orderTotal: order.orderTotal,
-  });
-  expect(invoiceResponse.ok, `Send invoice responded with ${invoiceResponse.status}`).toBeTruthy();
+  // 3. Send invoice (skip when sendApplication already included order — avoids invalidating contractUrl)
+  if (!skipInvoice) {
+    const invoiceResponse = await api.invoice.sendInvoice(merchant, result.leadUuid, {
+      orderTotal: order.orderTotal,
+    });
+    expect(invoiceResponse.ok, `Send invoice responded with ${invoiceResponse.status}`).toBeTruthy();
+  } else {
+    console.log('[API Setup] Skipping sendInvoice — order was included in sendApplication');
+  }
 
   // 4. Authorize credit card (skip if submitting payment info via API or using contract URL)
   if (!skipCreditCardAuth && !submitPaymentInfoViaApi) {

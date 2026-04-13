@@ -28,7 +28,7 @@ src/
 │   │                       # + ContractPage, PayTomorrowPortalPage, PayPairPortalPage (extends BasePage)
 │   ├── servicing/          # ServicingBasePage → Customer, Payment, ACH, etc.
 │   ├── website/            # WebsiteBasePage (email OTP login, pagamentos, sidebar)
-│   └── ams/                # AmsBasePage → AmsPage
+│   └── ams/                # AmsBasePage → AmsPage, AmsUserMerchantsPage, AmsUserDetailsPage (Task #74)
 ├── helpers/                # Utilities
 │   ├── common.helpers.ts   # waitForSpinner, toast, dropdown, parseMoney, clearAndType, sleep
 │   ├── database.helpers.ts # PostgreSQL pool, polling com backoff, domain queries
@@ -119,6 +119,10 @@ interface ApiResponse<T = unknown> {
 | `SettlementClient` | `svc` | `settleApplication(merchant, leadUuid)` |
 | `CreditCardClient` | `origination` | `authorizeCreditCard(leadPk, firstName, lastName, options?)` |
 | `ScheduledTaskClient` | `svc` | `triggerScheduledTask(taskName)` |
+| `SvcPhoneClient` | `svc` | `updateOptOutAi(body)`, `updateDnc(body)`, `updateDnt(body)` — phone DNC/DNT/opt-out flags (Task #505) |
+| `SvcEmailClient` | `svc` | `getContactInfo(accountPk)`, `createOrUpdateEmail(body)` — contact info retrieval and email record updates (Task #442) |
+| `LosPartnerAuthClient` | `svc` | `authorize(username, password) → GetApiKeyResponse`, `createApiUser(body) → CreateApiUserResponse` — Bearer token issuance for merchant LOS API (Task #482) |
+| `LosPartnerApplicationClient` | `svc` | `createApplication(body?, apiVersion?)`, `searchApplicationStatus(body?)`, `createInvoice(id, body?)`, `settleApplication(id, body?)`, `addLease(id, body?)` — all use Bearer token via `setBearerToken(token)` / `clearBearerToken()`; `apiVersion=null` omits X-API-Version header (tests DefaultLosApiVersionRequestWrapper injection) (Task #482) |
 
 ### JSON Templates
 

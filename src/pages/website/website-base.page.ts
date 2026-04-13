@@ -57,8 +57,9 @@ export class WebsiteBasePage extends BasePage {
    * Enters the verification code received via email.
    * The website uses 6 separate single-digit inputs for the OTP code.
    * Typing into the first input auto-advances to the next fields.
+   * @returns true if login succeeded (modal closed), false if code was invalid
    */
-  async enterVerificationCode(code: string): Promise<void> {
+  async enterVerificationCode(code: string): Promise<boolean> {
     // Wait for the OTP modal to be visible
     const modalBody = this.page.locator(SELECTORS.modalBody).filter({ hasText: 'We just emailed you' });
     await modalBody.waitFor({ state: 'visible', timeout: 10_000 });
@@ -72,14 +73,44 @@ export class WebsiteBasePage extends BasePage {
 
     console.log(`[Website] Entered verification code: ${code}`);
 
-    // Wait for the OTP modal to disappear (indicates successful verification and navigation)
-    await modalBody.waitFor({ state: 'hidden', timeout: 30_000 }).catch(() => {});
+    // Wait for the OTP modal to disappear (success) or invalid code error to appear
+    const invalidCodeError = modalBody.locator(':text("Invalid verification code")');
+    const result = await Promise.race([
+      modalBody.waitFor({ state: 'hidden', timeout: 30_000 }).then(() => 'success' as const),
+      invalidCodeError.waitFor({ state: 'visible', timeout: 30_000 }).then(() => 'invalid' as const),
+    ]).catch(() => 'timeout' as const);
+
+    if (result === 'invalid' || result === 'timeout') {
+      console.log(`[Website] Verification code "${code}" was ${result === 'invalid' ? 'rejected (Invalid verification code)' : 'timed out'}`);
+      return false;
+    }
 
     // Wait for the dashboard/account page to load
     await this.page.waitForLoadState('domcontentloaded');
     await this.waitForSpinner();
 
     console.log(`[Website] Verification complete. URL: ${this.page.url()}`);
+    return true;
+  }
+
+  /**
+   * Requests a new verification code by clicking "Didn't get a code?" on the OTP modal.
+   * Clears the existing OTP inputs so a fresh code can be entered.
+   */
+  async requestNewVerificationCode(): Promise<void> {
+    const resendBtn = this.page.locator(SELECTORS.wsResendCodeButton).first();
+    await resendBtn.waitFor({ state: 'visible', timeout: 5_000 });
+    await resendBtn.click();
+    console.log('[Website] Requested new verification code');
+    await sleep(2_000);
+
+    // Clear existing OTP input values so the next code can be entered fresh
+    const modalBody = this.page.locator(SELECTORS.modalBody).filter({ hasText: 'We just emailed you' });
+    const otpInputs = modalBody.locator('input');
+    const count = await otpInputs.count();
+    for (let i = 0; i < count; i++) {
+      await otpInputs.nth(i).fill('');
+    }
   }
 
   /**
@@ -231,6 +262,58 @@ export class WebsiteBasePage extends BasePage {
     const urlFragment = transitionMap[option] || option.replace(/\s+/g, '-');
     await this.page.waitForURL(`**/*${urlFragment}*`, { timeout: 10_000 }).catch(() => {});
     await this.waitForSpinner();
+  }
+
+  // ── Phone Update ──────────────────────────────────────────────────
+
+  /**
+   * Updates the phone number on the Update Contact Info page.
+   * Navigates to the contact info page, fills area code and phone number, then saves.
+   */
+  async updatePhoneNumber(areaCode: string, phoneNumber: string): Promise<void> {
+    await this.goToSidebarLink('update contact info');
+
+    // The form has a single combined "Mobile Phone*" input (e.g. "(407) 555-4802").
+    // Use triple-click + pressSequentially to trigger React onChange properly.
+    const phoneInput = this.page.locator(SELECTORS.wsPhoneNumberInput).first();
+    await phoneInput.waitFor({ state: 'visible', timeout: 10_000 });
+    await phoneInput.click({ clickCount: 3 });
+    await phoneInput.pressSequentially(`${areaCode}${phoneNumber}`, { delay: 50 });
+
+    const saveBtn = this.page.locator(SELECTORS.wsSaveChangesButton).first();
+    await saveBtn.waitFor({ state: 'visible', timeout: 5_000 });
+    await saveBtn.click();
+    await this.waitForSpinner();
+
+    console.log(`[Website] Updated phone: (${areaCode}) ${phoneNumber}`);
+  }
+
+  /**
+   * Returns the error message text if visible, null otherwise.
+   */
+  async getErrorMessageText(): Promise<string | null> {
+    const errorEl = this.page.locator(SELECTORS.wsErrorMessage).first();
+    const isVisible = await errorEl.isVisible({ timeout: 3_000 }).catch(() => false);
+    if (!isVisible) return null;
+    return (await errorEl.textContent())?.trim() || null;
+  }
+
+  /**
+   * Returns the success message text if visible, null otherwise.
+   */
+  async getSuccessMessageText(): Promise<string | null> {
+    const successEl = this.page.locator(SELECTORS.wsSuccessMessage).first();
+    const isVisible = await successEl.isVisible({ timeout: 3_000 }).catch(() => false);
+    if (!isVisible) return null;
+    return (await successEl.textContent())?.trim() || null;
+  }
+
+  /**
+   * Checks if an error message containing "could not find" is visible.
+   */
+  async isErrorVisible(): Promise<boolean> {
+    const errorEl = this.page.locator(SELECTORS.wsErrorMessage).filter({ hasText: /could not find/i }).first();
+    return errorEl.isVisible({ timeout: 5_000 }).catch(() => false);
   }
 
   // ── Email Change ──────────────────────────────────────────────────
@@ -404,7 +487,11 @@ export class WebsiteBasePage extends BasePage {
    */
   async checkActiveAccountId(expectedAccountPk: string): Promise<boolean> {
     const dropdown = this.page.locator(SELECTORS.wsAccountsDropdown).first();
-    await dropdown.waitFor({ state: 'visible', timeout: 10_000 });
+    const isVisible = await dropdown.isVisible({ timeout: 10_000 }).catch(() => false);
+    if (!isVisible) {
+      console.log(`[Website] Account dropdown not found — single account or different layout. Skipping account ID check.`);
+      return false;
+    }
 
     const dropdownText = await dropdown.textContent() || '';
     const parts = dropdownText.split(' - ');

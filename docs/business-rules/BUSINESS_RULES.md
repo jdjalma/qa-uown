@@ -80,6 +80,9 @@
 69. [Elegibilidade para Auto Paid-Out](#69-elegibilidade-para-auto-paid-out)
 70. [Regras Detalhadas de Calculo EPO por Estado](#70-regras-detalhadas-de-calculo-epo-por-estado)
 
+**Deep Dive:**
+71. [Produto Lease — Deep Dive Tecnico](12-produto-lease-deep-dive.md) *(formulas com precisao decimal, alocacao de pagamentos, importacao LOS→SVC, rewind/replay, sweeps, CC/ACH lifecycle, SMS rules, customer portal, merchant config flags, blacklist, funding lifecycle, invoice modification)*
+
 **Apendices:**
 - [Apendice A: Integracoes com Terceiros](#apendice-a-integracoes-com-terceiros)
 - [Apendice B: Referencia Rapida de Endpoints](#apendice-b-referencia-rapida-de-endpoints-para-ativacao)

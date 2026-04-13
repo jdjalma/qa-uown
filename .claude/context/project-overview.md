@@ -39,6 +39,3 @@ API: `api-only`
 @selectors/* → src/selectors/* @api/* → src/api/*        @support/* → src/support/*
 ```
 
-## Origin
-
-Migrated from `fintech-qaautomation` (Java/Cucumber).

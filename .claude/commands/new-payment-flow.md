@@ -58,7 +58,7 @@ $ARGUMENTS
 # Todos em paralelo (independentes):
 Agent(subagent-impl-api-client, ...)    # se client não existe
 Agent(subagent-impl-page-object, ...)   # se page object não existe
-Agent(subagent-data-template, ...)      # JSON templates de request
+Agent(subagent-data, ...)               # JSON templates de request (template mode)
 Agent(subagent-impl-db-validation, ...) # queries de validação DB
 ```
 
@@ -80,7 +80,7 @@ $ARGUMENTS
 
 ```bash
 npx tsc --noEmit 2>&1 | head -30
-npx playwright test tests/taskTestingUown/{testName}/ --project=task-testing --reporter=list
+npx playwright test docs/taskTestingUown/{testName}/ --project=task-testing --reporter=list
 ```
 
 Invocar `subagent-validate-results` após execução:
@@ -99,7 +99,7 @@ Agent(subagent_type="subagent-docs-update", prompt="Post-pipeline: payment flow 
 ## Resultado esperado
 
 - Artefatos em `src/` (client, page object, templates)
-- Teste em `tests/taskTestingUown/{name}/{name}.spec.ts`
+- Teste em `docs/taskTestingUown/{name}/{name}.spec.ts`
 - `tsc --noEmit` sem erros
 - Todos os cenários passando (100%)
-- Relatório em `docs/test-reports/{taskId}-test-report.md`
+- Relatório em `docs/taskTestingUown/{testName}/{testName}-report.md`

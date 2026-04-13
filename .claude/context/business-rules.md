@@ -49,12 +49,32 @@ UW_APPROVED → CC_AUTH_PASSED → CONTRACT_CREATED → SIGNED → SETTLED → F
 
 Always consult `docs/business-rules/` before creating tests for business flows.
 
+## Domain → Chapter Guide (Read BEFORE writing test logic)
+
+> **Agents:** identify which domain your test covers, then read the corresponding chapter in `docs/business-rules/` BEFORE writing any assertions, payloads, or validations. The summary above is not a substitute for the chapter.
+
+| Test domain | Chapter to read |
+|-------------|----------------|
+| Application creation, lead status, SSN rules | `02-originacao-pipeline.md` |
+| E-sign, contracts, PandaDocs/Signwell | `03-contratos-esign.md` |
+| Financial calculations, fees, EPO, payment amounts | `04-calculos-financeiros.md` |
+| Payments, CC/ACH, sweeps, arrangement lifecycle | `05-pagamentos.md` |
+| Account lifecycle, status transitions, ratings | `06-conta-ciclo-vida.md` |
+| Due date adjustments, account modifications | `07-modificacoes-conta.md` |
+| Funding, merchant config, Kornerstone routing | `08-funding-merchants.md` |
+| External integrations (SMS, TMS, IVR, Five9) | `09-integracoes-externas.md` |
+| Portal communications, email templates | `10-portal-comunicacoes.md` |
+| Risk tiers, fraud scenarios, SSN selection | `appendix-g-cenarios-risco.md` |
+| Lease product (formulas, allocation, sweeps) | `12-produto-lease-deep-dive.md` |
+| DB tables, columns, FK relationships | `appendix-c-tabelas-banco.md` |
+| SQL query patterns, CTE structures | `appendix-f-sql-reference.md` |
+
 ## Reference Sources
 
 | Source | Path | Cross-references |
 |--------|------|-----------------|
 | **Postman collection** | `docs/UOWN Leasing API Documentation (FULL API).postman_collection.json` | Endpoint contracts, request/response shapes |
-| **DB schema (QA2)** | `docs/database-schema-qa2.md` | Table structure, columns, FK relationships |
+| **DB schema (QA2)** | `docs/database-schema.md` | Table structure, columns, FK relationships |
 | **Application source** | `.claude/context/app-repos.md` | Controllers, migrations, entities, frontend components |
 | **Appendix C** | `docs/business-rules/appendix-c-tabelas-banco.md` | DB table documentation |
 | **Appendix F** | `docs/business-rules/appendix-f-sql-reference.md` | SQL query patterns |

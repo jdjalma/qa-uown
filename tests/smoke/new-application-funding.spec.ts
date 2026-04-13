@@ -38,8 +38,12 @@ for (const data of testData) {
   test.describe(`Smoke - Happy Path (${data.env})`, { tag: data.tag.split(' ') }, () => {
     test.use({ envName: data.env });
 
-    test('sendApplication → sign contract → settle → funded', async ({ page, api, ctx }) => {
+    test('sendApplication → sign contract → settle → funded', async ({ page, api, ctx, merchantConfig: mSetup }) => {
       test.setTimeout(300_000); // 5 min — includes browser e-sign flow
+
+      await test.step('Ensure merchant config', async () => {
+        await mSetup.configureByName(data.merchant, 'lifecycle');
+      });
 
       const { merchant, applicant, order } = buildTestData({
         env: data.env,

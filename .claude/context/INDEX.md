@@ -67,7 +67,7 @@ Context directory for the project, organized by topic for focused reference.
 
 | Directory | Purpose |
 |-----------|---------|
-| `.claude/agents/` | 16 specialized subagents — invoked by CLAUDE.md (orchestrator) |
+| `.claude/agents/` | 13 specialized subagents — invoked by CLAUDE.md (orchestrator) |
 | `.claude/commands/` | Slash commands (`/qa-flow` — full 10-phase QA flow) |
 | `.claude/locks/` | PID-based lock files for multi-terminal coordination (gitignored) |
 | `.claude/prompt/` | Journal of successful historical prompts (reference) |

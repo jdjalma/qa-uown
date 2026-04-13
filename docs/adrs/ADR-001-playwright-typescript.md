@@ -9,7 +9,7 @@ Accepted
 2025-01-15
 
 ## Context
-The project needed a test automation framework for a fintech platform with 4 web portals (Origination, Servicing, Website, AMS), REST APIs, and database validations. The previous framework (Java/Cucumber in the `fintech-qaautomation` project) had maintenance and development speed limitations.
+The project needed a test automation framework for a fintech platform with 4 web portals (Origination, Servicing, Website, AMS), REST APIs, and database validations. The previous framework (Java/Cucumber) had maintenance and development speed limitations.
 
 Options considered:
 - **Selenium + Java**: Existing framework, team familiarity, but verbose and slow for development
@@ -44,5 +44,4 @@ TypeScript configuration:
 - CLAUDE.md and docs/TESTING.md document patterns for onboarding
 
 ## References
-- ADR-012 (migration from Java/Cucumber)
 - `playwright.config.ts`, `tsconfig.json`

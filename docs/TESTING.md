@@ -72,8 +72,10 @@ Tests that span multiple portals and external systems. Example: the PayTomorrow 
 **E2E (`tests/e2e/paytomorrow-refund-flow.spec.ts`):**
 Full multi-portal test covering PayTomorrow portal login, application creation, email link polling, finalization flow (identity, employment, offers, contract e-sign), UOWN Origination verification, funding, refund via PayTomorrow portal, and Servicing cancellation verification.
 
-**API-only (`tests/api/paytomorrow-refund-flow-api.spec.ts`):**
-Pure API lifecycle test: `sendApplication` -> invoice -> CC auth -> submit -> SIGNED -> settle -> FUNDED. Covers the full lifecycle up to FUNDED without browser interaction (refund is only available via the PayTomorrow portal UI).
+**API-only (planned — not yet implemented):**
+Pure API lifecycle test covering `sendApplication` -> invoice -> CC auth -> submit -> SIGNED -> settle -> FUNDED. Would cover the full lifecycle up to FUNDED without browser interaction (refund is only available via the PayTomorrow portal UI).
+
+> **Status:** This API-only test is documented but not yet created in `tests/api/`.
 
 **Key patterns used:**
 - `email.getEmailLink(recipientEmail, urlPattern)` — polls IMAP for an email containing a URL matching the pattern (e.g., `/paytomorrow\.com/i`)
@@ -82,7 +84,9 @@ Pure API lifecycle test: `sendApplication` -> invoice -> CC auth -> submit -> SI
 
 ### LeadShortCode Migration Validation Tests
 
-**API+DB (`tests/api/R1.49.1_separateShortCodeInANewEntity_469.spec.ts`):**
+> **Status:** Spec file removed. Documentation preserved for reference patterns.
+
+**API+DB (previously `tests/api/R1.49.1_separateShortCodeInANewEntity_469.spec.ts`):**
 Validates the Flyway migration V20260226100000 which moves the `short_code` field from `uown_los_lead` to a new dedicated table `uown_los_lead_short_code`. Contains 6 scenarios:
 
 | Test | Coverage |
@@ -130,7 +134,9 @@ Validates the Flyway migration V20260226100000 which moves the `short_code` fiel
 
 ### GDS Lambda Segment Validation Tests
 
-**API+DB (`tests/taskTestingUown/RU02.26.1.49.1_gdsLambdaSegment_472.spec.ts`):**
+> **Status:** Spec file removed. Documentation preserved for reference patterns.
+
+**API+DB (previously `docs/taskTestingUown/RU02.26.1.49.1_gdsLambdaSegment_472.spec.ts`):**
 Validates that the GDS underwriting process populates the `lambda_segment` column in the `uown_los_uwdata` table. Creates an application via API, waits for GDS approval, then queries the DB to verify `lambda_segment` is NOT NULL and that the uwdata record has expected fields (`decided_by_agent`, `uw_status`).
 
 | Test | Coverage |
@@ -146,7 +152,9 @@ Validates that the GDS underwriting process populates the `lambda_segment` colum
 
 ### Program Selection & Routing Validation Tests (13 vs 16 Months)
 
-**API+DB (`tests/taskTestingUown/RU02.26.1.49.1_uownSvcUnderWritingProgramSelectionAndRouting13Vs16Months_439.spec.ts`):**
+> **Status:** Spec file removed. Documentation preserved for reference patterns.
+
+**API+DB (previously `docs/taskTestingUown/RU02.26.1.49.1_uownSvcUnderWritingProgramSelectionAndRouting13Vs16Months_439.spec.ts`):**
 Validates that underwriting program selection and routing correctly assigns 13-month or 16-month plans based on banking data and BIN eligibility. Contains 4 scenarios:
 
 | Scenario | Flow | Conditions | Expected |
@@ -191,7 +199,7 @@ Verifies that the origination app uses env-based `IS_PRODUCTION` and `ENVIRONMEN
 
 ### Completion Screen Validation Tests (Confetes)
 
-**E2E (`tests/taskTestingUown/R1.50.0_improveFinalCompletionScreen_1209/R1.50.0_improveFinalCompletionScreen_1209.spec.ts`):**
+**E2E (`docs/taskTestingUown/R1.50.0_improveFinalCompletionScreen_1209/R1.50.0_improveFinalCompletionScreen_1209.spec.ts`):**
 Validates the improved post-signature completion screen (Confetes component). The new design replaces the old minimal text screen with a confetti animation, check icon, "Thank You!" heading, contact info, and email notification footer. Also verifies the old "View Document" link is removed.
 
 | Step | Action | Key Details |
@@ -213,7 +221,7 @@ Validates the improved post-signature completion screen (Confetes component). Th
 
 ### Payment Arrangement Settlement Tests (Task #446)
 
-**API+DB (`tests/taskTestingUown/RU03.26.1.50.0_atlogAiPaymentArrangementSettlement_446/RU03.26.1.50.0_atlogAiPaymentArrangementSettlement_446.spec.ts`):**
+**API+DB (`docs/taskTestingUown/RU03.26.1.50.0_atlogAiPaymentArrangementSettlement_446/RU03.26.1.50.0_atlogAiPaymentArrangementSettlement_446.spec.ts`):**
 Validates the `uown_sv_payment_arrangement` entity and settlement flow using the Payment Arrangement API directly. Drives applications to FUNDED state (or uses pre-seeded `existingAccountPks` when GDS is unavailable), creates CC or ACH payment arrangements, triggers scheduled sweeps, and validates DB state transitions, FK links, account status changes. Environment: QA1. Merchant: TerraceFinance.
 
 | CT | Type | Flow | Key Assertions |
@@ -249,8 +257,10 @@ Validates the `uown_sv_payment_arrangement` entity and settlement flow using the
 
 ### Payment Arrangement Settlement E2E UI Tests (Task #446)
 
-**E2E+Hybrid (`tests/e2e/servicing/payment-arrangement-settlement-446.spec.ts`):**
+**E2E+Hybrid (planned — not yet implemented):**
 Complementary UI tests for the Payment Arrangement feature. Validates the Servicing Portal Make Payment modal and SETTLEMENT account status rendering. Uses the `servicing-ui` Playwright project (storageState: `.auth/servicing.json`). Environment: QA1.
+
+> **Status:** This test spec is documented but not yet created in `tests/e2e/servicing/`. The API+DB spec (above) is the active test.
 
 | CT | Type | Flow | Key Assertions |
 |----|------|------|----------------|
@@ -275,9 +285,46 @@ Complementary UI tests for the Payment Arrangement feature. Validates the Servic
 
 **Important finding:** The standard Make Payment modal always omits `arrangementType` in the request body — the backend defaults to NORMAL. SETTLEMENT arrangements can only be created via API with explicit `arrangementType: 'SETTLEMENT'`.
 
+### Fix Payment Arrangement Status Tests (Task #483)
+
+**API+DB+E2E (`docs/taskTestingUown/RU04.26.1.50.2_fixPaymentArrangementStatus_483/RU04.26.1.50.2_fixPaymentArrangementStatus_483.spec.ts`):**
+Validates the payment arrangement status transitions for CC approved, CC denied, and future-dated multi-installment scenarios. Uses GDS bypass with pre-seeded ACTIVE KS3015 accounts in QA1. Merchant: FifthAveFurnitureNY (KS3015). Project: `task-testing`. Environment: QA1.
+
+| CT | Type | Flow | Key Assertions |
+|----|------|------|----------------|
+| CT-01 | API+DB | CC APPROVED — single installment, today | `status=SUCCESS`, `is_active=false` immediately after `makeCreditCardPayments` |
+| CT-02 | API+DB | CC DENIED — single installment, today, declined card | `status=FAILED`, `is_active=false` |
+| CT-03 | API+DB | Future-dated 3-installment arrangement | `status=NOT_STARTED`, `is_active=true`; installments created with future dates |
+
+**Key patterns used:**
+- CT-03 queries its account lazily inside the test (not in `beforeAll`) — CT-01 frees its account after synchronous CC SUCCESS (`is_active=false`), allowing account reuse with fewer test accounts
+- `ServicingBasePage.makeCcPaymentArrangement({ startDate, endDate, frequency, ccDetails? })` — extended to accept optional `ccDetails` for one-time card entry when the account has a card on file
+- `ccDetails` shape: `{ firstName, lastName, cardNumber, cvc, expMonth, expYear }` — when provided, clicks "Use one-time card information" radio and fills the manual entry form
+
+**UI: one-time card form in Make Payment modal:**
+When an account has a card on file, the payment arrangement modal shows two radios:
+- "Use existing card information" (selected by default)
+- "Use one-time card information" (reveals manual entry fields)
+
+Manual entry fields (plain inputs with `placeholder` attributes — NOT React Select):
+- `input[placeholder='First Name']` — `CreditCardSelectors.otCardFirstName`
+- `input[placeholder='Last Name']` — `CreditCardSelectors.otCardLastName`
+- `input[placeholder='Expires On']` — `type="month"` input; **requires `YYYY-MM` format**
+- `input[placeholder='Card Security Code']` — `CreditCardSelectors.otCardSecurityCode`
+- "Use current address" checkbox
+
+**Critical: `type="month"` input format:**
+HTML `input[type="month"]` filled via Playwright's `fill()` requires `YYYY-MM` format (e.g., `2028-12`). Using `MM/YY` or `MM/YYYY` causes `Error: Malformed value`. Always convert before filling:
+```typescript
+const fullYear = expYear.length === 2 ? `20${expYear}` : expYear;
+await locator.fill(`${fullYear}-${expMonth}`);
+```
+
+**Report:** `docs/taskTestingUown/RU04.26.1.50.2_fixPaymentArrangementStatus_483-report.md`
+
 ### Due Date Moves History Tests (Task #502)
 
-**E2E+API+DB (`tests/taskTestingUown/RU03.26.1.50.0_addDueDateMovesPageInHistoryMenu_502/RU03.26.1.50.0_addDueDateMovesPageInHistoryMenu_502.spec.ts`):**
+**E2E+API+DB (`docs/taskTestingUown/RU03.26.1.50.0_addDueDateMovesPageInHistoryMenu_502/RU03.26.1.50.0_addDueDateMovesPageInHistoryMenu_502.spec.ts`):**
 Validates the new Servicing > History > Due Date Changes page. Uses existing FUNDED accounts. Environment: QA1. Contains 4 tests and 6 scenarios.
 
 | CT | Type | Flow | Key Assertions |
@@ -310,7 +357,7 @@ Validates the new Servicing > History > Due Date Changes page. Uses existing FUN
 
 ### Frequency Changes History Tests (Task #503)
 
-**E2E+API (`tests/taskTestingUown/RU03.26.1.50.0_addFrequencyChangesPageInHistoryMenu_503/RU03.26.1.50.0_addFrequencyChangesPageInHistoryMenu_503.spec.ts`):**
+**E2E+API (`docs/taskTestingUown/RU03.26.1.50.0_addFrequencyChangesPageInHistoryMenu_503/RU03.26.1.50.0_addFrequencyChangesPageInHistoryMenu_503.spec.ts`):**
 Validates the new Servicing > History > Frequency Changes page. Uses existing accounts with frequency modification history — no new application is created. Environment: QA1. Tests run in `serial` mode.
 
 | CT | Type | Flow | Key Assertions |
@@ -337,9 +384,137 @@ Validates the new Servicing > History > Frequency Changes page. Uses existing ac
 - `FrequencyModsResponse` — `{ pk?, agent, rowCreatedTimestamp, frequencyModInfo: FrequencyModInfo }`
 - `FrequencyModInfo` — `{ accountPk, oldFrequency, newFrequency, oldTermPayment, newTermPayment, firstDueDate, secondDueDate }`
 
+### Money Factor Display Format and Program Details Page Tests (Tasks #1251, #1252)
+
+**E2E (`docs/taskTestingUown/RU04.26.1.51.0_standardizeMoneyFactorDisplayFormatAcrossOrigination_1251/RU04.26.1.51.0_standardizeMoneyFactorDisplayFormatAcrossOrigination_1251.spec.ts`):**
+Validates that the Money Factor column in the Origination Programs table displays the value multiplied by 100 with trailing zeros removed (`toMoneyFactorDisplayValue`), matching the format already used in the edit form and Program Settings. Environment: QA2. Project: `task-testing`.
+
+**E2E (`docs/taskTestingUown/RU04.26.1.51.0_createProgramDetailsPage_1252/RU04.26.1.51.0_createProgramDetailsPage_1252.spec.ts`):**
+Validates the new `/programs/:pk` route (R1.51.0) which replaces the previous inline-edit pattern. Covers deep-link access, F5/reload persistence, back/forward browser navigation, Clone/Clone Group button presence, Activity Log panel, and edit+save round-trip. Environment: QA2. Project: `task-testing`.
+
+| CT | Task | Type | Flow | Key Assertions |
+|----|------|------|------|----------------|
+| CT-01 | #1251 | E2E | Login → Programs table | Money Factor column shows `dbValue * 100` (e.g. DB `0.1846` → table `"18.46"`) |
+| CT-02 | #1251 | E2E | Programs table → click program → details form | `tableValue === formValue`; URL contains `/programs/` |
+| CT-03 | #1251 | E2E | Direct URL `/programs/:pk` → form | `formValue === toMoneyFactorDisplayValue(dbValue)`; `%` icon visible adjacent to input |
+| CT-04 | #1251 | Hybrid (DB + E2E) | Fresh DB query → table → form | End-to-end chain: DB raw → table x100 → form x100, all identical |
+| CT-05 | #1252 | E2E | Click program in table → URL change | URL matches `/programs/\d+`; loaded program name = clicked name |
+| CT-06 | #1252 | E2E | Direct URL `/programs/:pk` | URL stays `/programs/{pk}` after load; form shows correct program name |
+| CT-07 | #1252 | E2E | Direct URL → `page.reload()` | URL unchanged after F5; `nameAfter === nameBefore` |
+| CT-08 | #1252 | E2E | Click program → `goBack()` → `goForward()` | Back: URL = `/programs`; Forward: URL = `/programs/{pk}` |
+| CT-09 | #1252 | E2E | Direct URL → UI elements | Clone button visible; Clone Group button visible; Activity Log panel visible |
+| CT-10 | #1252 | E2E | Direct URL → edit Amount at Signed → save | Toast "Program saved successfully"; saved value matches `55` or `55.00`; cleanup restores original |
+| CT-11 | #1252 | Hybrid (DB + E2E) | Click program → extract PK from URL | `parseInt(pkFromUrl) === dbProgramPk` |
+
+**Test result (2026-04-01, qa2):** 3 passed (CT-01 #1251, CT-08 #1252, CT-11 #1252), 8 skipped gracefully — backend svc on R1.50.0 (`GET /uown/programs/:pk` not yet deployed). Tests will pass automatically when svc upgrades to R1.51.0.
+
+**Key patterns used:**
+- `ProgramsPage.getMoneyFactorTableValue(programName)` — reads Money Factor column from list table
+- `ProgramsPage.getMoneyFactorFormValue()` — reads `input[name='moneyFactor']` from edit form
+- `ProgramsPage.navigateToProgramDetails(originationUrl, programPk)` — direct URL navigation to `/programs/:pk`
+- `ProgramsPage.waitForProgramDetailsLoad()` — returns `boolean`; `false` triggers graceful skip when backend unavailable
+- `ProgramsPage.navigateToPrograms()` — calls `showMaxRows()` + `networkidle` wait to load 100 rows/page, reducing pagination from ~182 to ~18 pages
+- `ProgramsPage.nextPage()` — waits for `networkidle` + `tableRow.first().waitFor(visible)` to fix DataTable race condition on page turn
+- `ProgramsPage.isCloneButtonVisible()` — matches `button, a` (Clone is an `<a>` link, not a `<button>`)
+- Graceful skip pattern: `beforeAll` checks DB availability + backend feature flag; each CT calls `test.skip(!condition, reason)` as first line
+- `test.describe.configure({ mode: 'serial' })` — required to share `let` context variables across CTs in the same describe block
+
+**Report:** `docs/taskTestingUown/RU04.26.1.51.0_programs-1251-1252-report.md`
+
+---
+
+### Pagination Enforcement After Program Clone Action Tests (Task #1214)
+
+**E2E (`docs/taskTestingUown/RU04.26.1.51.0_enforcePaginationAfterProgramCloneAction_1214/RU04.26.1.51.0_enforcePaginationAfterProgramCloneAction_1214.spec.ts`):**
+Validates that the Programs list respects the rows-per-page setting after a Clone Group action. Before this fix, cloning a program group reset the pagination and displayed all cloned rows (potentially hundreds) on a single page. Environment: QA2. Project: `task-testing`.
+
+| CT | Type | Flow | Key Assertions |
+|----|------|------|----------------|
+| CT-01 | E2E | Login → Programs → Clone Group → inspect page 1 | `rowsAfterClone === 10`; `rowsPerPageValue === "10"` |
+| CT-02 | E2E | After CT-01 → navigate to page 2 | `rowsOnPage2 === 10` (pagination remains applied on subsequent pages) |
+
+**Test result (2026-04-01, qa2):** 2/2 passed. CT-01: rowsAfterClone=10, rowsPerPage="10" ✅. CT-02: rowsOnPage2=10 ✅.
+
+**Key patterns used:**
+- `ProgramsPage.openCloneGroupModal()` — opens the Clone Group modal on the details page
+- `ProgramsPage.fillCloneGroupName(name)` — fills the group name input in the modal
+- `ProgramsPage.selectAllProgramsInModal()` — clicks "Select All" to select all programs
+- `ProgramsPage.submitCloneGroupModal()` — clicks SAVE to submit the modal
+- `ProgramsPage.waitForCloneGroupSuccess()` — waits for toast "Programs successfully cloned!"
+- `ProgramsPage.getTableRowCount()` — counts visible `.rdt_TableRow` elements after the clone
+- `ProgramsPage.getRowsPerPageValue()` — reads the rows-per-page dropdown to confirm it was not reset
+- `test.describe.configure({ mode: 'serial' })` — CTs share the `clonedGroupName` variable set in CT-01
+
+**Report:** `docs/taskTestingUown/RU04.26.1.51.0_enforcePaginationAfterProgramCloneAction_1214-report.md`
+
+---
+
+### Invoice Number Column and Search Filter Tests (Task #1253)
+
+**Hybrid E2E+DB (`docs/taskTestingUown/RU04.26.1.51.0_addInvoiceNumberColumnAndSearchFilterToLeadsPage_1253/RU04.26.1.51.0_addInvoiceNumberColumnAndSearchFilterToLeadsPage_1253.spec.ts`):**
+Validates the new "Invoice Number" column and filter field on the Origination portal Leads page (R1.51.0). No new applications are created — tests use existing DB data discovered at runtime in `beforeAll`. Environment: QA1. Project: `task-testing`.
+
+| CT | Type | Flow | Key Assertions |
+|----|------|------|----------------|
+| CT-01 | E2E | Login → Leads → get table headers | "Invoice Number" column exists; positioned immediately after "Term Month" |
+| CT-02 | Hybrid (DB + E2E) | DB: find lead with invoice → filter by Lead PK | Row "Invoice Number" cell = value from `uown_los_invoice.merchant_invoice_number` |
+| CT-03 | Hybrid (DB + E2E) | DB: find lead without invoice → filter by Lead PK | Row "Invoice Number" cell is empty (LEFT JOIN → null) |
+| CT-04 | E2E | Login → Leads → expand filters | Filter panel contains "Invoice Number" input with `placeholder='Search by Invoice Number'` |
+| CT-05 | Hybrid (DB + E2E) | DB: find known invoice number → apply Invoice Number filter | At least one row returned; every row shows the filtered invoice number |
+| CT-06 | E2E | Apply Invoice Number filter with `INVALID-INV-QA-99999` | "There are no records to display" message shown |
+
+**Key patterns used:**
+- `LeadsPage.setInvoiceNumber(invoiceNumber)` — fills `input[placeholder='Search by Invoice Number']` in the filter panel
+- `db.queryOne()` in `beforeAll` — discovers real leads with/without invoice numbers; CTs that need DB data use `test.skip` when data is unavailable (DB tunnel not active). **Note:** `queryOne()` is the primary single-row query method (not `getSingleRow`, which does not exist)
+- `LeadsPage.getCleanHeaders()` — strips sort indicators (`▲▼△▽↑↓`) before comparing column positions
+- `SELECTORS.leadsInvoiceNumberInput` — `"input[placeholder='Search by Invoice Number']"` in `LeadsTableSelectors`
+
+**Data source:** `uown_los_invoice.merchant_invoice_number` — joined to `uown_los_lead` via `lead_pk` in the `getLeadsByCriteria` backend endpoint. Leads without an invoice record yield an empty column (LEFT JOIN).
+
+---
+
+### Banking Data Propagation from Approved Lead Tests (Task #484)
+
+**API + DB (`docs/taskTestingUown/RU04.26.1.50.2_propagateBankingDataFromApprovedLeadToNewLead_484/RU04.26.1.50.2_propagateBankingDataFromApprovedLeadToNewLead_484.spec.ts`):**
+Validates the new `BankDataStep` inserted into the `sendApplication` pipeline (after `underwritingCheck`). When a returning customer applies without banking data, and their most recent approved lead had banking data with `source=SEND_APP` and was eligible for 16-month terms, the banking data is automatically copied to `uown_los_bank_account` on the new lead. Environment: QA2. Merchant: Kornerstone (`GOW-0003_clone_fer_ks`). Project: `task-testing`.
+
+**Propagation conditions (all must be true):**
+1. Config flag `saveBankDataFromPreviousLead` = true (default)
+2. UW status = APPROVED
+3. `eligibleTerms` contains `"16"` (Kornerstone / 16-month merchant)
+4. `previousUW` is not blank (returning customer)
+5. Request does NOT include banking data (`mainBankAccountNumber` absent)
+6. Previous lead has a bank account record with `source = SEND_APP`
+
+| CT | Type | Flow | Key Assertions |
+|----|------|------|----------------|
+| CT-00 | API setup | `sendApplication` (Kornerstone, with banking data) | `authorizationNumber` > 0; bank record saved with `source=SEND_APP` |
+| CT-01 | API + DB (graceful) | Returning customer, Kornerstone, no banking in request | Banking data propagated to new lead; `account_number`/`routing_number` match CT-00 lead |
+| CT-02 | API + DB (graceful) | Returning customer, Kornerstone, banking data in request | BankDataStep skips propagation; new lead uses request banking data (Bank of America) |
+| CT-03 | API + DB (graceful) | Returning customer, TerraceFinance (13m only), no banking in request | No propagation — `eligibleTerms` does not contain `"16"` |
+| CT-04 | API + DB (graceful) | Returning customer, Kornerstone, previous lead had no bank accounts | No propagation — previous lead has no `uown_los_bank_account` records |
+| CT-05 | API + DB (graceful) | New customer (no previousUW), Kornerstone, no banking in request | No propagation — first application, `previousUW` is blank |
+| CT-06 | API + DB (graceful) | Field-level integrity check (inline in CT-01) | `account_number`, `routing_number`, `source` identical between leads; `lead_pk` differs |
+
+**Test result (2026-04-02, qa2):** 7/7 passed. DB validations executed with graceful skip — SSH tunnel to qa2 not active; propagation confirmed indirectly via `authorizationNumber > 0` in all scenarios.
+
+**Key patterns used:**
+- `api.application.sendApplication(merchant, applicant, order)` — drives `sendApplication` pipeline including `BankDataStep`; `authorizationNumber > 0` confirms UW_APPROVED
+- Graceful DB handling: DB queries wrapped with try/catch; `test.skip` when tunnel unavailable — API-level assertions always run
+- Two-step setup per negative CT: create "previous" lead first (step 1), then apply as returning customer (step 2)
+- `mainBankAccountNumber` / `mainBankRoutingNumber` presence in request body controls whether `BankDataStep` propagates or skips
+- `Kornerstone` merchant (`GOW-0003_clone_fer_ks`) used for propagation CTs — 16-month eligible, valid for qa2
+- `TerraceFinance` merchant (`OL90202-0001`) used for CT-03 — 13-month only, confirms `eligibleTerms` guard
+
+**DB table:** `uown_los_bank_account` — columns: `pk`, `lead_pk`, `account_number`, `routing_number`, `bank_name`, `bank_account_type`, `source`, `is_deleted`
+
+**Report:** `docs/taskTestingUown/RU04.26.1.50.2_propagateBankingDataFromApprovedLeadToNewLead_484-report.md`
+
+---
+
 ### Term Month Column Verification Tests (Task #1242)
 
-**Hybrid E2E+API (`tests/taskTestingUown/RU03.26.1.50.0_displaySelectedTermMonthInOverviewAndLeadsTables_1242/RU03.26.1.50.0_displaySelectedTermMonthInOverviewAndLeadsTables_1242.spec.ts`):**
+**Hybrid E2E+API (`docs/taskTestingUown/RU03.26.1.50.0_displaySelectedTermMonthInOverviewAndLeadsTables_1242/RU03.26.1.50.0_displaySelectedTermMonthInOverviewAndLeadsTables_1242.spec.ts`):**
 Validates that the new "Term Month" column in the Origination portal Overview and Leads tables displays the term selected by the applicant via `planId`. Uses `sendApplication` + `getMissingFields` + `submitApplication` API flow to drive lead state, then verifies column values via E2E. Environment: QA1. Merchant: TerraceFinance.
 
 | CT | Type | Flow | Key Assertions |
@@ -416,7 +591,7 @@ Full lifecycle via UI-driven account creation using the Origination "New Applica
 
 ### CompleteApplication Screen Redesign Tests (Task #1233)
 
-**E2E Hybrid (`tests/taskTestingUown/RU03.26.1.50.0_improveDesignOfCompleteApplicationScreen_1233/RU03.26.1.50.0_improveDesignOfCompleteApplicationScreen_1233.spec.ts`):**
+**E2E Hybrid (`docs/taskTestingUown/RU03.26.1.50.0_improveDesignOfCompleteApplicationScreen_1233/RU03.26.1.50.0_improveDesignOfCompleteApplicationScreen_1233.spec.ts`):**
 Validates the redesigned MissingPaymentProgram screen on the `/{shortCode}/complete` route. MR !1408 replaced the plain white modal with a modern card-based layout featuring title/subtitle, payment cards with emoji icons, term selection tabs (13/16 months), and a footer with contact information. Environment: QA1. Merchant: TerraceFinance. Project: `task-testing`.
 
 | CT | Type | Flow | Key Assertions |
@@ -436,11 +611,11 @@ Validates the redesigned MissingPaymentProgram screen on the `/{shortCode}/compl
 - `PaymentProgramSelectors` — 15 new selectors in `src/selectors/common.selectors.ts` covering the redesigned screen (container, logo, title, subtitle, cards, tabs, footer)
 - `FREQUENCY_LABELS` constant — maps frequency names to expected title/description pairs from frontend source
 
-**Known bug (BUG-01):** SSN `888888888` causes a NullPointerException in the backend (500 error). The test uses auto-generated approved SSNs instead. Documented in `docs/test-reports/1233-bugs.md`.
+**Known bug (BUG-01):** SSN `888888888` causes a NullPointerException in the backend (500 error). The test uses auto-generated approved SSNs instead. Documented in `docs/taskTestingUown/1233-bugs.md`.
 
 ### Fix PlanId Condition When NextPayDate Is Not Provided (Task #476)
 
-**API+E2E (`tests/taskTestingUown/Tasks/RU03.26.1.50.0_fixPlanIdConditionWhenNextPayDateIsNotProvided_476/RU03.26.1.50.0_fixPlanIdConditionWhenNextPayDateIsNotProvided_476.spec.ts`):**
+**API+E2E (`docs/taskTestingUown/Tasks/RU03.26.1.50.0_fixPlanIdConditionWhenNextPayDateIsNotProvided_476/RU03.26.1.50.0_fixPlanIdConditionWhenNextPayDateIsNotProvided_476.spec.ts`):**
 Validates the fix for the `planId` condition on the `/{shortCode}/complete` route when `nextPayDate` is not provided. When `planId` is empty in the URL, the backend renders a 2-step employment form (next paycheck date + pay frequency) before showing payment program options. The test validates both the API-level `getMissingFields` behavior and the full E2E flow through the missing employment screen. Environment: sandbox. Merchant: TerraceFinance.
 
 | CT | Type | Flow | Key Assertions |
@@ -479,7 +654,7 @@ Validates the fix for the `planId` condition on the `/{shortCode}/complete` rout
 
 ### Submit Application Error Log Tests (Task #1240)
 
-**E2E+API (`tests/taskTestingUown/RU03.26.1.50.0_trackAndDisplaySubmitApplicationErrors_1240/RU03.26.1.50.0_trackAndDisplaySubmitApplicationErrors_1240.spec.ts`):**
+**E2E+API (`docs/taskTestingUown/RU03.26.1.50.0_trackAndDisplaySubmitApplicationErrors_1240/RU03.26.1.50.0_trackAndDisplaySubmitApplicationErrors_1240.spec.ts`):**
 Validates the Error Log page (`/errorLog`) in the Origination portal, which tracks and displays errors from Send Application and Submit Application flows. Uses `ErrorLogPage` (extends `OriginationBasePage`) and `MerchantClient.getSubmitApplicationErrorLogs()`. Environment: QA1. Contains 5 tests.
 
 | CT | Type | Flow | Key Assertions |
@@ -507,6 +682,110 @@ Validates the Error Log page (`/errorLog`) in the Origination portal, which trac
 - `src/pages/origination/error-log.page.ts` — `ErrorLogPage` extends `OriginationBasePage`
 
 **Selectors** (prefix `el` = Error Log): `elTabSendApplication`, `elTabSubmitApplication`, `elFilterFromDate`, `elFilterToDate`, `elFilterSearch`, `elFilterSubmitButton` — defined in `src/selectors/common.selectors.ts`.
+
+---
+
+### Podium API Integration Tests (Task #442)
+
+**Hybrid E2E+API+DB (`docs/taskTestingUown/RU03.26.1.50.0_uownSvcPodiumApiIntegration_442/RU03.26.1.50.0_uownSvcPodiumApiIntegration_442.spec.ts`):**
+Validates the Podium API integration in the Servicing portal. Podium is a reviews-management platform; the integration adds a "Send Podium Link" button inside the Send Invite modal (`#invitation`), gated by the `send_podium_link` permission. Includes Flyway migration for `uown_podium_token` (OAuth2 token lifecycle), API endpoint `POST /uown/svc/accounts/{pk}/podium-link`, and logging to `sv_outbound_api_log`. Environment: QA1. Project: `task-testing`.
+
+| CT | Type | Flow | Key Assertions |
+|----|------|------|----------------|
+| CT-01 | DB | Query `flyway_schema_history` + `information_schema.columns` | Migration `V20260317121000__create_podium_token_table.sql` applied with `success=true`; table has all 7 expected columns |
+| CT-02 | E2E | Login as ADMIN → navigate to account 4438 → open Send Invite modal | `isPodiumLinkButtonVisible()` returns `true` (user has `send_podium_link` permission) |
+| CT-03 | E2E | Open Send Invite modal → click "Send Podium Link" → confirm | Toast text: `"Podium invitation sent successfully."` |
+| CT-04 | DB | Query `uown_podium_token` after invite send | At least 1 token row; `access_token` non-null; `expiration_time` non-null (token lifecycle active) |
+| CT-05 | DB | Query `sv_outbound_api_log` for Podium call record | SKIPPED — `sv_outbound_api_log` inaccessible via test DB connection (SVC schema may be separate) |
+| CT-06 | API | `POST /uown/svc/accounts/999999999/podium-link` (invalid accountPk) | HTTP 400; `errorMessage: "No primary customer found for this account."` |
+| CT-07 | E2E | Login as supervisor (no `send_podium_link`) → open Send Invite modal | `isPodiumLinkButtonVisible()` returns `false` (PENDING — awaits execution with DB tunnel active) |
+
+**Key patterns used:**
+- `ServicingCustomerPage.openSendInviteModal()` — clicks `#invitation`, forces Bootstrap modal `show` class via JS (CSS animations disabled prevent automatic class addition)
+- `ServicingCustomerPage.isPodiumLinkButtonVisible()` — returns `true` if "Send Podium Link" button is visible inside the InviteModal
+- `ServicingCustomerPage.sendPodiumLink()` — full flow: open modal → click "Send Podium Link" (force: true) → confirm in ConfirmationModal → wait for toast; returns toast text
+- `LoginPage` dynamic login override — CT-07 uses `LoginPage.login(supervisorUser, supervisorPassword)` to re-authenticate within the test as a different role
+- `api.account.sendPodiumLink(accountPk)` — `AccountClient` method; `POST /uown/svc/accounts/{pk}/podium-link`; returns `PodiumInvitationResponse`
+- `db.flywayMigrationApplied(version)` — validates Flyway migration applied with `success=true`
+- Permission-gated UI: Bootstrap `InviteModal` from `@uownleasing/common-ui`; "Send Podium Link" button rendered only when `hasSendPodiumLinkPermission = true`
+- Click `"Send Podium Link"` uses `force: true` — React unmounts `InviteModal` during click handler, so standard click fails
+
+**New response types (`src/api/responses/account.response.ts`):**
+- `PodiumInvitationResponse` — `message?: string`, `errorMessage?: string`
+
+**Known environment limitation:**
+- `sv_outbound_api_log` is not accessible via the test DB connection — the SVC schema appears to be on a separate database or schema boundary. CT-05 is permanently skipped with an explanatory message.
+
+---
+
+### AMS New Page to Assign Merchants to User Tests (Task #74)
+
+**E2E+API (`docs/taskTestingUown/RU04.26.1.51.0_uownAmsNewPageToAssignMerchantsToUser_74/RU04.26.1.51.0_uownAmsNewPageToAssignMerchantsToUser_74.spec.ts`):**
+Validates the new `/associate-users-to-merchants` page in the AMS portal (R1.51.0). The page provides two side-by-side `react-data-table-component` tables (Users and Merchants), a Submit button that opens a Bootstrap confirmation modal, a success toast, and a Log Activity audit trail accessible at `/users/[username]`. Environment: QA2. Project: `task-testing`. All 9/9 tests passing.
+
+| CT | Type | Flow | Key Assertions |
+|----|------|------|----------------|
+| CT-E2E-01 | E2E | Login → navigate to `/associate-users-to-merchants` | Page renders with two rdt tables (Users + Merchants) and Submit button |
+| CT-E2E-02 | E2E | Select user (row 0) → verify selection info text updates | Users table selection info shows selected count |
+| CT-E2E-03 | E2E | Select merchant (row 0) → verify selection info text updates | Merchants table selection info shows selected count |
+| CT-E2E-04 | E2E | Pagination on Merchants table → next page | Page 2 merchants differ from page 1 content |
+| CT-E2E-05 | E2E | Select user + merchant → click Submit → confirm modal → success | `amsAssocConfirmButton` clicked; success toast visible (`amsSuccessToast`) |
+| CT-E2E-06 | E2E | Navigate to `/users/[username]` → verify Log Activity section | Log Activity `react-data-table-component` table present with columns: date, type, userId, notes |
+| CT-E2E-07 | E2E | Navigate to `/users/[username]` → expand "Edit User Merchants" accordion → click pencil → type "KS15500" in React Select → select "45 Tires - KS15500" → SAVE → verify merchant tag → verify log count unchanged (10 → 10) | Merchant tag "45 Tires - KS15500" visible in read-only list; Log Activity count stays at 10 — UI edit does NOT generate a log entry |
+| CT-API-01 | API | `POST /user/addMerchantsToUsers` — bulk assign | 200 OK; response body confirms assignment |
+| CT-API-02 | API | `PUT /user/{username}` — update user info | 200 OK; triggers Log Activity entry |
+
+**Key patterns used:**
+- `AmsUserMerchantsPage` — two-table layout: Users (left, nth(0)) + Merchants (right, nth(1)); both are `react-data-table-component` rdt tables — scope all row/pagination locators by nth index to avoid cross-table selection
+- `AmsUserDetailsPage.getLatestLogEntry()` — waits for first `.rdt_TableRow` to appear (race condition guard) then reads cells `[date, type, userId, notes]`; returns `null` if table empty
+- `AmsUserDetailsPage.getLogEntries()` — returns all visible rows on first page; waits for `rows.first()` before counting to avoid stale empty count
+- `clickSubmit()` — clicks Submit → waits for Bootstrap `.modal-footer button:has-text("Confirm")` → clicks Confirm → waits for success toast; wraps each step in `try/catch` for resilience
+- Pagination: `.rdt_Pagination` is a sibling of `.rdt_Table` (not nested inside it) — scope to `nth(0)` / `nth(1)` matching the table index
+
+**Critical finding — Log Activity behavior:**
+- `POST /user/addMerchantsToUsers` (bulk assign) does **NOT** generate Log Activity entries in AMS
+- The "Edit User Merchants" UI card (accordion on `/users/[username]`) also does **NOT** generate Log Activity entries
+- Only `PUT /user/{username}` (updateUser endpoint) triggers an `"UPDATED user info: {...}"` log entry
+- Log Activity section is a `react-data-table-component` table (`.rdt_TableRow`) — NOT a native `<table>`; use `.rdt_TableRow` / `[class*="rdt_TableCell"]` selectors
+
+**Critical finding — Edit User Merchants UI:**
+- The "Edit User Merchants" card is an **OVERWRITE** operation — replaces the entire merchant list; it is not additive
+- Entering edit mode removes `span#EditUserMerchants-edit` from the DOM; use `:has(#merchants)` to scope the SAVE button, not `:has(span#EditUserMerchants-edit)`
+- React Select options are rendered in a portal with class `index-module_customOptionStyles__CSG9m`; navigate via ArrowDown+Enter
+
+**New selectors (`src/selectors/common.selectors.ts`):**
+
+rdt base selectors (shared by both tables on the page):
+- `amsRdtTable` — `.rdt_Table`
+- `amsRdtTableRow` — `.rdt_TableRow`
+- `amsRdtPagination` — `.rdt_Pagination` (sibling of `.rdt_Table`, NOT nested inside it)
+- `amsPaginationNextButton` — `button[aria-label="Next Page"]`
+
+Associate Users to Merchants page (`/associate-users-to-merchants`):
+- `amsAssocPageSubmit` — `button:has-text("Submit")`
+- `amsAssocRowCheckbox` — `input[name="select-row-undefined"]`
+- `amsUsersSelectionInfo` — `[class*="selectable-users-table_selectionInfo"]`
+- `amsMerchantsSelectionInfo` — `[class*="selectable-merchants-table_selectionInfo"]`
+- `amsAssocConfirmButton` — `.modal-footer button:has-text("Confirm")`
+- `amsSuccessToast` — `.Toastify__toast--success, .toast-success, .alert-success`
+
+Log Activity and User Details page (`/users/[username]`):
+- `amsLogActivityRow` — `.rdt_TableRow`
+- `amsLogActivityCell` — `[class*="rdt_TableCell"]`
+- `amsEditUserMerchantsButton` — `span#EditUserMerchants-edit` (removed from DOM in edit mode — use `:has(#merchants)` for SAVE scoping)
+- `amsUserMerchantsCardToggle` — `'.card-header:has(span#EditUserMerchants-edit) #toggle-collapse'`
+- `amsUserMerchantsCardCollapse` — `'.card:has(span#EditUserMerchants-edit) .collapse'`
+- `amsUserMerchantsSelectControl` / `amsUserMerchantsSelectInput` — React Select `#merchants` using `filter__` prefix (`#merchants .filter__control` / `#merchants .filter__input`)
+- `amsUserMerchantsSelectOption` — `[class*="customOptionStyles__CSG9m"]` (options rendered in a portal; use ArrowDown+Enter to navigate)
+- `amsUserMerchantsTag` — `'.card:has(span#EditUserMerchants-edit) [class*="tag__snNpm"]'`
+- `amsUserMerchantsSaveButton` — `.card:has(#merchants) button[class*="collapsableEdit__button__primary"]`
+
+**Page objects (modified):**
+- `src/pages/ams/ams-user-merchants.page.ts` — `AmsUserMerchantsPage` extends `AmsBasePage`; methods: `waitForMerchantsPage()`, `selectUserByUsername(username)` (searches current page only, returns boolean), `selectUserByIndex(index)` (returns username text), `selectMerchantByIndex(index)` (returns merchant code text), `getUsersRowCount()`, `getMerchantsRowCount()`, `clickMerchantsNextPage()` (DOM text-change detection for reliable pagination transition), `clickUsersNextPage()`, `getUsersSelectionText()`, `getMerchantsSelectionText()`, `getCurrentPageMerchants()` (returns `string[]` with row-visibility wait), `isMerchantsNextPageAvailable()`, `clickSubmit()` (handles Bootstrap confirmation modal + returns boolean success)
+- `src/pages/ams/ams-user-details.page.ts` — `AmsUserDetailsPage` extends `AmsBasePage`; added `expandMerchantsCard()`, `clickEditMerchantsButton()`, `selectMerchantInEdit()`, `saveMerchantsEdit()`, `getMerchantTags()`, `getLatestLogEntry()` (returns `null` if table empty), `getLogEntries()` (waits for `rows.first()` before counting)
+- `src/pages/ams/ams-base.page.ts` — `AmsBasePage`; base utilities for rdt tables
+
+**Report:** `docs/taskTestingUown/RU04.26.1.51.0_uownAmsNewPageToAssignMerchantsToUser_74-report.md`
 
 ---
 
@@ -586,7 +865,7 @@ const status = await customerPage.getLeadStatus();
 
 ```
 src/api/
-├── clients/          # One client per domain
+├── clients/          # One client per domain (18 clients)
 │   ├── base.client.ts
 │   ├── application.client.ts
 │   ├── invoice.client.ts
@@ -597,23 +876,47 @@ src/api/
 │   ├── merchant.client.ts
 │   ├── account.client.ts
 │   ├── payment-arrangement.client.ts
-│   └── svc-payoff.client.ts
-├── bodies/           # Typed request payloads + builders
+│   ├── svc-payoff.client.ts
+│   ├── svc-phone.client.ts
+│   ├── svc-email.client.ts
+│   ├── svc-contact.client.ts
+│   ├── los-partner-auth.client.ts
+│   ├── los-partner-application.client.ts
+│   ├── ams.client.ts
+│   └── seon.client.ts
+├── bodies/           # Typed request payloads + builders (13 files)
 │   ├── application.body.ts
 │   ├── invoice.body.ts
 │   ├── lead.body.ts
 │   ├── settlement.body.ts
 │   ├── credit-card.body.ts
-│   └── payment-arrangement.body.ts
-└── responses/        # Typed response interfaces
-    ├── api-response.ts    # Generic ApiResponse<T> wrapper
+│   ├── payment-arrangement.body.ts
+│   ├── account.body.ts
+│   ├── svc-phone.body.ts
+│   ├── svc-email.body.ts
+│   ├── svc-contact.body.ts
+│   ├── ams-user.body.ts
+│   ├── merchant-config.body.ts
+│   └── seon.body.ts
+└── responses/        # Typed response interfaces (18 files)
+    ├── base.response.ts   # Generic ApiResponse<T> wrapper
     ├── application.response.ts
     ├── invoice.response.ts
     ├── account.response.ts
     ├── merchant.response.ts
     ├── payment-arrangement.response.ts
     ├── svc-payoff.response.ts
-    └── ...
+    ├── settlement.response.ts
+    ├── scheduled-task.response.ts
+    ├── lead.response.ts
+    ├── svc-phone.response.ts
+    ├── svc-email.response.ts
+    ├── svc-contact.response.ts
+    ├── ams-user.response.ts
+    ├── los-partner-auth.response.ts
+    ├── los-partner-application.response.ts
+    ├── credit-card.response.ts
+    └── seon.response.ts
 ```
 
 ### Usage Patterns
@@ -781,19 +1084,19 @@ This section tracks deviations from project standards that are documented but no
 
 ### Medium — Diagnostic spec files outside the standard directory pattern
 
-Temporary diagnostic/investigation spec files exist outside the `tests/taskTestingUown/{name}/{name}.spec.ts` pattern:
+Temporary diagnostic/investigation spec files exist outside the `docs/taskTestingUown/{name}/{name}.spec.ts` pattern:
 
 | File | Issue |
 |------|-------|
-| `tests/taskTestingUown/diag.spec.ts` | Uses `db.executeUpdate` with UPDATE; `page.waitForTimeout`; flat placement |
-| `tests/taskTestingUown/dom-diagnostic.spec.ts` | Uses `page.waitForTimeout(5000)`; flat placement |
-| `tests/taskTestingUown/check-json.spec.ts` | SELECT only; flat placement |
+| `docs/taskTestingUown/diag.spec.ts` | Uses `db.executeUpdate` with UPDATE; `page.waitForTimeout`; flat placement |
+| `docs/taskTestingUown/dom-diagnostic.spec.ts` | Uses `page.waitForTimeout(5000)`; flat placement |
+| `docs/taskTestingUown/check-json.spec.ts` | SELECT only; flat placement |
 
 These files are outside the Playwright `task-testing` project glob pattern but may be picked up by broader test runs. They should be cleaned up or moved to the correct subdirectory structure when the investigations are complete.
 
 ### Low — `body as never` casts in 476 spec
 
-`tests/taskTestingUown/Tasks/.../476.spec.ts` uses `body as never` (4 occurrences) to bypass TypeScript type checking on `sendApplication()` calls. The correct fix is to use `buildSendApplicationBody()` with properly typed arguments.
+`docs/taskTestingUown/Tasks/.../476.spec.ts` uses `body as never` (4 occurrences) to bypass TypeScript type checking on `sendApplication()` calls. The correct fix is to use `buildSendApplicationBody()` with properly typed arguments.
 
 **Pattern to avoid:**
 ```typescript

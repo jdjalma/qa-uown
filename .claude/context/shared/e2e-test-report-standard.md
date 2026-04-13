@@ -5,7 +5,7 @@
 
 ## 1. Task Report Artifact Template (validate-results)
 
-**File path:** `tests/taskTestingUown/{testName}/{testName}.md`
+**File path:** `docs/taskTestingUown/{testName}/{testName}-report.md`
 
 ```markdown
 # Relatório de Teste: {testName}
@@ -38,6 +38,23 @@
 | **Trace** | Habilitado (`TRACE=on-first-retry`) |
 
 > Para testes API-only (sem browser): substituir as linhas Vídeo e Trace por `N/A (API-only)`.
+
+## Evidências (Dados Utilizados/Criados)
+
+> **MANDATORY** — toda execução DEVE listar os PKs de evidência (leads e/ou contas) usados ou criados durante o teste. Estes valores permitem rastrear e reproduzir o teste manualmente.
+
+| Tipo | PK | Papel no Teste | Criado/Existente |
+|------|----|----------------|:----------------:|
+| Lead | leadPk={N} | {descrição — ex: aplicação aprovada, risco baixo CA} | Criado / Existente |
+| Account | accountPk={N} | {descrição — ex: conta ACTIVE para CC payment} | Criado / Existente |
+| Arrangement | arrangementPk={N} | {descrição — ex: SETTLEMENT 3 parcelas CC} | Criado |
+
+> **Regras:**
+> - Incluir TODOS os leadPk e accountPk extraídos dos logs de execução
+> - Se o teste usa contas pré-existentes (GDS bypass), marcar como "Existente"
+> - Se o teste cria novos leads/contas, marcar como "Criado"
+> - Incluir também PKs auxiliares relevantes: arrangementPk, ccTransactionPk, achPk, fundingTransactionPk
+> - Se nenhum lead/account é usado (ex: teste de config), usar: `> Nenhuma evidência de lead/account — teste de configuração.`
 
 ## Capturas de Tela
 
@@ -82,18 +99,16 @@
 Each scenario follows this exact pattern:
 
 ```markdown
-### Cenário: Cenário {N} — {CT label(s)}
+### CT-XX
 
-**O que é feito:** {ação concreta — endpoint chamado com quais dados, navegação UI clique a clique, ou query DB executada}
+**Objetivo:** {uma frase — o que o cenário valida}
 
-**O que acontece:** {comportamento observado do sistema — status HTTP, transição de estado, resposta, efeito colateral}
-
-**O que é verificado:** {asserções concretas com valores reais — `campo=valor`, HTTP 200, `accountStatus=SETTLED_IN_FULL`, etc.}
+**O que é verificado:** {comportamento do sistema em linguagem de negócio — o que o sistema faz, não o que o teste faz; menciona a origem do dado quando relevante}
 
 Exemplos:
-| Coluna1     | Coluna2      |
-| ----------- | ------------ |
-| {valor1}    | {valor2}     |
+| Coluna1  | Coluna2  |
+|----------|----------|
+| {valor1} | {valor2} |
 
 #### Como verificar manualmente
 
@@ -108,36 +123,32 @@ Exemplos:
 
 ### Regra de ouro das descrições
 
-> **Cada cenário deve responder três perguntas: O que é feito → O que acontece → O que é verificado.**
+> **Objetivo** diz o que valida. **O que é verificado** descreve o comportamento do sistema. **Como verificar manualmente** tem os valores técnicos exatos.
 
-❌ **Muito vago** (não aceito):
+❌ **Objetivo vago** (não aceito):
 ```
-Verifica que o endpoint retorna sucesso.
-```
-
-❌ **Vago com jargão** (não aceito):
-```
-Move due date via modal no Servicing portal, verifica toast de sucesso, navega para History page e valida DB.
+Verifica o comportamento do endpoint.
 ```
 
-✅ **Correto** (nível de detalhe exigido):
+❌ **O que é verificado técnico** (não aceito):
 ```
-**O que é feito:** Chama `POST /uown/tms/v1/accounts/4461/next-due-date/adjustments` com `daysOffset=3` e `dueDate=03/20/2026` via header `FIVE9_TMS_API_KEY`.
+`rows.length > 0` — ao menos uma linha retornada após o filtro
+`row["Invoice Number"] === "R45701"` — todas as linhas exibem o invoice
+```
 
-**O que acontece:** Backend move a next due date 3 dias para frente e registra o ajuste. Retorna HTTP 200 com `DueDateAdjustmentResponse` contendo o novo due date calculado.
+✅ **Correto**:
+```
+**Objetivo:** Verificar que filtrar por invoice number retorna apenas os leads que possuem aquele invoice.
 
-**O que é verificado:**
-- HTTP 200
-- `response.newDueDate` = `03/20/2026`
-- DB: `uown_due_date_moves.move_number_of_days` = `3`, `agent` = `manager`
-- `waitForRecord` confirma gravação assíncrona dentro de 30s
+**O que é verificado:** Ao buscar por um invoice number existente, a tabela retorna somente leads cujo `merchant_invoice_number` corresponde ao valor filtrado — confirmando que o filtro é funcional e preciso.
 ```
 
 **Rules:**
-- Header: `### Cenário: Cenário {N} — {CT-XX}` — N sequential (1, 2, 3...); CT label(s) after dash
-- **MANDATORY**: three-block description — `**O que é feito:**`, `**O que acontece:**`, `**O que é verificado:**`
-- Each block must contain concrete details — endpoints, table names, field names, exact values
-- Exemplos table: columns from real test assertions (LeadPk, Status, ShortCode, etc.)
+- Header: `### CT-XX` — apenas o prefixo CT e o código do cenário
+- **MANDATORY**: `**Objetivo:**` + `**O que é verificado:**`
+- **Objetivo:** uma frase curta dizendo o que o cenário valida
+- **O que é verificado:** comportamento do sistema em linguagem de negócio — NÃO código de teste, NÃO asserções técnicas
+- Exemplos table: opcional — incluir quando há valores reais que ilustram o comportamento (leadPk, invoiceNumber, etc.)
 - Values: from REAL execution output — never placeholders
 - Status: `**PASSOU**` or `**FALHOU**`
 - Failed: add `> Falha: {mensagem de erro real}` immediately before the status line
@@ -204,14 +215,19 @@ Every `#### Como verificar manualmente` block must be:
 - API-only tests: no screenshot needed (no browser)
 - Reference in `.md` Capturas de Tela table: `reports/screenshots/{file}.png`
 
-## 6. QA Flow Report Locations
+## 6. Report Locations (centralized in docs/taskTestingUown/)
 
-| Type | Location | Gitignored |
-|------|----------|:----------:|
-| Task test reports | `tests/taskTestingUown/{testName}/{testName}.md` | Yes |
-| QA Flow - Scenarios | `docs/test-reports/[TASK_ID]-test-scenarios.md` | No |
-| QA Flow - Bug Report | `docs/test-reports/[TASK_ID]-bugs.md` | No |
-| QA Flow - Execution Report | `docs/test-reports/[TASK_ID]-test-report.md` | No |
+All reports live in `docs/taskTestingUown/` (gitignored — local only).
+
+| File | Created by | Content |
+|------|-----------|---------|
+| `{testName}-report.md` | `subagent-validate-results` | Full execution report: task info + scenarios + evidence PKs + screenshots + bugs + validation summary. **Single source of truth for execution results.** |
+| `{testName}-scenarios.md` | `qa-flow` Fase 2 | Planning artifact: User Stories + CT-XX scenarios created before implementation. |
+
+> **Naming:** use `{testName}` (same as the `.spec.ts` basename, e.g. `RU03.26.1.50.0_smsQueue_455`). For qa-flow runs without a spec file, use `[TASK_ID]` as the name.
+>
+> **No separate bugs file** — bugs are documented inside `{testName}-report.md` in the `## Bugs de Aplicação Encontrados` section.
+> **No separate execution file** — the single `-report.md` already contains execution metadata, scenarios, and bugs.
 
 ## 7. Bug Report Format (Application Bugs Only)
 

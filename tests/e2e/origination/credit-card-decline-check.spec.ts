@@ -25,14 +25,14 @@ const testData = [
   // { env: 'sandbox', state: 'CA', merchant: 'ProgressMobility', tag: buildTags(TestTag.SANITY, TestTag.REGRESSION, TestTag.SANDBOX) },
   { env: 'qa1', state: 'NY', merchant: 'TireAgent', tag: buildTags(TestTag.SANITY, TestTag.REGRESSION, TestTag.QA1) },
   // Uncomment to run on other environments:
-  // { env: 'stg', state: 'NY', merchant: 'TireAgent', tag: buildTags(TestTag.SANITY, TestTag.REGRESSION, TestTag.STG) },
+  { env: 'stg', state: 'NY', merchant: 'TireAgent', tag: buildTags(TestTag.SANITY, TestTag.REGRESSION, TestTag.STG) },
 ];
 
 for (const data of testData) {
   test.describe(`Credit Card Decline Check - ${data.env} ${data.state}/${data.merchant}`, { tag: data.tag.split(' ') }, () => {
     test.use({ envName: data.env });
 
-    test(`Creating Uown account in "${data.env}"`, async ({ page, api, ctx }) => {
+    test(`Creating Uown account in "${data.env}"`, async ({ page, api, ctx, merchantConfig: mSetup }) => {
       const { env, merchant, applicant, order } = buildTestData({
         env: data.env,
         state: data.state,
@@ -42,6 +42,10 @@ for (const data of testData) {
         sanitizeNames: true,
       });
       test.setTimeout(600_000); // 10 min — decline loop + e-sign takes time
+
+      await test.step('Ensure merchant config', async () => {
+        await mSetup.configureByName(data.merchant, 'lifecycle');
+      });
 
       // ═══════════════════════════════════════════════════════════════
       //  PHASE 1: SEND APPLICATION via API (no invoice yet)

@@ -1,8 +1,11 @@
 ---
 name: subagent-impl-api-client
 description: Creates an API client (extends BaseClient) with typed response and request body.
-model: inherit
+model: opus
 color: orange
+maxTurns: 30
+disallowedTools:
+  - NotebookEdit
 ---
 
 # subagent-impl-api-client — API Client Implementer

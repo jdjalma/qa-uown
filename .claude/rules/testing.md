@@ -10,7 +10,7 @@ paths:
 ```
 Pattern:   {milestone}_{camelCaseTitle}_{taskNumber}
 Example:   R1.49.1_separateShortCodeInANewEntity_469
-Location:  tests/taskTestingUown/{testName}/{testName}.spec.ts
+Location:  docs/taskTestingUown/{testName}/{testName}.spec.ts
 Project:   task-testing
 ```
 

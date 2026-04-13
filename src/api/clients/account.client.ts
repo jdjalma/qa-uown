@@ -7,10 +7,13 @@ import type {
   SvcReceivableResponse,
   DueDateMovesPage,
   DueDateAdjustmentResponse,
+  PodiumInvitationResponse,
+  AccountSearchCriteriaResponse,
 } from '../responses/account.response.js';
 import {
   type CancelAccountBody,
   type NextDueDateAdjustmentBody,
+  type AccountSearchCriteriaBody,
   buildCancelAccountBody,
 } from '../bodies/account.body.js';
 
@@ -77,5 +80,19 @@ export class AccountClient extends BaseClient {
       timeout: 120_000,
     });
     return parseResponse<DueDateAdjustmentResponse>(response);
+  }
+
+  /** Sends a Podium review invite to the primary customer of the account (Task #442). */
+  async sendPodiumLink(accountPk: string | number): Promise<ApiResponse<PodiumInvitationResponse>> {
+    return this.post<PodiumInvitationResponse>(`/uown/svc/accounts/${accountPk}/podium-link`);
+  }
+
+  /**
+   * Searches accounts by filter criteria (Task #501).
+   * New fields: merchantName (exact case-insensitive) and location (exact case-insensitive).
+   * null/blank fields are treated as "no filter" by the backend (blankToNull()).
+   */
+  async getAccountsByCriteria(body: AccountSearchCriteriaBody): Promise<ApiResponse<AccountSearchCriteriaResponse>> {
+    return this.post<AccountSearchCriteriaResponse>('/uown/svc/getAccountsByCriteria', body);
   }
 }

@@ -58,18 +58,28 @@ export class BaseClient {
     return this.request.post(resolvedUrl, {
       headers: { ...this.headers, 'Content-Type': 'application/json' },
       data,
-      timeout: 120_000,
+      timeout: 300_000,
     });
   }
 
   protected async getRaw(url: string, host?: ApiHost): Promise<APIResponse> {
     const resolvedUrl = this.resolveUrl(url, host);
-    return this.request.get(resolvedUrl, { headers: this.headers });
+    return this.request.get(resolvedUrl, { headers: this.headers, timeout: 300_000 });
   }
 
   protected async post<T>(url: string, body?: object | string, host?: ApiHost): Promise<ApiResponse<T>> {
     const response = await this.postRaw(url, body, host);
     return parseResponse<T>(response);
+  }
+
+  protected async putRaw(url: string, body?: object | string, host?: ApiHost): Promise<APIResponse> {
+    const resolvedUrl = this.resolveUrl(url, host);
+    const data = typeof body === 'string' ? JSON.parse(body) : body;
+    return this.request.put(resolvedUrl, {
+      headers: { ...this.headers, 'Content-Type': 'application/json' },
+      data,
+      timeout: 300_000,
+    });
   }
 
   protected async get<T>(url: string, host?: ApiHost): Promise<ApiResponse<T>> {

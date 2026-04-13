@@ -3,14 +3,23 @@ import { SELECTORS } from '../selectors/common.selectors.js';
 import { TIMEOUTS } from '../config/constants.js';
 
 export async function waitForSpinner(page: Page, timeoutMs = TIMEOUTS.SPINNER): Promise<void> {
-  const allSpinners = `${SELECTORS.spinnerBorder}, ${SELECTORS.spinnerGrow}, ${SELECTORS.fullPageLoader}`;
-  try {
-    const spinner = page.locator(allSpinners).first();
-    if (await spinner.isVisible({ timeout: 1_000 }).catch(() => false)) {
-      await spinner.waitFor({ state: 'hidden', timeout: timeoutMs });
+  // Wait for each spinner type independently. Using a combined selector with .first()
+  // can miss the full-page loader if a brief Bootstrap spinner appears first and disappears
+  // quickly — .first() resolves to the Bootstrap spinner, waits for it to hide, and returns
+  // while the full-page loader is still active.
+  const spinnerSelectors = [
+    `${SELECTORS.spinnerBorder}, ${SELECTORS.spinnerGrow}`,
+    SELECTORS.fullPageLoader,
+  ];
+  for (const sel of spinnerSelectors) {
+    try {
+      const spinner = page.locator(sel).first();
+      if (await spinner.isVisible({ timeout: 1_500 }).catch(() => false)) {
+        await spinner.waitFor({ state: 'hidden', timeout: timeoutMs });
+      }
+    } catch {
+      // Spinner not present or already gone - this is expected
     }
-  } catch {
-    // Spinner not present or already gone - this is expected
   }
 }
 
