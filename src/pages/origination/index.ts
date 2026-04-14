@@ -17,3 +17,4 @@ export { OpenToBuyPage } from './open-to-buy.page.js';
 export { NewApplicationFiltersPage } from './new-application-filters.page.js';
 export { MerchantModHistoryPage } from './merchant-mod-history.page.js';
 export { ModificationReportPage } from './modification-report.page.js';
+export { MerchantEditPage } from './merchant-edit.page.js';

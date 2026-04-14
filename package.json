@@ -31,7 +31,8 @@
     "sonar": "npx sonar-scanner",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
-    "docker:reset": "docker compose down -v"
+    "docker:reset": "docker compose down -v",
+    "postinstall": "npx playwright install chromium"
   },
   "devDependencies": {
     "@playwright/mcp": "^0.0.68",

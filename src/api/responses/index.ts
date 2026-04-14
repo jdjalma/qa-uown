@@ -16,3 +16,4 @@ export * from './svc-contact.response.js';
 export * from './ams-user.response.js';
 export * from './los-partner-auth.response.js';
 export * from './los-partner-application.response.js';
+export * from './seon.response.js';

@@ -1,6 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
 import path from 'path';
+
+// Load .env BEFORE config so that ENV (and all other vars) are available
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+
 import {
   DESKTOP_CHROME,
   DESKTOP_CHROME_HEADLESS,
@@ -13,9 +17,9 @@ import {
 } from './src/support/browser-factory.js';
 import { testConfig } from './src/support/config.js';
 
+// Optional per-env overrides (e.g. .env.qa1)
 const env = testConfig.env;
 dotenv.config({ path: path.resolve(__dirname, `.env.${env}`), override: true });
-dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const browserProfile = isCI() ? DESKTOP_CHROME_HEADLESS : DESKTOP_CHROME;
 

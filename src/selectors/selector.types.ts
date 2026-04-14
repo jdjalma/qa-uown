@@ -599,11 +599,19 @@ export interface AmsUserSelectors {
   amsEditUserMerchantsButton: string;
   amsUserMerchantsCardToggle: string;
   amsUserMerchantsCardCollapse: string;
+  amsUserMerchantsTag: string;
+  amsManageMerchantsButton: string;
+  amsDeleteAllMerchantsButton: string;
+  amsUserMerchantsSaveButton: string;
+  amsUserMerchantsCancelButton: string;
   amsUserMerchantsSelectControl: string;
   amsUserMerchantsSelectInput: string;
   amsUserMerchantsSelectOption: string;
-  amsUserMerchantsTag: string;
-  amsUserMerchantsSaveButton: string;
+  amsUserMerchantsMultiValue: string;
+  amsUserMerchantsMultiValueRemove: string;
+  amsUserMerchantsClearIndicator: string;
+  amsUserMerchantsSearchbox: string;
+  amsUserMerchantsOriginationTab: string;
 }
 
 /** Composite type of all selectors */

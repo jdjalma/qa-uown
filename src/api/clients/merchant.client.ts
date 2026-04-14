@@ -55,6 +55,14 @@ export class MerchantClient extends BaseClient {
     );
   }
 
+  async createOrUpdateMerchant(merchantInfo: Record<string, unknown>): Promise<ApiResponse<BaseResponseBody>> {
+    return this.post<BaseResponseBody>(
+      '/uown/createOrUpdateMerchant',
+      merchantInfo,
+      'origination',
+    );
+  }
+
   async getMerchantApiErrorLogs(
     from: string,
     to: string,

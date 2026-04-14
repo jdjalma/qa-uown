@@ -8,12 +8,12 @@ UOwn é uma plataforma fintech de **Lease-to-Own** (aluguel com opção de compr
 
 | Portal | Função |
 |--------|--------|
-| **Origination** | Pipeline de aplicação — do lead ao funding (17 etapas) |
-| **Servicing** | Gestão de contas ativas — pagamentos, modificações, cancelamentos |
-| **Website** | Portal do cliente — login, pagamentos, visualização |
+| **Origination** | Pipeline de aplicação — do lead ao funding (17 etapas), paginas de merchants, programas, estados |
+| **Servicing** | Gestão de contas ativas — pagamentos, modificações, cancelamentos, reembolsos |
+| **Website** | Portal do cliente — login, pagamentos, visualização, alteração de dados |
 | **AMS** | Administração — gestão de usuários e merchants |
 
-O backend é **Java 17 + Spring Boot + PostgreSQL**. A documentação de regras de negócio cobre **69+ seções** em [docs/business-rules/](business-rules/), incluindo: pipeline de aplicação, underwriting, contratos e e-sign, cálculos financeiros, pagamentos (CC/ACH), funding, inadimplência, e mais.
+A documentação de regras de negócio cobre **69+ seções** em [docs/business-rules/](business-rules/), incluindo: pipeline de aplicação, underwriting, contratos e e-sign, cálculos financeiros, pagamentos (CC/ACH), funding, inadimplência, e mais.
 
 ---
 

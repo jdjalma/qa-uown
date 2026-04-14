@@ -19,6 +19,7 @@ Context directory for the project, organized by topic for focused reference.
 | **[environments.md](./environments.md)** | Environments, URLs, DB config, timeouts | Configuration and debugging |
 | **[glossary.md](./glossary.md)** | Java/Cucumber → TypeScript/Playwright mapping | Migration, onboarding, legacy code references |
 | **[app-repos.md](./app-repos.md)** | Application source repo catalog (14 repos) | Task analysis, SPEC generation, result validation |
+| **[orchestration.md](./orchestration.md)** | Full orchestration protocol (phases 0–6, dependency graph, context loading, checkpoints) | Pipeline execution, agent coordination |
 
 ---
 

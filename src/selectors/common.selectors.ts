@@ -532,18 +532,33 @@ export const SELECTORS: AppSelectors = {
   amsLogActivityCell: '[class*="rdt_TableCell"]',
 
   // ── AMS — Edit User Merchants card (/users/[username]) ──────────────
-  // Card header scoped by the pencil span ID (unique per card)
-  amsEditUserMerchantsButton: 'span#EditUserMerchants-edit',
-  amsUserMerchantsCardToggle: '.card-header:has(span#EditUserMerchants-edit) #toggle-collapse',
-  amsUserMerchantsCardCollapse: '.card:has(span#EditUserMerchants-edit) .collapse',
-  amsUserMerchantsSelectControl: '#merchants .filter__control',
-  amsUserMerchantsSelectInput: '#merchants .filter__input',
-  amsUserMerchantsSelectOption: '[class*="customOptionStyles__CSG9m"]',
-  // Tags in read-only view: scoped to the readOnly container inside the merchants card
-  amsUserMerchantsTag: '.card:has(span#EditUserMerchants-edit) [class*="tag__snNpm"]',
-  // Save/cancel scoped to merchants card
-  // When in edit mode, span#EditUserMerchants-edit is removed from DOM; scope by #merchants (visible only in edit mode)
-  amsUserMerchantsSaveButton: '.card:has(#merchants) button[class*="collapsableEdit__button__primary"]',
+  // Pencil button ID (button#EditUserMerchants-edit with SVG inside)
+  amsEditUserMerchantsButton: '#EditUserMerchants-edit',
+  amsUserMerchantsCardToggle: '.card:has(#EditUserMerchants-edit) #toggle-collapse',
+  amsUserMerchantsCardCollapse: '.card:has(#EditUserMerchants-edit) .collapse',
+  // Tags in read-only view: merchants-read_tag CSS module class
+  amsUserMerchantsTag: '[class*="merchants-read_tag"]',
+  // "Manage merchants" button (edit mode) — opens merchant management modal
+  amsManageMerchantsButton: 'button:has-text("Manage merchants")',
+  // "Delete All" button (edit mode) — removes all merchants
+  amsDeleteAllMerchantsButton: 'button:has-text("Delete All")',
+  // SAVE button scoped to merchants card edit mode
+  amsUserMerchantsSaveButton: 'button:has-text("SAVE")',
+  // CANCEL button in merchants card edit mode
+  amsUserMerchantsCancelButton: 'button:has-text("CANCEL")',
+  // React Select controls (inside merchant management modal)
+  amsUserMerchantsSelectControl: '.filter__control',
+  amsUserMerchantsSelectInput: '.filter__input',
+  amsUserMerchantsSelectOption: '[class*="customOptionStyles"]',
+  // Multi-value tags in React Select (modal)
+  amsUserMerchantsMultiValue: '[class*="multiValue"]',
+  amsUserMerchantsMultiValueRemove: '[class*="multiValue"] [role="button"], [class*="multiValue"] [class*="remove"]',
+  // Clear all indicator in React Select
+  amsUserMerchantsClearIndicator: '[class*="clearIndicator"], [class*="clear-indicator"]',
+  // Search for Current Merchants input (read-only mode)
+  amsUserMerchantsSearchbox: 'input[placeholder="Search for Current Merchants"]',
+  // Origination tab in the merchants card
+  amsUserMerchantsOriginationTab: '.nav-tabs .nav-link',
 
   // ── CC History / Edit Modal ────────────────────────────────────
   ccEditPencilIcon: 'svg[data-icon="pencil-alt"], svg[data-icon="pencil"], svg[data-icon="pen-to-square"]',

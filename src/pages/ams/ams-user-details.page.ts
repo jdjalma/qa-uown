@@ -75,53 +75,69 @@ export class AmsUserDetailsPage extends AmsBasePage {
 
   /**
    * Expands the "Edit User Merchants" card if it is currently collapsed.
-   * The toggle chevron is inside the card header alongside the pencil icon.
+   * In desktop layout, the card may already be expanded.
    */
   async expandMerchantsCard(): Promise<void> {
     const collapse = this.page.locator(SELECTORS.amsUserMerchantsCardCollapse);
+    const collapseExists = await collapse.count() > 0;
+    if (!collapseExists) return; // no collapse wrapper = already visible
+
     const isExpanded = await collapse.evaluate((el) => el.classList.contains('show')).catch(() => false);
     if (!isExpanded) {
-      await this.page.locator(SELECTORS.amsUserMerchantsCardToggle).click();
-      await collapse.waitFor({ state: 'visible', timeout: 5_000 });
+      const toggle = this.page.locator(SELECTORS.amsUserMerchantsCardToggle);
+      if (await toggle.count() > 0) {
+        await toggle.click();
+        await collapse.waitFor({ state: 'visible', timeout: 5_000 });
+      }
     }
   }
 
-  /** Click the pencil on the "Edit User Merchants" card to enter edit mode. */
-  async clickEditMerchantsButton(): Promise<void> {
-    await this.page.locator(SELECTORS.amsEditUserMerchantsButton).click();
-    await this.page.locator(SELECTORS.amsUserMerchantsSelectControl).waitFor({ state: 'visible', timeout: 5_000 });
-  }
-
   /**
-   * Type a merchant code/name in the React Select, wait for options to appear,
-   * then select the first non-"Select All" option.
-   * Returns the text of the selected option.
+   * Click the pencil on the "Edit User Merchants" card to enter edit mode.
+   * The new component (Task #79) uses a <button> with SVG; we click the SVG
+   * via dispatchEvent since Playwright's click may have actionability issues.
    */
-  async selectMerchantInEdit(searchTerm: string): Promise<string> {
-    await this.page.locator(SELECTORS.amsUserMerchantsSelectControl).click();
-    await this.page.locator(SELECTORS.amsUserMerchantsSelectInput).type(searchTerm, { delay: 80 });
-    // Wait for the dropdown to open (aria-expanded becomes true)
-    await this.page.locator(SELECTORS.amsUserMerchantsSelectInput).waitFor({ state: 'visible' });
-    await this.page.waitForFunction(
-      (sel) => document.querySelector(sel)?.getAttribute('aria-expanded') === 'true',
-      SELECTORS.amsUserMerchantsSelectInput,
-      { timeout: 5_000 },
-    );
-    // Options appear in a portal — ArrowDown skips "Select All", Enter selects
-    await this.page.keyboard.press('ArrowDown');
-    await this.page.keyboard.press('ArrowDown');
-    const options = await this.page.locator(SELECTORS.amsUserMerchantsSelectOption).all();
-    const selectedText = options.length > 1 ? (await options[1].innerText().catch(() => '')).trim() : searchTerm;
-    await this.page.keyboard.press('Enter');
-    await this.page.keyboard.press('Escape'); // close dropdown
-    return selectedText;
+  async clickEditMerchantsButton(): Promise<void> {
+    await this.page.evaluate((sel) => {
+      const btn = document.querySelector(sel);
+      const svg = btn?.querySelector('svg') ?? btn;
+      if (svg) svg.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    }, SELECTORS.amsEditUserMerchantsButton);
+    // Wait for edit mode indicators (SAVE button or "Manage merchants" button)
+    await this.page.locator(`${SELECTORS.amsUserMerchantsSaveButton}, ${SELECTORS.amsManageMerchantsButton}`).first()
+      .waitFor({ state: 'visible', timeout: 5_000 });
   }
 
-  /** Click SAVE on the "Edit User Merchants" card and wait for read-only mode to restore. */
+  /** Click CANCEL on the "Edit User Merchants" card and wait for read-only mode. */
+  async cancelMerchantsEdit(): Promise<void> {
+    await this.page.locator(SELECTORS.amsUserMerchantsCancelButton).click();
+    // Wait for edit mode to close (pencil reappears or SAVE disappears)
+    await this.page.locator(SELECTORS.amsEditUserMerchantsButton).waitFor({ state: 'visible', timeout: 10_000 });
+  }
+
+  /** Click SAVE on the "Edit User Merchants" card, handle confirmation modal, and wait for read-only mode. */
   async saveMerchantsEdit(): Promise<void> {
     await this.page.locator(SELECTORS.amsUserMerchantsSaveButton).click();
-    // Wait for the pencil to reappear (edit mode closed)
-    await this.page.locator(SELECTORS.amsEditUserMerchantsButton).waitFor({ state: 'visible', timeout: 10_000 });
+    // Handle "Confirm Changes" modal if it appears
+    const confirmButton = this.page.locator('button:has-text("CONFIRM")');
+    try {
+      await confirmButton.waitFor({ state: 'visible', timeout: 3_000 });
+      await confirmButton.click();
+    } catch {
+      // No confirmation modal — save completed directly
+    }
+    // Wait for edit mode to close (pencil reappears)
+    await this.page.locator(SELECTORS.amsEditUserMerchantsButton).waitFor({ state: 'visible', timeout: 15_000 });
+  }
+
+  /** Click "Manage merchants" button to open merchant management modal. */
+  async clickManageMerchants(): Promise<void> {
+    await this.page.locator(SELECTORS.amsManageMerchantsButton).click();
+  }
+
+  /** Click "Delete All" button to remove all merchants. */
+  async clickDeleteAll(): Promise<void> {
+    await this.page.locator(SELECTORS.amsDeleteAllMerchantsButton).click();
   }
 
   /** Returns all current merchant tag texts from the read-only "Edit User Merchants" card. */
@@ -135,10 +151,63 @@ export class AmsUserDetailsPage extends AmsBasePage {
     return texts;
   }
 
+  /** Check if "Manage merchants" button is visible (edit mode indicator). */
+  async isManageMerchantsVisible(): Promise<boolean> {
+    return this.page.locator(SELECTORS.amsManageMerchantsButton).isVisible();
+  }
+
+  /** Check if "Delete All" button is visible. */
+  async isDeleteAllVisible(): Promise<boolean> {
+    return this.page.locator(SELECTORS.amsDeleteAllMerchantsButton).isVisible();
+  }
+
+  /** Check if the "Search for Current Merchants" searchbox is disabled. */
+  async isSearchboxDisabled(): Promise<boolean> {
+    const searchbox = this.page.locator(SELECTORS.amsUserMerchantsSearchbox);
+    if (await searchbox.count() === 0) return true; // not visible = effectively disabled
+    return searchbox.isDisabled();
+  }
+
+  /** Check if the "Search for Current Merchants" searchbox is visible. */
+  async isSearchboxVisible(): Promise<boolean> {
+    return this.page.locator(SELECTORS.amsUserMerchantsSearchbox).isVisible();
+  }
+
+  /** Type a search term in the "Search for Current Merchants" searchbox (read-only mode). */
+  async filterCurrentMerchants(term: string): Promise<void> {
+    await this.page.locator(SELECTORS.amsUserMerchantsSearchbox).fill(term);
+  }
+
+  /** Clear the "Search for Current Merchants" searchbox. */
+  async clearCurrentMerchantsFilter(): Promise<void> {
+    await this.page.locator(SELECTORS.amsUserMerchantsSearchbox).fill('');
+  }
+
+  /**
+   * Type a merchant code/name in the React Select (modal context),
+   * wait for options to appear, then select the first non-"Select All" option.
+   * Returns the text of the selected option.
+   */
+  async selectMerchantInEdit(searchTerm: string): Promise<string> {
+    await this.page.locator(SELECTORS.amsUserMerchantsSelectControl).click();
+    await this.page.locator(SELECTORS.amsUserMerchantsSelectInput).type(searchTerm, { delay: 80 });
+    await this.page.locator(SELECTORS.amsUserMerchantsSelectInput).waitFor({ state: 'visible' });
+    await this.page.waitForFunction(
+      (sel) => document.querySelector(sel)?.getAttribute('aria-expanded') === 'true',
+      SELECTORS.amsUserMerchantsSelectInput,
+      { timeout: 5_000 },
+    );
+    await this.page.keyboard.press('ArrowDown');
+    await this.page.keyboard.press('ArrowDown');
+    const options = await this.page.locator(SELECTORS.amsUserMerchantsSelectOption).all();
+    const selectedText = options.length > 1 ? (await options[1].innerText().catch(() => '')).trim() : searchTerm;
+    await this.page.keyboard.press('Enter');
+    await this.page.keyboard.press('Escape');
+    return selectedText;
+  }
+
   /**
    * Returns the most recent Log Activity entry from the user details page.
-   * The Log Activity table is the only .rdt_Table on /users/[username].
-   * Each row has 4 cells: [date, type, userId, notes].
    */
   async getLatestLogEntry(): Promise<{ date: string; type: string; userId: string; notes: string } | null> {
     const firstRow = this.page.locator(SELECTORS.amsLogActivityRow).first();

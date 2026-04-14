@@ -28,7 +28,7 @@ src/
 │   │                       # + ContractPage, PayTomorrowPortalPage, PayPairPortalPage (extends BasePage)
 │   ├── servicing/          # ServicingBasePage → Customer, Payment, ACH, etc.
 │   ├── website/            # WebsiteBasePage (email OTP login, pagamentos, sidebar)
-│   └── ams/                # AmsBasePage → AmsPage, AmsUserMerchantsPage, AmsUserDetailsPage (Task #74)
+│   └── ams/                # AmsBasePage → AmsPage, AmsUserMerchantsPage, AmsUserDetailsPage (Tasks #74, #79)
 ├── helpers/                # Utilities
 │   ├── common.helpers.ts   # waitForSpinner, toast, dropdown, parseMoney, clearAndType, sleep
 │   ├── database.helpers.ts # PostgreSQL pool, polling com backoff, domain queries

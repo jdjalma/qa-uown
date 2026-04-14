@@ -82,7 +82,26 @@ BasePage
 │     isErrorVisible() — returns boolean whether error is currently displayed
 │   Selectors added (Task #146): wsPhoneAreaCodeInput, wsPhoneNumberInput, wsSaveChangesButton,
 │     wsSuccessMessage, wsErrorMessage, wsUpdatePhoneSection
-└── AmsBasePage → AmsPage
+└── AmsBasePage → AmsPage, AmsUserDetailsPage
+    │   AmsUserDetailsPage — Task #79 (AMS Merchant Selection Flow)
+    │   Location: src/pages/ams/ams-user-details.page.ts
+    │   Key methods (merchant edit flow):
+    │     clickEditMerchantsButton() — dispatches click event on SVG button (#EditUserMerchants-edit)
+    │     cancelMerchantsEdit() — clicks CANCEL and waits for read-only mode
+    │     saveMerchantsEdit() — clicks SAVE, handles "Confirm Changes" modal, waits for read-only mode
+    │     clickManageMerchants() — clicks "Manage merchants" button in edit mode
+    │     clickDeleteAll() — clicks "Delete All" button in edit mode
+    │     isManageMerchantsVisible() — returns true if Manage merchants button is visible
+    │     isDeleteAllVisible() — returns true if Delete All button is visible
+    │     isSearchboxDisabled() — returns disabled state of the merchants searchbox
+    │     isSearchboxVisible() — returns visibility of the merchants searchbox
+    │     filterCurrentMerchants(term) — types in the read-only searchbox to filter displayed merchants
+    │     clearCurrentMerchantsFilter() — clears the merchants searchbox
+    │   Selectors updated (Task #79, src/selectors/common.selectors.ts):
+    │     amsEditUserMerchantsButton: '#EditUserMerchants-edit' (was span, now button)
+    │     amsUserMerchantsTag: '[class*="merchants-read_tag"]' (new CSS module class)
+    │     amsManageMerchantsButton: 'button:has-text("Manage merchants")'
+    │     amsDeleteAllMerchantsButton: 'button:has-text("Delete All")'
 ```
 
 Location: `src/pages/{portal}/`

@@ -92,7 +92,7 @@ Subagents live in `.claude/agents/`. CLAUDE.md is the **orchestrator** — analy
 | Project context | [`.claude/context/INDEX.md`](.claude/context/INDEX.md) |
 | Java ↔ TypeScript glossary | [`.claude/context/glossary.md`](.claude/context/glossary.md) |
 | Application source repos | [`.claude/context/app-repos.md`](.claude/context/app-repos.md) |
-| Database schema | [`docs/database-schema.md`](docs/database-schema.md) |
+| Database schema | [`docs/taskTestingUown/database-schema.md`](docs/taskTestingUown/database-schema.md) |
 | Agent coordination (locks) | [`.claude/context/shared/agent-coordination.md`](.claude/context/shared/agent-coordination.md) |
 | E2E agent responsibilities | [`.claude/context/shared/e2e-agent-responsibilities.md`](.claude/context/shared/e2e-agent-responsibilities.md) |
 | E2E test examples | [`.claude/context/shared/e2e-test-examples.md`](.claude/context/shared/e2e-test-examples.md) |
@@ -101,5 +101,8 @@ Subagents live in `.claude/agents/`. CLAUDE.md is the **orchestrator** — analy
 | E2E checklist | [`.claude/context/shared/e2e-checklist.md`](.claude/context/shared/e2e-checklist.md) |
 | Test report standard | [`.claude/context/shared/e2e-test-report-standard.md`](.claude/context/shared/e2e-test-report-standard.md) |
 | QA Flow command | [`.claude/commands/qa-flow.md`](.claude/commands/qa-flow.md) |
+| New Page Object command | [`.claude/commands/new-page-object.md`](.claude/commands/new-page-object.md) |
+| New API Client command | [`.claude/commands/new-api-client.md`](.claude/commands/new-api-client.md) |
+| New Payment Flow command | [`.claude/commands/new-payment-flow.md`](.claude/commands/new-payment-flow.md) |
 | Personal settings overrides | [`.claude/settings.local.json`](.claude/settings.local.json) (gitignored — create locally) |
 

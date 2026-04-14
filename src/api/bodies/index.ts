@@ -10,3 +10,4 @@ export * from './svc-email.body.js';
 export * from './svc-contact.body.js';
 export * from './ams-user.body.js';
 export * from './merchant-config.body.js';
+export * from './seon.body.js';
