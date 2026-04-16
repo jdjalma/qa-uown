@@ -111,7 +111,177 @@ install:
     when:
       - runner_system_failure
       - stuck_or_timeout_failure
-      - script_failure
+
+# ══════════════════════════════════════════════════════════════
+#  API TESTS
+# ══════════════════════════════════════════════════════════════
+test:api:
+  stage: test
+  image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+  dependencies:
+    - install
+  needs: ["install"]
+  parallel: 2
+  before_script:
+    - echo "Running API tests"
+    - echo "Retries:$PLAYWRIGHT_RETRIES Timeout:$PLAYWRIGHT_TIMEOUT"
+  script:
+    - npm run test:api -- --retries=$PLAYWRIGHT_RETRIES
+  when: manual
+  after_script:
+    - echo "Test execution completed"
+    - if [ -f reports/test-summary.json ]; then cat reports/test-summary.json; fi
+  artifacts:
+    when: always
+    paths:
+      - reports/
+      - playwright-report/
+      - test-results/**/*.json
+      - test-results/**/*.png
+    reports:
+      junit: reports/junit.xml
+    expire_in: 7 days
+  coverage: '/All tests\s+(\d+\.\d+)%/'
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+
+# ══════════════════════════════════════════════════════════════
+#  SMOKE TESTS (Critical Path) - MANUAL
+# ══════════════════════════════════════════════════════════════
+test:smoke:
+  stage: test
+  image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+  dependencies:
+    - install
+  needs: ["install"]
+  parallel: 3
+  before_script:
+    - echo "Running SMOKE tests (Critical Path)"
+    - echo "Workers:$PLAYWRIGHT_WORKERS"
+  script:
+    - npm run test:smoke -- --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
+  when: manual
+  after_script:
+    - echo "Smoke test results:"
+    - if [ -f reports/test-summary.json ]; then cat reports/test-summary.json; fi
+  artifacts:
+    when: always
+    paths:
+      - reports/
+      - playwright-report/
+      - test-results/**/*.json
+      - test-results/**/*.png
+    reports:
+      junit: reports/junit.xml
+    expire_in: 7 days
+  coverage: '/All tests\s+(\d+\.\d+)%/'
+  allow_failure: false
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
+
+# ══════════════════════════════════════════════════════════════
+#  ORIGINATION TESTS
+# ══════════════════════════════════════════════════════════════
+test:origination:
+  stage: test
+  image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+  dependencies:
+    - install
+  needs: ["install"]
+  parallel: 4
+  when: manual
+  before_script:
+    - echo "Running Origination Portal tests"
+  script:
+    - npm run test:origination -- --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
+  after_script:
+    - if [ -f reports/test-summary.json ]; then cat reports/test-summary.json; fi
+  artifacts:
+    when: always
+    paths:
+      - reports/
+      - playwright-report/
+      - test-results/**/*.json
+      - test-results/**/*.png
+    reports:
+      junit: reports/junit.xml
+    expire_in: 7 days
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
+  allow_failure: true
+
+# ══════════════════════════════════════════════════════════════
+#  SERVICING TESTS
+# ══════════════════════════════════════════════════════════════
+test:servicing:
+  stage: test
+  image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+  dependencies:
+    - install
+  needs: ["install"]
+  parallel: 3
+  when: manual
+  before_script:
+    - echo "Running Servicing Portal tests"
+  script:
+    - npm run test:servicing -- --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
+  after_script:
+    - if [ -f reports/test-summary.json ]; then cat reports/test-summary.json; fi
+  artifacts:
+    when: always
+    paths:
+      - reports/
+      - playwright-report/
+      - test-results/**/*.json
+      - test-results/**/*.png
+    reports:
+      junit: reports/junit.xml
+    expire_in: 7 days
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
+  allow_failure: true
+
+# ══════════════════════════════════════════════════════════════
+#  WEBSITE TESTS
+# ══════════════════════════════════════════════════════════════
+test:website:
+  stage: test
+  image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+  dependencies:
+    - install
+  needs: ["install"]
+  parallel: 2
+  when: manual
+  before_script:
+    - echo "Running Website tests"
+  script:
+    - npm run test:website -- --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
+  after_script:
+    - if [ -f reports/test-summary.json ]; then cat reports/test-summary.json; fi
+  artifacts:
+    when: always
+    paths:
+      - reports/
+      - playwright-report/
+      - test-results/**/*.json
+      - test-results/**/*.png
+    reports:
+      junit: reports/junit.xml
+    expire_in: 7 days
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
+  allow_failure: true
 
 # ══════════════════════════════════════════════════════════════
 #  CI TESTS - Unified Flow & Critical Path
@@ -124,60 +294,9 @@ test:ci:
   dependencies:
     - install
   needs: ["install"]
-  when: manual
-  variables:
-    ENV: "sandbox"
+  parallel: 2
   before_script:
-    - echo "Running CI tests from tests/ci/ folder (MANUAL) — ENV=$ENV"
-    - |
-      echo "=== DEBUG: CI Environment ($ENV) ==="
-      ENV_UPPER=$(echo "$ENV" | tr '[:lower:]' '[:upper:]')
-
-      echo "--- Pod egress IP ---"
-      curl -s --max-time 5 https://ifconfig.me 2>/dev/null || echo "could not determine"
-      echo ""
-
-      echo "--- Environment variables ---"
-      echo "ENV=$ENV"
-      SVC_URL_VAR="${ENV_UPPER}_SVC_API_URL"
-      ORIG_URL_VAR="${ENV_UPPER}_ORIGINATION_URL"
-      SVC_WEB_VAR="${ENV_UPPER}_SERVICING_URL"
-      WEB_URL_VAR="${ENV_UPPER}_WEBSITE_URL"
-      echo "${ENV_UPPER}_SVC_API_URL:     ${!SVC_URL_VAR:-NOT SET}"
-      echo "${ENV_UPPER}_ORIGINATION_URL: ${!ORIG_URL_VAR:-NOT SET}"
-      echo "${ENV_UPPER}_SERVICING_URL:   ${!SVC_WEB_VAR:-NOT SET}"
-      echo "${ENV_UPPER}_WEBSITE_URL:     ${!WEB_URL_VAR:-NOT SET}"
-      echo "UOWN_API_KEY length: ${#UOWN_API_KEY}"
-      echo "DEFAULT_MANAGER_USERNAME: ${DEFAULT_MANAGER_USERNAME:+set (${#DEFAULT_MANAGER_USERNAME} chars)}"
-      echo "EMAIL: ${EMAIL:+set}"
-
-      echo "--- Internal SVC API connectivity ---"
-      curl -s -o /dev/null -w "HTTP %{http_code}" -X POST "${!SVC_URL_VAR}/uown/los/sendApplication" -H "x-api-key: $UOWN_API_KEY" -H "Content-Type: application/json" -d '{}' 2>&1 || echo "CURL FAILED"
-      echo ""
-
-      echo "--- Public portal connectivity ---"
-      curl -s -o /dev/null -w "Origination (public): HTTP %{http_code}" "https://origination-${ENV}.uownleasing.com" 2>&1 || echo "FAILED"
-      echo ""
-      curl -s -o /dev/null -w "Servicing (public):   HTTP %{http_code}" "https://svc-website-${ENV}.uownleasing.com" 2>&1 || echo "FAILED"
-      echo ""
-      curl -s -o /dev/null -w "Website (public):     HTTP %{http_code}" "https://website-${ENV}.uownleasing.com" 2>&1 || echo "FAILED"
-      echo ""
-
-      echo "--- Internal portal connectivity ---"
-      if [ -n "${!ORIG_URL_VAR}" ]; then
-        curl -s -o /dev/null -w "Origination (internal): HTTP %{http_code}" "${!ORIG_URL_VAR}" 2>&1 || echo "FAILED"
-        echo ""
-      fi
-      if [ -n "${!SVC_WEB_VAR}" ]; then
-        curl -s -o /dev/null -w "Servicing (internal):   HTTP %{http_code}" "${!SVC_WEB_VAR}" 2>&1 || echo "FAILED"
-        echo ""
-      fi
-      if [ -n "${!WEB_URL_VAR}" ]; then
-        curl -s -o /dev/null -w "Website (internal):     HTTP %{http_code}" "${!WEB_URL_VAR}" 2>&1 || echo "FAILED"
-        echo ""
-      fi
-
-      echo "=== END DEBUG ==="
+    - echo "Running CI tests from tests/ci/ folder"
   script:
     - npx playwright test --project=ci-tests --retries=$PLAYWRIGHT_RETRIES --workers=$PLAYWRIGHT_WORKERS
   after_script:

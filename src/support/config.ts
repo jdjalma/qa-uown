@@ -81,9 +81,15 @@ export function loadTestConfig(): TestConfig {
     ci,
     strictMode: envBool('STRICT_MODE', false),
     allureEnabled: envBool('ALLURE', false),
-    screenshots: ci ? 'only-on-failure' : (process.env.SCREENSHOTS as TestConfig['screenshots']) || 'on',
-    video: (process.env.VIDEO as TestConfig['video']) || 'on',
-    trace: ci ? 'on-first-retry' : (process.env.TRACE as TestConfig['trace']) || 'on-first-retry',
+    screenshots: ci
+      ? 'only-on-failure'
+      : (process.env.SCREENSHOTS as TestConfig['screenshots']) || 'only-on-failure',
+    video: ci
+      ? 'retain-on-failure'
+      : (process.env.VIDEO as TestConfig['video']) || 'off',
+    trace: ci
+      ? 'retain-on-failure'
+      : (process.env.TRACE as TestConfig['trace']) || 'on-first-retry',
   };
 }
 
