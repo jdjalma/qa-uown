@@ -22,14 +22,11 @@ import { buildTestData, sleep } from '@helpers/index.js';
 
 const SKIP_REASON = 'cancelAccount requires servicing accountPk (not leadPk). Needs DB query or API to resolve.';
 
-const testData = [
-  {
-    env: 'sandbox',
-    state: 'CA',
-    merchant: 'ProgressMobility',
-    tag: buildTags(TestTag.SMOKE, TestTag.REGRESSION, TestTag.SANDBOX),
-  },
-];
+const testData = {
+  state: 'CA',
+  merchant: 'ProgressMobility',
+  tag: buildTags(TestTag.SMOKE, TestTag.REGRESSION, TestTag.SANDBOX),
+};
 
 /**
  * Creates an application (pre-qualification), gets approvedAmount, sends invoice,
@@ -88,75 +85,68 @@ async function createAndDriveToFunding(
   return { leadPk, leadUuid, approvedAmount };
 }
 
-for (const data of testData) {
-  test.describe(`Lease Cancellation API - ${data.env}/${data.merchant}`, { tag: splitTags(data.tag) }, () => {
-    test.use({ envName: data.env });
-
-    test.skip('cancelAccount without refund', async ({ api }) => {
-      test.skip(true, SKIP_REASON);
-      const { merchant, applicant } = buildTestData({
-        env: data.env,
-        state: data.state,
-        merchant: data.merchant,
-        orderTotal: '800',
-        orderDescription: 'API cancel without refund',
-      });
-
-      await test.step('Create application and drive to FUNDING', async () => {
-        const result = await createAndDriveToFunding(api, merchant, applicant);
-        test.info().annotations.push(
-          { type: 'leadPk', description: String(result.leadPk) },
-          { type: 'leadUuid', description: result.leadUuid },
-        );
-      });
-
-      // TODO: resolve accountPk from leadPk via DB query, then call:
-      // await api.account.cancelAccount(accountPk, 'comment', false);
+test.describe(`Lease Cancellation API - ${testData.merchant}`, { tag: splitTags(testData.tag) }, () => {
+  test.skip('cancelAccount without refund', async ({ api }) => {
+    test.skip(true, SKIP_REASON);
+    const { merchant, applicant } = buildTestData({
+      state: testData.state,
+      merchant: testData.merchant,
+      orderTotal: '800',
+      orderDescription: 'API cancel without refund',
     });
 
-    test.skip('cancelAccount with refund', async ({ api }) => {
-      test.skip(true, SKIP_REASON);
-      const { merchant, applicant } = buildTestData({
-        env: data.env,
-        state: data.state,
-        merchant: data.merchant,
-        orderTotal: '800',
-        orderDescription: 'API cancel with refund',
-      });
+    await test.step('Create application and drive to FUNDING', async () => {
+      const result = await createAndDriveToFunding(api, merchant, applicant);
+      test.info().annotations.push(
+        { type: 'leadPk', description: String(result.leadPk) },
+        { type: 'leadUuid', description: result.leadUuid },
+      );
+    });
 
-      await test.step('Create application and drive to FUNDING', async () => {
-        const result = await createAndDriveToFunding(api, merchant, applicant);
-        test.info().annotations.push(
-          { type: 'leadPk', description: String(result.leadPk) },
-          { type: 'leadUuid', description: result.leadUuid },
-        );
-      });
+    // TODO: resolve accountPk from leadPk via DB query, then call:
+    // await api.account.cancelAccount(accountPk, 'comment', false);
+  });
 
-      // TODO: resolve accountPk, then call:
+  test.skip('cancelAccount with refund', async ({ api }) => {
+    test.skip(true, SKIP_REASON);
+    const { merchant, applicant } = buildTestData({
+      state: testData.state,
+      merchant: testData.merchant,
+      orderTotal: '800',
+      orderDescription: 'API cancel with refund',
+    });
+
+    await test.step('Create application and drive to FUNDING', async () => {
+      const result = await createAndDriveToFunding(api, merchant, applicant);
+      test.info().annotations.push(
+        { type: 'leadPk', description: String(result.leadPk) },
+        { type: 'leadUuid', description: result.leadUuid },
+      );
+    });
+
+    // TODO: resolve accountPk, then call:
+    // await api.account.cancelAccount(accountPk, 'comment', true);
+  });
+
+  test.skip('Protection plan sweep after cancellation', async ({ api }) => {
+    test.skip(true, SKIP_REASON);
+    const { merchant, applicant } = buildTestData({
+      state: testData.state,
+      merchant: testData.merchant,
+      orderTotal: '800',
+      orderDescription: 'API protection plan sweep',
+    });
+
+    await test.step('Create application, drive to FUNDING, and cancel', async () => {
+      const result = await createAndDriveToFunding(api, merchant, applicant);
+      test.info().annotations.push(
+        { type: 'leadPk', description: String(result.leadPk) },
+        { type: 'leadUuid', description: result.leadUuid },
+      );
+
+      // TODO: resolve accountPk, cancel, then trigger sweep:
       // await api.account.cancelAccount(accountPk, 'comment', true);
-    });
-
-    test.skip('Protection plan sweep after cancellation', async ({ api }) => {
-      test.skip(true, SKIP_REASON);
-      const { merchant, applicant } = buildTestData({
-        env: data.env,
-        state: data.state,
-        merchant: data.merchant,
-        orderTotal: '800',
-        orderDescription: 'API protection plan sweep',
-      });
-
-      await test.step('Create application, drive to FUNDING, and cancel', async () => {
-        const result = await createAndDriveToFunding(api, merchant, applicant);
-        test.info().annotations.push(
-          { type: 'leadPk', description: String(result.leadPk) },
-          { type: 'leadUuid', description: result.leadUuid },
-        );
-
-        // TODO: resolve accountPk, cancel, then trigger sweep:
-        // await api.account.cancelAccount(accountPk, 'comment', true);
-        // await api.scheduledTask.triggerScheduledTask('cancelProtectionPlanSweep');
-      });
+      // await api.scheduledTask.triggerScheduledTask('cancelProtectionPlanSweep');
     });
   });
-}
+});
