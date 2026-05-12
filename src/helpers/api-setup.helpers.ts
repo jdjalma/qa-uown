@@ -11,7 +11,9 @@ import { expect } from '@playwright/test';
 import type { TestInfo } from '@playwright/test';
 import type { ApiClients, TestContext } from '@support/base-test.js';
 import type { MerchantInfo, ApplicantInfo, OrderInfo } from '@api/bodies/index.js';
+import { buildSendApplicationBody } from '@api/bodies/index.js';
 import { sleep } from './common.helpers.js';
+import { ensureMerchantReady } from './merchant-config.helper.js';
 
 /**
  * The API may return a contract URL with the wrong host
@@ -90,6 +92,10 @@ export interface ApiSetupResult {
   leadUuid: string;
   /** Contract redirect URL (only populated if extractContractUrl was true) */
   contractUrl?: string;
+  /** Direct iframe URL returned by submitApplication (only when submitPaymentInfoViaApi=true). */
+  embeddedSigningUrl?: string;
+  /** Provider chosen by backend routing — 'GOWSIGN' | 'SIGNWELL' (only when submitPaymentInfoViaApi=true). */
+  esignClient?: string;
 }
 
 // ── Main function ───────────────────────────────────────────────────
@@ -185,6 +191,17 @@ export interface PreQualifiedOptions {
   submitPaymentInfoViaApi?: boolean;
   /** Skip CC auth entirely (stays at UW_APPROVED) */
   skipPaymentInfo?: boolean;
+  /**
+   * Banking data to inject in sendApplication body.
+   * Required for Kornerstone flow (merchant + BIN + banking → KORNERSTONE routing).
+   * When set, helper uses the body-overload of sendApplication and appends these fields.
+   */
+  bankData?: { routingNumber: string; accountNumber: string };
+  /**
+   * Skip merchant preflight (ensureMerchantReady). Use when the caller
+   * already validated the merchant or is intentionally testing drift.
+   */
+  skipMerchantPreflight?: boolean;
 }
 
 export interface PreQualifiedResult {
@@ -206,8 +223,30 @@ export async function createPreQualifiedApplication(
   options: PreQualifiedOptions = {},
   testInfo?: TestInfo,
 ): Promise<PreQualifiedResult> {
+  // 0. Merchant preflight — ensure settings + programs match the contract
+  // before sendApplication. Pitfall #10: stale merchant config (missing flag,
+  // unchecked checkbox) causes sendApplication 400/500 with opaque errors.
+  await ensureMerchantReady(api, merchant.number, {
+    skip: options.skipMerchantPreflight,
+  });
+
   // 1. Send application WITHOUT order (pre-qualification)
-  const appResp = await api.application.sendApplication(merchant, applicant);
+  // reason: when bankData is provided, build body manually so we can inject
+  // mainBankRoutingNumber + mainBankAccountNumber (required for Kornerstone routing).
+  let appResp;
+  if (options.bankData) {
+    const body = buildSendApplicationBody(merchant, applicant);
+    body.mainBankRoutingNumber = options.bankData.routingNumber;
+    body.mainBankAccountNumber = options.bankData.accountNumber;
+    appResp = await api.application.sendApplication(body);
+  } else {
+    appResp = await api.application.sendApplication(merchant, applicant);
+  }
+  if (!appResp.ok) {
+    // reason: log response body when sendApplication fails — otherwise the test
+    // fails with a generic "400" and no indication of the actual validation error.
+    console.log(`[Setup] sendApplication ${appResp.status} body: ${JSON.stringify(appResp.body)}`);
+  }
   expect(appResp.ok, `sendApplication responded with ${appResp.status}`).toBeTruthy();
   ctx.leadUuid = appResp.body.accountNumber ?? String(appResp.body.authorizationNumber ?? '');
   ctx.leadPk = String(appResp.body.authorizationNumber ?? '');
@@ -246,10 +285,34 @@ export async function createPreQualifiedApplication(
   if (options.skipPaymentInfo) {
     console.log('[Setup] Skipping payment info — staying at UW_APPROVED');
   } else if (options.submitPaymentInfoViaApi) {
+    // reason: submitApplication fails with "Merchant program is required" on brand-new
+    // leads without prior merchantProgramPk. getMissingFields MUST be called first —
+    // it reads shortCode + planId from the invoice redirectUrl and resolves the program.
+    const redirectUrl = invoiceResp.body?.paymentDetailsList?.[0]?.redirectUrl ?? '';
+    if (redirectUrl) {
+      const url = new URL(redirectUrl);
+      const pathParts = url.pathname.split('/').filter(Boolean);
+      const shortCode = pathParts[0] ?? '';
+      const planId = url.searchParams.get('planId') ?? '';
+      if (shortCode) {
+        const missingResp = await api.application.getMissingFields(
+          shortCode,
+          planId ? { planId } : undefined,
+        );
+        expect(missingResp.ok, `getMissingFields responded with ${missingResp.status}`).toBeTruthy();
+        console.log(`[Setup] getMissingFields ok (shortCode=${shortCode}, planId=${planId || '(none)'})`);
+      } else {
+        console.warn('[Setup] Could not extract shortCode from invoice redirectUrl');
+      }
+    } else {
+      console.warn('[Setup] No redirectUrl in invoice response — submitApplication may fail');
+    }
+
     const submitResp = await api.application.submitApplication(
       Number(ctx.leadPk), applicant.firstName, applicant.lastName,
     );
-    console.log(`[Setup] submitApplication ${submitResp.ok ? 'succeeded' : 'failed'}`);
+    console.log(`[Setup] submitApplication ${submitResp.ok ? 'succeeded' : 'failed'}: ${JSON.stringify(submitResp.body)}`);
+    expect(submitResp.ok, `submitApplication responded with ${submitResp.status}`).toBeTruthy();
   } else {
     const ccResp = await api.creditCard.authorizeCreditCard(ctx.leadPk, applicant.firstName, applicant.lastName);
     expect(ccResp.ok, `CC auth responded with ${ccResp.status}`).toBeTruthy();
@@ -318,9 +381,18 @@ export async function setupApplicationViaApi(
 
   const result: ApiSetupResult = { leadPk: '', leadUuid: '' };
 
-  // 1. Send application
-  const appResponse = await api.application.sendApplication(merchant, applicant, order);
-  expect(appResponse.ok, `Send application responded with ${appResponse.status}`).toBeTruthy();
+  // 1. Send application — retry up to 3x on qa2 transient 5xx (Task #505 OBS-02:
+  //    `sendApplication 500: 401 Unauthorized: [no body]` from svc → downstream service,
+  //    intermittent under qa2 load). Permanent 4xx (validation errors) propagate immediately.
+  let appResponse = await api.application.sendApplication(merchant, applicant, order);
+  let attempt = 1;
+  while (!appResponse.ok && appResponse.status >= 500 && attempt < 3) {
+    console.log(`[API Setup] sendApplication transient ${appResponse.status} (attempt ${attempt}/3) — retrying after backoff`);
+    await sleep(2_000 * attempt);
+    appResponse = await api.application.sendApplication(merchant, applicant, order);
+    attempt++;
+  }
+  expect(appResponse.ok, `Send application responded with ${appResponse.status} after ${attempt} attempt(s) body=${JSON.stringify(appResponse.body).slice(0, 200)}`).toBeTruthy();
   result.leadPk = String(appResponse.body.authorizationNumber ?? '');
   result.leadUuid = appResponse.body.accountNumber ?? result.leadPk;
   console.log(`[API Setup] leadPk="${result.leadPk}" leadUuid="${result.leadUuid}"`);
@@ -344,8 +416,10 @@ export async function setupApplicationViaApi(
   }
 
   // 3. Send invoice (skip when sendApplication already included order — avoids invalidating contractUrl)
+  // Lifted declaration: invoice response is consumed by step 4b (shortCode for getMissingFields).
+  let invoiceResponse: Awaited<ReturnType<typeof api.invoice.sendInvoice>> | null = null;
   if (!skipInvoice) {
-    const invoiceResponse = await api.invoice.sendInvoice(merchant, result.leadUuid, {
+    invoiceResponse = await api.invoice.sendInvoice(merchant, result.leadUuid, {
       orderTotal: order.orderTotal,
     });
     expect(invoiceResponse.ok, `Send invoice responded with ${invoiceResponse.status}`).toBeTruthy();
@@ -363,8 +437,57 @@ export async function setupApplicationViaApi(
 
   // 4b. Submit CC + bank info via API (replaces contract URL form)
   if (submitPaymentInfoViaApi) {
-    const submitResponse = await api.application.submitApplication(result.leadPk, applicant.firstName, applicant.lastName);
-    console.log(`[API Setup] submitApplication ${submitResponse.ok ? 'succeeded' : 'failed'}: ${JSON.stringify(submitResponse.body)}`);
+    // 4b.i Resolve merchantProgramPk via getMissingFields — required before submitApplication,
+    // otherwise backend rejects with "Merchant program is required to determine fee" (500).
+    // shortCode + planId are embedded in the sendInvoice redirectUrl.
+    const invoiceBody = invoiceResponse?.body ?? null;
+    const redirectUrl = invoiceBody?.paymentDetailsList?.[0]?.redirectUrl ?? '';
+    if (redirectUrl) {
+      const url = new URL(redirectUrl);
+      const pathParts = url.pathname.split('/').filter(Boolean);
+      const shortCode = pathParts[0] ?? '';
+      const planId = url.searchParams.get('planId') ?? '';
+      if (shortCode) {
+        const missingResp = await api.application.getMissingFields(
+          shortCode,
+          planId ? { planId } : undefined,
+        );
+        expect(
+          missingResp.ok,
+          `getMissingFields responded with ${missingResp.status}`,
+        ).toBeTruthy();
+      } else {
+        console.warn('[API Setup] Could not extract shortCode from invoice redirectUrl');
+      }
+    } else {
+      console.warn('[API Setup] No invoice response available for shortCode extraction');
+    }
+
+    // submitApplication — retry up to 3x on qa2 transient 5xx (UnexpectedRollbackException).
+    let submitResponse = await api.application.submitApplication(result.leadPk, applicant.firstName, applicant.lastName);
+    let submitAttempt = 1;
+    while (!submitResponse.ok && submitResponse.status >= 500 && submitAttempt < 3) {
+      console.log(`[API Setup] submitApplication transient ${submitResponse.status} (attempt ${submitAttempt}/3) — retrying after backoff`);
+      await sleep(2_000 * submitAttempt);
+      submitResponse = await api.application.submitApplication(result.leadPk, applicant.firstName, applicant.lastName);
+      submitAttempt++;
+    }
+    console.log(`[API Setup] submitApplication ${submitResponse.ok ? 'succeeded' : 'failed'} after ${submitAttempt} attempt(s): ${JSON.stringify(submitResponse.body)}`);
+    // Capture iframe URL + esign provider chosen by backend routing.
+    // Per Task #505 (UI-first restructure): tests need direct iframe URL to validate
+    // visually — `redirectUrl` (paymentDetailsList) leads to consumer flow form, not iframe.
+    if (submitResponse.ok && submitResponse.body) {
+      const body = submitResponse.body as Record<string, unknown>;
+      if (typeof body.embeddedSigningUrl === 'string') {
+        result.embeddedSigningUrl = body.embeddedSigningUrl;
+        if (ctx) ctx.embeddedSigningUrl = body.embeddedSigningUrl;
+      }
+      if (typeof body.esignClient === 'string') {
+        result.esignClient = body.esignClient;
+        if (ctx) ctx.esignClient = body.esignClient;
+      }
+      console.log(`[API Setup] esignClient=${result.esignClient ?? '(none)'} embeddedSigningUrl=${result.embeddedSigningUrl ?? '(none)'}`);
+    }
   }
 
   // 5. Reconcile portal leadPk

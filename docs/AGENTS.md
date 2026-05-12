@@ -23,11 +23,11 @@ Estrutura baseada em subagentes em `.claude/`:
 | Arquivo | Quando consultar |
 |---------|------------------|
 | `INDEX.md` | Início de qualquer trabalho |
-| `project-overview.md` | Stack, portais, ambientes |
-| `project-structure.md` | Árvore de diretórios, convenções de localização |
+| `project.md` | Stack, portais, ambientes |
+| `project.md` | Árvore de diretórios, convenções de localização |
 | `coding-standards.md` | Regras globais obrigatórias |
-| `architecture.md` | Page Objects, API Clients, hierarquias, ADRs |
-| `test-patterns.md` | Padrões E2E/API, fixtures, hooks |
+| `project.md` | Page Objects, API Clients, hierarquias, ADRs |
+| `test-patterns-core.md` / `test-patterns-ui.md` / `test-patterns-arrangements.md` | Padrões E2E/API, fixtures, hooks |
 | `business-rules.md` | State machine, SSN, allocation |
 | `environments.md` | URLs, DB config, timeouts, scripts |
 | `glossary.md` | Mapeamento Java/Cucumber → TypeScript/Playwright |
@@ -100,9 +100,9 @@ Cada subagente vive em `.claude/agents/subagent-{nome}.md` com frontmatter:
 | `subagent-impl-e2e` | orange | Implementa teste E2E | Sim |
 | `subagent-impl-api` | orange | Implementa teste API-only | Sim |
 | `subagent-impl-api-client` | orange | Cria API client tipado | Sim |
-| `subagent-impl-page-object` | orange | Cria page object | Sim |
+| `subagent-page-object` (mode: `create`) | orange | Cria page object | Sim |
 | `subagent-impl-db-validation` | orange | Cria queries DB + polling | Sim |
-| `subagent-refactor-page-object` | red | Refatora page object existente | Sim |
+| `subagent-page-object` (mode: `refactor`) | red | Refatora page object existente | Sim |
 | `subagent-debug-flaky` | red | Diagnostica e corrige teste flaky | Sim |
 | `subagent-audit` | purple | Audita seletores + estrutura `.claude/` (dois modos — não corrige) | Não |
 | `subagent-data` | yellow | Gerencia dados — merchants, templates, contas de teste (três modos) | Sim |
@@ -119,11 +119,11 @@ Cada subagente vive em `.claude/agents/subagent-{nome}.md` com frontmatter:
 - `subagent-impl-e2e` — teste E2E em `tests/e2e/{portal}/`
 - `subagent-impl-api` — teste API em `tests/api/`
 - `subagent-impl-api-client` — client em `src/api/clients/` + types
-- `subagent-impl-page-object` — page object em `src/pages/{portal}/`
+- `subagent-page-object` (mode: `create`) — page object em `src/pages/{portal}/`
 - `subagent-impl-db-validation` — queries + polling em helpers ou inline
 
 **Maintenance:**
-- `subagent-refactor-page-object` — refatora page object existente
+- `subagent-page-object` (mode: `refactor`) — refatora page object existente
 - `subagent-debug-flaky` — diagnostica e corrige teste flaky
 
 **Validation (NAO escreve código — análise):**

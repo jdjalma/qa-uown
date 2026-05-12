@@ -114,7 +114,7 @@ When the task comes from an explicit source (GitLab issue, user story, or detail
 See pipeline types table in `CLAUDE.md`.
 
 > `(pre-docs)` = Phase 1 pre-analysis. Runs when task comes from an explicit source. Omitted for `debug`, `refactor`, and `audit`.
-> `qa-flow` = Comprehensive 10-phase flow via `.claude/commands/qa-flow.md`.
+> `qa-flow` = Comprehensive 10-phase flow. Trigger: `.claude/skills/qa-flow.md`. Protocolo detalhado: `.claude/context/shared/qa-flow-protocol.md`.
 
 ## Phase 3 — Build Execution Plan
 

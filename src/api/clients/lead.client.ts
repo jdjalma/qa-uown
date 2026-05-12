@@ -1,6 +1,10 @@
 import { BaseClient } from './base.client.js';
 import type { ApiResponse } from '../responses/api-response.js';
-import type { ChangeLeadStatusResponseBody, UpdateFundingStatusResponseBody } from '../responses/lead.response.js';
+import type {
+  ChangeLeadStatusResponseBody,
+  UpdateFundingStatusResponseBody,
+  ModifyInvoiceResponseBody,
+} from '../responses/lead.response.js';
 import type { MerchantInfo } from '../bodies/application.body.js';
 import {
   type ChangeLeadStatusBody,
@@ -34,5 +38,18 @@ export class LeadClient extends BaseClient {
       leadPks,
       status,
     });
+  }
+
+  /**
+   * Modify lease pos-signing — invokes the backend's modifyInvoiceForLead
+   * flow that cancels the original contract, transitions the lead to
+   * LEASE_MOD_REQUESTED, and creates a new lead with a fresh contract.
+   *
+   * Endpoint: POST /uown/los/modifyInvoiceForLead/{leadPk}
+   * Pre-condition: lead must be SIGNED or beyond
+   * Returns: { newLeadPk } where newLeadPk is the spawned lead's pk.
+   */
+  async modifyInvoiceForLead(leadPk: number): Promise<ApiResponse<ModifyInvoiceResponseBody>> {
+    return this.post<ModifyInvoiceResponseBody>(`/uown/los/modifyInvoiceForLead/${leadPk}`, {});
   }
 }

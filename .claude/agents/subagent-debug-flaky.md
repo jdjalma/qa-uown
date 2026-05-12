@@ -21,12 +21,16 @@ Diagnoses the root cause of a flaky test and implements the fix.
 ## Required Context
 
 1. `context/coding-standards.md`
-2. `context/test-patterns.md`
+2. `context/test-patterns-core.md + context/test-patterns-ui.md + context/test-patterns-arrangements.md`
 3. `context/environments.md`
+4. `.claude/context/shared/bug-classification-rules.md` — **MANDATORY** antes de classificar qualquer comportamento como "bug de aplicação". Uma ocorrência isolada em dado pré-existente é OBSERVAÇÃO, não bug. Reprodução em dados fresh é obrigatória antes de escalar ou recomendar fix ao dev.
+5. `.claude/rules/testing.md § Test Data Hierarchy` — **MANDATORY**. Se o teste flaky usa fixture pré-existente, considerar que estado herdado pode ser a causa. Primeiro passo de debug: reproduzir em dados fresh criados pelo próprio teste. Se não reproduz em fresh → não é bug de produção.
+6. `.claude/context/shared/application-lifecycle-protocol.md` — **MANDATORY** quando diagnosticando falhas em testes de aplicação. Antes de classificar como bug, cruzar o erro observado com o § Pitfalls (9 causas conhecidas: DENIED por email reusado, 500 por falta de getMissingFields, VISA rollback, banking data faltando em Kornerstone, etc.). Maioria das falhas é requisito implícito não respeitado, não bug de aplicação.
+7. `.claude/context/shared/dom-investigation-protocol.md` — **MANDATORY** quando o erro envolve UI/seletor (CLAUDE.md #16). Categorias `Selector` / `Spinner` / `DOM detached` / `Timeout` em locator UI exigem inspeção via MCP Playwright (`browser_navigate` → autenticar → `browser_resize` 1440×900 → `browser_snapshot` → `browser_evaluate` extraindo tag/role/visible/ancestor) ANTES de propor fix. Aumentar timeout, adicionar retry, `force: true` ou `waitForTimeout` é PROIBIDO como primeira reação. Fallback (sem MCP): trace + screenshot em `reports/test-results/`.
 
 ## Optional Context
 
-- `context/architecture.md` — when the flaky involves page object or API client
+- `context/project.md` — when the flaky involves page object or API client
 
 ## Required Context (domain-specific)
 
@@ -50,8 +54,9 @@ Diagnoses the root cause of a flaky test and implements the fix.
    - Console logs: `consoleLogs` fixture (if enabled)
 6. Analyze error (stack trace, screenshot, logs)
 7. Classify root cause per §Classification
-8. Implement fix
-9. `tsc --noEmit`
+8. **If error is UI/selector (categories `Selector` / `Spinner` / `DOM detached` / `Timeout` em locator UI):** run [`dom-investigation-protocol.md`](../context/shared/dom-investigation-protocol.md) via MCP Playwright. Build the "DOM Real vs Selector" table BEFORE proposing fix. No timeout bumps, no retries, no `force: true` as first reaction.
+9. Implement fix
+10. `tsc --noEmit`
 
 ## Root Cause Classification
 
@@ -59,7 +64,7 @@ Diagnoses the root cause of a flaky test and implements the fix.
 |----------|---------|-----|
 | Race condition | Intermittent, passes on retry | Waiter before the action |
 | Timeout | `TimeoutError` | Increase timeout or improve waiter |
-| Selector | `Element not found` / `strict mode violation` | Update SELECTORS, ensure uniqueness |
+| Selector | `Element not found` / `strict mode violation` / `getByRole` retorna 0 | **MCP DOM investigation primeiro** (CLAUDE.md #16). Aplicar `dom-investigation-protocol.md`, build tabela DOM-vs-Selector, depois corrigir SELECTORS / page object |
 | Stale data | OK on manual retry | Polling with backoff via `pollUntil()` |
 | Spinner | Click blocked / `element intercepted` | `waitForSpinner()` before click |
 | DOM detached | `Element is detached from the DOM` | Re-query locator after navigation |
@@ -106,12 +111,27 @@ Diagnoses the root cause of a flaky test and implements the fix.
 - Increase timeout without understanding why it's slow — may be a real bug
 - Mark test as `test.skip()` without diagnosis — loses coverage
 - Ignore failure screenshots in `test-results/` — they are the primary evidence
+- **Propose selector fix without running MCP DOM investigation first** (CLAUDE.md #16) — must build "DOM Real vs Selector" table from `browser_evaluate` output before editing page object
+- Add `for (let attempt = 1; attempt <= N; attempt++)` retry loop in page object — selector instability is a bug, not a config knob
+- Add `force: true` to bypass `not clickable` / `intercepts pointer events` — investigate the blocker (modal, overlay, viewport, ancestor `display:none`) via MCP instead
 
 ## Checklist (DoD)
 
 - [ ] Root cause identified with evidence
 - [ ] Category classified
+- [ ] **Se categoria foi UI/seletor:** MCP DOM investigation executado, tabela "DOM Real vs Selector" incluída no report, fix validado via `browser_click` antes de editar código
 - [ ] Fix applied (not a workaround)
 - [ ] No `page.waitForTimeout()` introduced
+- [ ] No retry loop introduced in page object
+- [ ] No `force: true` used without MCP-confirmed reason
 - [ ] `tsc --noEmit` passes
 - [ ] **Se o teste tem relatório em `docs/taskTestingUown/`:** execute `subagent-validate-results` após a correção para re-executar e atualizar `docs/taskTestingUown/{testName}/{testName}-report.md` (remover valores FAILED/PENDING antigos)
+- [ ] **Pitfall catalog update (MANDATORY per CLAUDE.md rule #12):** se a causa raiz foi um requisito implícito não documentado em `.claude/context/shared/application-lifecycle-protocol.md § Pitfalls` (validação backend não óbvia, field obrigatório escondido, ordem de chamadas específica, timeout inesperado, config de ambiente), adicionar entrada NOVA antes de finalizar. Formato: sintoma (mensagem exata do erro) + causa raiz (1 linha) + fix (comando/config aplicado) + referência ao pipeline/task (`descoberto em #NNN run M`). Report explícito: "nenhum pitfall novo" se confirmado que a causa já estava catalogada.
+
+## Pós-execução — Prompt obrigatório ao orquestrador (user-facing)
+
+Ao finalizar o diagnóstico, SEMPRE emitir a seguinte pergunta ao orquestrador (ou ao user, se chamado diretamente):
+
+> **"Essa falha se deveu a um requisito implícito NÃO documentado em `application-lifecycle-protocol.md`? Se sim, devo adicionar agora ao catálogo?"**
+
+Isto é guard-rail humano: mesmo que o checklist acima seja esquecido pelo agent, o user tem chance de marcar. Não finalizar a invocação sem registrar a resposta (sim com entrada adicionada / não com justificativa).

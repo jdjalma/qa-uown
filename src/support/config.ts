@@ -39,8 +39,8 @@ export interface TestConfig {
   /** Screenshots: 'off' | 'on' | 'only-on-failure' */
   screenshots: 'off' | 'on' | 'only-on-failure';
 
-  /** Video recording: 'off' | 'on' | 'on-first-retry' */
-  video: 'off' | 'on' | 'on-first-retry';
+  /** Video recording: 'off' | 'on' | 'on-first-retry' | 'retain-on-failure' */
+  video: 'off' | 'on' | 'on-first-retry' | 'retain-on-failure';
 
   /** Trace recording: 'off' | 'on' | 'on-first-retry' | 'retain-on-failure' */
   trace: 'off' | 'on' | 'on-first-retry' | 'retain-on-failure';

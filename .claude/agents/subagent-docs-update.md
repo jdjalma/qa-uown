@@ -31,7 +31,7 @@ Operates in **two modes** depending on pipeline phase:
    - `docs/business-rules/` — new rules not documented?
    - `context/glossary.md` — new terms?
    - `context/environments.md` — new envs/configs?
-   - `context/architecture.md` — new components?
+   - `context/project.md` — new components?
    - `src/data/merchants.ts` — new merchant?
 3. Cross-reference with app source code (via `context/app-repos.md`):
    - New Flyway migrations? New endpoints? New enums?
@@ -56,7 +56,7 @@ Operates in **two modes** depending on pipeline phase:
 | Mode | Files |
 |------|-------|
 | Pre-analysis | `context/INDEX.md`, `context/business-rules.md`, task description |
-| Post-pipeline | `context/INDEX.md`, `context/business-rules.md`, `context/architecture.md`, `context/test-patterns.md` |
+| Post-pipeline | `context/INDEX.md`, `context/business-rules.md`, `context/project.md`, `context/test-patterns-core.md + context/test-patterns-ui.md + context/test-patterns-arrangements.md` |
 
 **Optional:** `context/environments.md`, `context/glossary.md`, `context/app-repos.md`
 
@@ -66,11 +66,11 @@ Operates in **two modes** depending on pipeline phase:
 |--------|-------------------|
 | New business flow/rule | `docs/business-rules/{chapter}.md` |
 | New E2E or API test | `docs/TESTING.md` |
-| New page object | `CLAUDE.md` hierarchy + `context/architecture.md` |
-| New API client | `context/architecture.md` |
-| New helper | `context/architecture.md` + `shared/e2e-agent-responsibilities.md` |
-| New fixture or hook | `context/test-patterns.md` |
-| New data file | `context/project-structure.md` |
+| New page object | `CLAUDE.md` hierarchy + `context/project.md` |
+| New API client | `context/project.md` |
+| New helper | `context/project.md` + `shared/helpers-catalog.md / shared/api-clients-catalog.md / shared/page-objects-catalog.md` |
+| New fixture or hook | `context/test-patterns-core.md + context/test-patterns-ui.md + context/test-patterns-arrangements.md` |
+| New data file | `context/project.md` |
 | New environment | `context/environments.md` |
 | Technical decision | `docs/adrs/ADR-NNN-{title}.md` (use existing ADRs as template) |
 | Agent change | `docs/AGENTS.md` + `context/INDEX.md` |
@@ -95,7 +95,7 @@ Operates in **two modes** depending on pipeline phase:
 - Create new doc when existing can be updated
 - Document temporary state as permanent
 - Leave broken cross-references
-- Update `CLAUDE.md` without checking `context/architecture.md`
+- Update `CLAUDE.md` without checking `context/project.md`
 - Skip this agent — outdated docs cause drift in all agents
 
 ## Checklist (DoD)

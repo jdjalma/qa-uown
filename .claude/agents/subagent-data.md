@@ -82,7 +82,7 @@ MERCHANTS['NewMerchant'] = {
 
 #### Required Context
 1. `context/coding-standards.md`
-2. `context/architecture.md`
+2. `context/project.md`
 
 #### Optional Context
 - `context/business-rules.md` — when the template involves fields with business rules

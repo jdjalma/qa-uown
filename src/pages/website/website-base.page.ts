@@ -12,8 +12,9 @@ export class WebsiteBasePage extends BasePage {
   readonly balanceAmount = this.page.locator(SELECTORS.wsBalanceAmount);
   readonly nextPaymentDate = this.page.locator(SELECTORS.wsNextPaymentDate);
 
-  // Login elements
-  readonly emailInput = this.page.locator(SELECTORS.wsEmailInput);
+  // Login elements — single input #phoneOrEmail accepts email or 10-digit phone (no mask)
+  readonly emailInput = this.page.locator(SELECTORS.wsEmailOrPhoneInput);
+  readonly emailOrPhoneInput = this.page.locator(SELECTORS.wsEmailOrPhoneInput);
   readonly verificationCodeInput = this.page.locator(SELECTORS.wsVerificationCodeInput);
   readonly submitButton = this.page.locator(SELECTORS.wsSubmitButton);
   readonly resendCodeButton = this.page.locator(SELECTORS.wsResendCodeButton);
@@ -44,24 +45,31 @@ export class WebsiteBasePage extends BasePage {
   }
 
   /**
-   * Logs in to the website portal with email.
-   * The website uses email-based verification (OTP) rather than password.
-   * The verification code must be obtained externally (email sweep or DB query).
+   * Logs in to the website portal with email OR 10-digit phone (no mask).
+   * The website uses OTP verification rather than password. The OTP itself
+   * can be obtained from the inbox or directly from `uown_login_attempt.code`
+   * via DatabaseHelpers.waitForFreshOtpCode.
    */
-  async loginWithEmail(email: string): Promise<void> {
-    await this.emailInput.fill(email);
+  async loginWithEmailOrPhone(emailOrPhone: string): Promise<void> {
+    await this.emailOrPhoneInput.fill(emailOrPhone);
     await this.clickAndWaitForSpinner(this.submitButton);
   }
 
+  /** @deprecated Use loginWithEmailOrPhone — the field accepts both. */
+  async loginWithEmail(email: string): Promise<void> {
+    return this.loginWithEmailOrPhone(email);
+  }
+
   /**
-   * Enters the verification code received via email.
+   * Enters the verification code received via email or SMS.
    * The website uses 6 separate single-digit inputs for the OTP code.
    * Typing into the first input auto-advances to the next fields.
+   * Accepts both modal copies: "We just emailed you" and "We just texted you" (SMS).
    * @returns true if login succeeded (modal closed), false if code was invalid
    */
   async enterVerificationCode(code: string): Promise<boolean> {
-    // Wait for the OTP modal to be visible
-    const modalBody = this.page.locator(SELECTORS.modalBody).filter({ hasText: 'We just emailed you' });
+    // Wait for the OTP modal to be visible (matches both email and SMS copy)
+    const modalBody = this.page.locator(SELECTORS.modalBody).filter({ hasText: /We just (emailed|texted) you/i });
     await modalBody.waitFor({ state: 'visible', timeout: 10_000 });
 
     // The OTP form has 6 individual input fields inside the modal.
@@ -85,11 +93,19 @@ export class WebsiteBasePage extends BasePage {
       return false;
     }
 
-    // Wait for the dashboard/account page to load
+    // Modal closed — but auth isn't done until the page leaves the login route.
+    // Without this, the next steps can interact with the still-loading login page.
+    await this.page.waitForURL(url => !/\/$|\/login\/?$/.test(new URL(url).pathname), { timeout: 15_000 })
+      .catch(() => { /* fall through — log will show actual URL */ });
     await this.page.waitForLoadState('domcontentloaded');
     await this.waitForSpinner();
 
-    console.log(`[Website] Verification complete. URL: ${this.page.url()}`);
+    const finalUrl = this.page.url();
+    console.log(`[Website] Verification complete. URL: ${finalUrl}`);
+    if (/\/$|\/login\/?$/.test(new URL(finalUrl).pathname)) {
+      console.log('[Website] Auth check FAILED — still on login route after OTP modal closed.');
+      return false;
+    }
     return true;
   }
 
@@ -103,14 +119,29 @@ export class WebsiteBasePage extends BasePage {
     await resendBtn.click();
     console.log('[Website] Requested new verification code');
     await sleep(2_000);
+    await this.clearOtpInputs();
+  }
 
-    // Clear existing OTP input values so the next code can be entered fresh
-    const modalBody = this.page.locator(SELECTORS.modalBody).filter({ hasText: 'We just emailed you' });
+  /**
+   * Clears the 6 single-digit OTP inputs without requesting a new code.
+   * Used between consecutive wrong-code attempts in lockout scenarios.
+   * No-op if the modal is no longer visible (e.g. lockout closed it during
+   * the transition).
+   */
+  async clearOtpInputs(): Promise<void> {
+    const modalBody = this.page.locator(SELECTORS.modalBody).filter({ hasText: /We just (emailed|texted) you/i });
+    if (!(await modalBody.isVisible({ timeout: 500 }).catch(() => false))) return;
     const otpInputs = modalBody.locator('input');
     const count = await otpInputs.count();
     for (let i = 0; i < count; i++) {
-      await otpInputs.nth(i).fill('');
+      await otpInputs.nth(i).fill('', { timeout: 2_000 }).catch(() => {/* modal closed mid-iteration */});
     }
+  }
+
+  /** True if the OTP modal is currently visible. */
+  async isOtpModalVisible(): Promise<boolean> {
+    const modalBody = this.page.locator(SELECTORS.modalBody).filter({ hasText: /We just (emailed|texted) you/i });
+    return modalBody.isVisible({ timeout: 1_000 }).catch(() => false);
   }
 
   /**
@@ -179,16 +210,16 @@ export class WebsiteBasePage extends BasePage {
 
   /** Try multiple selector strategies to find and click a sidebar item */
   private async findAndClickSidebarItem(desiredOption: string): Promise<boolean> {
-    const selectors = [
-      this.page.getByRole('link', { name: new RegExp(desiredOption, 'i') }).first(),
-      this.page.locator(`a, span, div[role="button"]`).filter({ hasText: new RegExp(`^\\s*${desiredOption}\\s*$`, 'i') }).first(),
-      this.page.locator(`text=${desiredOption}`).first(),
-    ];
-    for (const sel of selectors) {
-      if (await sel.isVisible({ timeout: 1_000 }).catch(() => false)) {
-        await sel.click();
-        return true;
-      }
+    // Sidebar items are <span class="...sideBarContainer__item..."> elements.
+    // Scope to that class — other spans elsewhere in the DOM (hidden header/breadcrumb
+    // duplicates with the same text) would otherwise match `.first()` and never be clickable.
+    const item = this.page
+      .locator('[class*="sideBarContainer__item"]')
+      .filter({ hasText: new RegExp(`^\\s*${desiredOption}\\s*$`, 'i') })
+      .first();
+    if (await item.isVisible({ timeout: 1_500 }).catch(() => false)) {
+      await item.click();
+      return true;
     }
     return false;
   }
@@ -202,11 +233,17 @@ export class WebsiteBasePage extends BasePage {
     };
     const parents = dropdownParents[normalizedOption] || ['Payments', 'Account Settings'];
     for (const parentLabel of parents) {
-      const parentEl = this.page.locator(`text=${parentLabel}`).first();
+      // Same scoping as findAndClickSidebarItem — avoid hidden duplicate spans.
+      const parentEl = this.page
+        .locator('[class*="sideBarContainer__item"]')
+        .filter({ hasText: new RegExp(`^\\s*${parentLabel}\\s*$`, 'i') })
+        .first();
       if (await parentEl.isVisible({ timeout: 2_000 }).catch(() => false)) {
         await parentEl.click();
-        // Wait for dropdown children to become visible after expansion
-        await this.page.getByRole('link', { name: new RegExp(desiredOption, 'i') }).first()
+        // Wait briefly for dropdown expansion (children render under the same scope)
+        await this.page.locator('[class*="sideBarContainer__item"]')
+          .filter({ hasText: new RegExp(`^\\s*${desiredOption}\\s*$`, 'i') })
+          .first()
           .waitFor({ state: 'visible', timeout: 3_000 }).catch(() => {});
         if (await this.findAndClickSidebarItem(desiredOption)) {
           await this.waitForPageTransition(normalizedOption);
@@ -220,10 +257,12 @@ export class WebsiteBasePage extends BasePage {
   /** Expand all sidebar dropdown sections */
   private async expandAllSidebarDropdowns(): Promise<void> {
     for (const dropdown of ['Payments', 'Account Settings']) {
-      const dropdownEl = this.page.locator(`text=${dropdown}`).first();
+      const dropdownEl = this.page
+        .locator('[class*="sideBarContainer__item"]')
+        .filter({ hasText: new RegExp(`^\\s*${dropdown}\\s*$`, 'i') })
+        .first();
       if (await dropdownEl.isVisible({ timeout: 1_000 }).catch(() => false)) {
         await dropdownEl.click();
-        // Wait for dropdown expansion animation
         await this.page.waitForLoadState('domcontentloaded').catch(() => {});
       }
     }
@@ -466,14 +505,17 @@ export class WebsiteBasePage extends BasePage {
   /** Wait for payment success or error toast and log the result */
   private async waitForPaymentResult(type: string, amount: string): Promise<void> {
     const successToast = this.page.locator(SELECTORS.toastSuccess);
-    const errorToast = this.page.locator(`${SELECTORS.toastError}, [role="alert"]`);
+    // Scope to error-specific Toastify/Bootstrap classes only. Avoid bare `[role="alert"]`:
+    // Toastify sets role=alert on success toasts AND keeps an empty route-announcer
+    // `<p role="alert">` in DOM permanently (Next.js). Either would falsify the race.
+    const errorToast = this.page.locator(SELECTORS.toastError).first();
     const result = await Promise.race([
       successToast.waitFor({ state: 'visible', timeout: 30_000 }).then(() => 'success' as const),
       errorToast.waitFor({ state: 'visible', timeout: 30_000 }).then(() => 'error' as const),
     ]);
 
     if (result === 'error') {
-      const errorText = (await errorToast.first().textContent())?.trim() || '';
+      const errorText = (await errorToast.textContent())?.trim() || '';
       console.log(`[Website] ${type} payment error: "${errorText}" — will be treated as non-fatal`);
     } else {
       console.log(`[Website] ${type} payment of $${amount} submitted`);

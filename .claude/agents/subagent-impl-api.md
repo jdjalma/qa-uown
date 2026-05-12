@@ -19,13 +19,17 @@ Implements an API-only test (no browser) in `tests/api/`.
 ## Required Context
 
 1. `context/coding-standards.md`
-2. `context/architecture.md`
+2. `context/project.md`
 3. `context/business-rules.md` — **ALWAYS**. After reading the summary, identify which domain applies (origination / payments / servicing / modifications / funding) and read the corresponding chapter from `docs/business-rules/` per the Domain → Chapter Guide in that file. Do this BEFORE writing any assertions or request bodies.
+4. `.claude/rules/testing.md § Test Data Hierarchy` — **MANDATORY**. Setup via automação (`sendApplication`, `submitApplication`, `changeLeadStatus`, `driveLeadToFunding`, etc.). NUNCA hardcode `accountPk`/`leadPk` existente. Reuso é EXCEÇÃO — requer comentário justificando. UPDATE direto no DB é proibido sem autorização explícita do usuário.
+5. `.claude/context/shared/ssn-test-catalog.md` — **MANDATORY** quando o teste cria aplicação. Usar a receita correta para a modalidade que o SPEC especifica (13m / 13m+16m / 16m Second Look / Denied). Respeitar SSNs fixos (`100000053` para Second Look) e pré-condições documentadas. Desviar da receita quebra o teste em qa/stg por comportamento do GDS. **Brand coverage (§7):** CTs Kornerstone DEVEM validar `uown_sv_account.company='KORNERSTONE'` em pré-condição (SELECT) e parar + pedir autorização se divergente. CTs de email/template DEVEM validar `template_name` prefixo `KORNERSTONE_`, `from_email_address`, e cross-contamination check entre brands.
+6. `.claude/context/shared/application-lifecycle-protocol.md` — **MANDATORY** quando o teste faz `sendApplication` ou encadeia transições de lease. Sequência canônica de 13+ passos API + catálogo de 9 pitfalls documentados. Para Kornerstone: usar overload `sendApplication(body)` + inject `mainBankRoutingNumber`/`mainBankAccountNumber`. Para CC arrangements: `MASTERCARD_APPROVED` (nunca VISA_APPROVED em qa). Consultar ANTES de implementar.
 
 ## Optional Context
 - `context/environments.md` — when endpoints vary by environment
 - `docs/business-rules/appendix-g-cenarios-risco.md` — **MANDATORY** when the test calls `sendApplication` or any application creation endpoint. Defines which SSN, state, merchant and cart value to use per risk tier
 - `context/shared/common-operations.md` — **MANDATORY** when the test involves payments (CC or ACH arrangements), driving a lead to FUNDED, or any multi-step API flow. Contains exact, working code with correct function signatures
+- `.claude/context/shared/qa-domain-reflexes.md` — **MANDATORY** safety net. If the SPEC omits reflex validations for an action listed in the catalog (audit log after mutation, rating letter before/after payment, etc.), add them anyway. Reflexes are non-negotiable — SPEC gaps must be closed here.
 
 ## Dependencies
 
@@ -175,3 +179,4 @@ await test.step('CT-02 — Validate DB persistence after API call', async () => 
 - [ ] When testing `sendApplication` denial: use `riskTier: 'high'` + SSN ending in 9; assert `UW_DENIED`
 - [ ] When testing state blocking: use `riskTier: 'blocked-state'` + state NJ/VT/MN/ME + ONLINE merchant
 - [ ] **DB persistence validated** (when endpoint modifies state): query the relevant table after the API call and assert values match the response payload
+- [ ] **QA reflex safety net applied**: cross-checked every endpoint action against `.claude/context/shared/qa-domain-reflexes.md`. If SPEC was missing a matching reflex (audit log, rating letter, balance recompute, etc.), added the validation to the test anyway

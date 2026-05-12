@@ -22,13 +22,26 @@ export interface ContactPhoneInfo {
   };
 }
 
-/** Nested email info object for createOrUpdatePrimaryCustomerContactInfo */
+/**
+ * Nested email info object for createOrUpdatePrimaryCustomerContactInfo.
+ * Mirrors Java SvEmail + EmailInfo @Embeddable (Jackson serialization).
+ * emailPK and customerPK are capitalized to match the Java field names —
+ * sending lowercase variants causes Jackson to ignore them and the endpoint
+ * inserts a NEW row instead of updating.
+ */
 export interface ContactEmailInfo {
+  /** Outer SvEmail entity pk. > 0 = update existing; omit or 0 = create new */
+  pk?: number;
   emailInfo: {
-    /** 0 or omitted = create new; > 0 = update existing */
-    emailPk?: number;
+    /** EmailInfo embedded pk. Match SvEmail.pk for updates. */
+    emailPK?: number;
+    /** Customer pk associated with this email */
+    customerPK?: number;
     emailAddress: string;
-    accountPk?: number;
+    /** e.g. 'PRIMARY', 'SECONDARY', 'WORK', 'OTHER' — preserve original on update */
+    emailType?: string;
+    doNotEmail?: boolean;
+    reasonForDnc?: string | null;
   };
 }
 

@@ -118,9 +118,10 @@ interface ApiResponse<T = unknown> {
 | `LeadClient` | `svc` | `changeLeadStatus(merchant, leadPk, newStatus)`, `updateFundingStatus(leadPks, status)` |
 | `SettlementClient` | `svc` | `settleApplication(merchant, leadUuid)` |
 | `CreditCardClient` | `origination` | `authorizeCreditCard(leadPk, firstName, lastName, options?)` |
-| `ScheduledTaskClient` | `svc` | `triggerScheduledTask(taskName)` |
+| `ScheduledTaskClient` | `svc` | `triggerScheduledTask(taskName)`, `sendEmailsSweep()` — POST `/uown/svc/sendEmailsSweep` (Task #490) |
 | `SvcPhoneClient` | `svc` | `updateOptOutAi(body)`, `updateDnc(body)`, `updateDnt(body)` — phone DNC/DNT/opt-out flags (Task #505) |
 | `SvcEmailClient` | `svc` | `getContactInfo(accountPk)`, `createOrUpdateEmail(body)` — contact info retrieval and email record updates (Task #442) |
+| `BankAccountClient` | `svc` | `createOrUpdateBankAccount(body)`, `removeBankAccount(body)`, `getBankAccounts(accountPk)` + helper wrappers `createBankAccount`, `deleteBankAccount` — bank account CRUD for servicing (Task #497) |
 | `LosPartnerAuthClient` | `svc` | `authorize(username, password) → GetApiKeyResponse`, `createApiUser(body) → CreateApiUserResponse` — Bearer token issuance for merchant LOS API (Task #482) |
 | `LosPartnerApplicationClient` | `svc` | `createApplication(body?, apiVersion?)`, `searchApplicationStatus(body?)`, `createInvoice(id, body?)`, `settleApplication(id, body?)`, `addLease(id, body?)` — all use Bearer token via `setBearerToken(token)` / `clearBearerToken()`; `apiVersion=null` omits X-API-Version header (tests DefaultLosApiVersionRequestWrapper injection) (Task #482) |
 

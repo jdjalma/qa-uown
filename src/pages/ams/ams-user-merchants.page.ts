@@ -52,21 +52,40 @@ export class AmsUserMerchantsPage extends AmsBasePage {
 
   /**
    * Find and select a user in the Users table by exact username.
-   * Searches only the currently visible page (does not paginate).
+   * Paginates through the Users table (up to maxPages) until found.
    * Returns true if found and selected, false otherwise.
    */
-  async selectUserByUsername(username: string): Promise<boolean> {
-    const rows = this.usersContainer.locator(SELECTORS.amsRdtTableRow);
-    const count = await rows.count();
-    for (let i = 0; i < count; i++) {
-      const row = rows.nth(i);
-      const cellText = await row.locator('[class*="rdt_TableCell"]').nth(1).innerText().catch(() => '');
-      if (cellText.trim() === username) {
-        await row.locator(SELECTORS.amsAssocRowCheckbox).first().check();
-        return true;
+  async selectUserByUsername(username: string, maxPages = 30): Promise<boolean> {
+    for (let pageNum = 0; pageNum < maxPages; pageNum++) {
+      const rows = this.usersContainer.locator(SELECTORS.amsRdtTableRow);
+      await rows.first().waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {});
+      const count = await rows.count();
+      for (let i = 0; i < count; i++) {
+        const row = rows.nth(i);
+        const cellText = await row.locator('[class*="rdt_TableCell"]').nth(1).innerText().catch(() => '');
+        if (cellText.trim() === username) {
+          await row.locator(SELECTORS.amsAssocRowCheckbox).first().check();
+          return true;
+        }
       }
+      if (!(await this.isUsersNextPageAvailable())) return false;
+      await this.clickUsersNextPage();
     }
     return false;
+  }
+
+  /**
+   * Returns true if the users table has a clickable "Next Page" button.
+   * Pagination nav (.rdt_Pagination) is a sibling of .rdt_Table — scope to nth(0).
+   */
+  async isUsersNextPageAvailable(): Promise<boolean> {
+    const btn = this.page.locator(SELECTORS.amsRdtPagination).nth(0).locator(SELECTORS.amsPaginationNextButton);
+    try {
+      await btn.waitFor({ state: 'visible', timeout: 3_000 });
+      return !(await btn.isDisabled());
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -133,8 +152,24 @@ export class AmsUserMerchantsPage extends AmsBasePage {
    */
   async clickUsersNextPage(): Promise<void> {
     const paginationNext = this.page.locator(SELECTORS.amsRdtPagination).nth(0).locator(SELECTORS.amsPaginationNextButton);
+    const currentFirstText = await this.usersContainer
+      .locator(SELECTORS.amsRdtTableRow).first()
+      .locator('[class*="rdt_TableCell"]').nth(1).innerText().catch(() => '');
     await paginationNext.click();
-    await this.usersContainer.locator(SELECTORS.amsRdtTableRow).first().waitFor({ state: 'visible', timeout: 5_000 });
+    await this.usersContainer.locator(SELECTORS.amsRdtTableRow).first().waitFor({ state: 'visible', timeout: 10_000 });
+    await this.page.waitForFunction(
+      ({ containerSel, rowSel, cellSel, oldText }: { containerSel: string; rowSel: string; cellSel: string; oldText: string }) => {
+        const tables = document.querySelectorAll(containerSel);
+        if (tables.length < 1) return false;
+        const firstRow = tables[0].querySelector(rowSel);
+        if (!firstRow) return false;
+        const cells = firstRow.querySelectorAll(cellSel);
+        if (cells.length < 2) return false;
+        return (cells[1].textContent?.trim() ?? '') !== oldText;
+      },
+      { containerSel: SELECTORS.amsRdtTable, rowSel: SELECTORS.amsRdtTableRow, cellSel: '[class*="rdt_TableCell"]', oldText: currentFirstText.trim() },
+      { timeout: 10_000 },
+    );
   }
 
   /** Returns the current selection info text for the Users table. */

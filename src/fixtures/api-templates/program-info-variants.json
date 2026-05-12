@@ -1,0 +1,39 @@
+{
+  "_comment": "Named variants for scheduleProgramActivationDeactivationDates CTs. These are NOT consumed by buildRequestBody() — instead, import PROGRAM_DATE_VARIANTS from src/data/test-programs.ts which exposes typed objects with ISO-date functions evaluated at runtime. This file serves as human-readable documentation of the intent of each variant.",
+  "variants": {
+    "active_today": {
+      "_description": "Program active right now: activationDate=yesterday, deactivationDate=tomorrow, active=true. Backend will recompute active=true from window.",
+      "activationDate": "<calculateDateISO(-1)>",
+      "deactivationDate": "<calculateDateISO(+1)>",
+      "active": true
+    },
+    "inactive_future": {
+      "_description": "Program with future activation: activationDate=today+30, deactivationDate=null. Flag active=true is overridden by backend — date window makes it inactive. Use for CT-API-05.",
+      "activationDate": "<calculateDateISO(+30)>",
+      "deactivationDate": null,
+      "active": true
+    },
+    "inactive_past": {
+      "_description": "Program with past deactivation: activationDate=null, deactivationDate=yesterday. Backend recomputes active=false.",
+      "activationDate": null,
+      "deactivationDate": "<calculateDateISO(-1)>",
+      "active": true
+    },
+    "both_null": {
+      "_description": "No date bounds set: program is always active. activationDate=null, deactivationDate=null, active=true.",
+      "activationDate": null,
+      "deactivationDate": null,
+      "active": true
+    },
+    "invalid_order": {
+      "_description": "activationDate > deactivationDate — backend must return 400. Use for CT-API-06.",
+      "activationDate": "2026-12-01",
+      "deactivationDate": "2026-01-01"
+    },
+    "same_day": {
+      "_description": "activationDate == deactivationDate == today. Program is active for exactly one day. Use for CT-24.",
+      "activationDate": "<calculateDateISO(0)>",
+      "deactivationDate": "<calculateDateISO(0)>"
+    }
+  }
+}

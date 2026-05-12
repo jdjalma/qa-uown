@@ -1,6 +1,6 @@
 import { BaseClient } from './base.client.js';
 import type { ApiResponse } from '../responses/api-response.js';
-import type { AuthorizeCreditCardResponseBody, CcTransaction } from '../responses/credit-card.response.js';
+import type { AuthorizeCreditCardResponseBody, CcTransaction, SvCreditCardResponse } from '../responses/credit-card.response.js';
 import {
   type AuthorizeCreditCardBody,
   type AuthorizeCreditCardOptions,
@@ -31,5 +31,29 @@ export class CreditCardClient extends BaseClient {
 
   async getCcTransactions(accountPk: number): Promise<ApiResponse<CcTransaction[]>> {
     return this.get<CcTransaction[]>(`/uown/svc/getCCTransactions/${accountPk}`);
+  }
+
+  /**
+   * Tokenize + persist a credit card on a servicing account. Returns the
+   * `SvCreditCard` with `creditCardInfo.creditCardPk` + `ccToken` populated,
+   * which should be fed back into `makeCreditCardPayments` with
+   * `useCardOnFile: true` to avoid the FK violation bug observed when the
+   * plural endpoint handles tokenization + arrangement creation inline.
+   * Backend: svc SvcCreditCardController.java:74.
+   */
+  async createOrUpdateCreditCard(ccInfo: {
+    accountPk: number;
+    ccFirstName: string;
+    ccLastName: string;
+    ccNumber: string;
+    ccExp: string;
+    cvc: string;
+    ccType?: string;
+    ccVendor?: string;
+    autoPay?: boolean;
+    leadPk?: number;
+    [key: string]: unknown;
+  }): Promise<ApiResponse<SvCreditCardResponse>> {
+    return this.post<SvCreditCardResponse>('/uown/svc/createOrUpdateCreditCard', ccInfo);
   }
 }

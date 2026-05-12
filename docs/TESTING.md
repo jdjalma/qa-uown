@@ -542,6 +542,31 @@ Validates that the new "Term Month" column in the Origination portal Overview an
 
 **Data source:** `uown_los_sched_summary.term_in_months` — populated during `submitApplication` when `planId` is provided. Leads without `submitApplication` have no `sched_summary` record, so the column is blank (LEFT JOIN).
 
+### Bank Account Rating Letter Validation Tests (Task #497)
+
+**E2E+API+DB (`docs/taskTestingUown/RU04.26.1.51.0_bankAccountRatingLetterValidation_497/RU04.26.1.51.0_bankAccountRatingLetterValidation_497.spec.ts`):**
+Validates the Servicing portal bank account management flow and rating letter generation (R1.51.0). Covers adding/removing bank accounts via UI and API, default payment source updates, ACH funding path, activity log and rating change log entries. Environment: QA2. Project: `task-testing`. 6 CTs, all passing.
+
+| CT | Type | Flow | Key Assertions |
+|----|------|------|----------------|
+| CT-01 | E2E | Login → Servicing customer → Add bank account modal → fill + save | Bank account appears in account list; `getAccountNumberLastFour()` matches |
+| CT-02 | E2E+DB | Add bank account → DB query | `getBankAccountsByAccountPk` returns new record; `is_deleted = false` |
+| CT-03 | E2E+API | Delete bank account via UI | Row disappears from modal; `waitForBankAccountDeleted` confirms DB state |
+| CT-04 | API | `api.bankAccount.createBankAccount` → `getBankAccounts` | Response contains created account; PK matches |
+| CT-05 | API+DB | `api.bankAccount.deleteBankAccount` → `waitForBankAccountDeleted` | DB record marked deleted |
+| CT-06 | E2E+API+DB | Full ACH flow: create account → set default payment → activity log + rating log | `getBankAccountActivityLogs` + `getRatingChangeLogs` contain expected entries |
+
+**Key patterns used:**
+- `BankAccountPage` — new page object for Servicing bank account modals (`.modal.show` scoping)
+- `api.bankAccount` — typed client wired in `ApiClients` (`src/support/base-test.ts`)
+- `db.getBankAccountsByAccountPk` / `db.waitForBankAccountDeleted` — DB polling helpers
+- `db.getBankAccountActivityLogs` / `db.getRatingChangeLogs` — log validation helpers
+- `BankAccountModalSelectors` in `src/selectors/selector.types.ts` — 19 entries scoped to `.modal.show`
+
+**Report:** `docs/taskTestingUown/RU04.26.1.51.0_bankAccountRatingLetterValidation_497/RU04.26.1.51.0_bankAccountRatingLetterValidation_497-report.md`
+
+---
+
 ### Canonical Full-Lifecycle Regression Tests
 
 Two E2E tests serve as the primary regression suite for the full account lifecycle. Both use the `cross-portal` Playwright project and cover origination, contract, servicing, and website portals end-to-end.
@@ -786,6 +811,112 @@ Log Activity and User Details page (`/users/[username]`):
 - `src/pages/ams/ams-base.page.ts` — `AmsBasePage`; base utilities for rdt tables
 
 **Report:** `docs/taskTestingUown/RU04.26.1.51.0_uownAmsNewPageToAssignMerchantsToUser_74-report.md`
+
+---
+
+### Customer Portal Reminder Email Template Tests (Task #490)
+
+**API+IMAP+DB (`docs/taskTestingUown/RU04.26.1.51.0_addNewCustomerPortalReminderEmailTemplate_490/RU04.26.1.51.0_addNewCustomerPortalReminderEmailTemplate_490.spec.ts`):**
+Validates the new Customer Portal Reminder email template for both UOWN and Kornerstone tenants. The flow sends the Customer Portal Link via API, triggers the email queue sweep, and validates email delivery via IMAP and DB state. Environment: QA1. Project: `task-testing`. 8 scenarios (CT-01 through CT-08), all passing.
+
+| CT | Type | Flow | Key Assertions |
+|----|------|------|----------------|
+| CT-01 | API | `POST /uown/svc/sendCustomerPortalLink/{accountPk}` (UOWN account) | 200 OK; response contains `message` confirming invite queued |
+| CT-02 | API+DB | Trigger `sendEmailsSweep` → poll `uown_email_queue` | Email record transitions from PENDING to SENT |
+| CT-03 | API+IMAP | IMAP polling for Customer Portal email (UOWN template) | Email received; subject and body match UOWN template |
+| CT-04 | API | Screenshot of rendered UOWN email HTML via Chromium | Screenshot attached to test report as evidence |
+| CT-05 | API | `POST /uown/svc/sendCustomerPortalLink/{accountPk}` (Kornerstone account) | 200 OK; response confirms Kornerstone invite queued |
+| CT-06 | API+DB | Trigger `sendEmailsSweep` → poll `uown_email_queue` for Kornerstone | Email record transitions from PENDING to SENT |
+| CT-07 | API+IMAP | IMAP polling for Customer Portal email (Kornerstone template) | Email received; subject and body match Kornerstone template |
+| CT-08 | API | Screenshot of rendered Kornerstone email HTML via Chromium | Screenshot attached to test report as evidence |
+
+**Key patterns used:**
+- `api.account.sendCustomerPortalLink(accountPk)` — `AccountClient` method; `POST /uown/svc/sendCustomerPortalLink/{accountPk}`; returns `PortalInvitationResponse`
+- `api.scheduledTask.sendEmailsSweep()` — `ScheduledTaskClient` method; `POST /uown/svc/sendEmailsSweep`; triggers processing of all PENDING emails in the queue
+- `email.getEmailContent(recipientEmail, subjectPattern)` — IMAP polling via `imapflow` (Gmail) to retrieve delivered email
+- `api.svcEmail.createOrUpdateEmail(body)` — used for test setup to set a known email address on the test account; original email is restored in `afterEach` cleanup
+- DB validation via `uown_email_queue` queries — polls for email status transition (PENDING → SENT) with exponential backoff
+- Chromium screenshot of rendered email HTML — email body rendered in a headless browser page; screenshot attached as test evidence
+
+**New API methods:**
+
+| Client | Method | Endpoint | Returns |
+|--------|--------|----------|---------|
+| `AccountClient` | `sendCustomerPortalLink(accountPk)` | `POST /uown/svc/sendCustomerPortalLink/{accountPk}` | `PortalInvitationResponse` |
+| `ScheduledTaskClient` | `sendEmailsSweep()` | `POST /uown/svc/sendEmailsSweep` | — |
+
+**New response type (`src/api/responses/account.response.ts`):**
+- `PortalInvitationResponse` — `{ message?: string; errorMessage?: string }`
+
+---
+
+### Remove CC Information from AuthorizeCreditCard Endpoint Tests (Task #507)
+
+**API (`docs/taskTestingUown/RU05.26.1.51.1_removeCcInformationReturnedFromAuthorizeEndpoint_507/RU05.26.1.51.1_removeCcInformationReturnedFromAuthorizeEndpoint_507.spec.ts`) + E2E (`docs/taskTestingUown/RU05.26.1.51.1_removeCcInformationReturnedFromAuthorizeEndpoint_507/RU05.26.1.51.1_removeCcInformationReturnedFromAuthorizeEndpoint_507-e2e.spec.ts`):**
+Validates that `POST /uown/los/authorizeCreditCard` returns a slim DTO after the security patch (R1.51.1). The endpoint must expose only the allow-listed fields `{ status, error, errorCode, preAuthStatus }` and must NOT return any gateway, token, CC number, or transaction data. Full Gherkin scenario mapping: 12/12 covered across 7 API CTs + 2 E2E CTs. Environment: stg. Project: `task-testing`. 8 API passed + 3 E2E passed in stg.
+
+**API spec — 7 CTs covering DTO contract, response shape, deny-list, decline path, invalid input, and adversarial input:**
+
+| CT | Type | Flow | Key Assertions |
+|----|------|------|----------------|
+| CT-01 | API | `POST /uown/los/authorizeCreditCard` — approved card | HTTP 200; all deny-list fields absent (no `gateway*`, `token*`, `ccNumber*`, `transaction*`) |
+| CT-02 | API | Allow-list completeness | Response shape matches slim DTO exactly; no extra root-level keys beyond allow-list |
+| CT-03 | API | Deep traversal deny-list | Recursively traverse entire response body; confirm no nested key matches deny-list patterns |
+| CT-04 | API | Invalid `ccNumber` (incomplete, e.g. `"4111"`) | Spring exception envelope `{message, status}` returned; no data leak in envelope |
+| CT-05 | API | Declined card path | HTTP 200; slim DTO with `status` indicating decline; no sensitive fields |
+| CT-06 | API | Expired `ccExp` | Spring exception envelope returned; no CC/token fields in body |
+| CT-07 | API | Adversarial input (special characters, oversized payload) | Endpoint rejects gracefully; no raw data echoed back |
+
+**E2E hybrid spec — 2 CTs covering DevTools-equivalent network capture during real signing flow + UI error rendering:**
+
+| CT | Type | Flow | Key Assertions |
+|----|------|------|----------------|
+| CT-E2E-01 | E2E hybrid | Full signing flow (API setup → browser navigate to contract → fill CC → `page.on('response')` intercept on `/authorizeCreditCard`) | Wire payload captured from real browser request; deny-list traversal on live response confirms no leak during actual signing |
+| CT-E2E-02 | E2E | Invalid CC submission via Contract UI | UI renders error message from slim DTO `{ message }` without exposing raw backend error; no CC data visible in page |
+
+**Key patterns used:**
+- Allow-list validation: assert each allowed field exists; deny-list deep traversal: recursively walk response JSON keys and assert none match the deny-list patterns
+- `api.creditCard.authorizeCreditCard(body)` — `CreditCardClient` method
+- Dual response shape dispatch: `Object.keys(body).length === 4` → strict slim DTO assertions; `Object.keys(body).length === 2` → Spring exception envelope assertions (see pitfall #22 in `application-lifecycle-protocol.md`)
+- `page.on('response', handler)` with URL filter on `/authorizeCreditCard` — captures wire payload during E2E signing flow (reusable pattern for security/contract regression when DevTools-level network capture is required)
+- Deep deny-list traversal applied to both slim DTO and Spring envelope responses — minimum security check regardless of response shape
+
+**Security guarantee verified in stg (2026-05-07):** endpoint no longer leaks gateway/token/CC data in either response form.
+
+**Report:** `docs/taskTestingUown/RU05.26.1.51.1_removeCcInformationReturnedFromAuthorizeEndpoint_507/RU05.26.1.51.1_removeCcInformationReturnedFromAuthorizeEndpoint_507-stg-report.md`
+
+---
+
+### Kount/GDS Token Sweep Tests (Task #502)
+
+**API+DB (`docs/taskTestingUown/RU05.26.1.51.1_removeSelectForUpdateFromKountAndGDSTokenQueriesToPreventDatabaseLocking_502/`):**
+Validates that `POST /uown/svc/refreshKountAccessTokenSweep` and `POST /uown/svc/refreshGdsAccessTokenSweep` update the access tokens in `uown_kount_token` and `uown_gds_token` without DB locking. Environment: QA2. Project: `task-testing`.
+
+| CT | Type | Flow | Key Assertions |
+|----|------|------|----------------|
+| CT-01–02 | DB | Schema checks — `uown_kount_token` + `uown_gds_token` | Tables exist; `expiration_time` columns present |
+| CT-03 | API+DB | Trigger Kount sweep → `waitForValueChange` on `access_token` | Token string differs from pre-sweep value; no DB lock errors |
+| CT-04 | API+DB | Trigger GDS sweep → `waitForValueChange` on `access_token` | Same pattern for `uown_gds_token` |
+| CT-05 | API | Both sweeps return 2xx (no 5xx lock timeout) | Response status OK |
+| CT-06 | DB | `uown_scheduled_task` row existence check | Row identified by `scheduled_task_name` (column name confirmed) |
+
+**Key pitfalls discovered (see common-operations.md for full details):**
+- `uown_kount_token.expiration_time` is `timestamp WITHOUT time zone` — always compare timestamps in PG, not in JS (`Date.getTime()` is timezone-unreliable)
+- `uown_scheduled_task` uses `scheduled_task_name` + `cron_trigger` columns (NOT `name`/`cron_expression`)
+- After deleting pk=1 from either token table, the sweep recreates the row at a new auto-incremented PK — never query `WHERE pk = 1` after a delete+sweep cycle
+
+**New API methods:** `api.scheduledTask.refreshKountAccessTokenSweep()`, `api.scheduledTask.refreshGdsAccessTokenSweep()`
+
+**New DB helper:** `db.waitForValueChange(sql, params, oldValue, timeoutMs?, intervalMs?)` — polls until the scalar SQL result changes from `oldValue`
+
+**New types:** `TokenRow`, `KountTokenRow`, `GdsTokenRow` (exported from `src/helpers/database.helpers.ts`)
+
+**Ad-hoc scripts** (diagnostic, not promoted to first-class helpers):
+- `src/scripts/check_tokens_502.ts` — reads current token state
+- `src/scripts/bump_kount_expiry_502.ts` — bumps expiration for test setup
+- `src/scripts/restore_tokens_502.ts` — restores tokens after destructive test steps
+
+**App bug (external constraint):** `RefreshKountAccessTokenSweepService` / `RefreshGdsAccessTokenSweepService` use `loadOrCreateToken().setPk(1)` + `repo.save()`, but `@GeneratedValue` ignores the explicit PK on INSERT — the sweep always creates a new PK on recreation. Commit `213b96b54`. Tests must account for this behavior.
 
 ---
 
@@ -1119,3 +1250,28 @@ This was discovered during the planId/submitApplication flow work (Task #476/#12
 `tests/.../446.spec.ts` and `tests/.../502.spec.ts` use `existingAccountPks` (GDS bypass) and therefore omit `runId`/`email` from `testData`. This is functionally correct (no application is created) but deviates from the standard `testData` structure.
 
 When these tests are updated to support full application creation flows (when GDS is available), `runId` and `email` fields should be added back.
+
+## Platform Quirks
+
+Known UI/API behavior divergences from standard patterns. Cross-reference the task report for full context.
+
+### Origination react-select class prefix mix (Task #1262)
+
+Origination forms use two concurrent react-select class naming schemes on the same page:
+- **Themed selects** (e.g., Merchant/Location filter dropdowns): `classNamePrefix="filter"` → classes `filter__control`, `filter__option`, etc.
+- **Default selects** (e.g., Inventory Category in merchant add/edit form): default `css-*` prefix → classes like `css-abc123-option`.
+
+A union selector that handles both:
+```
+.filter__option, [class*="css-"][class*="option-"], [class*="-option"]:not([class*="options"]):not([class*="placeholder"]):not([class*="single-value"])
+```
+
+See `MerchantEditPage.pickReactSelectOption()` in `src/pages/origination/merchant-edit.page.ts` for the canonical implementation.
+
+### Clone DropdownButton is an `<a>` tag, not `<button>` (Task #1262)
+
+The "Clone" dropdown trigger in the Add Merchant form is rendered as `<a class="dropdownContainer__ddButton">`. Menu items are `.dropdown-item` children inside `.dropdown.show`. The first `.dropdown-item` is a header containing the search `<input>` — always exclude it with `.dropdown-item:not(.dropdown-header)`.
+
+### `waitForResponse` flakiness on qa2 for merchant save (Task #1262)
+
+`page.waitForResponse('/uown/createOrUpdateMerchant')` is flaky on qa2 because the response event may fire after navigation invalidates the wait. Prefer asserting on the outgoing request (`waitForRequest`) combined with URL change polling (`expect.poll(() => page.url().includes('addMerchant'))`) as the success signal.

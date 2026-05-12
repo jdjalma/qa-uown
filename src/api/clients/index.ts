@@ -16,3 +16,6 @@ export { AmsClient } from './ams.client.js';
 export { LosPartnerAuthClient } from './los-partner-auth.client.js';
 export { LosPartnerApplicationClient } from './los-partner-application.client.js';
 export { SeonClient } from './seon.client.js';
+export { BankAccountClient } from './bank-account.client.js';
+export { CustomersClient } from './customers.client.js';
+export { GowSignTemplateClient } from './gowsign-template.client.js';

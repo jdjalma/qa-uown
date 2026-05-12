@@ -30,6 +30,8 @@ export const SELECTORS: AppSelectors = {
   filterOption: "div[class*='filter__option']",
   filterOptionWithRole: '.filter__option, [role="option"]',
   filterControl: '.filter__control',
+  /** Resilient combobox locator — works whether the widget exposes `.filter__control` (qa2 react-select) or only the ARIA `combobox` role (stg / alternate themes). */
+  filterControlResilient: '.filter__control, [role="combobox"]',
   filtersButton: "button[class*='filterButton'], button:has-text('Filters')",
   filterMenuPortal: '.filter__menu-portal',
   filterPlaceholder: "div[class*='filter__placeholder']",
@@ -75,6 +77,9 @@ export const SELECTORS: AppSelectors = {
   customerSummary: '#customer-summary',
   customerStatusValue: "xpath=//div[@id='customer-summary']//*[contains(text(),'Status')]/following-sibling::div",
   accountNumberLink: "xpath=//div[@id='customer-summary']//*[contains(normalize-space(.),'Account Number')]/following-sibling::a | //div[@id='customer-summary']//*[contains(normalize-space(.),'Account Number')]/following-sibling::*//a",
+  // Rating Letter row on customer-information page.
+  // Structure: <div class="information-card_row"><span class="information-card_label">Rating Letter</span><span class="information-card_value">...</span></div>
+  ratingLetterValue: '[class*="information-card_row"]:has([class*="information-card_label"]:has-text("Rating Letter")) [class*="information-card_value"]',
 
   // ── Payment ────────────────────────────────────────────────────────
   makePayment: '#makePayment',
@@ -103,6 +108,8 @@ export const SELECTORS: AppSelectors = {
   bankAccountCustomerFirst: '#bankAccountCustomerFirstName',
   bankAccountCustomerLast: '#bankAccountCustomerLastName',
   bankAccountTypeInput: '#bankAccountType input',
+  /** Make Payment modal — <select> listing existing bank accounts on file (servicing portal). Empty until an option is chosen, which is required for Submit to enable. */
+  existingBankAccountSelect: 'select[name="bankAccountPk"]',
 
   // ── Form fields ────────────────────────────────────────────────────
   isEverythingAgreed: '#isEverythingAgreed',
@@ -141,6 +148,18 @@ export const SELECTORS: AppSelectors = {
   signwellSignAllLink: 'a:has-text("Save & Apply Everywhere"), a:has-text("Sign All")',
   signwellDocCompleteHeading: 'h1:has-text("Thanks for filling out your document")',
   signwellModalCloseLink: '.modal a[href="#"]',
+
+  // ── Signing provider — provider-agnostic detection surface ─────────
+  // Used by `SigningPage` (cross-portal) to detect which e-sign provider
+  // (GOWSIGN | SIGNWELL | PANDADOCS) rendered the iframe via URL inspection.
+  // Detection strategy preference (most → least robust):
+  //   1. iframe URL host match (*.gowsign.com / *.signwell.com / app.pandadoc.com)
+  //   2. DOM markers (UOwn alternative-contract wrapper, SignWell-Embedded-Iframe id)
+  signingAnyIframe: 'iframe',
+  signingGowSignIframe: 'iframe.alternative-contract-vendor_iframe__nSb3A',
+  signingGowSignIframeByUrl: 'iframe[src*="gowsign.com"]',
+  signingSignWellIframeByUrl: 'iframe[src*="signwell.com"], iframe#SignWell-Embedded-Iframe',
+  signingPandaDocsIframeByUrl: 'iframe[src*="pandadoc.com"]',
 
   // ── Origination - Funding ──────────────────────────────────────────
   fundingQueue: '#funding',
@@ -319,7 +338,10 @@ export const SELECTORS: AppSelectors = {
   wsPaymentSection: '.payment-section, [data-section="payments"]',
   wsContactSection: '.contact-section, [data-section="contact"]',
 
-  wsEmailInput: "input[type='email'], input[name='email'], input[placeholder*='email' i]",
+  // Single input that accepts email OR 10-digit phone (no mask). Real DOM:
+  // <input type="text" id="phoneOrEmail" name="phoneOrEmail" placeholder="Mobile number OR email address">
+  wsEmailInput: "#phoneOrEmail, input[name='phoneOrEmail'], input[type='email'], input[placeholder*='email' i]",
+  wsEmailOrPhoneInput: "#phoneOrEmail, input[name='phoneOrEmail']",
   wsVerificationCodeInput: "input[name='code'], input[placeholder*='code' i], input[type='tel']",
   wsSubmitButton: "button[type='submit'], button:has-text('Submit'), button:has-text('Continue'), button:has-text('Verify')",
   wsResendCodeButton: "button:has-text('Resend'), a:has-text('Resend'), :text-is(\"Didn't get a code?\"), :has-text('Resend code')",
@@ -575,4 +597,206 @@ export const SELECTORS: AppSelectors = {
   naCcBinField: '#mainCreditCardBin',
   naCcBinImage: 'img[src*="ccbin"]',
   naCcBinInstructionText: '.ccBinContainer span, [class*="ccBinContainer"] span',
+
+  // ── Merchant Add/Edit (Origination — /merchant & /merchant/addMerchant) ──────
+  // Task #1262 — Inventory Category mandatory
+  merchantListAddButton: "a[href*='addMerchant'], button:has-text('Add'), button:has-text('Add Merchant')",
+  // Clone is a bootstrap DropdownButton with title="Clone" — toggle opens the menu
+  merchantCloneDropdownToggle: "button:has-text('Clone'), .dropdown-toggle:has-text('Clone')",
+  // Search input inside the clone dropdown (InputField name="search")
+  merchantCloneDropdownInput: ".dropdown-menu input[name='search'], .show input[name='search']",
+  // Each clonable merchant appears as a DropdownItem inside the opened dropdown menu
+  merchantCloneDropdownItem: ".dropdown-menu.show .dropdown-item, .show .dropdown-item",
+  // Clone icon + tooltip shown in Merchant Information panel after a clone
+  merchantClonedFromIcon: '#merchantClone',
+  // Inventory Category — react-select creatable control rendered by InputField (label "Inventory Category")
+  inventoryCategoryControl: "label:has-text('Inventory Category') ~ div .filter__control, div:has(> label:has-text('Inventory Category')) .filter__control",
+  inventoryCategoryInput: "label:has-text('Inventory Category') ~ div input, div:has(> label:has-text('Inventory Category')) input",
+  inventoryCategoryClearIndicator: "label:has-text('Inventory Category') ~ div .filter__clear-indicator, div:has(> label:has-text('Inventory Category')) .filter__clear-indicator",
+  inventoryCategorySingleValue: "label:has-text('Inventory Category') ~ div [class*='filter__single-value'], div:has(> label:has-text('Inventory Category')) [class*='filter__single-value']",
+  inventoryCategoryLabel: "label:has-text('Inventory Category')",
+  inventoryCategoryErrorText: "div:has(> label:has-text('Inventory Category')) [class*='error'], div:has(> label:has-text('Inventory Category')) .text-danger, div:has(> label:has-text('Inventory Category')) + div:has-text('Required')",
+  // Merchant identity fields on the add/edit form
+  merchantRefCodeInput: "input[name='merchantCode'], input[name='refMerchantCode']",
+  merchantNameInput: "input[name='merchantName']",
+  merchantLegalNameInput: "input[name='legalName']",
+  merchantLocationNameInput: "input[name='locationName']",
+
+  // ── Program Groups (Origination — /programGroups — Task #1260) ────────────
+  pgGroupCountCell: "div[role='cell']:nth-child(2) span",
+  pgGroupInfoIcon: "div[role='cell'] svg[data-icon='circle-info'], div[role='cell'] svg.fa-circle-info",
+  pgGroupEditIcon: "div[role='cell'] svg[data-icon='pen-to-square'], div[role='cell'] svg.fa-pen-to-square, div[role='cell'] svg[data-icon='pencil']",
+  pgProgramLink: 'a[href*="/programs/"]',
+
+  // ── Programs List (Origination — /programs — Schedule Activation/Deactivation Dates) ──
+  plSectionHeader: '[class*="index-module_sectionHeader"]:has-text("PROGRAMS")',
+  plAddNewProgramBtn: 'button:has-text("ADD NEW PROGRAM")',
+  plSearchInput: "input#search, input[name='search'][placeholder='Search table']",
+  plGroupFilterDropdown: "#groupName, label:has-text('Program Groups') ~ div .filter__control",
+  plSearchButton: "button[type='submit']:has-text('Search'), button:has-text('Search')",
+  plTableRow: '.rdt_TableRow',
+  // react-data-table-component renders program name as a <div> with cursor-pointer utility classes
+  // (utils_dataTableColumn__cursorPointer_*, utils_dataTableColumn__blueFile_*). The `data-tag="allowRowEvents"`
+  // on parent cells is unreliable for click handling — target the styled div directly.
+  plProgramNameLink: ".rdt_TableRow [role='cell']:first-child [class*='cursorPointer'], .rdt_TableRow [role='cell']:first-child a, .rdt_TableRow [role='cell']:first-child span[class*='link']",
+  plPaginationFooter: '.rdt_Pagination',
+
+  // ── Program Details (Origination — right pane of /programs 2-pane layout) ──
+  pdPanelHeader: '[class*="index-module_sectionHeader"]:has-text("PROGRAM DETAILS")',
+  pdProgramNameInput: '#programName',
+  pdTermMonthsInput: '#termMonths',
+  pdActivationDateInput: '#activationDate',
+  pdDeactivationDateInput: '#deactivationDate',
+  pdMoneyFactorInput: '#moneyFactor',
+  pdPayoffDiscountInput: '#payoffDiscount',
+  pdEpoDaysInput: '#epoDays',
+  pdEpoFeePercentInput: '#epoFeePercent',
+  pdMinimumCartAmountInput: '#minimumCartAmount',
+  pdMaxCartAmountInput: '#maxCartAmount',
+  pdDealerDiscountOverrideInput: "input[name='dealerDiscountOverride']",
+  pdProcessingFeeOverrideInput: "input[name='processingFeeOverride']",
+  pdAmountChargedAtSigningInput: "input[name='amountChargedAtSigning']",
+  pdAllowedFrequencyOverrideControl: "label:has-text('Allowed Frequency Override') ~ div .filter__control",
+  pdLendingCategoryControl: "label:has-text('Lending Category') ~ div .filter__control, select[name='lendingCategory']",
+  pdProgramGroupControl: "label:has-text('Program Group') ~ div .filter__control, select[name='programGroup']",
+  pdStatesControl: "label:has-text('States') ~ div .filter__control",
+  pdSaveButton: "button[form='addOrEditMerchantProgramForm']:has-text('SAVE'), button[type='submit']:has-text('SAVE')",
+  pdCancelButton: "[class*='program-form_programForm__cancelButton'], button:has-text('CANCEL')",
+  pdCloneDropdownToggle: "[class*='index-module_dropdownContainer__ddButton'], button:has-text('Clone'):not(:has-text('Group'))",
+  pdCloneGroupButton: 'button:has-text("Clone Group")',
+  pdInlineError: 'div.inline-error, [class*="error"]:has-text("Activation"), [class*="error"]:has-text("Deactivation")',
+  pdNotesCard: '.card:has(.card-header:has-text("Notes")), .card:has([class*="card-header"]:has-text("Notes"))',
+  pdNotesFiltersButton: '.card:has([class*="card-header"]:has-text("Notes")) button:has-text("Filters")',
+  pdNotesSearchInput: '.card:has([class*="card-header"]:has-text("Notes")) input[name="search"], .card:has([class*="card-header"]:has-text("Notes")) input[placeholder*="Search" i]',
+  pdNotesUserIdInput: '.card:has([class*="card-header"]:has-text("Notes")) input[name="userId"], .card:has([class*="card-header"]:has-text("Notes")) input[placeholder*="User" i]',
+  pdNotesLogActivityControl: '.card:has([class*="card-header"]:has-text("Notes")) label:has-text("Log Activity") ~ div .filter__control',
+  // Scope to table BODY only — excludes the header row (which is also .rdt_TableRow).
+  // Multiple fallbacks for role-based + class-based matching against react-data-table-component.
+  pdNotesRow: '.card:has([class*="card-header"]:has-text("Notes")) .rdt_TableBody .rdt_TableRow, .card:has([class*="card-header"]:has-text("Notes")) [role="rowgroup"]:last-of-type [role="row"]',
+  pdNotesCell: "div[role='cell']",
+  pdNotesExpandChevron: 'button[aria-label*="Expand" i], svg[data-icon="chevron-down"], svg[data-icon="chevron-right"]',
+
+  // ── Merchant Programs Section (Origination — merchant detail page, read-only) ──
+  mpsSection: "section:has(:text-is('Programs')), .card:has([class*='card-header']:has-text('Programs')), div:has(> :text-is('Programs')) + div",
+  mpsProgramRow: '.rdt_TableRow',
+  mpsProgramNameCell: "[role='cell']:first-child",
+  mpsStatusBadge: "[class*='badge'], [class*='status'], [role='cell'] span:has-text('Active'), [role='cell'] span:has-text('Inactive')",
+  mpsStatusTooltip: '[role="tooltip"], .tooltip, [class*="tooltip"]',
+  mpsEditAction: "[role='cell'] svg[data-icon='pen-to-square'], [role='cell'] button:has-text('Edit'), [role='cell'] a:has-text('Edit')",
+
+  // ── Bank Account Modal (Servicing — customer-information page) ────────────
+  // Card-level anchors (read-only collapsed view)
+  bankAccountCard: '.card:has(button:has-text("Add Account"))',
+  addBankAccountButton: 'button:has-text("Add Account")',
+  viewAllBankAccountsButton: 'button:has-text("View All")',
+  // Read-only values on the collapsed card — resolved via label sibling combinators
+  setDefaultPaymentValue: 'label:has-text("Set as default payment?") ~ div [class*="inputField__readOnly"], label:has-text("Set as default payment?") ~ div [class*="readOnly"]',
+  accountNumberDisplayValue: 'label[for="accountNumber"] ~ div [class*="inputField__readOnly"], label:has-text("Account Number") ~ div [class*="readOnly"]',
+  // "Add a Bank Account" modal
+  addBankAccountModalTitle: 'div:has-text("Add a Bank Account")',
+  addBankAccountForm: '#addBAForm',
+  bankAccountTypeDropdown: '#bankAccountType',
+  bankAccountRoutingNumberInput: '#routingNumber',
+  bankAccountAccountNumberInput: '#accountNumber',
+  setDefaultPaymentDropdown: '#autoPay',
+  saveBankAccountButton: '#addBAForm button[class*="collapsableEdit__button__primary"], .modal.show button[class*="collapsableEdit__button__primary"]',
+  cancelBankAccountButton: '#addBAForm button[class*="collapsableEdit__button__secondary"], .modal.show button[class*="collapsableEdit__button__secondary"]',
+  addBankAccountModalClose: 'svg[data-icon="xmark-large"]',
+  // "All Bank Accounts" modal (View All)
+  allBankAccountsModalTitle: 'div:has-text("All Bank Accounts")',
+  // Scoped to the "All Bank Accounts" modal — customer page has other rdt_Table instances
+  // (e.g., Last 3 Payments). Strict-mode matching must resolve to a single element.
+  bankAccountsTable: '.modal.show .rdt_Table',
+  bankAccountsTableBody: '.modal.show .rdt_TableBody',
+  bankAccountsTableRow: (index: number) => `#row-${index}`,
+  bankAccountsRowCheckbox: 'input[name="select-row-undefined"]',
+  bankAccountsSelectAllCheckbox: 'input[name="select-all-rows"]',
+  bankAccountsDeleteButton: '.modal.show button:has-text("Delete")',
+
+  // ── GowSign — Document Viewer (cross-portal / external embed) ─────────────
+  // Reference: docs/taskTestingUown/gowsign_integration/gowsign-integration-user-stories.md § Apendice A
+  // Selector strategy preference: ID > aria-label > custom non-Tailwind class > getByText
+  // Header / Toolbar
+  gsViewerRoot: '.gowsign-document',
+  gsDocumentTitle: 'h1.overflow-hidden.overflow-ellipsis',
+  gsStartSignatureButton: '#startSignatureButton',
+  gsDownloadButton: 'button:has(svg.lucide-download)',
+  gsCloseDocumentButton: 'button[aria-label="Close document"]',
+  // Reading mode: Headless UI ID is dynamic, so anchor by aria-label/role (toggle is a switch)
+  gsReadingModeToggle: '[role="switch"][aria-label*="Reading" i], [role="switch"][aria-labelledby]:near(:text("Reading mode"))',
+
+  // Pre-signature metadata table
+  gsSentByLabel: 'text=Document sent by',
+  gsCreatedOnLabel: 'text=Created on',
+  gsDocumentIdHeader: 'th:has-text("DOCUMENT ID"), :has(svg.lucide-file-digit)',
+  gsDocumentIdValue: 'td:right-of(:text("DOCUMENT ID"))',
+  gsRecipientHeader: 'th:has-text("Recipient")',
+  gsRecipientNameCell: 'td:right-of(:text("Recipient"))',
+  gsRecipientEmailCell: 'td span.text-blue-600:has(svg.lucide-mail)',
+  gsStatusBadge: 'span.rounded-md.text-white',
+
+  // Document content
+  gsDocumentContainer: '.gowsign-document',
+  gsPageNumber: '.styles_page-number__oHQFD',
+  gsPageBreak: '.gowsign-page-break',
+
+  // Property Price Tag
+  gsPriceTagTable: 'table.price-tag',
+  gsPriceTagTotalOfPayments: 'table.price-tag td:has(strong:has-text("TOTAL OF")) strong:has-text("$")',
+  gsPriceTagCostOfLease: 'table.price-tag td:has(strong:has-text("COST OF LEASE")) strong:has-text("$")',
+  gsPriceTagCashPrice: 'table.price-tag td:has(strong:has-text("CASH PRICE")) strong:has-text("$")',
+  gsPriceTagAmountOfEachPayment: 'table.price-tag td:has(strong:has-text("AMOUNT OF EACH PAYMENT")) strong',
+  gsPriceTagNumberOfPayments: 'table.price-tag td:has(strong:has-text("NUMBER OF")) strong',
+  gsPriceTagRenewalPeriod: 'table.price-tag td:has(strong:has-text("RENEWAL PERIOD")) strong',
+
+  // LESSOR / LESSEE
+  gsLessorLesseeTable: 'table:has(td:has(strong:has-text("LESSOR:")))',
+  gsLessorCell: 'table:has(td:has(strong:has-text("LESSOR:"))) td:has(strong:has-text("LESSOR:"))',
+  gsLesseeCell: 'table:has(td:has(strong:has-text("LESSEE:"))) td:has(strong:has-text("LESSEE:"))',
+
+  // Lease Items
+  gsLeaseItemsTable: 'table#leaseItems:has(tbody tr td)',
+  gsLeaseItemsRow: 'table#leaseItems:has(tbody tr td) tbody tr:has(td)',
+  gsTotalDeliveryFee: 'p:has-text("Total Delivery Fee") u',
+
+  // Initial Payment Breakdown
+  gsInitialLeasePaymentRow: 'p:has-text("Initial Lease Payment") span[style*="float: right"]',
+  gsProcessingFeeRow: 'p:has-text("Processing Fee") span[style*="float: right"]',
+  gsTaxRow: 'p:has-text("Tax") span[style*="float: right"]',
+  gsTotalInitialPaymentRow: 'p:has-text("Total Initial Payment") span[style*="float: right"]',
+
+  // Dates / agreement metadata
+  gsAgreementNumberValue: 'p:has-text("Agreement Number:") strong',
+  gsAccountNumberValue: 'p:has-text("Account:") strong',
+  gsContractDateValue: 'p:has(strong:has-text("Date:")) span[style*="float: right"]',
+  gsInitialPaymentDueDateRow: 'p:has-text("initial Lease payment due on")',
+  gsPromoExpirationRow: 'p:has-text("3-Month-Promotional-Payoff-Option"), p:has-text("expires on")',
+
+  // EPO chart
+  gsEpoChartTable: 'table:has(th:has-text("Payment Number")):has(th:has-text("EPO"))',
+  gsEpoChartRows: 'table:has(th:has-text("Payment Number")):has(th:has-text("EPO")) tr:has(td)',
+  gsEpoChartRowAt: (n: number) => `table:has(th:has-text("Payment Number")):has(th:has-text("EPO")) tr:nth-child(${n + 1})`,
+
+  // ACH grid
+  gsAchGridTable: 'table:has(th:has-text("Number of payments")):has(th:has-text("Total Cost"))',
+  gsAchGridRows: 'table:has(th:has-text("Number of payments")):has(th:has-text("Total Cost")) tr:has(td)',
+
+  // ── Servicing — Documents tab (/documents/{accountPk}) ─────────────
+  // Source: servicing repo `components/document-information/index.tsx` and `pages/documents/[account].tsx`.
+  // The page renders <PageName name="Documents" /> + <Input id="filterDocuments" /> + ADD NEW button + <DataTable ...>.
+  // File Name column truncates to 31 chars on desktop with `...` and exposes the full title via the `title=""` attr.
+  // The download cell is `<div className="mx-2 cursor-pointer" id="download">` containing a FontAwesome SVG whose
+  // onClick calls `window.open(row.fileTempLink, '_blank')` — opens in a new tab; NOT a Download event.
+  svcDocumentsPageTitle: 'h2:has-text("Documents"), h1:has-text("Documents"), [class*="page-name"]:has-text("Documents")',
+  svcDocumentsSearchInput: '#filterDocuments',
+  svcDocumentsAddNewButton: 'button[class*="documentsButton"], button:has-text("ADD NEW")',
+  svcDocumentsTableRow: '.rdt_TableRow',
+  svcDocumentsTableCell: "div[role='cell']",
+  svcDocumentsEmptyState: 'text=There are no records to display',
+  // IMPORTANT: ids are unique per row in the React source (id="download"/"edit"/"resend"), so duplicates exist
+  // across rows in the DOM. Always scope these via the row Locator (e.g. row.locator(SELECTORS.svcDocumentsRowDownloadTrigger)),
+  // never against the page root.
+  svcDocumentsRowDownloadTrigger: '#download',
+  svcDocumentsRowEditTrigger: '#edit',
+  svcDocumentsRowResendTrigger: '#resend',
 } as const;

@@ -142,27 +142,27 @@ POST /uown/svc/resumeScheduledTask/{nomeDoSweep}
 
 **O que faz:** Retenta CCs que foram negados no dia, excluindo erros permanentes (cartao expirado, roubado, conta fechada).
 **Cron:** Diario
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/CCDailyScheduledDeniedRerun`
 **O que verificar:** Transacoes que mudaram de DENIED para APPROVED.
 
 #### 34.4 delinquencyRerunCCPaymentsSweep
 
 **O que faz:** Retenta CC especificamente em contas **inadimplentes**. Tenta cobrar valor de past due.
 **Cron:** Configuravel
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/delinquencyRerunCCPaymentsSweep`
 **O que verificar:** Contas inadimplentes que tiveram pagamento aprovado. Reducao de daysPastDue.
 
 #### 34.5 dailyDelinquencyRerunCCSweep
 
 **O que faz:** Rerun diario em contas inadimplentes. Complementa o sweep anterior com frequencia diaria.
 **Cron:** Diario
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/dailyDelinquencyRerunCCSweep`
 
 #### 34.6 IdempotentCCSweep
 
 **O que faz:** Retenta transacoes CC que deram **timeout** (sem resposta do gateway). Garante idempotencia -- nao cobra duas vezes.
 **Cron:** Configuravel
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/IdempotentCCSweep`
 **O que verificar:** Transacoes com status TIMEOUT que foram resolvidas.
 
 #### 34.7 CCVintageRun e SecondVintageRun (On-Demand)
@@ -196,14 +196,14 @@ POST /uown/svc/resumeScheduledTask/{nomeDoSweep}
 
 **O que faz:** Consulta status dos pagamentos ACH enviados (aprovado, negado, NSF).
 **Cron:** `0 0 16 ? * MON-FRI` (4:00 PM Seg-Sex)
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/getSendACHPaymentsStatusSweep`
 **O que verificar:** ACH com status APPROVED ou DENIED. NSF fees criados.
 
 #### 34.11 getStatusDatePaymentsListSweep
 
 **O que faz:** Busca lista de pagamentos por data de status no processador ACH.
 **Cron:** Configuravel
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/getStatusDatePaymentsListSweep`
 
 #### 34.12 rerunACHPaymentsSweep
 
@@ -223,7 +223,7 @@ POST /uown/svc/resumeScheduledTask/{nomeDoSweep}
 
 **O que faz:** Processa pagamentos recebidos via PayWallet (desconto em folha). Le arquivo XLSX do SFTP.
 **Cron:** `0 0 0 * * ?` (Meia-noite diario)
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/processPayWalletPaymentsSweep`
 **O que verificar:** Novos pagamentos criados a partir do arquivo. Arquivo movido para pasta `/pw/`.
 
 ---
@@ -234,7 +234,7 @@ POST /uown/svc/resumeScheduledTask/{nomeDoSweep}
 
 **O que faz:** Cobra taxas de assinatura/documentacao pendentes em contas.
 **Cron:** `0 0/2 * * * ?` (A cada 2 minutos)
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/chargeSigningFeeSweep`
 **O que verificar:** Transacoes de signing fee criadas e cobradas.
 
 #### 34.16 CreateScheduledCreditCardPaymentsSweep
@@ -252,8 +252,9 @@ POST /uown/svc/resumeScheduledTask/{nomeDoSweep}
 
 **O que faz:** Verifica contas elegiveis para status PAID_OUT (todas parcelas pagas). Atualiza automaticamente.
 **Cron:** `0 0/1 * * ?` (A cada hora)
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/paidOutAccountsSweep`
 **O que verificar:** Contas que mudaram para PAID_OUT. `SELECT * FROM uown_sv_account WHERE status = 'PAID_OUT' ORDER BY modified_date DESC;`
+
 
 #### 34.18 checkLeadExpirationSweep
 
@@ -266,14 +267,14 @@ POST /uown/svc/resumeScheduledTask/{nomeDoSweep}
 
 **O que faz:** Atualiza status de contratos baseado em mudancas de status da conta.
 **Cron:** A cada 15 minutos (configuravel via `BootstrapService.update.contract.status.sweep`)
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/updateContractStatusSweep`
 **O que verificar:** Tabela `uown_sv_contract` para atualizacoes recentes.
 
 #### 34.20 removeRatingLetterSweep
 
 **O que faz:** Remove/arquiva rating letters apos periodo estatutario.
 **Cron:** `0 0 0 ? * FRI` (Meia-noite Sexta)
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/removeRatingLetterSweep`
 **O que verificar:** Contas com rating removido/resetado.
 
 ---
@@ -284,41 +285,41 @@ POST /uown/svc/resumeScheduledTask/{nomeDoSweep}
 
 **O que faz:** Processa fila de emails pendentes e envia via SendGrid.
 **Cron:** Frequente (minutos)
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/emailSweep`
 **O que verificar:** Emails em `uown_email_queue` com status SENT.
 
 #### 34.22 FirstPaymentReminderSweep
 
 **O que faz:** Envia lembretes de primeiro pagamento para contas novas.
 **Cron:** Diario
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/FirstPaymentReminderSweep`
 **O que verificar:** Emails de "First Payment Reminder" na fila.
 
 #### 34.23 RecurringPaymentReminderSweep
 
 **O que faz:** Envia lembretes de pagamento recorrente para contas ativas.
 **Cron:** Diario
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/RecurringPaymentReminderSweep`
 **O que verificar:** Emails de lembrete na fila.
 
 #### 34.24 delinquencyOfferEmailSweep
 
 **O que faz:** Envia ofertas de negociacao por email/SMS baseado na faixa de inadimplencia (30, 60, 90, 150+ dias).
 **Cron:** `0 0 12 ? * MON-FRI` (12:00 PM Seg-Sex)
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/delinquencyOfferEmailSweep`
 **O que verificar:** Emails de Delinquency30/60/90/150DayOffer enviados.
 
 #### 34.25 delinquencyReminderEmailSweep
 
 **O que faz:** Envia lembretes genericos "Past Due" para contas inadimplentes.
 **Cron:** `0 0 13 ? * WED` (1:00 PM Quarta)
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/delinquencyReminderEmailSweep`
 
 #### 34.26 latePaymentNoticeEmailSweep
 
 **O que faz:** Envia avisos mensais com dias exatos de atraso.
 **Cron:** `0 0 13 ? * 2L` (1:00 PM ultima Segunda do mes)
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/latePaymentNoticeEmailSweep`
 
 #### 34.27 UnutilizedApprovalSweep
 
@@ -331,20 +332,20 @@ POST /uown/svc/resumeScheduledTask/{nomeDoSweep}
 
 **O que faz:** Envia convites/lembretes para clientes usarem o portal de autoatendimento.
 **Cron:** `0 0 0 * * ?` (Meia-noite diario)
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/customerPortalReminderSweep`
 
 #### 34.29 paidInFullAccountEmailSweep
 
 **O que faz:** Envia email "Paid in Full" quando conta e quitada.
 **Cron:** `0 0 1 ? * MON-FRI` (1:00 AM Seg-Sex)
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/paidInFullAccountEmailSweep`
 **O que verificar:** Emails "Paid in Full" enviados para contas recentemente quitadas.
 
 #### 34.30 settledInFullAccountEmailSweep
 
 **O que faz:** Envia email "Settled in Full" quando conta e liquidada por acordo.
 **Cron:** `0 0 2 ? * MON-FRI` (2:00 AM Seg-Sex)
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/settledInFullAccountEmailSweep`
 **O que verificar:** Emails "Settled in Full" enviados.
 
 ---
@@ -393,27 +394,27 @@ POST /uown/svc/resumeScheduledTask/{nomeDoSweep}
 
 **O que faz:** Envia alocacoes de pagamento do dia para TaxCloud para compliance fiscal. Roda em 10 threads.
 **Cron:** `0 15 22 ? * *` (10:15 PM diario)
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/dailyTaxCloudPaymentsSync`
 **O que verificar:** Logs de TaxCloud para order submissions. Erros de sincronizacao.
 
 #### 34.37 dailyTaxCloudRefundsSync
 
 **O que faz:** Envia reembolsos do dia para TaxCloud para ajuste fiscal. Roda em 5 threads.
 **Cron:** `0 0 23 ? * *` (11:00 PM diario)
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/dailyTaxCloudRefundsSync`
 **O que verificar:** TaxCloud refund order submissions.
 
 #### 34.38 updateTaxRatesSweep
 
 **O que faz:** Atualiza taxas de imposto (mensal no ultimo dia do mes).
 **Cron:** `0 0 0 L * ? *` (Meia-noite no ultimo dia do mes)
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/updateTaxRatesSweep`
 
 #### 34.39 monthlyTaxReportSweep
 
 **O que faz:** Gera relatorio mensal de impostos para reconciliacao.
 **Cron:** `0 0 0 1 * ?` (Meia-noite no dia 1 de cada mes)
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/monthlyTaxReportSweep`
 
 ---
 
@@ -434,32 +435,32 @@ POST /uown/svc/resumeScheduledTask/{nomeDoSweep}
 
 **O que faz:** Gera arquivo para o Skit.ai (bot de cobranca) com dados de contas inadimplentes. Enviado via SFTP.
 **Cron:** `0 0 0 * * ?` (Meia-noite diario)
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/createSkitDelinquentFileSweep`
 **O que verificar:** Arquivo gerado no SFTP. Logs de envio.
 
 #### 34.42 createSkitDelinquentOfferFileSweep
 
 **O que faz:** Gera arquivo Skit.ai com contas inadimplentes elegiveis para ofertas de settlement.
 **Cron:** `0 0 0 * * ?` (Meia-noite diario)
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/createSkitDelinquentOfferFileSweep`
 
 #### 34.43 redistributeDelinquentEpoPoolSweep
 
 **O que faz:** Redistribui reserva de EPO pool para contas inadimplentes. Rebalanceia alocacoes.
 **Cron:** `0 0 3 ? * SUN` (3:00 AM Domingo)
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/redistributeDelinquentEpoPoolSweep`
 
 #### 34.44 pastDueEpoPoolAmountReportSweep
 
 **O que faz:** Gera relatorio de valores EPO pool para contas em atraso.
 **Cron:** `0 0 2 ? * SUN` (2:00 AM Domingo)
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/pastDueEpoPoolAmountReportSweep`
 
 #### 34.45 progetDeviceLockingSweep
 
 **O que faz:** Bloqueia dispositivos (IoT/GPS) de contas inadimplentes via sistema Proget.
 **Cron:** `0 0 0 ? * * *` (Meia-noite diario)
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/progetDeviceLockingSweep`
 **O que verificar:** Status de bloqueio no Proget.
 
 ---
@@ -470,18 +471,20 @@ POST /uown/svc/resumeScheduledTask/{nomeDoSweep}
 
 **O que faz:** Gera relatorio diario de funding e opcionalmente envia para SharePoint.
 **Cron:** `0 0 1 * * ?` (1:00 AM) / `0 0 3 * * ?` (3:00 AM para SharePoint)
-**Endpoint manual:** Via trigger generico
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/dailyFundingReportSweep` (ou `dailyFundingReportSharepointSweep` para a variante SharePoint)
 **O que verificar:** Relatorio no email/SharePoint.
 
 #### 34.47 dailyFundedReportSweep
 
 **O que faz:** Relatorio de contas financiadas no dia.
 **Cron:** `0 0 3 * * ?` (3:00 AM)
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/dailyFundedReportSweep`
 
 #### 34.48 dailyRefundReportSweep / dailyRefundedReportSweep
 
 **O que faz:** Relatorio de reembolsos processados no dia.
 **Cron:** `0 0 3 * * ?` (3:00 AM)
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/dailyRefundReportSweep` (ou `dailyRefundedReportSweep` para a variante)
 
 #### 34.49 dailyAgentTransactionReportSweep
 
@@ -493,16 +496,19 @@ POST /uown/svc/resumeScheduledTask/{nomeDoSweep}
 
 **O que faz:** Relatorio semanal consolidado de funding.
 **Cron:** `0 0 1 ? * SUN` (1:00 AM Domingo)
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/weeklyFundingReportSweep`
 
 #### 34.51 monthlyFundingReportSweep / monthlyConsolidatedFundingReportSweep
 
 **O que faz:** Relatorio mensal de funding e versao consolidada multi-entidade.
 **Cron:** `0 0 1 1 * ?` (1:00 AM dia 1) / `0 0 4 1 * ?` (4:00 AM dia 1)
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/monthlyFundingReportSweep` (ou `monthlyConsolidatedFundingReportSweep` para a versao consolidada)
 
 #### 34.52 sendDailyPaymentsSharepointSweep
 
 **O que faz:** Envia resumo diario de pagamentos para SharePoint.
 **Cron:** `0 16 7 ? * * *` (7:16 AM)
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/sendDailyPaymentsSharepointSweep`
 
 #### 34.53 sendDailyBorrowingBaseReport
 
@@ -514,31 +520,37 @@ POST /uown/svc/resumeScheduledTask/{nomeDoSweep}
 
 **O que faz:** Relatorio diario de leases ativos para tracking de portfolio.
 **Cron:** `0 2 7 ? * * *` (7:02 AM)
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/activeLeaseDailyReport`
 
 #### 34.55 rerunACHWeeklyReport
 
 **O que faz:** Relatorio semanal de retentativas ACH falhadas.
 **Cron:** `0 15 7 ? * MON` (7:15 AM Segunda)
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/rerunACHWeeklyReport`
 
 #### 34.56 generateDelinquencyReport
 
 **O que faz:** Gera relatorio completo de inadimplencia.
 **Cron:** `0 0 8 * * ?` (8:00 AM diario)
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/generateDelinquencyReport`
 
 #### 34.57 generateDueDateMovesReport
 
 **O que faz:** Relatorio de auditoria de movimentacoes de data de vencimento.
 **Cron:** `0 0 3 * * ?` (3:00 AM)
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/generateDueDateMovesReport`
 
 #### 34.58 generateExportBlacklistReport
 
 **O que faz:** Exporta entradas de blacklist para compliance.
 **Cron:** `0 0 0 1 * ?` (Meia-noite dia 1 do mes)
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/generateExportBlacklistReport`
 
 #### 34.59 generateMerchantLeaseReport
 
 **O que faz:** Relatorio de leases por merchant para reconciliacao.
 **Cron:** `0 0 8 * * ?` (8:00 AM diario)
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/generateMerchantLeaseReport`
 
 ---
 
@@ -554,11 +566,13 @@ POST /uown/svc/resumeScheduledTask/{nomeDoSweep}
 
 **O que faz:** Gera relatorio de leads para Daniel Jewelers (merchant especifico).
 **Cron:** `0 30 0 * * ?` (12:30 AM)
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/danielJewelersLeadReportSweep`
 
 #### 34.62 saleFileGenerationSweep
 
 **O que faz:** Gera arquivos de vendas/transacoes para vendors/parceiros.
 **Cron:** `0 0 4 * * ?` (4:00 AM)
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/saleFileGenerationSweep`
 
 ---
 
@@ -568,17 +582,20 @@ POST /uown/svc/resumeScheduledTask/{nomeDoSweep}
 
 **O que faz:** Gera arquivo de onboarding para Vervent (parceiro de documentos de lease).
 **Cron:** `0 0 2 ? * *` (2:00 AM)
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/generateVerventOnBoardingFileSweep`
 
 #### 34.64 kornerstoneDailyImportSweep
 
 **O que faz:** Importa dados diarios do sistema legado Kornerstone (migracao). Chama `MigrationService.importBasicDataForContracts()`.
 **Cron:** `0 0 22 ? * *` (10:00 PM)
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/kornerstoneDailyImportSweep`
 **O que verificar:** Novas contas importadas em `uown_sv_account`.
 
 #### 34.65 refreshTrustPilotAccessKeySweep
 
 **O que faz:** Renova credenciais de API do TrustPilot.
 **Cron:** `0 0 0 * * ?` (Meia-noite)
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/refreshTrustPilotAccessKeySweep`
 
 ---
 
@@ -588,11 +605,13 @@ POST /uown/svc/resumeScheduledTask/{nomeDoSweep}
 
 **O que faz:** Health check do sistema. Registra metricas de monitoramento.
 **Cron:** `0 0 23 * * ?` (11:00 PM)
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/monitorSweep`
 
 #### 34.67 paymentGatewayFixSweep
 
 **O que faz:** Corrige problemas de sincronizacao com gateways de pagamento.
 **Cron:** `0 0 21 * * ?` (9:00 PM)
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/paymentGatewayFixSweep`
 
 #### 34.68 checkSignedAndFundingLeaseCountSweep
 
@@ -604,6 +623,7 @@ POST /uown/svc/resumeScheduledTask/{nomeDoSweep}
 
 **O que faz:** Verifica validade e precisao de contas bancarias.
 **Cron:** `0 0/5 * * * ?` (A cada 5 minutos)
+**Endpoint manual:** `POST /uown/svc/triggerScheduledTask/bankVerificationSweep`
 
 ---
 

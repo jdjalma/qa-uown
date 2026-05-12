@@ -10,4 +10,8 @@ export * from './svc-email.body.js';
 export * from './svc-contact.body.js';
 export * from './ams-user.body.js';
 export * from './merchant-config.body.js';
+export * from './program-info.body.js';
 export * from './seon.body.js';
+export * from './bank-account.body.js';
+export * from './customer.body.js';
+export * from './gowsign-template.body.js';

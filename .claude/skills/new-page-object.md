@@ -26,21 +26,21 @@ Antes de qualquer trabalho, crie a TODO list com `TaskCreate` para cada fase. At
 Glob: src/pages/{portal}/{name}.page.ts
 ```
 
-Se ja existe -> invocar `subagent-refactor-page-object` em vez de criar novo.
+Se ja existe -> invocar `subagent-page-object` (mode: `refactor`) em vez de criar novo.
 
 ### Fase 2 — Carregar contexto
 
 Ler antes de implementar:
 - `.claude/rules/page-objects.md` — hierarquia, NEVER/ALWAYS
-- `.claude/context/architecture.md` — estrutura do projeto
-- `.claude/context/test-patterns.md` — padroes de test
+- `.claude/context/project.md` — estrutura do projeto
+- `.claude/context/test-patterns-core.md + context/test-patterns-ui.md + context/test-patterns-arrangements.md` — padroes de test
 
 ### Fase 3 — Implementar
 
-Invocar `subagent-impl-page-object`:
+Invocar `subagent-page-object` (mode: `create`):
 
 ```
-Agent(subagent_type="subagent-impl-page-object", prompt="""
+Agent(subagent_type="subagent-page-object", prompt="""
 Portal: {portal}
 Classe: {className}
 Caminho: {filePath}
@@ -64,7 +64,7 @@ Invocar `subagent-docs-update`:
 Agent(subagent_type="subagent-docs-update", prompt="""
 Novo page object criado: {className} em {filePath}
 Portal: {portal}
-Atualizar shared/e2e-agent-responsibilities.md se necessario.
+Atualizar shared/helpers-catalog.md / shared/api-clients-catalog.md / shared/page-objects-catalog.md se necessario.
 """)
 ```
 

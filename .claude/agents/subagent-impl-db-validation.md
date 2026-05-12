@@ -18,7 +18,7 @@ Creates PostgreSQL validation queries and polling helpers.
 
 ## Required Context
 
-1. `context/architecture.md`
+1. `context/project.md`
 2. `context/environments.md`
 
 ## Optional Context

@@ -121,6 +121,34 @@ test.describe('My Test', { tag: splitTags(data.tag) }, () => { ... });
 
 ---
 
+## Network Interception — Third-Party SDKs
+
+Use `network-intercept.helper.ts` when a test needs to assert on HTTP traffic emitted by a third-party frontend SDK (e.g., NeuroID, SEON) or its corresponding backend endpoint.
+
+```typescript
+import { attachNeuroIdListeners, dumpCaptured, classifyNeuroIdOutcome } from '@helpers/network-intercept.helper.js';
+
+test('NeuroID bypass on PROFILE_NOT_FOUND', async ({ page }) => {
+  const capture = await attachNeuroIdListeners(page);
+
+  // ... drive the application flow ...
+
+  const outcome = classifyNeuroIdOutcome(capture);
+  // outcome: { sdkLoaded, backendCalled, bypassTriggered, status }
+
+  const dump = dumpCaptured(capture); // safe for attach — PII scrubbed, bodies capped at 50KB
+  await test.info().attach('neuro-id-traffic', { body: JSON.stringify(dump), contentType: 'application/json' });
+});
+```
+
+Key points:
+- Call `attachNeuroIdListeners(page)` BEFORE navigating to the page that loads the SDK.
+- `classifyNeuroIdOutcome` returns a structured verdict — assert on its fields, not raw request bodies.
+- PII fields (`ssn`, `dob`, `cardNumber`, `cvc`, `accountNumber`, `routingNumber`, `password`) are scrubbed automatically.
+- The helper is generic: use `capture.requests` directly for non-NeuroID SDKs.
+
+---
+
 ## Boas práticas — Estabilidade
 
 * Sempre aguardar **spinner** após navegação (`waitForSpinner()`).
@@ -130,6 +158,25 @@ test.describe('My Test', { tag: splitTags(data.tag) }, () => { ... });
 * Para PayPair OTP: **network intercept** em `/api/v1/users/send_code` (não IMAP).
 * Para textareas com `oninput`: usar `evaluate()` em vez de `fill()`.
 * Para iframe nesting: `#llapp-iframe` → `#pt-iframe` (PayPair widget → UOWN payment).
+
+## Boas práticas — ACH / Bank Account funding flow
+
+When `submitPaymentInfoViaApi: true` is set in the API setup options and the flow requires ACH (bank account) funding, `getMissingFields` **must** be called between `sendInvoice` and `submitApplication`. Skipping it causes a 500 error in qa2 with message "Merchant program is required" because `merchantProgramPk` is not set on the lead.
+
+Pattern (enforced in `src/helpers/api-setup.helpers.ts` since Task #497):
+
+```typescript
+// 1. sendInvoice
+const invoiceResponse = await api.invoice.sendInvoice(merchant, leadUuid);
+
+// 2. getMissingFields — REQUIRED before submitApplication when ACH path
+await api.application.getMissingFields(shortCode, { planId });
+
+// 3. submitApplication
+await api.application.submitApplication(leadPk, firstName, lastName, { planId, ... });
+```
+
+This fix is already applied in the helper — no manual call needed when using `buildTestData()` + `api-setup.helpers.ts`. Relevant only when constructing the flow manually.
 
 ## Boas práticas — Dados de teste
 

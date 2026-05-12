@@ -35,8 +35,10 @@ export class MerchantConfigurator {
    */
   async resolve(refCode: string): Promise<MerchantDetail> {
     const res = await this.client.getMerchantsByRefCode(refCode);
-    const merchant = res.body?.merchants?.[0];
-    if (!merchant?.merchantPk) {
+    const list = Array.isArray(res.body) ? res.body : [];
+    const merchant = list[0];
+    const pk = Number(merchant?.merchantInfo?.merchantPK ?? merchant?.pk ?? 0);
+    if (!merchant || !pk) {
       throw new Error(`Merchant not found for refCode: "${refCode}"`);
     }
     return merchant;
@@ -56,7 +58,7 @@ export class MerchantConfigurator {
   ): Promise<MerchantDetail> {
     const merchant = await this.resolve(refCode);
     const desired = typeof state === 'string' ? MERCHANT_PRESETS[state] : state;
-    const pk = merchant.merchantPk!;
+    const pk = Number(merchant.merchantInfo?.merchantPK ?? merchant.pk ?? 0);
 
     // Only snapshot once per merchant — first configure wins
     if (!this.snapshots.has(pk)) {

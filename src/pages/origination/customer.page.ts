@@ -763,24 +763,32 @@ export class OriginationCustomerPage extends OriginationBasePage {
       .first();
   }
 
-  /** Returns the Merchant filter container scoped within the Sales Rep panel. */
-  private getSalesRepMerchantContainer() {
-    return this.getSalesRepPanel().locator("label:has-text('Merchant')").locator('..');
-  }
-
-  /** Returns the Merchant `.filter__control` within the Sales Rep panel. */
+  /**
+   * The Sales Rep panel contains exactly two comboboxes in a fixed order:
+   * Merchant (index 0) and Location (index 1). We anchor on this rather than on
+   * a label tag because stg renders the field titles as plain `<div>` elements
+   * (no `<label>` tag), while qa2 uses `<label>`. Positional indexing is stable
+   * because the panel layout (Merchant above Location) is part of the contract.
+   */
   private getSalesRepMerchantControl() {
-    return this.getSalesRepMerchantContainer().locator(SELECTORS.filterControl).first();
+    return this.getSalesRepPanel().locator(SELECTORS.filterControlResilient).nth(0);
   }
 
-  /** Returns the Location filter container scoped within the Sales Rep panel. */
-  private getSalesRepLocationContainer() {
-    return this.getSalesRepPanel().locator("label:has-text('Location')").locator('..');
-  }
-
-  /** Returns the Location `.filter__control` within the Sales Rep panel. */
   private getSalesRepLocationControl() {
-    return this.getSalesRepLocationContainer().locator(SELECTORS.filterControl).first();
+    return this.getSalesRepPanel().locator(SELECTORS.filterControlResilient).nth(1);
+  }
+
+  /**
+   * Field "container" used to clear/read values. We walk up from the control
+   * to the field group ancestor — works in both layouts (label sibling div in
+   * qa2, parent div containing combobox in stg).
+   */
+  private getSalesRepMerchantContainer() {
+    return this.getSalesRepMerchantControl().locator('xpath=ancestor::*[1]');
+  }
+
+  private getSalesRepLocationContainer() {
+    return this.getSalesRepLocationControl().locator('xpath=ancestor::*[1]');
   }
 
   /**
@@ -816,8 +824,10 @@ export class OriginationCustomerPage extends OriginationBasePage {
     const control = this.getSalesRepMerchantControl();
     await control.click();
 
-    // Type the merchant name to search
-    const input = control.locator('input').first();
+    // Type the merchant name to search.
+    // qa2: control is `.filter__control` wrapper → input is a descendant.
+    // stg: control is the combobox element itself (often `<input role="combobox">`) → no descendant input.
+    const input = control.locator('input').first().or(control);
     await input.fill(merchantName);
 
     // Wait for and select the matching option
@@ -849,8 +859,8 @@ export class OriginationCustomerPage extends OriginationBasePage {
     const control = this.getSalesRepLocationControl();
     await control.click();
 
-    // Type the location name to search
-    const input = control.locator('input').first();
+    // Type the location name to search. See merchant variant for env-specific notes.
+    const input = control.locator('input').first().or(control);
     await input.fill(locationName);
 
     // Wait for and select the matching option

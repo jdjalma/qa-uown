@@ -19,7 +19,7 @@ Creates a typed API client in `src/api/clients/`, with response type and request
 ## Required Context
 
 1. `context/coding-standards.md`
-2. `context/architecture.md`
+2. `context/project.md`
 
 ## Optional Context
 
@@ -31,7 +31,7 @@ Creates a typed API client in `src/api/clients/`, with response type and request
 |-------------|------------|
 | None | subagent-impl-e2e, subagent-impl-api |
 
-Can run in **PARALLEL** with: `subagent-impl-page-object`, `subagent-impl-e2e`
+Can run in **PARALLEL** with: `subagent-page-object` (mode: `create`), `subagent-impl-e2e`
 
 ## Steps
 

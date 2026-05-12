@@ -148,7 +148,13 @@ export class EmailHelpers {
         const subject = msg.envelope?.subject || '';
         const msgDate = msg.envelope?.date || new Date(0);
         const decoded = this.decodeQuotedPrintable(msg.source?.toString() || '');
-        const result = extractor(decoded);
+        // Strip RFC 822 headers — they contain the recipient alias (e.g. `+8980800_657167@`)
+        // whose suffix matches the same regex shape as the OTP and produces false positives.
+        // QP decoding can corrupt the canonical `\r\n\r\n` boundary (e.g. header ending in
+        // `==` swallows the next break), so anchor on the start of the HTML payload instead.
+        const htmlStart = decoded.search(/<!doctype html|<html/i);
+        const body = htmlStart > -1 ? decoded.slice(htmlStart) : decoded;
+        const result = extractor(body);
 
         if (attempt <= 3 || result) {
           console.log(`[Email] seq=${msg.seq} Subject="${subject}" Date=${msgDate.toISOString()} Found=${result != null}`);

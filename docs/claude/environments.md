@@ -108,3 +108,14 @@
 * Pipeline: `lint` → `test:cicd` → relatório HTML + JSON summary.
 * Custom reporter gera `reports/test-summary.json`.
 * Allure opcional (`ALLURE=true`).
+
+---
+
+## qa2 Known Issues
+
+| Issue | Affected | Symptom | Notes |
+|-------|----------|---------|-------|
+| Backend slowness / hangs on `sendApplication` | Saslow's (`OW90337-0001`), Daniel's (`OL90205-0079`), some others | `sendApplication` times out at 300s or takes >180s for denied path | qa2 backend load issue, not a feature defect. Tests should use generous timeouts or `existingAccountPks` bypass. Confirmed 2026-05-06. |
+| `MerchantConfigurator.configureByName` fails silently | Daniel's, Saslow, Dickinson, Kornerstone, FirstApp | Configurator returns 0 merchants; preflight skipped silently | `configureByName` sends lowercase `refCode` key but qa2 stores `ref_merchant_code` with original casing. Use `skipMerchantPreflight: true` or pass `merchant.number` directly. See `.claude/context/shared/common-operations.md § MerchantConfigurator`. |
+| `makeCreditCardPayments` HTTP 500 FK violation | All merchants in qa2 | `DataIntegrityViolationException: constraint [fk_uown_cc_transaction_arrangement]` on new accounts | Active svc bug (pitfall #11 in application-lifecycle-protocol.md). No automation workaround. |
+| `/v2/customers/search` HTTP 500 SQL error | All | `leadStatus` column not projected by mapper | Confirmed bug Task #510. Tests must expect potential 500 and skip rather than fail. |

@@ -10,3 +10,7 @@ export interface UpdateFundingStatusResponseBody extends BaseResponseBody {
   updatedCount?: number;
   leadPks?: number[];
 }
+
+export interface ModifyInvoiceResponseBody extends BaseResponseBody {
+  newLeadPk?: number;
+}

@@ -110,6 +110,17 @@ export class ServicingCustomerPage extends ServicingBasePage {
     return this.getTextContent(this.merchantName);
   }
 
+  /**
+   * Reads the Rating Letter value shown in the customer-information Account Info card.
+   * Returns the trimmed value, or '-' when unset (backend has not persisted a rating).
+   */
+  async getRatingLetter(): Promise<string> {
+    const value = this.page.locator(SELECTORS.ratingLetterValue).first();
+    await value.waitFor({ state: 'visible', timeout: 10_000 });
+    const text = (await value.textContent()) ?? '';
+    return text.replace(/\s+/g, ' ').trim();
+  }
+
   async navigateToSection(section: string): Promise<void> {
     await this.sideMenuNavigateTo(section);
   }

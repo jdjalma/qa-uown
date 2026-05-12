@@ -32,6 +32,7 @@ export interface FilterSelectors {
   filterOption: string;
   filterOptionWithRole: string;
   filterControl: string;
+  filterControlResilient: string;
   filtersButton: string;
   filterMenuPortal: string;
   filterPlaceholder: string;
@@ -84,6 +85,7 @@ export interface CustomerSummarySelectors {
   customerSummary: string;
   customerStatusValue: string;
   accountNumberLink: string;
+  ratingLetterValue: string;
 }
 
 export interface PaymentSelectors {
@@ -115,6 +117,7 @@ export interface BankSelectors {
   bankAccountCustomerFirst: string;
   bankAccountCustomerLast: string;
   bankAccountTypeInput: string;
+  existingBankAccountSelect: string;
 }
 
 export interface FormSelectors {
@@ -156,6 +159,24 @@ export interface SignwellSelectors {
   signwellSignAllLink: string;
   signwellDocCompleteHeading: string;
   signwellModalCloseLink: string;
+}
+
+/**
+ * Provider-agnostic signing surface selectors. Used by `SigningPage`
+ * (cross-portal) to detect which e-sign provider rendered the iframe and to
+ * expose a uniform start/status surface across GowSign, SignWell, PandaDocs.
+ */
+export interface SigningProviderSelectors {
+  /** Any iframe present on the page — used as the union for provider sniffing. */
+  signingAnyIframe: string;
+  /** GowSign iframe in the UOwn `AlternativeContractModal` wrapper. */
+  signingGowSignIframe: string;
+  /** Generic GowSign iframe match (any URL on `*.gowsign.com`). */
+  signingGowSignIframeByUrl: string;
+  /** Generic SignWell iframe match (URL or known embed ID). */
+  signingSignWellIframeByUrl: string;
+  /** Generic PandaDocs iframe match (legacy). */
+  signingPandaDocsIframeByUrl: string;
 }
 
 export interface FundingSelectors {
@@ -402,6 +423,7 @@ export interface WebsiteSelectors {
 
   // Login elements
   wsEmailInput: string;
+  wsEmailOrPhoneInput: string;
   wsVerificationCodeInput: string;
   wsSubmitButton: string;
   wsResendCodeButton: string;
@@ -560,6 +582,204 @@ export interface CcBinSelectors {
   naCcBinInstructionText: string;
 }
 
+// ── Origination — Merchant Add/Edit form (/merchant, /merchant/addMerchant, /merchant/{code}) ──
+// ── Origination — Program Groups page (Task #1260) ──────────────────────────
+export interface ProgramGroupsSelectors {
+  pgGroupCountCell: string;
+  pgGroupInfoIcon: string;
+  pgGroupEditIcon: string;
+  pgProgramLink: string;
+}
+
+// ── Origination — Programs List page (/programs — Schedule Activation/Deactivation Dates) ──
+export interface ProgramsListSelectors {
+  plSectionHeader: string;
+  plAddNewProgramBtn: string;
+  plSearchInput: string;
+  plGroupFilterDropdown: string;
+  plSearchButton: string;
+  plTableRow: string;
+  plProgramNameLink: string;
+  plPaginationFooter: string;
+}
+
+// ── Origination — Program Details panel (right pane of 2-pane /programs layout) ────
+export interface ProgramDetailsSelectors {
+  pdPanelHeader: string;
+  pdProgramNameInput: string;
+  pdTermMonthsInput: string;
+  pdActivationDateInput: string;
+  pdDeactivationDateInput: string;
+  pdMoneyFactorInput: string;
+  pdPayoffDiscountInput: string;
+  pdEpoDaysInput: string;
+  pdEpoFeePercentInput: string;
+  pdMinimumCartAmountInput: string;
+  pdMaxCartAmountInput: string;
+  pdDealerDiscountOverrideInput: string;
+  pdProcessingFeeOverrideInput: string;
+  pdAmountChargedAtSigningInput: string;
+  pdAllowedFrequencyOverrideControl: string;
+  pdLendingCategoryControl: string;
+  pdProgramGroupControl: string;
+  pdStatesControl: string;
+  pdSaveButton: string;
+  pdCancelButton: string;
+  pdCloneDropdownToggle: string;
+  pdCloneGroupButton: string;
+  pdInlineError: string;
+  pdNotesCard: string;
+  pdNotesFiltersButton: string;
+  pdNotesSearchInput: string;
+  pdNotesUserIdInput: string;
+  pdNotesLogActivityControl: string;
+  pdNotesRow: string;
+  pdNotesCell: string;
+  pdNotesExpandChevron: string;
+}
+
+// ── Origination — Merchant detail page: Programs section (read-only) ────────
+export interface MerchantProgramsSectionSelectors {
+  mpsSection: string;
+  mpsProgramRow: string;
+  mpsProgramNameCell: string;
+  mpsStatusBadge: string;
+  mpsStatusTooltip: string;
+  mpsEditAction: string;
+}
+
+// ── Servicing — Customer Documents tab (/documents/{accountPk}) ─────────────
+export interface ServicingDocumentsSelectors {
+  /** Page title rendered by `<PageName name="Documents" />` */
+  svcDocumentsPageTitle: string;
+  /** Search/filter input above the table — `<Input id="filterDocuments" />` */
+  svcDocumentsSearchInput: string;
+  /** "ADD NEW" upload trigger button (uses CSS-modules class `documentsButton`) */
+  svcDocumentsAddNewButton: string;
+  /** All rows of the react-data-table (rdt_TableRow) — scope under documents page only */
+  svcDocumentsTableRow: string;
+  /** Table cell selector for the documents table */
+  svcDocumentsTableCell: string;
+  /** "There are no records to display" empty-state message */
+  svcDocumentsEmptyState: string;
+  /** Download trigger inside a row — `<div id="download">` (FontAwesome SVG with onClick → window.open) */
+  svcDocumentsRowDownloadTrigger: string;
+  /** Edit pencil trigger inside a row — `<div id="edit">` */
+  svcDocumentsRowEditTrigger: string;
+  /** Resend trigger inside a row — `<div id="resend">` */
+  svcDocumentsRowResendTrigger: string;
+}
+
+// ── Servicing — Bank Account CRUD Modal (card + Add + View All) ─────────────
+export interface BankAccountModalSelectors {
+  bankAccountCard: string;
+  addBankAccountButton: string;
+  viewAllBankAccountsButton: string;
+  addBankAccountModalTitle: string;
+  addBankAccountForm: string;
+  bankAccountTypeDropdown: string;
+  bankAccountRoutingNumberInput: string;
+  bankAccountAccountNumberInput: string;
+  setDefaultPaymentDropdown: string;
+  saveBankAccountButton: string;
+  cancelBankAccountButton: string;
+  addBankAccountModalClose: string;
+  allBankAccountsModalTitle: string;
+  bankAccountsTable: string;
+  bankAccountsTableBody: string;
+  bankAccountsTableRow: (index: number) => string;
+  bankAccountsRowCheckbox: string;
+  bankAccountsSelectAllCheckbox: string;
+  bankAccountsDeleteButton: string;
+  setDefaultPaymentValue: string;
+  accountNumberDisplayValue: string;
+}
+
+export interface MerchantAddEditSelectors {
+  merchantListAddButton: string;
+  merchantCloneDropdownToggle: string;
+  merchantCloneDropdownInput: string;
+  merchantCloneDropdownItem: string;
+  merchantClonedFromIcon: string;
+  inventoryCategoryControl: string;
+  inventoryCategoryInput: string;
+  inventoryCategoryClearIndicator: string;
+  inventoryCategorySingleValue: string;
+  inventoryCategoryLabel: string;
+  inventoryCategoryErrorText: string;
+  merchantRefCodeInput: string;
+  merchantNameInput: string;
+  merchantLegalNameInput: string;
+  merchantLocationNameInput: string;
+}
+
+// ── GowSign — Document Viewer (cross-portal / external embed) ──────────────
+export interface GowSignDocumentViewerSelectors {
+  // Header / Toolbar
+  gsViewerRoot: string;
+  gsDocumentTitle: string;
+  gsStartSignatureButton: string;
+  gsDownloadButton: string;
+  gsCloseDocumentButton: string;
+  gsReadingModeToggle: string;
+
+  // Pre-signature metadata table
+  gsSentByLabel: string;
+  gsCreatedOnLabel: string;
+  gsDocumentIdHeader: string;
+  gsDocumentIdValue: string;
+  gsRecipientHeader: string;
+  gsRecipientNameCell: string;
+  gsRecipientEmailCell: string;
+  gsStatusBadge: string;
+
+  // Document content
+  gsDocumentContainer: string;
+  gsPageNumber: string;
+  gsPageBreak: string;
+
+  // Property Price Tag
+  gsPriceTagTable: string;
+  gsPriceTagTotalOfPayments: string;
+  gsPriceTagCostOfLease: string;
+  gsPriceTagCashPrice: string;
+  gsPriceTagAmountOfEachPayment: string;
+  gsPriceTagNumberOfPayments: string;
+  gsPriceTagRenewalPeriod: string;
+
+  // LESSOR / LESSEE
+  gsLessorLesseeTable: string;
+  gsLessorCell: string;
+  gsLesseeCell: string;
+
+  // Lease Items
+  gsLeaseItemsTable: string;
+  gsLeaseItemsRow: string;
+  gsTotalDeliveryFee: string;
+
+  // Initial Payment Breakdown
+  gsInitialLeasePaymentRow: string;
+  gsProcessingFeeRow: string;
+  gsTaxRow: string;
+  gsTotalInitialPaymentRow: string;
+
+  // Dates / agreement metadata in body
+  gsAgreementNumberValue: string;
+  gsAccountNumberValue: string;
+  gsContractDateValue: string;
+  gsInitialPaymentDueDateRow: string;
+  gsPromoExpirationRow: string;
+
+  // EPO chart
+  gsEpoChartTable: string;
+  gsEpoChartRows: string;
+  gsEpoChartRowAt: (n: number) => string;
+
+  // ACH grid
+  gsAchGridTable: string;
+  gsAchGridRows: string;
+}
+
 // ── AMS — Users list, User Details & Merchant Association (Task #74) ────────
 export interface AmsUserSelectors {
   // Users list (/users) — react-data-table-component
@@ -633,6 +853,7 @@ export interface AppSelectors extends
   FormSelectors,
   PandaDocsSelectors,
   SignwellSelectors,
+  SigningProviderSelectors,
   FundingSelectors,
   PaymentTransactionSelectors,
   AddCardSelectors,
@@ -660,7 +881,15 @@ export interface AppSelectors extends
   SalesRepPanelSelectors,
   OpenToBuySelectors,
   CcHistorySelectors,
-  CcBinSelectors {}
+  CcBinSelectors,
+  MerchantAddEditSelectors,
+  ProgramGroupsSelectors,
+  ProgramsListSelectors,
+  ProgramDetailsSelectors,
+  MerchantProgramsSectionSelectors,
+  BankAccountModalSelectors,
+  ServicingDocumentsSelectors,
+  GowSignDocumentViewerSelectors {}
 
 export interface AmsUserSelectors {
   amsRdtTable: string;

@@ -4,6 +4,118 @@ import { sleep } from './common.helpers.js';
 
 const { Pool } = pg;
 
+export interface NeuroIdVerificationRow {
+  pk: number;
+  lead_pk: number;
+  neuro_id_status: string | null;
+  status: string | null;
+  success: boolean | null;
+  notes: string | null;
+  error_message: string | null;
+  caller: string | null;
+  site_id: string | null;
+  identity: string | null;
+  row_created_timestamp: Date | null;
+  row_updated_timestamp: Date | null;
+}
+
+// ── Merchant program (scheduleProgramActivationDeactivationDates) ───────
+//
+// Table `uown_merchant_program` holds program definitions (NOT the merchant
+// link). The merchant↔program relationship is in the junction table
+// `uown_merchant_to_program` (merchant_pk, program_pk, is_active, …).
+// A program's pk IS the program_pk — there is no separate program_pk column.
+// There is no group_pk column either (only group_name).
+// Columns (confirmed via JPA `MerchantProgram` + migration V20260327120000):
+//   pk, program_id, program_name, term_months, money_factor, …
+//   activation_date DATE NULL, deactivation_date DATE NULL,
+//   is_active BOOLEAN NOT NULL DEFAULT TRUE (derived by sweep from dates),
+//   group_name TEXT NULL,
+//   row_created_timestamp, row_updated_timestamp, tenant_id
+export interface MerchantProgramRecord {
+  pk: number;
+  programName: string;
+  programId: string | null;
+  termMonths: number;
+  activationDate: string | null;       // ISO `YYYY-MM-DD` or null
+  deactivationDate: string | null;     // ISO `YYYY-MM-DD` or null
+  isActive: boolean;
+  groupName: string | null;
+  rowCreatedTimestamp: Date | null;
+  rowUpdatedTimestamp: Date | null;
+}
+
+export interface MerchantProgramSnapshot {
+  activationDate: string | null;
+  deactivationDate: string | null;
+  isActive: boolean;
+}
+
+// Log entry from table `uown_merchant_activity_log` (snake_case lowercase).
+// Schema confirmed in qa2: columns include merchant_pk, program_pk (not _p_k),
+// log_type, notes, created_by, agent, row_created_timestamp.
+// Filtered here to PROGRAM_DATA_CHANGE log_type (audit trail emitted by
+// MerchantProgramService + MerchantProgramActivationDeactivationSweepService).
+export interface ProgramActivityLogRecord {
+  pk: number;
+  program_pk: number | null;
+  merchant_pk: number | null;
+  log_type: string;
+  created_by: string | null;
+  notes: string | null;
+  row_created_timestamp: Date | null;
+}
+
+// ── Login attempt + activity log row shapes (SVC-460) ───────────────────
+export interface LoginAttemptRow {
+  pk: string;
+  email_phone_input: string;
+  code: string | null;
+  given_codes: string | null;
+  number_of_attempts: number;
+  sms_id: string | null;
+  account_found: boolean;
+  account_pks: string | null;
+  expiration_time: Date | null;
+  sent_time: Date | null;
+  row_created_timestamp: Date;
+}
+
+export interface LoginActivityLogRow {
+  pk: string;
+  log_type: string;
+  created_by: string | null;
+  agent: string | null;
+  notes: string | null;
+  row_created_timestamp: Date;
+}
+
+// ── Kount + GDS token row shapes (RU05.26.1.51.1 — issue #502) ──────────
+export interface TokenRow {
+  pk: number;
+  row_created_timestamp: Date | null;
+  row_updated_timestamp: Date | null;
+  tenant_id: number | null;
+  access_token: string;
+  expiration_time: Date;
+}
+export type KountTokenRow = TokenRow;
+export type GdsTokenRow = TokenRow;
+
+// Raw row shape returned by pg for MerchantProgram SELECT *
+interface MerchantProgramRow {
+  pk: number | string;
+  program_name: string;
+  program_id: string | null;
+  term_months: number | string;
+  activation_date: Date | string | null;
+  deactivation_date: Date | string | null;
+  is_active: boolean;
+  group_name: string | null;
+  row_created_timestamp: Date | null;
+  row_updated_timestamp: Date | null;
+}
+
 export class DatabaseHelpers {
   private pool: pg.Pool;
 
@@ -106,6 +218,40 @@ export class DatabaseHelpers {
       'waitForValueEquals',
     );
     return result === true;
+  }
+
+  /**
+   * Polls a single-string column until its value changes from `oldValue`.
+   * Returns the new value when it changes; throws if timeout reached.
+   *
+   * @param sql SELECT returning a single string column (use LIMIT 1)
+   * @param params query params
+   * @param oldValue the value we want to see CHANGE
+   * @param timeoutMs total wait budget (default 30_000)
+   * @param intervalMs poll interval (default 500)
+   */
+  async waitForValueChange(
+    sql: string,
+    params: unknown[],
+    oldValue: string,
+    timeoutMs = 30_000,
+    intervalMs = 500,
+  ): Promise<string> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      try {
+        const current = await this.getSingleString(sql, params);
+        if (current !== null && current !== oldValue) {
+          return current;
+        }
+      } catch (error) {
+        console.warn(`[waitForValueChange] poll error: ${(error as Error).message}`);
+      }
+      await sleep(intervalMs);
+    }
+    throw new Error(
+      `waitForValueChange timed out after ${timeoutMs}ms (value still ${oldValue})`,
+    );
   }
 
   // Kount operations
@@ -523,6 +669,108 @@ export class DatabaseHelpers {
     return result === true;
   }
 
+  /** Get account auto_pay_types (comma-separated, e.g. 'ACH,CC', 'NONE', 'ACH') */
+  async getAccountAutoPayTypes(accountPk: string): Promise<string | null> {
+    return this.getSingleString(
+      'SELECT auto_pay_types FROM uown_sv_account WHERE pk = $1',
+      [accountPk],
+    );
+  }
+
+  // ── Bank account operations (table: uown_sv_bank_account) ────────────
+
+  /** Get all bank accounts (active + deleted) for the account, newest first */
+  async getBankAccountsByAccountPk(accountPk: string): Promise<Array<Record<string, unknown>>> {
+    return this.query(
+      `SELECT * FROM uown_sv_bank_account
+       WHERE account_pk = $1
+       ORDER BY row_created_timestamp DESC`,
+      [accountPk],
+    );
+  }
+
+  /** Get only non-deleted bank accounts for the account, newest first */
+  async getActiveBankAccountsByAccountPk(accountPk: string): Promise<Array<Record<string, unknown>>> {
+    return this.query(
+      `SELECT * FROM uown_sv_bank_account
+       WHERE account_pk = $1 AND is_deleted = false
+       ORDER BY row_created_timestamp DESC`,
+      [accountPk],
+    );
+  }
+
+  /** Get a single bank account by its PK */
+  async getBankAccountByPk(bankAccountPk: string): Promise<Record<string, unknown> | null> {
+    return this.queryOne(
+      'SELECT * FROM uown_sv_bank_account WHERE pk = $1',
+      [bankAccountPk],
+    );
+  }
+
+  /** Wait until the specified bank account is flagged is_deleted = true */
+  async waitForBankAccountDeleted(
+    bankAccountPk: string,
+    timeoutMs: number = TIMEOUTS.DB_WAIT,
+  ): Promise<boolean> {
+    const result = await this.pollUntil<boolean>(
+      async () => {
+        const row = await this.queryOne<{ is_deleted: boolean }>(
+          'SELECT is_deleted FROM uown_sv_bank_account WHERE pk = $1',
+          [bankAccountPk],
+        );
+        return row?.is_deleted === true ? true : null;
+      },
+      timeoutMs,
+      'waitForBankAccountDeleted',
+    );
+    return result === true;
+  }
+
+  /**
+   * Wait for a new active bank_account row matching (account_pk, account_number).
+   * Returns the new PK as string, or null on timeout.
+   */
+  async waitForBankAccountExists(
+    accountPk: string,
+    accountNumber: string,
+    timeoutMs: number = TIMEOUTS.DB_WAIT,
+  ): Promise<string | null> {
+    return this.pollUntil<string>(
+      async () => {
+        return this.getSingleString(
+          `SELECT pk FROM uown_sv_bank_account
+           WHERE account_pk = $1 AND account_number = $2 AND is_deleted = false
+           ORDER BY row_created_timestamp DESC LIMIT 1`,
+          [accountPk, accountNumber],
+        );
+      },
+      timeoutMs,
+      'waitForBankAccountExists',
+    );
+  }
+
+  /** Get activity log entries scoped to bank account changes (log_type = 'BANK_ACCOUNT') */
+  async getBankAccountActivityLogs(accountPk: string): Promise<Array<Record<string, unknown>>> {
+    return this.query(
+      `SELECT * FROM uown_sv_activity_log
+       WHERE account_pk = $1 AND log_type = 'BANK_ACCOUNT'
+       ORDER BY row_created_timestamp DESC`,
+      [accountPk],
+    );
+  }
+
+  /** Get DATA_CHANGE activity logs that reference rating letter changes */
+  async getRatingChangeLogs(accountPk: string): Promise<Array<Record<string, unknown>>> {
+    return this.query(
+      `SELECT * FROM uown_sv_activity_log
+       WHERE account_pk = $1
+         AND log_type = 'DATA_CHANGE'
+         AND notes LIKE '%Rating letter changed%'
+       ORDER BY row_created_timestamp DESC`,
+      [accountPk],
+    );
+  }
+
   /** Get account PK from lead PK (cross-DB: LOS lead → SVC account) */
   async getAccountPkByLeadPk(leadPk: string): Promise<string | null> {
     return this.getSingleString(
@@ -743,6 +991,77 @@ export class DatabaseHelpers {
     return newStatus;
   }
 
+  /**
+   * Recalculates arrangement status based on its ACH payment states.
+   * Mirrors the Java logic in `PaymentArrangementACHListener` from MR !1368:
+   *
+   *   PENDING_STATUSES  = PENDING | SENT | ACK_RECEIVED | PICKED_TO_SEND
+   *                       | STATUS_UPDATE_PENDING | PENDING_TO_RERUN
+   *   SUCCESS_STATUSES  = SETTLED | COMPLETED | SETTLED_IN_RERUN
+   *   isFailure         = !PENDING && !SUCCESS (residual — anything else)
+   *
+   *   hasFailed   → FAILED       (is_active=false)
+   *   hasPending  → IN_PROGRESS  (is_active=true)
+   *   all success → SUCCESS      (is_active=false)
+   *     + SETTLEMENT type → account SETTLED_IN_FULL
+   *
+   * @returns The new arrangement status.
+   */
+  async recalculateAchArrangementStatus(arrangementPk: string): Promise<string> {
+    const PENDING_STATUSES = [
+      'PENDING',
+      'SENT',
+      'ACK_RECEIVED',
+      'PICKED_TO_SEND',
+      'STATUS_UPDATE_PENDING',
+      'PENDING_TO_RERUN',
+    ];
+    const SUCCESS_STATUSES = ['SETTLED', 'COMPLETED', 'SETTLED_IN_RERUN'];
+
+    const payments = await this.getAchPaymentsByArrangement(arrangementPk);
+
+    const hasFailed = payments.some(
+      p => !PENDING_STATUSES.includes(String(p.status)) && !SUCCESS_STATUSES.includes(String(p.status)),
+    );
+    const hasPending = payments.some(p => PENDING_STATUSES.includes(String(p.status)));
+
+    let newStatus: string;
+    let isActive: boolean;
+
+    if (hasFailed) {
+      newStatus = 'FAILED';
+      isActive = false;
+    } else if (hasPending) {
+      newStatus = 'IN_PROGRESS';
+      isActive = true;
+    } else {
+      newStatus = 'SUCCESS';
+      isActive = false;
+    }
+
+    await this.executeUpdate(
+      `UPDATE uown_sv_payment_arrangement
+       SET status = $1, is_active = $2
+       WHERE pk = $3`,
+      [newStatus, isActive, arrangementPk],
+    );
+
+    // SETTLEMENT + SUCCESS → account transitions to SETTLED_IN_FULL
+    if (newStatus === 'SUCCESS') {
+      const arrangement = await this.getPaymentArrangementByPk(arrangementPk);
+      if (arrangement && String(arrangement.arrangement_type) === 'SETTLEMENT') {
+        await this.executeUpdate(
+          `UPDATE uown_sv_account
+           SET account_status = 'SETTLED_IN_FULL'
+           WHERE pk = $1`,
+          [arrangement.account_pk],
+        );
+      }
+    }
+
+    return newStatus;
+  }
+
   // ── Merchant dealer fields ────────────────────────────────────────────
 
   async getMerchantDealerFields(merchantPk: number | string): Promise<{
@@ -828,16 +1147,16 @@ export class DatabaseHelpers {
 
   async getMerchantActivityLog(merchantPk: string | number): Promise<Array<{
     pk: number;
-    merchant_p_k: number;
+    merchant_pk: number;
     merchant_ref_code: string;
     log_type: string;
     notes: string;
     agent: string;
   }>> {
     return this.query(
-      `SELECT pk, merchant_p_k, merchant_ref_code, log_type, notes, agent
-       FROM "MerchantActivityLog"
-       WHERE merchant_p_k = $1
+      `SELECT pk, merchant_pk, merchant_ref_code, log_type, notes, agent
+       FROM uown_merchant_activity_log
+       WHERE merchant_pk = $1
        AND log_type = 'MERCHANT_DATA_CHANGE'
        ORDER BY pk DESC LIMIT 5`,
       [merchantPk],
@@ -846,19 +1165,60 @@ export class DatabaseHelpers {
 
   async getLatestMerchantActivityLog(merchantPk: string | number): Promise<{
     pk: number;
-    merchant_p_k: number;
+    merchant_pk: number;
     merchant_ref_code: string;
     log_type: string;
     notes: string;
     agent: string;
   } | null> {
     return this.queryOne(
-      `SELECT pk, merchant_p_k, merchant_ref_code, log_type, notes, agent
-       FROM "MerchantActivityLog"
-       WHERE merchant_p_k = $1
+      `SELECT pk, merchant_pk, merchant_ref_code, log_type, notes, agent
+       FROM uown_merchant_activity_log
+       WHERE merchant_pk = $1
        AND log_type = 'MERCHANT_DATA_CHANGE'
        ORDER BY pk DESC LIMIT 1`,
       [merchantPk],
+    );
+  }
+
+  // ── Merchant inventory category (task #1262) ──────────────────────
+
+  /**
+   * Returns full merchant row for verification of inventory_category persistence,
+   * audit fields, and clone linkage. Used by CT-03, CT-04, CT-06, CT-07.
+   *
+   * `uown_merchant` uses `row_created_timestamp`/`row_updated_timestamp` and a
+   * single `agent` column for the acting user (no `created_at`/`updated_at` /
+   * `created_by`/`updated_by`).
+   */
+  async getMerchantByRefCode(refMerchantCode: string): Promise<{
+    pk: number;
+    ref_merchant_code: string;
+    merchant_name: string | null;
+    inventory_category: string | null;
+    is_active: boolean;
+    row_created_timestamp: Date | null;
+    row_updated_timestamp: Date | null;
+    agent: string | null;
+    cloned_from: number | null;
+  } | null> {
+    return this.queryOne(
+      `SELECT pk, ref_merchant_code, merchant_name, inventory_category, is_active,
+              row_created_timestamp, row_updated_timestamp, agent, cloned_from
+       FROM uown_merchant
+       WHERE ref_merchant_code = $1`,
+      [refMerchantCode],
+    );
+  }
+
+  /**
+   * Count of merchants with the given ref code. Used by CT-02 and CT-04 to assert
+   * that a blocked save persisted nothing (returns 0).
+   */
+  async countMerchantByRefCode(refMerchantCode: string): Promise<number> {
+    return this.getSingleNumber(
+      `SELECT COUNT(*) FROM uown_merchant WHERE ref_merchant_code = $1`,
+      [refMerchantCode],
     );
   }
 
@@ -906,6 +1266,31 @@ export class DatabaseHelpers {
     );
   }
 
+  // ── NeuroID verification helpers ───────────────────────────────────
+
+  async getNeuroIdVerification(leadPk: string | number): Promise<NeuroIdVerificationRow | null> {
+    return this.queryOne<NeuroIdVerificationRow>(
+      `SELECT pk, lead_pk, neuro_id_status, status, success, notes, error_message,
+              caller, site_id, identity, row_created_timestamp, row_updated_timestamp
+         FROM uown_neuro_id_verification
+        WHERE lead_pk = $1
+        ORDER BY pk DESC
+        LIMIT 1`,
+      [Number(leadPk)],
+    );
+  }
+
+  async waitForNeuroIdRecord(
+    leadPk: string | number,
+    timeoutMs: number = TIMEOUTS.DB_WAIT,
+  ): Promise<NeuroIdVerificationRow | null> {
+    return this.pollUntil<NeuroIdVerificationRow>(
+      async () => this.getNeuroIdVerification(leadPk),
+      timeoutMs,
+      'waitForNeuroIdRecord',
+    );
+  }
+
   // ── Query plan helpers ─────────────────────────────────────────────
 
   async getTableRowEstimate(tableName: string): Promise<number> {
@@ -922,6 +1307,470 @@ export class DatabaseHelpers {
       params,
     );
     return rows.map(r => r['QUERY PLAN']).join('\n');
+  }
+
+  // ── Login attempt helpers (table: uown_login_attempt) ───────────────
+  //
+  // Source: SVC-460 perf optimization. The Website portal customer login
+  // generates one row per OTP request. The exact query under audit is:
+  //   SELECT * FROM uown_login_attempt
+  //   WHERE UPPER(email_phone_input)=UPPER($1)
+  //   ORDER BY row_created_timestamp DESC LIMIT $2
+  // Index in qa2: idx_login_attempt_email_upper_created on
+  //   (upper(email_phone_input), row_created_timestamp DESC).
+
+  /** Latest login attempt row for an email or phone (mirrors the ticket query). */
+  async getLatestLoginAttempt(emailOrPhone: string): Promise<LoginAttemptRow | null> {
+    return this.queryOne<LoginAttemptRow>(
+      `SELECT pk, email_phone_input, code, given_codes, number_of_attempts,
+              sms_id, account_found, account_pks, expiration_time, sent_time,
+              row_created_timestamp
+       FROM uown_login_attempt
+       WHERE UPPER(email_phone_input) = UPPER($1)
+       ORDER BY row_created_timestamp DESC
+       LIMIT 1`,
+      [emailOrPhone],
+    );
+  }
+
+  /**
+   * Snapshot the highest existing PK for an email/phone — call BEFORE the action
+   * that triggers a new OTP, then pass to waitForFreshOtpCode. Pk-based watermark
+   * avoids timezone pitfalls (the app inserts row_created_timestamp in a non-UTC
+   * tz while pg session reads as GMT, which breaks naive timestamp comparisons).
+   */
+  async getMaxLoginAttemptPk(emailOrPhone: string): Promise<bigint> {
+    const val = await this.getSingleString(
+      `SELECT COALESCE(MAX(pk), 0)::text
+       FROM uown_login_attempt
+       WHERE UPPER(email_phone_input) = UPPER($1)`,
+      [emailOrPhone],
+    );
+    return BigInt(val ?? '0');
+  }
+
+  /**
+   * Wait for a fresh OTP code to land in uown_login_attempt for a given
+   * email/phone. "Fresh" = pk > sincePk.
+   * Returns the row when found, or null on timeout.
+   */
+  async waitForFreshOtpCode(
+    emailOrPhone: string,
+    sincePk: bigint,
+    timeoutMs: number = TIMEOUTS.DB_WAIT,
+  ): Promise<LoginAttemptRow | null> {
+    return this.pollUntil<LoginAttemptRow>(
+      async () => {
+        const row = await this.queryOne<LoginAttemptRow>(
+          `SELECT pk, email_phone_input, code, given_codes, number_of_attempts,
+                  sms_id, account_found, account_pks, expiration_time, sent_time,
+                  row_created_timestamp
+           FROM uown_login_attempt
+           WHERE UPPER(email_phone_input) = UPPER($1)
+             AND pk > $2
+           ORDER BY pk DESC
+           LIMIT 1`,
+          [emailOrPhone, sincePk.toString()],
+        );
+        return row && row.code ? row : null;
+      },
+      timeoutMs,
+      'waitForFreshOtpCode',
+    );
+  }
+
+  /** Run EXPLAIN (ANALYZE, BUFFERS) on the ticket query for a given input. */
+  async explainLoginAttemptQuery(emailOrPhone: string): Promise<string> {
+    const rows = await this.query<{ 'QUERY PLAN': string }>(
+      `EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)
+       SELECT * FROM public.uown_login_attempt
+       WHERE UPPER(email_phone_input) = UPPER($1)
+       ORDER BY row_created_timestamp DESC
+       LIMIT $2`,
+      [emailOrPhone, 1],
+    );
+    return rows.map(r => r['QUERY PLAN']).join('\n');
+  }
+
+  /** Confirms the qa2 optimization index exists. */
+  async loginAttemptUpperIndexExists(): Promise<boolean> {
+    const row = await this.queryOne<{ exists: boolean }>(
+      `SELECT EXISTS (
+        SELECT 1 FROM pg_indexes
+        WHERE tablename = 'uown_login_attempt'
+          AND indexname = 'idx_login_attempt_email_upper_created'
+      ) AS exists`,
+    );
+    return row?.exists === true;
+  }
+
+  // ── Customer-portal login activity logs (table: uown_sv_activity_log) ──
+  //
+  // Generated when a Website customer requests/uses an OTP code:
+  //   - 'CORRESPONDENCE' / created_by='SYSTEM'        → "Created VerificationCode to be sent as EMAIL"
+  //   - 'CORRESPONDENCE' / created_by='SYSTEM'        → "Sent VerificationCode. Subject : ... To : <email>"
+  //   - 'CORRESPONDENCE' / created_by='customer portal' → "LOGIN ATTEMPT: Verification Code Sent to <phone>"  (SMS path)
+  //   - 'INTERNAL'       / created_by='customer portal' → "Login Success using code <6digits> at <ts>; Attempt <N>."
+  //
+  // Wrong-code attempts do NOT generate any log (current product behavior).
+
+  /**
+   * Snapshot the highest activity-log PK for an account — call BEFORE the action,
+   * then pass the value to getLoginActivityLogs / waitForLoginSuccessLog.
+   * Pk-based watermark avoids the timezone mismatch documented above.
+   */
+  async getMaxActivityLogPk(accountPk: string | number): Promise<bigint> {
+    const val = await this.getSingleString(
+      `SELECT COALESCE(MAX(pk), 0)::text
+       FROM uown_sv_activity_log
+       WHERE account_pk = $1`,
+      [accountPk],
+    );
+    return BigInt(val ?? '0');
+  }
+
+  /**
+   * All login-related logs for an account with pk greater than the given watermark.
+   *
+   * Backends emit slightly different copy across envs — qa2 uses 'VerificationCode'
+   * (single word), qa1 uses 'Verification Code' (with space). The filter accepts
+   * both via LIKE '%verification%code%' (case-insensitive).
+   */
+  async getLoginActivityLogs(
+    accountPk: string | number,
+    sincePk: bigint,
+  ): Promise<LoginActivityLogRow[]> {
+    return this.query<LoginActivityLogRow>(
+      `SELECT pk, log_type, created_by, agent, notes, row_created_timestamp
+       FROM uown_sv_activity_log
+       WHERE account_pk = $1
+         AND pk > $2
+         AND (
+           (log_type = 'CORRESPONDENCE' AND (
+             LOWER(notes) LIKE '%verification%code%' OR notes LIKE '%LOGIN ATTEMPT:%'
+           ))
+           OR (log_type = 'INTERNAL' AND notes LIKE 'Login Success using code%')
+         )
+       ORDER BY pk ASC`,
+      [accountPk, sincePk.toString()],
+    );
+  }
+
+  /**
+   * Poll until a login-flow activity log matching `predicate` shows up.
+   * Returns the matched row or null on timeout.
+   */
+  async waitForLoginActivityLog(
+    accountPk: string | number,
+    sincePk: bigint,
+    predicate: (row: LoginActivityLogRow) => boolean,
+    timeoutMs: number = TIMEOUTS.DB_WAIT,
+  ): Promise<LoginActivityLogRow | null> {
+    return this.pollUntil<LoginActivityLogRow>(
+      async () => {
+        const logs = await this.getLoginActivityLogs(accountPk, sincePk);
+        return logs.find(predicate) ?? null;
+      },
+      timeoutMs,
+      'waitForLoginActivityLog',
+    );
+  }
+
+  /** Wait for the "Login Success" log to appear after a successful OTP entry. */
+  async waitForLoginSuccessLog(
+    accountPk: string | number,
+    sincePk: bigint,
+    timeoutMs: number = TIMEOUTS.DB_WAIT,
+  ): Promise<LoginActivityLogRow | null> {
+    return this.pollUntil<LoginActivityLogRow>(
+      async () => {
+        return this.queryOne<LoginActivityLogRow>(
+          `SELECT pk, log_type, created_by, agent, notes, row_created_timestamp
+           FROM uown_sv_activity_log
+           WHERE account_pk = $1
+             AND pk > $2
+             AND log_type = 'INTERNAL'
+             AND notes LIKE 'Login Success using code%'
+           ORDER BY pk DESC
+           LIMIT 1`,
+          [accountPk, sincePk.toString()],
+        );
+      },
+      timeoutMs,
+      'waitForLoginSuccessLog',
+    );
+  }
+
+  // ── Merchant program (scheduleProgramActivationDeactivationDates) ────
+  //
+  // Source-of-truth rule: `is_active` is derived from the sweep
+  // (`MerchantProgramActivationDeactivationSweepService`) which reconciles
+  // the flag from activation_date / deactivation_date vs CURRENT_DATE.
+  // Until the sweep runs, a freshly edited program may have stale is_active —
+  // prefer the computed predicate when asserting "active today".
+  //
+  // Backend native SQL (ProgramActivationUtils#isActiveOnDate):
+  //   (activation_date   IS NULL OR activation_date   <= CURRENT_DATE)
+  //   AND
+  //   (deactivation_date IS NULL OR deactivation_date >= CURRENT_DATE)
+
+  private static mapMerchantProgramRow(row: MerchantProgramRow): MerchantProgramRecord {
+    const toIsoDate = (v: Date | string | null): string | null => {
+      if (v == null) return null;
+      if (v instanceof Date) return v.toISOString().slice(0, 10);
+      // pg may return DATE as 'YYYY-MM-DD' string under some drivers
+      return String(v).slice(0, 10);
+    };
+    return {
+      pk: Number(row.pk),
+      programName: row.program_name,
+      programId: row.program_id,
+      termMonths: Number(row.term_months),
+      activationDate: toIsoDate(row.activation_date),
+      deactivationDate: toIsoDate(row.deactivation_date),
+      isActive: row.is_active === true,
+      groupName: row.group_name,
+      rowCreatedTimestamp: row.row_created_timestamp,
+      rowUpdatedTimestamp: row.row_updated_timestamp,
+    };
+  }
+
+  /**
+   * All programs assigned to a merchant via active junction rows in
+   * `uown_merchant_to_program` (mirrors `MerchantProgramRepo#findByMerchantPk`).
+   * Only programs where the junction row is_active = true are returned; the
+   * returned `isActive` reflects the PROGRAM flag, not the junction flag.
+   */
+  async getMerchantPrograms(merchantPk: number | string): Promise<MerchantProgramRecord[]> {
+    const rows = await this.query<MerchantProgramRow>(
+      `SELECT mp.pk, mp.program_name, mp.program_id, mp.term_months,
+              mp.activation_date, mp.deactivation_date, mp.is_active,
+              mp.group_name, mp.row_created_timestamp, mp.row_updated_timestamp
+         FROM uown_merchant_program mp
+         JOIN uown_merchant_to_program mtp
+           ON mtp.program_pk = mp.pk AND mtp.is_active = true
+         WHERE mtp.merchant_pk = $1
+         ORDER BY mp.row_created_timestamp DESC`,
+      [merchantPk],
+    );
+    return rows.map(DatabaseHelpers.mapMerchantProgramRow);
+  }
+
+  /** Single program by pk. */
+  async getMerchantProgramByPk(pk: number | string): Promise<MerchantProgramRecord | null> {
+    const row = await this.queryOne<MerchantProgramRow>(
+      `SELECT pk, program_name, program_id, term_months,
+              activation_date, deactivation_date, is_active,
+              group_name, row_created_timestamp, row_updated_timestamp
+         FROM uown_merchant_program
+         WHERE pk = $1`,
+      [pk],
+    );
+    return row ? DatabaseHelpers.mapMerchantProgramRow(row) : null;
+  }
+
+  /**
+   * Programs active TODAY for a merchant — evaluates the same predicate as
+   * `ProgramActivationUtils#isActiveOnDate`, independent of the stale
+   * persisted flag. Use this for assertions that must not depend on the
+   * nightly sweep having run.
+   */
+  async getActiveMerchantPrograms(merchantPk: number | string): Promise<MerchantProgramRecord[]> {
+    const rows = await this.query<MerchantProgramRow>(
+      `SELECT mp.pk, mp.program_name, mp.program_id, mp.term_months,
+              mp.activation_date, mp.deactivation_date, mp.is_active,
+              mp.group_name, mp.row_created_timestamp, mp.row_updated_timestamp
+         FROM uown_merchant_program mp
+         JOIN uown_merchant_to_program mtp
+           ON mtp.program_pk = mp.pk AND mtp.is_active = true
+         WHERE mtp.merchant_pk = $1
+           AND (mp.activation_date   IS NULL OR mp.activation_date   <= CURRENT_DATE)
+           AND (mp.deactivation_date IS NULL OR mp.deactivation_date >= CURRENT_DATE)
+         ORDER BY mp.row_created_timestamp DESC`,
+      [merchantPk],
+    );
+    return rows.map(DatabaseHelpers.mapMerchantProgramRow);
+  }
+
+  /** Programs filtered by term_months (useful to isolate 13m vs 16m in CT-DateSelect-*). */
+  async getMerchantProgramsByTerm(
+    merchantPk: number | string,
+    termMonths: number,
+  ): Promise<MerchantProgramRecord[]> {
+    const rows = await this.query<MerchantProgramRow>(
+      `SELECT mp.pk, mp.program_name, mp.program_id, mp.term_months,
+              mp.activation_date, mp.deactivation_date, mp.is_active,
+              mp.group_name, mp.row_created_timestamp, mp.row_updated_timestamp
+         FROM uown_merchant_program mp
+         JOIN uown_merchant_to_program mtp
+           ON mtp.program_pk = mp.pk AND mtp.is_active = true
+         WHERE mtp.merchant_pk = $1
+           AND mp.term_months = $2
+         ORDER BY mp.row_created_timestamp DESC`,
+      [merchantPk, termMonths],
+    );
+    return rows.map(DatabaseHelpers.mapMerchantProgramRow);
+  }
+
+  /**
+   * Polls until `uown_merchant_program.is_active` for the given pk matches
+   * `expectedActive`. Use after triggering the sweep via
+   * `scheduledTask.triggerScheduledTask('merchantProgramActivationDeactivationSweep')`.
+   *
+   * Uses exponential backoff via the shared `pollUntil` (initial 100 ms →
+   * max 2 000 ms, governed by TIMEOUTS.DB_POLL_* — matching every other
+   * waitFor* in this helper).
+   */
+  async waitForProgramActiveState(
+    pk: number | string,
+    expectedActive: boolean,
+    timeoutMs: number = TIMEOUTS.DB_WAIT,
+  ): Promise<MerchantProgramRecord> {
+    const result = await this.pollUntil<MerchantProgramRecord>(
+      async () => {
+        const p = await this.getMerchantProgramByPk(pk);
+        return p && p.isActive === expectedActive ? p : null;
+      },
+      timeoutMs,
+      'waitForProgramActiveState',
+    );
+    if (!result) {
+      throw new Error(
+        `[waitForProgramActiveState] program pk=${pk} did not reach is_active=${expectedActive} within ${timeoutMs} ms`,
+      );
+    }
+    return result;
+  }
+
+  /**
+   * Captures the mutable state of a program for later restoration in `afterEach`.
+   * Read-only — no authorization required.
+   */
+  async snapshotMerchantProgram(pk: number | string): Promise<MerchantProgramSnapshot> {
+    const p = await this.getMerchantProgramByPk(pk);
+    if (!p) throw new Error(`[snapshotMerchantProgram] no program with pk=${pk}`);
+    return {
+      activationDate: p.activationDate,
+      deactivationDate: p.deactivationDate,
+      isActive: p.isActive,
+    };
+  }
+
+  /**
+   * DIRECT UPDATE on `uown_merchant_program` — authorized by user on
+   * 2026-04-22 (see scheduleProgramActivationDeactivationDates-spec.md
+   * §Preconditions · "DB UPDATE direto autorizado"). Used exclusively
+   * by CT-18..CT-25 / CT-DateSelect-* to set up boundary conditions that
+   * the UI cannot produce (e.g. deactivation_date = yesterday).
+   *
+   * The caller MUST pass an `authorizedBy` string naming the authorization
+   * record (e.g. 'user-authorization-2026-04-22'). Any other call site
+   * should use `MerchantClient.createOrUpdateProgram` instead.
+   *
+   * @throws if `authorizedBy` is empty — prevents accidental mutation.
+   */
+  async updateMerchantProgramDates(
+    pk: number | string,
+    dates: { activationDate?: string | null; deactivationDate?: string | null; isActive?: boolean },
+    authorizedBy: string,
+  ): Promise<void> {
+    if (!authorizedBy || !authorizedBy.trim()) {
+      throw new Error(
+        '[updateMerchantProgramDates] authorizedBy is required — direct UPDATE on uown_merchant_program needs explicit user authorization (see CLAUDE.md Exception 3).',
+      );
+    }
+    const sets: string[] = [];
+    const params: unknown[] = [];
+    if (Object.prototype.hasOwnProperty.call(dates, 'activationDate')) {
+      params.push(dates.activationDate ?? null);
+      sets.push(`activation_date = $${params.length}::date`);
+    }
+    if (Object.prototype.hasOwnProperty.call(dates, 'deactivationDate')) {
+      params.push(dates.deactivationDate ?? null);
+      sets.push(`deactivation_date = $${params.length}::date`);
+    }
+    if (Object.prototype.hasOwnProperty.call(dates, 'isActive')) {
+      params.push(dates.isActive);
+      sets.push(`is_active = $${params.length}::boolean`);
+    }
+    if (sets.length === 0) return;
+    sets.push('row_updated_timestamp = NOW()');
+    params.push(pk);
+    const sql = `UPDATE uown_merchant_program SET ${sets.join(', ')} WHERE pk = $${params.length}`;
+    console.warn(
+      `[updateMerchantProgramDates] AUTHORIZED DB MUTATION — pk=${pk} authorizedBy=${authorizedBy} dates=${JSON.stringify(dates)}`,
+    );
+    await this.executeUpdate(sql, params);
+  }
+
+  /**
+   * Restores a program to a previously captured snapshot. Also authorized
+   * under the same 2026-04-22 umbrella — used from `afterEach` of sweep CTs.
+   * Restores `is_active` directly (NOT relying on the sweep to reconcile).
+   */
+  async restoreMerchantProgram(
+    pk: number | string,
+    snapshot: MerchantProgramSnapshot,
+    authorizedBy: string,
+  ): Promise<void> {
+    if (!authorizedBy || !authorizedBy.trim()) {
+      throw new Error(
+        '[restoreMerchantProgram] authorizedBy is required — direct UPDATE on uown_merchant_program needs explicit user authorization (see CLAUDE.md Exception 3).',
+      );
+    }
+    console.warn(
+      `[restoreMerchantProgram] AUTHORIZED DB MUTATION — pk=${pk} authorizedBy=${authorizedBy} snapshot=${JSON.stringify(snapshot)}`,
+    );
+    await this.executeUpdate(
+      `UPDATE uown_merchant_program
+          SET activation_date   = $1::date,
+              deactivation_date = $2::date,
+              is_active         = $3,
+              row_updated_timestamp = NOW()
+        WHERE pk = $4`,
+      [snapshot.activationDate, snapshot.deactivationDate, snapshot.isActive, pk],
+    );
+  }
+
+  // ── Program activity log (PROGRAM_DATA_CHANGE) ───────────────────────
+  //
+  // Table `"MerchantActivityLog"` (quoted, PascalCase). Hibernate snake-case
+  // maps the camelCase fields `merchantPK` / `programPK` to columns
+  // `merchant_pk` / `program_pk` (matches existing getMerchantActivityLog
+  // in this helper). `notes`, `log_type`, `created_by` come from the embedded
+  // ActivityLogInfo.
+
+  /**
+   * Logs of `PROGRAM_DATA_CHANGE` (or any filtered subset) for a program.
+   * Emitted by MerchantProgramService (on program create/update) and by
+   * MerchantProgramActivationDeactivationSweepService (on flag flip).
+   *
+   * `sinceTimestamp` accepts ISO string or epoch ms — useful to scope to
+   * "logs created after my test started" and avoid flakiness from prior runs.
+   */
+  async getProgramActivityLogs(
+    programPk: number | string,
+    options: { sinceTimestamp?: string | Date; logTypes?: string[] } = {},
+  ): Promise<ProgramActivityLogRecord[]> {
+    const params: unknown[] = [programPk];
+    const where: string[] = ['program_pk = $1'];
+    const logTypes = options.logTypes && options.logTypes.length > 0
+      ? options.logTypes
+      : ['PROGRAM_DATA_CHANGE'];
+    params.push(logTypes);
+    where.push(`log_type = ANY($${params.length}::text[])`);
+    if (options.sinceTimestamp !== undefined) {
+      params.push(options.sinceTimestamp);
+      where.push(`row_created_timestamp >= $${params.length}`);
+    }
+    return this.query<ProgramActivityLogRecord>(
+      `SELECT pk, program_pk, merchant_pk, log_type, created_by, notes,
+              row_created_timestamp
+         FROM uown_merchant_activity_log
+         WHERE ${where.join(' AND ')}
+         ORDER BY row_created_timestamp DESC, pk DESC`,
+      params,
+    );
   }
 
   async close(): Promise<void> {

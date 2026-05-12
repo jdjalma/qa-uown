@@ -12,7 +12,15 @@ Use this skill when the user asks for a complete QA flow, mentions "qa flow", "f
 - Descricao/contexto da feature
 - Informacoes adicionais
 
-## Fases do QA Flow
+## Protocolo completo
+
+Este skill é o **resumo** do protocolo. Para execução completa com todas as regras obrigatórias (TODO list, sync repos, contextos obrigatórios por fase, regras de test data hierarchy, modality coverage, brand coverage, bug classification), consultar:
+
+**👉 [`.claude/context/shared/qa-flow-protocol.md`](../context/shared/qa-flow-protocol.md)**
+
+Esse arquivo contém 9 fases detalhadas + tabelas de contexto obrigatório + matriz de cobertura + enforcement rules.
+
+## Resumo das Fases do QA Flow
 
 ### Fase 0 — Setup e Planejamento
 

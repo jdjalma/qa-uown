@@ -41,6 +41,7 @@ const SHARED_CONTEXT: Partial<BrowserContextOptions> = {
 export const DESKTOP_CHROME: BrowserProfile = {
   name: 'Desktop Chrome',
   launchOptions: {
+    headless: false,
     args: [
       '--disable-blink-features=AutomationControlled',
       '--disable-notifications',

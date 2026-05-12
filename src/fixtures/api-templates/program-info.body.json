@@ -1,0 +1,23 @@
+{
+  "_comment": "Canonical body for POST /uown/createOrUpdateProgram. Use buildProgramInfoBody() from src/api/bodies/program-info.body.ts for typed programmatic builds — that builder is the primary interface. This JSON template is a human-readable reference and can also be used via buildRequestBody() only for fields that can be safely expressed as strings. Fields that must be null or numeric (merchantPk, termMonths, moneyFactor, etc.) cannot be templated by the string-interpolation engine and must be overridden in code.",
+  "merchantPk": "${merchantPk}",
+  "programPk": "${programPk}",
+  "programName": "${programName}",
+  "termMonths": "${termMonths}",
+  "activationDate": "${activationDate}",
+  "deactivationDate": "${deactivationDate}",
+  "active": true,
+  "moneyFactor": 16.9999,
+  "payoffDiscount": 30,
+  "epoDays": 90,
+  "epoFeePercent": 0,
+  "minCartAmount": 0,
+  "maxCartAmount": 0,
+  "dealerDiscount": 0,
+  "processingFeeOverride": 0,
+  "allowedFrequencyOverride": "WEEKLY,BI_WEEKLY,SEMI_MONTHLY,MONTHLY",
+  "lendingCategoryType": "LTO",
+  "amountChargedAtSigning": 0,
+  "groupName": null,
+  "states": "AL,AK,AZ,AR,CA,CO,CT,DE,DC,FL,GA,HI,ID,IL,IN,IA,KS,KY,LA,ME,MD,MA,MI,MN,MS,MO,MT,NE,NV,NH,NJ,NM,NY,NC,ND,OH,OK,OR,PA,RI,SC,SD,TN,TX,UT,VT,VA,WA,WV,WI,WY"
+}

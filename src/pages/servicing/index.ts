@@ -9,3 +9,5 @@ export { FrequencyChangesHistoryPage } from './frequency-changes-history.page.js
 export { PaymentArrangementPage } from './payment-arrangement.page.js';
 export { ServicingSearchPage } from './servicing-search.page.js';
 export { CreditCardHistoryPage } from './credit-card-history.page.js';
+export { BankAccountPage } from './bank-account.page.js';
+export { ServicingDocumentsPage, SERVICING_DOCUMENTS_SELECTORS } from './documents.page.js';

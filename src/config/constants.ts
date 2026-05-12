@@ -89,7 +89,10 @@ export function generateTestSSN(approved: boolean): string {
   if (approved) {
     return `${100000000 + randomInt(899999998)}`;
   }
-  return `${100000000 + randomInt(89999999)}9`;
+  // 8 random digits (10000000..99999999, 9-digit space starting at 1) + "9" suffix = 9 chars total.
+  // Backend rejects SSNs without exactly 9 digits — earlier `100000000 + randomInt(89999999) + '9'`
+  // produced 10 chars and surfaced as `sorErrorDescription="SSN should have 9 digits"` (pitfall #12).
+  return `${10000000 + randomInt(89999999)}9`;
 }
 
 /**

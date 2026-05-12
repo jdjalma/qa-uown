@@ -4,9 +4,10 @@ import { SELECTORS } from '../../selectors/common.selectors.js';
 
 
 export class ServicingBasePage extends BasePage {
-  // Top menu navigation
-  readonly servicingDropdown = this.page.locator("[data-menu='servicing'], .nav-item:has-text('Servicing')");
-  readonly historyDropdown = this.page.locator("[data-menu='history'], .nav-item:has-text('History')");
+  // Top menu navigation — both dropdowns are <a class="dropdown-toggle nav-link">,
+  // matched via role=link (NOT button) with exact name to avoid catching "manager", etc.
+  readonly servicingDropdown = this.page.getByRole('link', { name: /^Servicing$/i }).first();
+  readonly historyDropdown = this.page.getByRole('link', { name: /^History$/i }).first();
 
   // Side bar navigation
   readonly sidebarCustomer = this.page.locator(".sidebar-item:has-text('Customer')");
@@ -70,22 +71,10 @@ export class ServicingBasePage extends BasePage {
     // Wait for any full-page loader/spinner to clear before interacting with the menu
     await this.waitForSpinner();
 
-    // Open the correct dropdown — use getByRole for reliability
-    if (isHistoryItem) {
-      const historyBtn = this.page.getByRole('button', { name: /History/i }).first();
-      if (await historyBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-        await historyBtn.click();
-      } else {
-        await this.historyDropdown.click();
-      }
-    } else {
-      const servicingBtn = this.page.getByRole('button', { name: /Servicing/i }).first();
-      if (await servicingBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-        await servicingBtn.click();
-      } else {
-        await this.servicingDropdown.click();
-      }
-    }
+    // Open the correct dropdown. Both are <a role="link"> — clicking toggles the menu.
+    const dropdown = isHistoryItem ? this.historyDropdown : this.servicingDropdown;
+    await dropdown.waitFor({ state: 'visible', timeout: 5_000 });
+    await dropdown.click();
 
     // Wait for dropdown menu to appear, then click the item by role
     const menuItem = this.page.getByRole('menuitem', { name: label });
@@ -124,16 +113,25 @@ export class ServicingBasePage extends BasePage {
     }
     await this.paymentAmountInput.fill(amount);
 
-    // If existing bank info is on file, the modal shows a radio + dropdown
+    // If existing bank info is on file, the modal shows a radio + <select> dropdown
     // instead of manual bank fields. Use existing info when available.
-    const useExistingRadio = this.page.locator("input[type='radio'][checked], input[type='radio']").first();
+    const useExistingRadio = this.page.locator("input[type='radio'][value='existing']").first();
     const bankOnFile = this.page.locator("text=Use existing bank information");
     if (await bankOnFile.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      // Existing bank info is pre-selected — just ensure the radio is checked
       if (await useExistingRadio.isVisible({ timeout: 1_000 }).catch(() => false)) {
         await useExistingRadio.check().catch(() => {});
       }
-      // Bank info already selected from dropdown — proceed to submit
+      // Submit stays disabled until a bank account is picked from the <select>.
+      // The dropdown defaults to "" (placeholder) even when a single account exists.
+      const accountSelect = this.page.locator(SELECTORS.existingBankAccountSelect).first();
+      await accountSelect.waitFor({ state: 'visible', timeout: 5_000 });
+      const optionValues = await accountSelect.locator('option').evaluateAll(opts =>
+        opts.map(o => (o as HTMLOptionElement).value).filter(v => v !== ''),
+      );
+      if (optionValues.length === 0) {
+        throw new Error('[makeAchPayment] existing-bank-account dropdown has no real options');
+      }
+      await accountSelect.selectOption(optionValues[0]);
     } else {
       // No existing bank info — fill manually
       if (bankDetails.institute) {

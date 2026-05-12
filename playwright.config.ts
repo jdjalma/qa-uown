@@ -54,7 +54,10 @@ export default defineConfig({
     actionTimeout: testConfig.actionTimeout,
     navigationTimeout: testConfig.navigationTimeout,
     ignoreHTTPSErrors: true,
-    launchOptions: browserProfile.launchOptions,
+    launchOptions: {
+      ...browserProfile.launchOptions,
+      slowMo: process.env.SLOW_MO ? Number(process.env.SLOW_MO) : 0,
+    },
     ...browserProfile.contextOptions,
   },
 
@@ -234,6 +237,7 @@ export default defineConfig({
       use: {
         ...browserProfile.contextOptions,
         baseURL: process.env.ORIGINATION_URL,
+        storageState: '.auth/servicing.json',
       },
       dependencies: ['auth-servicing'],
     },

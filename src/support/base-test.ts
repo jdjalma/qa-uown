@@ -37,6 +37,9 @@ import { AmsClient } from '../api/clients/ams.client.js';
 import { LosPartnerAuthClient } from '../api/clients/los-partner-auth.client.js';
 import { LosPartnerApplicationClient } from '../api/clients/los-partner-application.client.js';
 import { SeonClient } from '../api/clients/seon.client.js';
+import { BankAccountClient } from '../api/clients/bank-account.client.js';
+import { CustomersClient } from '../api/clients/customers.client.js';
+import { GowSignTemplateClient } from '../api/clients/gowsign-template.client.js';
 import { MerchantConfigurator } from './merchant-configurator.js';
 import {
   disableCssAnimations,
@@ -59,6 +62,10 @@ export interface TestContext {
   achAdded: number;
   ccAdded: number;
   reportKeys: Map<string, string>;
+  /** GowSign/SignWell iframe URL captured from submitApplication response (when submitPaymentInfoViaApi=true). */
+  embeddedSigningUrl?: string;
+  /** Provider chosen by backend routing — 'GOWSIGN' | 'SIGNWELL'. */
+  esignClient?: string;
   [key: string]: unknown;
 }
 
@@ -80,6 +87,9 @@ export interface ApiClients {
   losPartnerAuth: LosPartnerAuthClient;
   losPartnerApplication: LosPartnerApplicationClient;
   seon: SeonClient;
+  bankAccount: BankAccountClient;
+  customers: CustomersClient;
+  gowSignTemplate: GowSignTemplateClient;
 }
 
 export interface TestFixtureOptions {
@@ -163,6 +173,9 @@ export const test = base.extend<BaseTestFixtures & TestFixtureOptions, BaseWorke
       losPartnerAuth: new LosPartnerAuthClient(request, testEnv),
       losPartnerApplication: new LosPartnerApplicationClient(request, testEnv),
       seon: new SeonClient(request, testEnv),
+      bankAccount: new BankAccountClient(request, testEnv),
+      customers: new CustomersClient(request, testEnv),
+      gowSignTemplate: new GowSignTemplateClient(request, testEnv),
     });
   },
 

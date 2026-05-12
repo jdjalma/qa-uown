@@ -38,7 +38,7 @@ export const MERCHANTS: Record<string, MerchantConfig> = {
     username: 'tireAgent',
     password: envOr('MERCHANT_TIRE_AGENT_PASSWORD', 'U0wn_tireAgent_G4eDIH'),
     number: 'OW90218-0001',
-    refCode: 'tireagent',
+    refCode: 'OW90218-0001',
     websiteUrl: 'https://dw93bg.paypair.com/',
     websiteUsername: 'tireAgent',
     websitePassword: envOr('MERCHANT_TIRE_AGENT_WEBSITE_PASSWORD', 'U0wn_tireAgent_G4eDIH'),
@@ -77,7 +77,17 @@ export const MERCHANTS: Record<string, MerchantConfig> = {
     fullName: "Daniel's Jewelers",
     username: 'danielsJewelers',
     password: envOr('MERCHANT_DANIELS_JEWELERS_PASSWORD', 'U0wn_danielsJewelers_CnRKhJ'),
-    number: 'OL90205-0001',
+    number: 'OL90205-0079',
+    refCode: 'danielsjewelers',
+    envOverrides: {
+      stg: { number: 'OL90205-0001' },
+    },
+  },
+  DanielsJewelersClone: {
+    fullName: "Daniel's Jewelers (clone OL90205-0079_clone)",
+    username: 'danielsJewelers',
+    password: envOr('MERCHANT_DANIELS_JEWELERS_PASSWORD', 'U0wn_danielsJewelers_CnRKhJ'),
+    number: 'OL90205-0079_clone',
     refCode: 'danielsjewelers',
   },
   Everly: {
@@ -101,8 +111,8 @@ export const MERCHANTS: Record<string, MerchantConfig> = {
     number: 'KS3015',
     programs: ['13 month', '16 month'],
     envOverrides: {
-      qa1: { password: envOr('MERCHANT_FIFTH_AVE_FURNITURE_NY_QA1_PASSWORD', 'U0wn_kornerstone_4aZ9Xb') },
-      qa2: { password: envOr('MERCHANT_FIFTH_AVE_FURNITURE_NY_QA2_PASSWORD', 'U0wn_kornerstone_4aZ9Xb') },
+      qa1: { password: envOr('MERCHANT_FIFTH_AVE_FURNITURE_NY_QA1_PASSWORD', 'U0wn_Kornerstone_012c') },
+      qa2: { password: envOr('MERCHANT_FIFTH_AVE_FURNITURE_NY_QA2_PASSWORD', 'U0wn_Kornerstone_012c') },
     },
   },
   ComfortZoneMattress: {
@@ -163,6 +173,14 @@ export const MERCHANTS: Record<string, MerchantConfig> = {
     refCode: 'terraceFinance',
     programs: ['13 month', '16 month'],
   },
+  EZPawn: {
+    fullName: 'EZ Pawn (TF10078-0001)',
+    username: 'terraceFinance',
+    password: envOr('MERCHANT_TERRACE_FINANCE_PASSWORD', 'U0wn_terraceFinance_xJ9z4p'),
+    number: 'TF10078-0001',
+    refCode: 'terraceFinance',
+    programs: ['13 month'],
+  },
   Kornerstone: {
     fullName: 'Kornerstone',
     username: 'kornerstone',
@@ -199,6 +217,66 @@ export const MERCHANTS: Record<string, MerchantConfig> = {
     number: 'OL90402-0001',
     refCode: 'msapowersports',
     ...PAYTOMORROW_PORTAL_DEFAULTS,
+  },
+  SaslowsJewelers: {
+    fullName: "Saslow's Jewelers",
+    username: 'saslowJewelers',
+    password: envOr('MERCHANT_SASLOWS_JEWELERS_PASSWORD', 'U0wn_saslowJewelers_fGoj3p'),
+    number: 'IL90206-0003',
+    refCode: 'saslowjewelers',
+    envOverrides: {
+      qa2: { password: envOr('MERCHANT_SASLOWS_JEWELERS_QA2_PASSWORD', 'U0wn_saslowJewelers_fGoj3p') },
+    },
+  },
+  /**
+   * Saslow's Jewelers — canonical CA entry (qa2 pk=6, ref_merchant_code=OW90337-0001).
+   * Used for CT-04 in task RU05.26.1.51.1_gowSignClientTypeAdaptionForNewTemplate_505.
+   * Note: qa2 DB shows state='NC' for this merchant — state field may reflect physical
+   * store location, not the operative config. Use this entry when the test spec calls for
+   * the Saslow's merchant identified by ref_merchant_code OW90337-0001.
+   */
+  SaslowsJewelersCA: {
+    fullName: "Saslow's Jewelers (OW90337-0001)",
+    username: 'saslowJewelers',
+    password: envOr('MERCHANT_SASLOWS_JEWELERS_CA_PASSWORD', 'U0wn_saslowJewelers_fGoj3p'),
+    number: 'OW90337-0001',
+    refCode: 'saslowjewelers',
+  },
+  /**
+   * Dickinson Jewelers — qa2 pk=832, client_type=KORNERSTONE, state=MD.
+   * Used for CT-11 in task RU05.26.1.51.1_gowSignClientTypeAdaptionForNewTemplate_505.
+   * Portal login uses shared kornerstone credentials; most CT-11 steps are API-only.
+   * Password is QA-managed — set MERCHANT_DICKINSON_JEWELERS_PASSWORD in .env if portal
+   * login is needed. Contract: KORNERSTONE_MERCHANT_CONFIG (useWebhook + holdDeposit true).
+   */
+  DickinsonJewelers: {
+    fullName: 'Dickinson Jewelers',
+    username: 'kornerstone',
+    password: envOr('MERCHANT_DICKINSON_JEWELERS_PASSWORD', 'U0wn_kornerstone_4aZ9Xb'),
+    number: 'KS4123',
+    refCode: 'kornerstone',
+  },
+  /**
+   * Paramount Jewelers (KS10150) — Kornerstone-family merchant, used in stg
+   * for the gowSignClientTypeAdaptionForNewTemplate_505 routing matrix.
+   * Login uses shared kornerstone credentials.
+   */
+  ParamountJewelers: {
+    fullName: 'Paramount Jewelers, Inc.',
+    username: 'kornerstone',
+    password: envOr('MERCHANT_PARAMOUNT_JEWELERS_PASSWORD', 'U0wn_Kornerstone_012c'),
+    number: 'KS10150',
+    refCode: 'kornerstone',
+  },
+  BodegaFurniture: {
+    fullName: 'Bodega Furniture',
+    username: 'kornerstone',
+    password: envOr('MERCHANT_BODEGA_FURNITURE_PASSWORD', 'U0wn_Kornerstone_012c'),
+    number: 'KS1011',
+    refCode: 'kornerstone',
+    envOverrides: {
+      qa2: { password: envOr('MERCHANT_BODEGA_FURNITURE_QA2_PASSWORD', 'U0wn_Kornerstone_012c') },
+    },
   },
 };
 

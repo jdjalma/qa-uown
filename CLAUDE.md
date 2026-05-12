@@ -35,9 +35,8 @@ Subagents live in `.claude/agents/`. CLAUDE.md is the **orchestrator** — analy
 | `subagent-impl-e2e` | opus | Implements E2E test | Yes |
 | `subagent-impl-api` | opus | Implements API-only test | Yes |
 | `subagent-impl-api-client` | opus | Creates typed API client | Yes |
-| `subagent-impl-page-object` | opus | Creates page object | Yes |
+| `subagent-page-object` | opus | Creates OR refactors page object (mode: `create` \| `refactor`) | Yes |
 | `subagent-impl-db-validation` | opus | Creates DB queries + polling | Yes |
-| `subagent-refactor-page-object` | opus | Refactors existing page object | Yes |
 | `subagent-debug-flaky` | opus | Diagnoses and fixes flaky test | Yes |
 | `subagent-audit` | sonnet | Audits selectors + .claude/ structure (does not fix) | No |
 | `subagent-data` | sonnet | Manages data — merchants, templates, test accounts | Yes |
@@ -73,6 +72,14 @@ Subagents live in `.claude/agents/`. CLAUDE.md is the **orchestrator** — analy
 6. **Real parallelization**: Agent tool with multiple agents, not sequential
 7. **Atomic scope**: each agent does ONE thing
 8. **Task report `docs/taskTestingUown/{testName}/{testName}-report.md` MUST be updated after every test execution** — never leave PENDING values after a successful run
+9. **QA domain reflexes are MANDATORY for every test creation or modification** — orchestrator MUST ensure `.claude/context/shared/qa-domain-reflexes.md` is consulted, regardless of pipeline type or whether the user invoked a formal pipeline. Applies to direct requests ("crie um teste X"), `/qa-flow`, `/new-payment-flow`, and all `new-*` pipelines. Every action step must cross-check the catalog; matching reflexes become mandatory validations.
+10. **Test Data Hierarchy é regra de TODOS os níveis** — spec design, implementação, orquestração, análise direta. Criar dados fresh via automação é PADRÃO; reuso de registro existente é EXCEÇÃO com justificativa escrita + reprodução em fresh antes de classificar bugs. UPDATE direto no DB é proibido sem autorização explícita (Exception 3). Ver [`.claude/rules/testing.md § Test Data Hierarchy`](.claude/rules/testing.md).
+11. **Classificação conservadora de bug** — observação isolada em dado pré-existente NÃO é bug. Bug só depois de: (a) reprodução em dados fresh, (b) checagem de task/issue existente (perguntar ao usuário), (c) descarte dos indicadores de artefato. Linguagem de relatório prefere `[OBSERVAÇÃO]` / `[HIPÓTESE]` a `[CONFIRMADO]`. Ver [`.claude/context/shared/bug-classification-rules.md`](.claude/context/shared/bug-classification-rules.md).
+12. **Requisitos implícitos descobertos durante debug DEVEM virar regra antes de finalizar o pipeline.** Se um teste falhou por requisito não documentado (validação backend não óbvia, field obrigatório escondido, ordem de chamadas específica, timeout inesperado, config de ambiente), a correção só é considerada completa após: (a) fix no código E (b) adição do pitfall em [`.claude/context/shared/application-lifecycle-protocol.md § Pitfalls`](.claude/context/shared/application-lifecycle-protocol.md) (ou protocol correspondente). Alimentação do catálogo é obrigação do agent/orquestrador que descobriu, não opcional.
+13. **Merchant preflight antes de toda nova aplicação.** Toda criação de aplicação via API deve garantir que a config do merchant (checkboxes + programas 13m/16m) bate com [`src/data/merchant-config-contract.ts`](src/data/merchant-config-contract.ts). `createPreQualifiedApplication` já chama `ensureMerchantReady` automaticamente; testes que usam outro caminho devem invocar o helper antes do `sendApplication`. Default: auto-heal via `createOrUpdateMerchant` (flag `AUTO_HEAL_MERCHANT=true` no `.env`; setar `false` desliga o heal e falha rápido com drift list). Testes que operam em lease/account JÁ criado NÃO devem rodar preflight — mutar config de merchant alheio ao escopo é side-effect (passar `skipMerchantPreflight: true` ou não chamar o helper). Ver pitfall #10.
+14. **SEMPRE validar Activity Log — sem log = nada está acontecendo.** Toda ação relevante de negócio (signing event, payment attempt, refund, recovery, status transition, vendor callback) DEVE ter activity log/note correspondente em `uown_los_lead_notes` ou tabela equivalente. Ausência de log é falha de implementação, não comportamento aceitável. Aplica-se a TODOS os agents que criam, validam ou debugam testes (`subagent-spec-test`, `subagent-impl-e2e`, `subagent-impl-api`, `subagent-impl-db-validation`, `subagent-debug-flaky`, `subagent-validate-results`): cada step de teste que dispara ação de negócio DEVE incluir validação do log gerado (presença + conteúdo esperado). Spec/relatório que não cobre log é incompleto. Origem: daily UOWN 2026-04-28 (Priyanka Namburu): *"If there is no activity log, that means nothing is happening."* Ver [`.claude/rules/testing.md § Activity Log Validation`](.claude/rules/testing.md).
+15. **UI-first como padrão. API only when feature has no UI affordance.** Se a feature tem fluxo de usuário no portal (Origination/Servicing/Website/AMS), o teste DEVE exercer esse fluxo via browser. API-only é EXCEÇÃO restrita a: (a) endpoints admin/ops sem UI exposta (ex: `PATCH /uown/svc/gowsign-templates/{id}`, sweeps de scheduled tasks, internal CRUD); (b) precondições/setup que aceleram o teste (criar lead via `sendApplication` antes de exercitar o fluxo de signing UI); (c) validações DB cross-cutting (queries de assertion). Validação visual (placeholders renderizados, badges, content do iframe GowSign, PDFs) NÃO pode ser substituída por leitura de log de backend — bug de rendering só vira detectável quando o cliente vê. Origem: 2026-05-06 — BUG-01 (placeholders vazios no PDF de Daniel's Jewelers/CA) descoberto manualmente pelo Fernando porque os testes API-only só liam logs sem renderizar PDF. Ver [`.claude/rules/testing.md § UI-First Principle`](.claude/rules/testing.md).
+16. **DOM-first em falhas de seletor — inspecionar via MCP Playwright ANTES de propor fix.** Quando um teste falha com `TimeoutError`/`not visible`/`not found`/`strict mode violation` em locator UI, a PRIMEIRA AÇÃO é navegar o portal real via `mcp__playwright__browser_*`, autenticar, fixar viewport ≥ 1440×900 (Bootstrap `d-lg-block`), e usar `browser_snapshot` + `browser_evaluate` para extrair `tagName`, `role`, `accessible name`, `visible`, e ancestor chain do elemento. Construir tabela "DOM Real vs Selector Atual" e SÓ depois propor fix. Aumentar timeout, adicionar retry, `force: true` ou `waitForTimeout` como primeira reação é PROIBIDO — mascara a causa raiz. Aplicável a `subagent-debug-flaky`, `subagent-page-object`, `subagent-impl-e2e`, e análises diretas. Fallback (CI sem rede): trace + screenshot do `reports/test-results/` + HTML colado pelo user. Origem: 2026-05-11 — `unified-flow.spec.ts` "Items Purchased" timeout era selector errado (`<a>` vs `<button>`), não timing; investigação MCP resolveu em 10 minutos. Ver [`.claude/context/shared/dom-investigation-protocol.md`](.claude/context/shared/dom-investigation-protocol.md).
 
 ## Detailed References
 
@@ -93,16 +100,23 @@ Subagents live in `.claude/agents/`. CLAUDE.md is the **orchestrator** — analy
 | Java ↔ TypeScript glossary | [`.claude/context/glossary.md`](.claude/context/glossary.md) |
 | Application source repos | [`.claude/context/app-repos.md`](.claude/context/app-repos.md) |
 | Database schema | [`docs/taskTestingUown/database-schema.md`](docs/taskTestingUown/database-schema.md) |
+| GowSign wiki mirror (overview, routing, templates, lifecycle, regression checklist) | [`docs/external/gowsign/README.md`](docs/external/gowsign/README.md) |
 | Agent coordination (locks) | [`.claude/context/shared/agent-coordination.md`](.claude/context/shared/agent-coordination.md) |
-| E2E agent responsibilities | [`.claude/context/shared/e2e-agent-responsibilities.md`](.claude/context/shared/e2e-agent-responsibilities.md) |
+| E2E agent responsibilities | [`.claude/context/shared/helpers-catalog.md / shared/api-clients-catalog.md / shared/page-objects-catalog.md`](.claude/context/shared/helpers-catalog.md / shared/api-clients-catalog.md / shared/page-objects-catalog.md) |
 | E2E test examples | [`.claude/context/shared/e2e-test-examples.md`](.claude/context/shared/e2e-test-examples.md) |
 | Common operations cookbook | [`.claude/context/shared/common-operations.md`](.claude/context/shared/common-operations.md) |
 | E2E test plan template | [`.claude/context/shared/e2e-test-plan-template.md`](.claude/context/shared/e2e-test-plan-template.md) |
 | E2E checklist | [`.claude/context/shared/e2e-checklist.md`](.claude/context/shared/e2e-checklist.md) |
 | Test report standard | [`.claude/context/shared/e2e-test-report-standard.md`](.claude/context/shared/e2e-test-report-standard.md) |
-| QA Flow command | [`.claude/commands/qa-flow.md`](.claude/commands/qa-flow.md) |
-| New Page Object command | [`.claude/commands/new-page-object.md`](.claude/commands/new-page-object.md) |
-| New API Client command | [`.claude/commands/new-api-client.md`](.claude/commands/new-api-client.md) |
-| New Payment Flow command | [`.claude/commands/new-payment-flow.md`](.claude/commands/new-payment-flow.md) |
+| QA domain reflexes (post-action validations by action type) | [`.claude/context/shared/qa-domain-reflexes.md`](.claude/context/shared/qa-domain-reflexes.md) |
+| SSN test catalog + 3 program modalities (13m / 13m+16m / 16m Second Look) | [`.claude/context/shared/ssn-test-catalog.md`](.claude/context/shared/ssn-test-catalog.md) |
+| Application lifecycle protocol (13+ steps + 9 pitfalls) | [`.claude/context/shared/application-lifecycle-protocol.md`](.claude/context/shared/application-lifecycle-protocol.md) |
+| Bug classification rules (require fresh reproduction before reporting) | [`.claude/context/shared/bug-classification-rules.md`](.claude/context/shared/bug-classification-rules.md) |
+| DOM investigation protocol (MCP Playwright before selector fix) | [`.claude/context/shared/dom-investigation-protocol.md`](.claude/context/shared/dom-investigation-protocol.md) |
+| QA Flow protocol (detailed) | [`.claude/context/shared/qa-flow-protocol.md`](.claude/context/shared/qa-flow-protocol.md) |
+| QA Flow skill (compact trigger) | [`.claude/skills/qa-flow.md`](.claude/skills/qa-flow.md) |
+| New Page Object skill | [`.claude/skills/new-page-object.md`](.claude/skills/new-page-object.md) |
+| New API Client skill | [`.claude/skills/new-api-client.md`](.claude/skills/new-api-client.md) |
+| New Payment Flow skill | [`.claude/skills/new-payment-flow.md`](.claude/skills/new-payment-flow.md) |
 | Personal settings overrides | [`.claude/settings.local.json`](.claude/settings.local.json) (gitignored — create locally) |
 

@@ -52,7 +52,7 @@ Cenarios obrigatorios: happy path, validacoes, edge cases
 ```
 # Todos em paralelo (independentes):
 Agent(subagent-impl-api-client, ...)    # se client nao existe
-Agent(subagent-impl-page-object, ...)   # se page object nao existe
+Agent(subagent-page-object, ...)   # se page object nao existe
 Agent(subagent-data, ...)               # JSON templates de request (template mode)
 Agent(subagent-impl-db-validation, ...) # queries de validacao DB
 ```

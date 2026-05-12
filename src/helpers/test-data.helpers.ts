@@ -13,10 +13,10 @@ import type { MerchantInfo, ApplicantInfo, OrderInfo } from '@api/bodies/index.j
 
 export interface BuildTestDataOptions {
   /**
-   * Environment name. Must be a valid EnvName — validated at runtime by ConfigEnvironment.
-   * Use EnvName type when possible (e.g. testData arrays typed with TestDataEntry).
+   * Environment name. Optional — defaults to `process.env.ENV || 'sandbox'`.
+   * Tests should usually omit this and let the env come from `.env`.
    */
-  env: string;
+  env?: string;
   /** US state code (e.g. 'NY', 'FL', 'CA') */
   state: string;
   /** Merchant key from merchants.ts (e.g. 'TireAgent', 'ProgressMobility') */
@@ -66,7 +66,7 @@ export interface TestData {
 
 export function buildTestData(options: BuildTestDataOptions): TestData {
   const {
-    env: envName,
+    env: envOverride,
     state,
     merchant: merchantName,
     orderTotal,
@@ -75,6 +75,8 @@ export function buildTestData(options: BuildTestDataOptions): TestData {
     emailOverride,
     dob = '01/01/1984',
   } = options;
+
+  const envName = envOverride ?? process.env.ENV ?? 'sandbox';
 
   const env = new ConfigEnvironment(envName as EnvName);
   const address = getAddressForState(state);

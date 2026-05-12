@@ -8,6 +8,7 @@ import type {
   DueDateMovesPage,
   DueDateAdjustmentResponse,
   PodiumInvitationResponse,
+  PortalInvitationResponse,
   AccountSearchCriteriaResponse,
 } from '../responses/account.response.js';
 import {
@@ -94,5 +95,10 @@ export class AccountClient extends BaseClient {
    */
   async getAccountsByCriteria(body: AccountSearchCriteriaBody): Promise<ApiResponse<AccountSearchCriteriaResponse>> {
     return this.post<AccountSearchCriteriaResponse>('/uown/svc/getAccountsByCriteria', body);
+  }
+
+  /** Sends customer portal reminder email (+ SMS if eligible) for a specific account (Task #490). */
+  async sendCustomerPortalLink(accountPk: string | number): Promise<ApiResponse<PortalInvitationResponse>> {
+    return this.post<PortalInvitationResponse>(`/uown/svc/sendCustomerPortalLink/${accountPk}`);
   }
 }

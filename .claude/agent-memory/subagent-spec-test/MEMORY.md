@@ -1,5 +1,8 @@
 # MEMORY — subagent-spec-test
 
+## Index (file-based memories)
+- [qa2 e-sign routing reality (2026-04-28)](project_qa2_esign_routing.md) — Only CA has GowSign template in qa2; other states fallback to SIGNWELL; NJ/VT/MN/ME blocked by stateCheck.
+
 ## Origination Filter Patterns (discovered 2026-03-31, task #1205)
 
 ### React Select types used in Origination portal:

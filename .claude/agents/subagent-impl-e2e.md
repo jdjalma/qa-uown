@@ -20,14 +20,19 @@ Implements a complete E2E test in `tests/e2e/{portal}/`.
 ## Required Context
 
 1. `context/coding-standards.md`
-2. `context/test-patterns.md`
-3. `context/architecture.md`
+2. `context/test-patterns-core.md + context/test-patterns-ui.md + context/test-patterns-arrangements.md`
+3. `context/project.md`
 4. `context/business-rules.md` — **ALWAYS**. After reading the summary, identify which domain applies (origination / payments / servicing / modifications / funding) and read the corresponding chapter from `docs/business-rules/` per the Domain → Chapter Guide in that file. Do this BEFORE writing any assertions or payloads.
+5. `.claude/rules/testing.md § Test Data Hierarchy` — **MANDATORY**. Implementar setup via automação (`buildTestData`, `sendApplication`, `driveLeadToFunding`). NUNCA hardcode `accountPk` existente. Reuso de conta existente é EXCEÇÃO — requer comentário no código justificando (ex: GDS bypass documentado). UPDATE direto no DB é proibido sem autorização do usuário registrada na conversa.
+6. `.claude/context/shared/ssn-test-catalog.md` — **MANDATORY** quando o teste cria aplicação via `sendApplication`. Usar a receita correta conforme a modalidade que o SPEC especifica (13m / 13m+16m / 16m Second Look / Denied). Respeitar SSNs fixos (`100000053` para Second Look) e pré-condições de profile/state/merchant — desviar da receita quebra o teste em qa/stg. **Brand coverage (§7):** toda aplicação em merchant Kornerstone DEVE validar `uown_sv_account.company='KORNERSTONE'` como pré-condição e parar + pedir autorização de UPDATE ao user se divergente. Toda CT com renderização visual DEVE incluir assertions de styling específicas da brand (logo, from, footer, cores, cross-contamination check).
+7. `.claude/context/shared/application-lifecycle-protocol.md` — **MANDATORY** quando o teste faz `sendApplication` ou encadeia transições de lease. Sequência canônica (13+ passos) + 9 pitfalls (DENIED por email reusado, getMissingFields antes de submitApplication, MASTERCARD_APPROVED vs VISA_APPROVED, banking data para Kornerstone, ordem SIGNED → settle → FUNDING → FUNDED, etc.). Consultar ANTES de escrever o teste — evita 20-60min redescobrindo requisitos implícitos.
 
 ## Optional Context
 - `context/environments.md` — when specific timeouts or URLs are needed
 - `docs/business-rules/appendix-g-cenarios-risco.md` — **MANDATORY** when the test creates a lease application. Defines SSN, state, merchant and cart value per risk tier. Always read this before building `sendApplication` payloads
 - `context/shared/common-operations.md` — **MANDATORY** when the test involves payments (CC or ACH arrangements), driving a lead to FUNDED, or any multi-step API flow. Contains exact, working code with correct function signatures
+- `.claude/context/shared/qa-domain-reflexes.md` — **MANDATORY** safety net. If the SPEC omits reflex validations for an action listed in the catalog (e.g., payment without rating letter check, mutation without audit log check), add them anyway. Reflexes are non-negotiable — SPEC gaps must be closed here.
+- `.claude/context/shared/dom-investigation-protocol.md` — **MANDATORY (CLAUDE.md #16)** quando um locator existente falhar durante a implementação (`TimeoutError`, `not visible`, `getByRole` retorna 0). NÃO ajustar timeout, NÃO adicionar retry, NÃO usar `force: true` — rode o protocolo MCP, descubra a causa real, e (se for bug do page object) delegue para `subagent-page-object` mode `refactor` em vez de patch inline.
 
 ## Dependencies
 
@@ -37,7 +42,7 @@ Implements a complete E2E test in `tests/e2e/{portal}/`.
 
 Can run in **PARALLEL** with: `subagent-impl-api`
 
-> **Scope:** If page objects or API clients don't exist, **delegate** to `subagent-impl-page-object` / `subagent-impl-api-client` — do NOT create inline. Exception: new selectors can be added to SELECTORS directly.
+> **Scope:** If page objects or API clients don't exist, **delegate** to `subagent-page-object` (mode: `create`) / `subagent-impl-api-client` — do NOT create inline. Exception: new selectors can be added to SELECTORS directly.
 
 ## Steps
 
@@ -170,7 +175,7 @@ for (const data of testData) {
 
 Rules:
 1. **At least 1 screenshot per CT (acceptance criterion)** — taken immediately after the key assertion that proves the criterion
-2. **Save to disk:** `page.screenshot({ path: 'reports/screenshots/{testName}-{NN}-{desc}.png', fullPage: false })`
+2. **Save to disk:** `page.screenshot({ path: 'docs/taskTestingUown/{testName}/{testName}-{NN}-{desc}.png', fullPage: false })` — screenshots MUST live inside the task folder alongside the report
 3. **For API-only steps:** no screenshot needed (no browser)
 4. **Naming:** `{testName}-{NN}-{description}.png` — sequential numbering (01, 02, 03...)
 5. **Focus on acceptance criteria** — the screenshot must show the state that proves the CT passed (not generic page captures)
@@ -179,7 +184,7 @@ Rules:
 // Example: screenshot immediately after the key assertion
 await test.step('CT-02 — Verify status is FUNDED', async () => {
   await expect(page.locator(SELECTORS.statusBadge)).toHaveText('FUNDED');
-  await page.screenshot({ path: 'reports/screenshots/myTest-02-funded-status.png', fullPage: false });
+  await page.screenshot({ path: 'docs/taskTestingUown/myTest/myTest-02-funded-status.png', fullPage: false });
 });
 ```
 
@@ -224,7 +229,7 @@ await test.step('CT-05 — Triple validation: API action + DB + UI', async () =>
 
 - Use hardcoded selectors in the test — always via `SELECTORS` or page object
 - Import from `@playwright/test` — use `@support/base-test`
-- Create page objects inline in the test — delegate to `subagent-impl-page-object`
+- Create page objects inline in the test — delegate to `subagent-page-object` (mode: `create`)
 - Use `page.waitForTimeout()` — use page object waiters or `sleep()` from helpers
 - Share state between tests via global variable — use `ctx` within the same test only
 - Omit `test.step()` — every logical phase needs a label
@@ -243,3 +248,4 @@ await test.step('CT-05 — Triple validation: API action + DB + UI', async () =>
 - [ ] **Screenshots**: saved to disk (`tests/{folder}/screenshots/{testName}-{NN}-{desc}.png`) + attached via `test.info().attach()` — focused on acceptance criteria (at least 1 per CT)
 - [ ] **`riskTier` present in testData** — SSN, state, merchant and merchandiseAmount consistent with Appendix G
 - [ ] State-specific behavior handled: EPO assertion uses proportional formula for CA/NY/HI/WV; NC last payment ≥ 11% baseCost; NJ/VT/MN/ME blocked if ONLINE merchant
+- [ ] **QA reflex safety net applied**: cross-checked every action against `.claude/context/shared/qa-domain-reflexes.md`. If SPEC was missing a matching reflex (audit log after mutation, rating letter before/after payment agreement, etc.), added the validation to the test anyway

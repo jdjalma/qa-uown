@@ -17,3 +17,7 @@ export * from './ams-user.response.js';
 export * from './los-partner-auth.response.js';
 export * from './los-partner-application.response.js';
 export * from './seon.response.js';
+export * from './bank-account.response.js';
+export * from './customer.response.js';
+export * from './gowsign.response.js';
+export * from './gowsign-template.response.js';

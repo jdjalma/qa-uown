@@ -130,45 +130,16 @@ export class PaymentTransactionPage extends ServicingBasePage {
    * the React dropdown, and clicks Submit.
    * Matches Java's checkCCTransactionAllocation() step.
    */
-  async editAllocationStrategy(rowIndex: number, strategy: AllocationStrategy | string): Promise<void> {
-    const row = this.getDataRows().nth(rowIndex);
-
-    // Find the "Update Payment" column index via headers
-    const headers = await this.page.locator(SELECTORS.tableHeader).allTextContents();
-    const updateColIdx = headers.findIndex(h =>
-      h.toLowerCase().includes('update') || h.toLowerCase().includes('edit')
-    );
-
-    let editClicked = false;
-
-    if (updateColIdx >= 0) {
-      const updateCell = row.locator("[role='cell']").nth(updateColIdx);
-      const editIcon = updateCell.locator('img, svg, [data-icon], button').first();
-      if (await editIcon.isVisible({ timeout: 3_000 }).catch(() => false)) {
-        await editIcon.click({ force: true });
-        editClicked = true;
-      }
+  async editAllocationStrategy(_rowIndex: number, strategy: AllocationStrategy | string): Promise<void> {
+    // Allocation Strategy lives in the "Update Payment" modal opened from /payment-history
+    // (icon = pen-to-square). The /credit-card-history table has a similar-looking icon
+    // (data-icon="pencil") but its modal is "Edit Pending Credit Card Payment" without an
+    // Allocation Strategy field — callers must navigate to History → Payments before this.
+    const pencil = this.page.locator(SELECTORS.pencilIcon).first();
+    if (!(await pencil.isVisible({ timeout: 5_000 }).catch(() => false))) {
+      throw new Error('[editAllocationStrategy] no editable transaction found on this page — make sure to navigate to History → Payments (/payment-history) first');
     }
-
-    if (!editClicked) {
-      // Fallback: try pencil icon selector or last cell icon
-      const pencil = row.locator(`${SELECTORS.pencilIcon}`);
-      if (await pencil.first().isVisible({ timeout: 3_000 }).catch(() => false)) {
-        await pencil.first().click();
-        editClicked = true;
-      } else {
-        const lastIcon = row.locator("[role='cell']:last-child img").first();
-        if (await lastIcon.isVisible({ timeout: 3_000 }).catch(() => false)) {
-          await lastIcon.click();
-          editClicked = true;
-        }
-      }
-    }
-
-    if (!editClicked) {
-      console.log(`[editAllocationStrategy] No edit icon found on row ${rowIndex} — skipping allocation strategy edit`);
-      return;
-    }
+    await pencil.click();
 
     // Wait for the modal to appear
     const submitButton = this.page.getByRole('button', { name: 'Submit', exact: true });

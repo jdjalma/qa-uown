@@ -32,7 +32,7 @@ Se ja existe -> analisar e estender em vez de criar novo.
 
 Ler antes de implementar:
 - `.claude/rules/api-clients.md` — BaseClient rules, template
-- `.claude/context/architecture.md` — estrutura API
+- `.claude/context/project.md` — estrutura API
 
 ### Fase 3 — Criar artefatos em paralelo
 

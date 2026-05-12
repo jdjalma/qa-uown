@@ -29,7 +29,7 @@ export class AmsUserDetailsPage extends AmsBasePage {
 
   /** Wait for the user details page to load (edit pencil visible). */
   async waitForDetailsPage(): Promise<void> {
-    await this.editProfileButton.waitFor({ state: 'visible', timeout: 20_000 });
+    await this.editProfileButton.waitFor({ state: 'visible', timeout: 60_000 });
   }
 
   /** Activate edit mode on the "Edit User Profile" card. */
@@ -232,8 +232,11 @@ export class AmsUserDetailsPage extends AmsBasePage {
    */
   async getLogEntries(): Promise<Array<{ date: string; type: string; userId: string; notes: string }>> {
     const rows = this.page.locator(SELECTORS.amsLogActivityRow);
+    // Log Activity loads async after DOM ready and typically sits below the fold —
+    // scroll the table into view and give the API call extra time on slower envs (stg).
+    await this.page.locator('.rdt_Table').first().scrollIntoViewIfNeeded().catch(() => {});
     try {
-      await rows.first().waitFor({ state: 'visible', timeout: 10_000 });
+      await rows.first().waitFor({ state: 'visible', timeout: 30_000 });
     } catch {
       return [];
     }

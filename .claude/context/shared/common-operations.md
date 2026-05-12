@@ -298,6 +298,191 @@ await api.scheduledTask.triggerScheduledTask('sendCreditCardPaymentsSweep');
 
 ---
 
+## Merchant Create/Edit Flow (Origination)
+
+> Task #1262. Uses `MerchantEditPage` (`src/pages/origination/merchant-edit.page.ts`).
+
+```typescript
+import { MerchantEditPage } from '@pages/origination/merchant-edit.page.js';
+
+// Create a new merchant with Inventory Category
+await test.step('Navigate to Add Merchant form', async () => {
+  merchantPage = new MerchantEditPage(page);
+  await merchantPage.navigateToAddMerchant(env.originationUrl);
+});
+
+await test.step('Fill form and save', async () => {
+  await merchantPage.fillMerchantForm({
+    refCode: 'OW90999-0001',
+    name: 'Test Merchant',
+    legalName: 'Test Merchant LLC',
+    locationName: 'Main Location',
+    inventoryCategory: 'ELECTRONICS',
+  });
+  // selectInventoryCategory is called internally by fillMerchantForm when inventoryCategory is provided
+});
+
+// Verify DB — note uown_merchant column names
+await test.step('Verify DB record', async () => {
+  const row = await db.getMerchantByRefCode('OW90999-0001');
+  expect(row.inventory_category).toBe('ELECTRONICS');
+  // Timestamp columns: row_created_timestamp / row_updated_timestamp (NOT created_at/updated_at)
+  // Acting user column: agent (NOT created_by/updated_by)
+  expect(row.agent).toBeDefined();
+});
+
+// Verify absence (blocked save — e.g., missing Inventory Category)
+const count = await db.countMerchantByRefCode('OW90999-BLOCKED');
+expect(count).toBe(0);
+```
+
+### React-select option picker — union selector for Origination forms
+
+Origination forms mix `filter__*` (themed, classNamePrefix="filter") and `css-*` (default) prefixes within the same page. Use the following union selector to target dropdown options regardless of which prefix is applied:
+
+```typescript
+const REACT_SELECT_OPTION_UNION =
+  '.filter__option, [class*="css-"][class*="option-"], ' +
+  '[class*="-option"]:not([class*="options"]):not([class*="placeholder"]):not([class*="single-value"])';
+```
+
+### Clone dropdown (Add Merchant form)
+
+The clone trigger is `<a class="dropdownContainer__ddButton">` (not `<button>`). Menu items are `.dropdown-item` inside `.dropdown.show`. The first item is a header containing the search input — always exclude it:
+
+```typescript
+// openCloneDropdown() clicks the <a> trigger
+await merchantPage.openCloneDropdown();
+// selectMerchantToClone types in search input and clicks first non-header item
+await merchantPage.selectMerchantToClone('OW90218');
+```
+
+---
+
+## Email Dispatch — Two-Stage Pipeline (Task #491)
+
+> **CRITICAL:** Any test that validates an email triggered by a sweep task MUST run BOTH sweeps in sequence, or the IMAP assertion will time out.
+
+The email dispatch pipeline is two-stage:
+
+1. **`*EmailSweep` task** (e.g., `settledInFullAccountEmailSweep`) — enqueues rows in `uown_email_queue` with status `PENDING`; writes a row to `uown_correspondence_logs`.
+2. **`emailSweep` task** — picks up PENDING rows and dispatches via SendGrid. Terminal status on successful dispatch is `STORED` (not `SENT`) in qa2; confirmed by `sent_time IS NOT NULL`.
+
+```typescript
+// Always run both sweeps in sequence
+await api.scheduledTask.triggerScheduledTask('settledInFullAccountEmailSweep');
+await helpers.waitForEmailQueueRecord(db, toEmail, accountPk, 'settled-in-full', 30_000);
+await api.scheduledTask.triggerScheduledTask('emailSweep');
+await helpers.waitForEmailQueueDispatched(db, queuePk, 60_000);
+```
+
+### Debugging when no row lands in uown_email_queue
+
+If the sweep triggers but no `uown_email_queue` row is created, check `uown_correspondence_logs.error` — it captures service-side failures like `"No data associated with correspondence request"` that silently prevent enqueue.
+
+```sql
+SELECT error, template_name, row_created_timestamp
+FROM uown_correspondence_logs
+WHERE account_pk = <accountPk>
+ORDER BY row_created_timestamp DESC;
+```
+
+### Schema notes (Task #491)
+
+- `uown_sv_account` does **NOT** have `customer_pk`. The relationship is: `uown_sv_customer.account_pk → uown_sv_account.pk`.
+- `uown_correspondence_logs` native columns: `pk`, `agent`, `row_created_timestamp`, `row_updated_timestamp`, `tenant_id`, `web_user_id`, `data_map`, `error`, `source`, `template_name`, `correspondence_type`, `account_pk`, `lead_pk`. There is NO `recipient`, `status`, or `updated_by` — derive those via JOIN on `uown_email_queue`.
+
+### settled-in-full helpers
+
+```typescript
+import {
+  findEligibleSettledInFullAccount,
+  waitForEmailQueueRecord,
+  waitForEmailQueueDispatched,
+  getCorrespondenceLog,
+} from '@helpers/index.js';
+```
+
+---
+
+---
+
+## Timestamp Comparisons — pg-node and `timestamp without time zone` (Task #502)
+
+> **PITFALL:** When pg-node reads a `timestamp without time zone` column, the returned JS `Date` is timezone-interpreted by the Node.js process locale. Comparing `row.expiration_time.getTime()` against `Date.now()` is unreliable across environments.
+
+**Wrong pattern (do NOT use):**
+```typescript
+// WRONG — timezone-sensitive
+const row = await db.getSingleRow<KountTokenRow>('SELECT expiration_time FROM uown_kount_token WHERE pk = 1');
+expect(row.expiration_time.getTime()).toBeGreaterThan(Date.now()); // unreliable
+```
+
+**Correct pattern — push comparison to PG:**
+```typescript
+// CORRECT — comparison happens in Postgres, JS receives boolean
+const { ok } = await db.getSingleRow<{ ok: boolean }>(
+  `SELECT (expiration_time > now() + interval '30 seconds') AS ok FROM uown_kount_token WHERE pk = $1`,
+  [1],
+);
+expect(ok).toBe(true);
+```
+
+Alternatively, use `waitForValueChange` to detect that the token string itself changed:
+```typescript
+const newToken = await db.waitForValueChange(
+  'SELECT access_token FROM uown_kount_token WHERE pk = $1',
+  [1],
+  oldToken,
+  30_000,
+);
+expect(newToken).not.toBe(oldToken);
+```
+
+**Affected tables:**
+- `uown_kount_token.expiration_time` — `timestamp WITHOUT time zone` — apply the PG-side pattern
+- `uown_gds_token.expiration_time` — `timestamp WITH time zone` — pg-node handles correctly; direct JS comparison is safe
+
+---
+
+## MerchantConfigurator — qa2 known quirk (Task #505 / hotfix R1.51.1)
+
+`MerchantConfigurator.configureByName(merchantName, ...)` calls `/uown/los/getMerchantsByRefCode` using the lowercase `refCode` key from `src/data/merchants.ts` (e.g., `'danielsjewelers'`). In qa2, this endpoint matches by the actual `ref_merchant_code` column value (e.g., `'OL90205-0079'`). The mismatch causes the configurator to return 0 results and fail silently, blocking preflight for:
+
+- Daniel's Jewelers (`OL90205-0079`)
+- Saslow's Jewelers CA (`OW90337-0001`)
+- FirstApp merchants
+- Dickinson Jewelers (`KS4123`)
+- Kornerstone merchants
+
+**Workaround — tests that do NOT need to mutate merchant config:**
+
+Pass `skipMerchantPreflight: true` to avoid calling `configureByName` entirely:
+
+```typescript
+await createPreQualifiedApplication(api, merchant, applicant, ctx, {
+  submitPaymentInfoViaApi: true,
+  skipMerchantPreflight: true,  // skip when config mutation is not needed
+});
+```
+
+**Workaround — tests that DO need to mutate merchant config:**
+
+Use the merchant number directly instead of `configureByName`:
+
+```typescript
+// Pass the ref_merchant_code (number field from src/data/merchants.ts), not the refCode key
+await mSetup.configure(MERCHANTS.DanielsJewelers.number, { isCcRequired: true, ... });
+```
+
+---
+
+## Token Tables — known app constraint (Task #502)
+
+`RefreshKountAccessTokenSweepService` and `RefreshGdsAccessTokenSweepService` (commit `213b96b54`) call `loadOrCreateToken().setPk(...)` followed by `repo.save(...)`. Because the entity uses `@GeneratedValue`, the explicit `setPk` is ignored on INSERT — the DB assigns a new PK. Consequence: **after deleting pk=1 from `uown_kount_token` or `uown_gds_token`, the sweep recreates the row at a new auto-incremented PK, not pk=1**. Tests that rely on `WHERE pk = 1` will find no row after a delete+sweep cycle. Use `ORDER BY pk DESC LIMIT 1` or `waitForValueChange` targeting the latest row instead.
+
+---
+
 ## Estado compartilhado entre steps (ctx)
 
 ```typescript

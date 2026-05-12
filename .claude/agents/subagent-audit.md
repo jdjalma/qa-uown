@@ -31,10 +31,10 @@ Operates in **two modes** depending on the input:
 
 #### Required Context
 1. `context/coding-standards.md`
-2. `context/architecture.md`
+2. `context/project.md`
 
 #### Optional Context
-- `context/test-patterns.md` — when auditing selectors used in fixtures or hooks
+- `context/test-patterns-core.md + context/test-patterns-ui.md + context/test-patterns-arrangements.md` — when auditing selectors used in fixtures or hooks
 
 #### Scope
 - If input provided: audit only the specified scope (portal, page, or file)
@@ -202,7 +202,7 @@ Search for these patterns **outside** `common.selectors.ts`:
 
 | Prerequisite | Successors |
 |-------------|------------|
-| None | subagent-refactor-page-object (selectors mode) / subagent-docs-update (structure mode) |
+| None | subagent-page-object (selectors mode) / subagent-docs-update (structure mode) |
 
 ## Checklist (DoD)
 

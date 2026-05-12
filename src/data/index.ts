@@ -6,5 +6,6 @@
  */
 export * from './merchants.js';
 export * from './state-address-mapper.js';
+export * from './state-merchant-matrix.js';
 export * from './test-cards.js';
 export * from './tire-agent.data.js';

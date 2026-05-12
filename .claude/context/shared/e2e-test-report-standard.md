@@ -60,7 +60,7 @@
 
 | CT | Arquivo | Descrição |
 |----|---------|-----------|
-| CT-XX | `reports/screenshots/{testName}-NN-desc.png` | {estado capturado — prova do critério de aceite} |
+| CT-XX | `docs/taskTestingUown/{testName}/{testName}-NN-desc.png` | {estado capturado — prova do critério de aceite} |
 
 > Para testes API-only (sem browser): substituir o bloco por `> Sem capturas de tela — teste API-only.`
 
@@ -206,14 +206,17 @@ Every `#### Como verificar manualmente` block must be:
 
 ## 5. Screenshots
 
-**Path:** `reports/screenshots/{testName}-{NN}-{desc}.png`
+**Path:** `docs/taskTestingUown/{testName}/{testName}-{NN}-{desc}.png`
 
-- Saved via `page.screenshot({ path: 'reports/screenshots/{testName}-{NN}-{desc}.png', fullPage: false })`
+Screenshots MUST be saved inside the task folder alongside the report and spec files. This keeps all artifacts co-located and prevents cleanup by Playwright between runs.
+
+- Saved via `page.screenshot({ path: 'docs/taskTestingUown/{testName}/{testName}-{NN}-{desc}.png', fullPage: false })`
 - Naming: sequential two-digit number + short description, e.g. `1233-ct01-01-payment-screen.png`
 - At least 1 per CT — taken immediately after the key assertion (proves the acceptance criterion)
 - Focus: screenshot must show the state that proves the CT passed (not generic page captures)
 - API-only tests: no screenshot needed (no browser)
-- Reference in `.md` Capturas de Tela table: `reports/screenshots/{file}.png`
+- Reference in `.md` Capturas de Tela table: `docs/taskTestingUown/{testName}/{file}.png`
+- **NEVER use `reports/screenshots/` or `reports/test-results/`** — those are cleaned by Playwright between runs
 
 ## 6. Report Locations (centralized in docs/taskTestingUown/)
 

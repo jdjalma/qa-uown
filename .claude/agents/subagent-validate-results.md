@@ -40,6 +40,9 @@ When not available, derive from test file name.
 | App source code | `../svc/`, `../origination/`, etc. (via `context/app-repos.md`) | Implementations |
 | DB schema | `docs/database-schema.md` | Schema validation |
 | Test framework | `src/helpers/`, `src/api/clients/`, `src/api/responses/` | Implementation details |
+| QA domain reflexes | `.claude/context/shared/qa-domain-reflexes.md` | Verify that reflex validations (audit log, rating letter, balance checks) were applied for each action under test |
+| **Bug classification rules** | `.claude/context/shared/bug-classification-rules.md` | **MANDATORY** antes de escrever `## Bugs de Aplicação Encontrados` — aplicar checklist de reprodução em fresh + task existente + indicadores de artefato. Evita falsos bugs. |
+| **Test data hierarchy** | `.claude/rules/testing.md § Test Data Hierarchy` | **MANDATORY** ao registrar evidências — marcar `Criado` vs `Existente` e justificar reuso de fixture. |
 
 ## Steps
 
@@ -51,7 +54,7 @@ When not available, derive from test file name.
    ```
 4. **Parse test output** — extract values per scenario using parsing rules in `shared/e2e-test-report-standard.md` §3
 4b. **Extract evidence PKs** — from test logs, extract ALL leadPk, accountPk, arrangementPk, ccTransactionPk, achPk, fundingTransactionPk. These go into the `## Evidências (Dados Utilizados/Criados)` section. Look for patterns: `leadPk={N}`, `accountPk={N}`, `arrangementPk={N}`, `account_pk`, `lead_pk`, etc.
-5. **Identify screenshots** — list all `reports/screenshots/{testName}-*.png` files generated
+5. **Identify screenshots** — list all `docs/taskTestingUown/{testName}/{testName}-*.png` files generated (screenshots live inside the task folder)
 6. **Identify and triage bugs** — for EVERY unexpected behavior, run the full triage protocol (see § Bug Triage Protocol below) before reporting it as a bug
 7. **Validate results against requirements:**
    - All required scenarios covered?
@@ -59,6 +62,7 @@ When not available, derive from test file name.
    - DB results match migrations?
    - Business outcomes match rules?
    - Only in-scope application bugs reported?
+7b. **QA reflex coverage check** — cross-reference every action executed in the test against `.claude/context/shared/qa-domain-reflexes.md`. For each matched catalog entry, confirm the expected reflex validations were present in the test (e.g., payment step → audit log + rating letter + balance diff asserted). If reflexes are missing, document as a gap in `## Resumo da Validação` under a row named `Reflexos QA não cobertos` listing which ones — this is NOT a bug, but a test quality gap for follow-up.
 8. **Format output** using scenario format in `shared/e2e-test-report-standard.md` §2
 9. **Write/update `.md` artifact** to `docs/taskTestingUown/{testName}/{testName}-report.md` using full template in `shared/e2e-test-report-standard.md` §1. This is the single location for all execution reports — includes scenarios, evidence, bugs (if any), and validation summary.
 
@@ -148,6 +152,7 @@ Every generated `.md` MUST contain these blocks in this order:
 | `## Cenários` | Always present — one `### Cenário: Cenário N — CT-XX` per test |
 | `## Cobertura dos Requisitos` | Present when task has explicit acceptance criteria |
 | `## Bugs de Aplicação Encontrados` | Present only when bugs found — omit if none |
+| `## Pitfalls Encontrados Durante Execução` | **Always present** when execução teve qualquer falha — MANDATORY per CLAUDE.md rule #12. Mesmo se sem falha, incluir linha "Nenhum pitfall novo — todas falhas já catalogadas" |
 | `## Resumo da Validação` | Always present — includes Vídeo, Screenshots rows |
 
 ## Block Rules
@@ -158,10 +163,10 @@ Every generated `.md` MUST contain these blocks in this order:
 - Exception: API-only tests (no browser) → use `N/A (API-only)` for both
 
 ### Capturas de Tela block
-- For browser tests: table with one row per screenshot in `reports/screenshots/`
+- For browser tests: table with one row per screenshot in `docs/taskTestingUown/{testName}/`
 - For API-only tests: single line `> Sem capturas de tela — teste API-only.`
-- Path format: `reports/screenshots/{testName}-{NN}-{desc}.png`
-- Never use relative paths like `screenshots/file.png` — always full `reports/screenshots/` prefix
+- Path format: `docs/taskTestingUown/{testName}/{testName}-{NN}-{desc}.png`
+- Screenshots MUST live inside the task folder alongside the report — never in `reports/screenshots/` or `reports/test-results/` (those are cleaned by Playwright between runs)
 
 ### Cenários — naming format
 - Header: `### CT-XX` — apenas o prefixo CT e o código do cenário
@@ -192,6 +197,26 @@ Os detalhes técnicos (endpoints, payloads, queries, valores exatos) ficam em `#
 - Section name: ALWAYS `## Bugs de Aplicação Encontrados`
 - NEVER use: `## Bugs Conhecidos`, `## Observações`, `## Known Bugs`
 - Omit entirely if no bugs — do NOT include empty section
+
+### Pitfalls section (MANDATORY quando execução teve qualquer falha — rule #12)
+
+Template obrigatório:
+
+```markdown
+## Pitfalls Encontrados Durante Execução
+
+> Requisitos implícitos (não-óbvios) descobertos durante esta execução. Per CLAUDE.md rule #12, cada entrada NÃO documentada precisa ser adicionada em `application-lifecycle-protocol.md § Pitfalls` antes de finalizar o pipeline.
+
+| # | Sintoma | Causa descoberta | Fix | Adicionado ao protocol? |
+|---|---------|-------------------|-----|:-----------------------:|
+| 1 | `{mensagem exata do erro}` | `{causa raiz 1 linha}` | `{comando/config aplicado}` | SIM (pitfall #N) / NÃO |
+```
+
+**Regras:**
+- Incluir **todas** as falhas investigadas, mesmo as que mapearam em pitfalls já catalogados (marcar "SIM (pitfall #N)" com o número existente)
+- Se **qualquer** linha tem "Adicionado ao protocol? = NÃO" → relatório está incompleto e **DEVE** ser atualizado antes de entregar
+- Se não houve falhas → incluir apenas: `> Execução limpa — nenhum pitfall observado.`
+- Nunca omitir a seção quando houve falhas — ausência = violação da rule #12
 
 ### Resumo da Validação
 - ALWAYS include rows: `Vídeo gravado` and `Screenshots salvos`
@@ -249,3 +274,4 @@ Os detalhes técnicos (endpoints, payloads, queries, valores exatos) ficam em `#
 - [ ] `## Resumo da Validação` has Vídeo, Screenshots, Bugs, Skipped rows
 - [ ] **Artifact written to `docs/taskTestingUown/{testName}/{testName}-report.md`**
 - [ ] **Entire `.md` in Portuguese (PT-BR)**
+- [ ] **QA reflex coverage checked**: every action in the test was cross-referenced with `.claude/context/shared/qa-domain-reflexes.md`. If reflexes are missing, reported in `## Resumo da Validação` as `Reflexos QA não cobertos`

@@ -19,10 +19,10 @@ Criar TODO list com `TaskCreate` para cada fase.
 
 ### Fase 1 — Refatorar
 
-Invocar `subagent-refactor-page-object`:
+Invocar `subagent-page-object` (mode: `refactor`):
 
 ```
-Agent(subagent_type="subagent-refactor-page-object", prompt="""
+Agent(subagent_type="subagent-page-object", prompt="""
 Arquivo: {filePath}
 Foco: {focus}
 

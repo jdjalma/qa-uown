@@ -107,3 +107,9 @@ export interface PodiumInvitationResponse {
   message?: string;
   errorMessage?: string;
 }
+
+/** Response from POST /uown/svc/sendCustomerPortalLink/{accountPk} (Task #490) */
+export interface PortalInvitationResponse {
+  message?: string;
+  errorMessage?: string;
+}
