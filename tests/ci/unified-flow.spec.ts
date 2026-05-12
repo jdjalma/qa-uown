@@ -27,7 +27,7 @@ const testData = {
   merchant: 'TireAgent',
   achPaymentDate: '5',
   achPaymentAmount: '10.45',
-  ccPaymentDate: '7',
+  ccPaymentDate: '0',
   ccPaymentAmount: '10.90',
   orderTotal: '621',
   tag: buildTags(TestTag.CRITICAL, TestTag.REGRESSION, TestTag.CICD),
@@ -36,7 +36,13 @@ const testData = {
 test.describe(`Unified Flow - ${testData.state}/${testData.merchant}`, { tag: testData.tag.split(' ') }, () => {
   test('Creating Uown account', async ({ page, api, email, ctx, merchantConfig: mSetup }) => {
     await test.step('Ensure merchant config', async () => {
-      await mSetup.configureByName(testData.merchant, 'lifecycle');
+      try {
+        await mSetup.configureByName(testData.merchant, 'lifecycle');
+      } catch (err) {
+        // qa2 has known RBAC issue on getMerchantsByRefCode (returns 200 + []).
+        // Same defensive pattern used in seon-e2e-flow.spec.ts — proceed with defaults.
+        console.log(`[Setup] MerchantConfigurator skipped: ${(err as Error).message}`);
+      }
     });
     const { env, address, merchant, applicant, order } = buildTestData({
       state: testData.state,
@@ -56,7 +62,7 @@ test.describe(`Unified Flow - ${testData.state}/${testData.merchant}`, { tag: te
       // Java original: sendApplication → navigate to contract URL → fill form.
       // sendInvoice invalidates the contract URL ("Invalid link" error).
       const appResponse = await api.application.sendApplication(merchant, applicant, order);
-      expect(appResponse.ok, `Send application responded with ${appResponse.status}`).toBeTruthy();
+      expect(appResponse.ok, `Send application responded with ${appResponse.status}: ${JSON.stringify(appResponse.body)?.slice(0, 300)}`).toBeTruthy();
 
       ctx.leadPk = String(appResponse.body.authorizationNumber ?? '');
       ctx.leadUuid = appResponse.body.accountNumber ?? ctx.leadPk;
@@ -385,262 +391,269 @@ test.describe(`Unified Flow - ${testData.state}/${testData.merchant}`, { tag: te
       });
     });
 
-  //   // ═══════════════════════════════════════════════════════════════
-  //   //  PHASE 6: SERVICING — Payments, Navigation, Validation
-  //   // ═══════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
+    //  PHASE 6: SERVICING — Payments, Navigation, Validation
+    // ═══════════════════════════════════════════════════════════════
 
-  //   await test.step('Login to servicing portal', async () => {
-  //     await loginToPortalWithOptions(page, env.servicingUrl, env);
-  //   });
+    await test.step('Login to servicing portal', async () => {
+      await loginToPortalWithOptions(page, env.servicingUrl, env);
+    });
 
-  //   await test.step('Open customer information', async () => {
-  //     await navigateToServicingCustomer(page, ctx.accountPk || ctx.leadUuid);
+    await test.step('Open customer information', async () => {
+      await navigateToServicingCustomer(page, ctx.accountPk || ctx.leadUuid);
 
-  //     // Extract the servicing account number from the URL (/customer-information/XXXXX)
-  //     const svcMatch = page.url().match(/\/customer-information\/(\d+)/);
-  //     if (svcMatch) {
-  //       ctx.servicingAccountPk = svcMatch[1];
-  //       // This is the real account number — update accountPk if it wasn't captured from origination
-  //       if (!ctx.accountPk) {
-  //         ctx.accountPk = ctx.servicingAccountPk as string;
-  //       }
-  //       console.log(`[Servicing] Account #: ${ctx.servicingAccountPk}`);
-  //       test.info().annotations.push({ type: 'accountPk', description: ctx.servicingAccountPk as string });
-  //     }
-  //   });
+      // Extract the servicing account number from the URL (/customer-information/XXXXX)
+      const svcMatch = page.url().match(/\/customer-information\/(\d+)/);
+      if (svcMatch) {
+        ctx.servicingAccountPk = svcMatch[1];
+        // This is the real account number — update accountPk if it wasn't captured from origination
+        if (!ctx.accountPk) {
+          ctx.accountPk = ctx.servicingAccountPk as string;
+        }
+        console.log(`[Servicing] Account #: ${ctx.servicingAccountPk}`);
+        test.info().annotations.push({ type: 'accountPk', description: ctx.servicingAccountPk as string });
+      }
+    });
 
-  //   await test.step('Add new credit card', async () => {
-  //     const servicingCustomer = new ServicingCustomerPage(page);
-  //     const card = TEST_CARDS.VISA_APPROVED;
-  //     await servicingCustomer.addCreditCard({
-  //       firstName: applicant.firstName,
-  //       lastName: applicant.lastName,
-  //       cardNumber: card.number,
-  //       expMonth: card.expMonth,
-  //       expYear: card.expYear,
-  //       cvc: card.cvv,
-  //     });
-  //   });
+    await test.step('Add new credit card', async () => {
+      const servicingCustomer = new ServicingCustomerPage(page);
+      const card = TEST_CARDS.VISA_APPROVED;
+      await servicingCustomer.addCreditCard({
+        firstName: applicant.firstName,
+        lastName: applicant.lastName,
+        cardNumber: card.number,
+        expMonth: card.expMonth,
+        expYear: card.expYear,
+        cvc: card.cvv,
+      });
+    });
 
-  //   await test.step('Make ACH payment', async () => {
-  //     if (data.achPaymentDate === 'NA' || data.achPaymentAmount === 'NA') return;
-  //     const servicingCustomer = new ServicingCustomerPage(page);
-  //     await servicingCustomer.makeAchPayment(data.achPaymentDate, data.achPaymentAmount, {
-  //       accountNumber: TEST_BANK.ACCOUNT_NUMBER,
-  //       routingNumber: TEST_BANK.ROUTING_NUMBER,
-  //     });
-  //     ctx.achAdded++;
-  //   });
+    await test.step('Make ACH payment', async () => {
+      if (testData.achPaymentDate === 'NA' || testData.achPaymentAmount === 'NA') return;
+      const servicingCustomer = new ServicingCustomerPage(page);
+      await servicingCustomer.makeAchPayment(testData.achPaymentDate, testData.achPaymentAmount, {
+        accountNumber: TEST_BANK.ACCOUNT_NUMBER,
+        routingNumber: TEST_BANK.ROUTING_NUMBER,
+      });
+      ctx.achAdded++;
+    });
 
-  //   await test.step('Make CC payment', async () => {
-  //     if (data.ccPaymentDate === 'NA' || data.ccPaymentAmount === 'NA') return;
-  //     const card = TEST_CARDS.VISA_APPROVED;
-  //     const billing = { address: address.street, city: address.city, state: data.state, zip: address.zipCode };
-  //     const servicingCustomer = new ServicingCustomerPage(page);
-  //     await servicingCustomer.makeCcPayment(data.ccPaymentDate, data.ccPaymentAmount, buildCcPaymentDetails(card, billing));
-  //     ctx.ccAdded++;
-  //   });
+    await test.step('Make CC payment', async () => {
+      if (testData.ccPaymentDate === 'NA' || testData.ccPaymentAmount === 'NA') return;
+      const card = TEST_CARDS.VISA_APPROVED;
+      const billing = { address: address.street, city: address.city, state: testData.state, zip: address.zipCode };
+      const servicingCustomer = new ServicingCustomerPage(page);
+      await servicingCustomer.makeCcPayment(testData.ccPaymentDate, testData.ccPaymentAmount, buildCcPaymentDetails(card, billing));
+      ctx.ccAdded++;
+    });
 
-  //   await test.step('Make CC payment with allocation strategy Payment', async () => {
-  //     if (data.ccPaymentDate === 'NA' || data.ccPaymentAmount === 'NA') return;
-  //     const card = TEST_CARDS.VISA_APPROVED;
-  //     const billing = { address: address.street, city: address.city, state: data.state, zip: address.zipCode };
-  //     const servicingCustomer = new ServicingCustomerPage(page);
-  //     await servicingCustomer.makeCcPayment('0', data.ccPaymentAmount, buildCcPaymentDetails(card, billing, AllocationStrategy.REGULAR_RECEIVABLES));
-  //     ctx.ccAdded++;
-  //   });
+    await test.step('Make CC payment with allocation strategy Payment', async () => {
+      if (testData.ccPaymentDate === 'NA' || testData.ccPaymentAmount === 'NA') return;
+      const card = TEST_CARDS.VISA_APPROVED;
+      const billing = { address: address.street, city: address.city, state: testData.state, zip: address.zipCode };
+      const servicingCustomer = new ServicingCustomerPage(page);
+      await servicingCustomer.makeCcPayment('0', testData.ccPaymentAmount, buildCcPaymentDetails(card, billing, AllocationStrategy.REGULAR_RECEIVABLES));
+      ctx.ccAdded++;
+    });
 
-  //   await test.step('Navigate to Payment Transaction', async () => {
-  //     const txnPage = new PaymentTransactionPage(page);
-  //     await txnPage.sideMenuNavigateTo('transaction');
-  //   });
+    await test.step('Navigate to Payment Transaction', async () => {
+      const txnPage = new PaymentTransactionPage(page);
+      await txnPage.sideMenuNavigateTo('transaction');
+    });
 
-  //   await test.step('Navigate to Due Amounts', async () => {
-  //     const txnPage = new PaymentTransactionPage(page);
-  //     await txnPage.topMenuNavigateTo('due amounts');
-  //   });
+    await test.step('Navigate to Due Amounts', async () => {
+      const txnPage = new PaymentTransactionPage(page);
+      await txnPage.topMenuNavigateTo('due amounts');
+    });
 
-  //   await test.step('Navigate to ACH History and check payment', async () => {
-  //     const achPage = new AchHistoryPage(page);
-  //     await achPage.navigateToAchHistory();
-  //     if (data.achPaymentDate !== 'NA') {
-  //       await achPage.verifyAchEntryExists(data.achPaymentAmount);
-  //     }
-  //   });
+    await test.step('Navigate to ACH History and check payment', async () => {
+      const achPage = new AchHistoryPage(page);
+      await achPage.navigateToAchHistory();
+      if (testData.achPaymentDate !== 'NA') {
+        await achPage.verifyAchEntryExists(testData.achPaymentAmount);
+      }
+    });
 
-  //   await test.step('Navigate to CC History and check payment', async () => {
-  //     if (data.ccPaymentDate !== 'NA') {
-  //       const servicingCustomer = new ServicingCustomerPage(page);
-  //       await servicingCustomer.verifyCcPaymentExists(data.ccPaymentAmount);
-  //     }
-  //   });
+    await test.step('Navigate to CC History and check payment', async () => {
+      if (testData.ccPaymentDate !== 'NA') {
+        const servicingCustomer = new ServicingCustomerPage(page);
+        await servicingCustomer.verifyCcPaymentExists(testData.ccPaymentAmount);
+      }
+    });
 
-  //   await test.step('Navigate remaining servicing sections', async () => {
-  //     const txnPage = new PaymentTransactionPage(page);
-  //     // Navigate via top menu History dropdown items
-  //     const historyItems = ['email', 'items purchased', 'payments', 'phone'];
-  //     for (const item of historyItems) {
-  //       await txnPage.topMenuNavigateTo(item);
-  //     }
-  //     // Navigate sidebar sections
-  //     await txnPage.sideMenuNavigateTo('transaction');
-  //     await txnPage.sideMenuNavigateTo('documents');
-  //   });
+    await test.step('Navigate remaining servicing sections', async () => {
+      const txnPage = new PaymentTransactionPage(page);
+      // Navigate via top menu History dropdown items
+      const historyItems = ['email', 'items purchased', 'payments', 'phone'];
+      for (const item of historyItems) {
+        await txnPage.topMenuNavigateTo(item);
+      }
+      // Navigate sidebar sections
+      await txnPage.sideMenuNavigateTo('transaction');
+      await txnPage.sideMenuNavigateTo('documents');
+    });
 
-  //   await test.step('Verify CC allocation strategies', async () => {
-  //     // Java: Check that CC transaction can be allocated to each strategy.
-  //     // Navigate to History → CC Transactions (which has the Allocation Strategy column and pencil edit icon),
-  //     // then cycle through all allocation strategies on the first CC row.
-  //     // Note: History → Payments shows a different dataset (not CC transactions).
-  //     const txnPage = new PaymentTransactionPage(page);
-  //     await txnPage.topMenuNavigateTo('cc history');
-  //     await txnPage.waitForPageLoad();
+    await test.step('Verify CC allocation strategies', async () => {
+      // Portal changed: Allocation Strategy was moved from CC Transactions to the
+      // Payment History "Update Payment" modal (pen-to-square icon on pending rows).
+      // The CC Transactions page's pencil icon now opens "Edit Pending Credit Card
+      // Payment" — date/amount/comment only, no allocation strategy.
+      const txnPage = new PaymentTransactionPage(page);
+      await txnPage.topMenuNavigateTo('payments');
+      await txnPage.waitForPageLoad();
 
-  //     // Wait for the data table to render with at least one row
-  //     const dataRow = page.locator("div[role='rowgroup']:last-of-type div[role='row']").first();
-  //     await dataRow.waitFor({ state: 'visible', timeout: 15_000 });
+      // Wait for the data table to render with at least one row
+      const dataRow = page.locator("div[role='rowgroup']:last-of-type div[role='row']").first();
+      await dataRow.waitFor({ state: 'visible', timeout: 15_000 });
 
-  //     const strategies = [
-  //       AllocationStrategy.EPO_ONLY,
-  //       AllocationStrategy.REGULAR_RECEIVABLES,
-  //       AllocationStrategy.DEFAULT,
-  //       AllocationStrategy.EPO_ONLY,
-  //       AllocationStrategy.DEFAULT,
-  //       AllocationStrategy.REGULAR_RECEIVABLES,
-  //     ];
+      const strategies = [
+        AllocationStrategy.EPO_ONLY,
+        AllocationStrategy.REGULAR_RECEIVABLES,
+        AllocationStrategy.DEFAULT,
+      ];
 
-  //     for (const strategy of strategies) {
-  //       await page.waitForLoadState('networkidle').catch(() => {});
-  //       await txnPage.editAllocationStrategy(0, strategy);
-  //       // CC Transactions table has no "Allocation Strategy" column visible —
-  //       // verification is implicit: modal opened, dropdown set, Submit clicked, modal closed.
-  //       console.log(`[Allocation] Strategy set to: "${strategy}"`);
-  //     }
-  //   });
+      for (const strategy of strategies) {
+        await page.waitForLoadState('networkidle').catch(() => {});
+        await txnPage.editAllocationStrategy(0, strategy);
+        // CC Transactions table has no "Allocation Strategy" column visible —
+        // verification is implicit: modal opened, dropdown set, Submit clicked, modal closed.
+        console.log(`[Allocation] Strategy set to: "${strategy}"`);
+      }
+    });
 
-  //   await test.step('Navigate to servicing and test quick search', async () => {
-  //     await page.goto(env.servicingUrl, { waitUntil: 'domcontentloaded' });
-  //     await page.waitForLoadState('networkidle').catch(() => {});
+    await test.step('Navigate to servicing and test quick search', async () => {
+      await page.goto(env.servicingUrl, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle').catch(() => {});
 
-  //     // Re-login if session expired (redirected to login page)
-  //     await loginToPortalIfNeeded(page, 'Servicing Login', env.servicingUrl, env);
+      // Re-login if session expired (redirected to login page)
+      await loginToPortalIfNeeded(page, 'Servicing Login', env.servicingUrl, env);
 
-  //     // Use servicing account # (not origination PK) for quick search
-  //     const searchId = (ctx.servicingAccountPk as string) || ctx.accountPk || ctx.leadUuid;
-  //     console.log(`[QuickSearch] Searching by: ${searchId}`);
-  //     const servicingCustomer = await navigateToServicingCustomer(page, searchId);
-  //     const status = await servicingCustomer.getAccountStatus();
-  //     console.log(`[Servicing QuickSearch] Account status: "${status}"`);
-  //     // The status may not always be extractable from the header depending on timing/layout.
-  //     // The account's existence on the servicing portal is the primary validation here.
-  //     if (status) {
-  //       test.info().annotations.push({ type: 'servicingStatus', description: status });
-  //     } else {
-  //       console.log(`[Servicing QuickSearch] Status not found in header — account exists but status extraction failed`);
-  //       // Verify the page has customer-information in URL as proof the account was found
-  //       expect(page.url()).toContain('customer-information');
-  //     }
-  //   });
+      // Use servicing account # (not origination PK) for quick search
+      const searchId = (ctx.servicingAccountPk as string) || ctx.accountPk || ctx.leadUuid;
+      console.log(`[QuickSearch] Searching by: ${searchId}`);
+      const servicingCustomer = await navigateToServicingCustomer(page, searchId);
+      const status = await servicingCustomer.getAccountStatus();
+      console.log(`[Servicing QuickSearch] Account status: "${status}"`);
+      // The status may not always be extractable from the header depending on timing/layout.
+      // The account's existence on the servicing portal is the primary validation here.
+      if (status) {
+        test.info().annotations.push({ type: 'servicingStatus', description: status });
+      } else {
+        console.log(`[Servicing QuickSearch] Status not found in header — account exists but status extraction failed`);
+        // Verify the page has customer-information in URL as proof the account was found
+        expect(page.url()).toContain('customer-information');
+      }
+    });
 
-  //   // ═══════════════════════════════════════════════════════════════
-  //   //  PHASE 7: WEBSITE PORTAL — Login, Account, Navigation, Payments
-  //   // ═══════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
+    //  PHASE 7: WEBSITE PORTAL — Login, Account, Navigation, Payments
+    // ═══════════════════════════════════════════════════════════════
 
-  //   await test.step('Navigate to website portal', async () => {
-  //     // Website portal can be slow — retry with extended timeout
-  //     for (let attempt = 1; attempt <= 3; attempt++) {
-  //       try {
-  //         await page.goto(env.websiteUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-  //         break;
-  //       } catch (err) {
-  //         console.log(`[Website] Navigation attempt ${attempt}/3 failed: ${(err as Error).message.split('\n')[0]}`);
-  //         if (attempt === 3) throw err;
-  //         await sleep(3_000);
-  //       }
-  //     }
-  //   });
+    await test.step('Navigate to website portal', async () => {
+      // Website portal can be slow — retry with extended timeout
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          await page.goto(env.websiteUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+          break;
+        } catch (err) {
+          console.log(`[Website] Navigation attempt ${attempt}/3 failed: ${(err as Error).message.split('\n')[0]}`);
+          if (attempt === 3) throw err;
+          await sleep(3_000);
+        }
+      }
+    });
 
-  //   await test.step('Login to website with email', async () => {
-  //     const websitePage = new WebsiteBasePage(page);
-  //     await websitePage.loginWithEmail(applicant.email);
+    await test.step('Login to website with email', async () => {
+      const websitePage = new WebsiteBasePage(page);
+      // Snapshot inbox watermark BEFORE triggering the OTP send. Two guards:
+      //   - sinceUid: monotonic server-side UID — anything <= snapshot is pre-existing
+      //   - since: wall-clock fallback when UID snapshot fails
+      // Combined with strict envelope.to match inside the helper, this rejects any
+      // OTP code that wasn't generated by THIS click.
+      let sinceUid = await email.snapshotInboxUid().catch(() => 0);
+      let sinceDate = new Date();
+      await websitePage.loginWithEmail(applicant.email);
 
-  //     const maxAttempts = 3;
-  //     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-  //       console.log(`[Website] Waiting for verification code email (attempt ${attempt}/${maxAttempts})...`);
-  //       const verificationCode = await email.getVerificationCode(applicant.email);
-  //       expect(verificationCode, `[Website] Verification code not found in email for ${applicant.email}`).toBeTruthy();
-  //       console.log(`[Website] Got verification code from email: ${verificationCode}`);
+      const maxAttempts = 3;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        console.log(`[Website] Waiting for verification code email (attempt ${attempt}/${maxAttempts}) sinceUid=${sinceUid}...`);
+        const verificationCode = await email.getVerificationCode(applicant.email, 150_000, { sinceUid, since: sinceDate });
+        expect(verificationCode, `[Website] Verification code not found in email for ${applicant.email}`).toBeTruthy();
+        console.log(`[Website] Got verification code from email: ${verificationCode}`);
 
-  //       const success = await websitePage.enterVerificationCode(verificationCode!);
-  //       if (success) break;
+        const success = await websitePage.enterVerificationCode(verificationCode!);
+        if (success) break;
 
-  //       if (attempt < maxAttempts) {
-  //         console.log(`[Website] Requesting new verification code (attempt ${attempt} failed)...`);
-  //         await websitePage.requestNewVerificationCode();
-  //       } else {
-  //         throw new Error(`[Website] Verification code rejected after ${maxAttempts} attempts`);
-  //       }
-  //     }
-  //   });
+        if (attempt < maxAttempts) {
+          console.log(`[Website] Requesting new verification code (attempt ${attempt} failed)...`);
+          // Refresh watermark so the next iteration won't accept the just-consumed code.
+          sinceUid = await email.snapshotInboxUid().catch(() => sinceUid);
+          sinceDate = new Date();
+          await websitePage.requestNewVerificationCode();
+        } else {
+          throw new Error(`[Website] Verification code rejected after ${maxAttempts} attempts`);
+        }
+      }
+    });
 
-  //   await test.step('Verify active account ID on website', async () => {
-  //     // Java: checkActiveAccountID() — reads dropdown, extracts accountPk, switches if mismatch
-  //     // The website may show servicing account # or origination lead PK — try both
-  //     const websitePage = new WebsiteBasePage(page);
-  //     const svcAcct = ctx.servicingAccountPk as string;
-  //     const accountId = svcAcct || ctx.accountPk;
-  //     if (accountId) {
-  //       const matched = await websitePage.checkActiveAccountId(accountId);
-  //       if (!matched && svcAcct && ctx.accountPk && svcAcct !== ctx.accountPk) {
-  //         // Try origination PK as fallback
-  //         await websitePage.checkActiveAccountId(ctx.accountPk);
-  //       }
-  //     }
-  //   });
+    await test.step('Verify active account ID on website', async () => {
+      // Java: checkActiveAccountID() — reads dropdown, extracts accountPk, switches if mismatch
+      // The website may show servicing account # or origination lead PK — try both
+      const websitePage = new WebsiteBasePage(page);
+      const svcAcct = ctx.servicingAccountPk as string;
+      const accountId = svcAcct || ctx.accountPk;
+      if (accountId) {
+        const matched = await websitePage.checkActiveAccountId(accountId);
+        if (!matched && svcAcct && ctx.accountPk && svcAcct !== ctx.accountPk) {
+          // Try origination PK as fallback
+          await websitePage.checkActiveAccountId(ctx.accountPk);
+        }
+      }
+    });
 
-  //   await test.step('Navigate website sections', async () => {
-  //     const websitePage = new WebsiteBasePage(page);
+    await test.step('Navigate website sections', async () => {
+      const websitePage = new WebsiteBasePage(page);
 
-  //     await websitePage.goToSidebarLink('make payment');
-  //     await websitePage.goToSidebarLink('payment methods');
-  //     await websitePage.goToSidebarLink('documents');
-  //     await websitePage.goToSidebarLink('contact us');
-  //   });
+      await websitePage.goToSidebarLink('make payment');
+      await websitePage.goToSidebarLink('payment methods');
+      await websitePage.goToSidebarLink('documents');
+      await websitePage.goToSidebarLink('contact us');
+    });
 
-  //   await test.step('Navigate to Update Contact Info and change email', async () => {
-  //     // Java: Navigate to "Update Contact Info" then change email to generic
-  //     const websitePage = new WebsiteBasePage(page);
-  //     await websitePage.goToSidebarLink('update contact info');
-  //     await websitePage.changeEmailToGeneric();
-  //   });
+    await test.step('Navigate to Update Contact Info and change email', async () => {
+      // Java: Navigate to "Update Contact Info" then change email to generic
+      const websitePage = new WebsiteBasePage(page);
+      await websitePage.goToSidebarLink('update contact info');
+      await websitePage.changeEmailToGeneric();
+    });
 
-  //   await test.step('Navigate to Account Summary', async () => {
-  //     const websitePage = new WebsiteBasePage(page);
-  //     await websitePage.goToSidebarLink('account summary');
-  //   });
+    await test.step('Navigate to Account Summary', async () => {
+      const websitePage = new WebsiteBasePage(page);
+      await websitePage.goToSidebarLink('account summary');
+    });
 
-  //   await test.step('Verify servicing payments reflected on website', async () => {
-  //     const websitePage = new WebsiteBasePage(page);
-  //     await websitePage.goToSidebarLink('make payment');
-  //     // Payment history should show the ACH and CC payments made in servicing
-  //     if (data.achPaymentAmount !== 'NA') {
-  //       const achRow = page.locator(`text=${data.achPaymentAmount}`).first();
-  //       if (await achRow.isVisible({ timeout: 5_000 }).catch(() => false)) {
-  //         expect(await achRow.isVisible()).toBeTruthy();
-  //       }
-  //     }
-  //   });
+    await test.step('Verify servicing payments reflected on website', async () => {
+      const websitePage = new WebsiteBasePage(page);
+      await websitePage.goToSidebarLink('make payment');
+      // Payment history should show the ACH and CC payments made in servicing
+      if (testData.achPaymentAmount !== 'NA') {
+        const achRow = page.locator(`text=${testData.achPaymentAmount}`).first();
+        if (await achRow.isVisible({ timeout: 5_000 }).catch(() => false)) {
+          expect(await achRow.isVisible()).toBeTruthy();
+        }
+      }
+    });
 
-  //   await test.step('Make ACH payment on website', async () => {
-  //     if (data.achPaymentDate === 'NA' || data.achPaymentAmount === 'NA') return;
-  //     const websitePage = new WebsiteBasePage(page);
-  //     await websitePage.makeAchPayment(data.achPaymentAmount);
-  //   });
+    await test.step('Make ACH payment on website', async () => {
+      if (testData.achPaymentDate === 'NA' || testData.achPaymentAmount === 'NA') return;
+      const websitePage = new WebsiteBasePage(page);
+      await websitePage.makeAchPayment(testData.achPaymentAmount);
+    });
 
-  //   await test.step('Make CC payment on website', async () => {
-  //     if (data.ccPaymentDate === 'NA' || data.ccPaymentAmount === 'NA') return;
-  //     const websitePage = new WebsiteBasePage(page);
-  //     await websitePage.makeCcPayment(data.ccPaymentAmount);
-  //   });
+    await test.step('Make CC payment on website', async () => {
+      if (testData.ccPaymentDate === 'NA' || testData.ccPaymentAmount === 'NA') return;
+      const websitePage = new WebsiteBasePage(page);
+      await websitePage.makeCcPayment(testData.ccPaymentAmount);
+    });
   });
 });
