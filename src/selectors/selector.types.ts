@@ -9,6 +9,7 @@ export interface SpinnerSelectors {
   spinnerBorder: string;
   spinnerGrow: string;
   fullPageLoader: string;
+  loadingOverlay: string;
 }
 
 export interface ToastSelectors {

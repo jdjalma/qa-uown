@@ -10,6 +10,7 @@ export async function waitForSpinner(page: Page, timeoutMs = TIMEOUTS.SPINNER): 
   const spinnerSelectors = [
     `${SELECTORS.spinnerBorder}, ${SELECTORS.spinnerGrow}`,
     SELECTORS.fullPageLoader,
+    SELECTORS.loadingOverlay,
   ];
   for (const sel of spinnerSelectors) {
     try {

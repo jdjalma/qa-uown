@@ -13,6 +13,14 @@ export interface EmailContent {
   body: string;
 }
 
+/** Freshness filters — pass into getVerificationCode to reject stale candidates. */
+export interface FreshnessOpts {
+  /** Wall-clock floor: reject envelope.date older than this. */
+  since?: Date;
+  /** UID watermark: reject uid <= sinceUid. Take via snapshotInboxUid() BEFORE the OTP trigger. */
+  sinceUid?: number;
+}
+
 export class EmailHelpers {
   private config: EmailHelperConfig;
   private authFailed = false;
@@ -30,14 +38,46 @@ export class EmailHelpers {
    * sent to the given address, and extracts the 6-digit OTP code.
    *
    * Polls every few seconds until the email arrives or the timeout is reached.
+   *
+   * @param opts.since - Reject messages with envelope.date < since
+   * @param opts.sinceUid - Reject messages with uid <= sinceUid (snapshot via snapshotInboxUid before triggering OTP)
    */
-  async getVerificationCode(recipientEmail: string, timeoutMs = 150_000): Promise<string | null> {
+  async getVerificationCode(
+    recipientEmail: string,
+    timeoutMs = 150_000,
+    opts?: FreshnessOpts,
+  ): Promise<string | null> {
     return this.pollInbox<string>(
       recipientEmail,
       timeoutMs,
       'Code',
-      (attempt) => this.fetchFromInbox(recipientEmail, attempt, (body) => this.extractCodeFromBody(body)),
+      (attempt) => this.fetchFromInbox(recipientEmail, attempt, (body) => this.extractCodeFromBody(body), opts),
     );
+  }
+
+  /**
+   * Snapshot the highest UID currently in INBOX. Call BEFORE triggering an OTP
+   * send so getVerificationCode can reject any pre-existing email.
+   *
+   * UIDs are monotonic per-mailbox and server-assigned at insert time, so they're
+   * a stricter watermark than envelope.date (which is the sender-supplied Date:
+   * header and can drift).
+   */
+  async snapshotInboxUid(): Promise<number> {
+    const client = new ImapFlow({
+      host: this.config.host!, port: this.config.port!, secure: true,
+      auth: { user: this.config.user, pass: this.config.password }, logger: false,
+    });
+    try {
+      await client.connect();
+      const status = await client.status('INBOX', { uidNext: true });
+      return Math.max(0, (status.uidNext ?? 1) - 1);
+    } catch (err) {
+      this.handleImapError(err);
+      return 0;
+    } finally {
+      await client.logout().catch(() => {});
+    }
   }
 
   /**
@@ -139,14 +179,51 @@ export class EmailHelpers {
     uids: number[],
     attempt: number,
     extractor: (decodedBody: string) => T | null,
+    recipientEmail: string,
+    opts?: FreshnessOpts,
   ): Promise<T | null> {
     let latestResult: T | null = null;
     let latestDate = new Date(0);
+    const recipientLower = recipientEmail.toLowerCase();
+    const sinceMs = opts?.since ? opts.since.getTime() : 0;
+    const sinceUid = opts?.sinceUid ?? 0;
 
     try {
       for await (const msg of client.fetch(uids, { source: true, envelope: true })) {
         const subject = msg.envelope?.subject || '';
         const msgDate = msg.envelope?.date || new Date(0);
+
+        // Filter 1: strict recipient match. Gmail IMAP `to:` search ignores
+        // the +alias suffix and returns emails for ALL aliases under the same
+        // root inbox — we must double-check envelope.to to avoid picking up
+        // another test's verification code.
+        const envelopeTo = msg.envelope?.to || [];
+        const matchesRecipient = envelopeTo.some(a => (a.address || '').toLowerCase() === recipientLower);
+        if (!matchesRecipient) {
+          if (attempt <= 1) {
+            console.log(`[Email] seq=${msg.seq} skipped — recipient mismatch (to="${envelopeTo.map(a => a.address).join(',')}")`);
+          }
+          continue;
+        }
+
+        // Filter 2 (preferred): UID watermark. UIDs are monotonic and assigned
+        // by the IMAP server at insert time — strictly newer than the snapshot
+        // means the email arrived after the OTP request.
+        if (sinceUid && msg.uid && msg.uid <= sinceUid) {
+          if (attempt <= 1) {
+            console.log(`[Email] seq=${msg.seq} skipped — uid ${msg.uid} <= sinceUid ${sinceUid}`);
+          }
+          continue;
+        }
+
+        // Filter 3 (fallback when no UID watermark): wall-clock floor on envelope.date.
+        if (!sinceUid && sinceMs && msgDate.getTime() < sinceMs) {
+          if (attempt <= 1) {
+            console.log(`[Email] seq=${msg.seq} skipped — older than since (${msgDate.toISOString()} < ${opts!.since!.toISOString()})`);
+          }
+          continue;
+        }
+
         const decoded = this.decodeQuotedPrintable(msg.source?.toString() || '');
         // Strip RFC 822 headers — they contain the recipient alias (e.g. `+8980800_657167@`)
         // whose suffix matches the same regex shape as the OTP and produces false positives.
@@ -157,7 +234,7 @@ export class EmailHelpers {
         const result = extractor(body);
 
         if (attempt <= 3 || result) {
-          console.log(`[Email] seq=${msg.seq} Subject="${subject}" Date=${msgDate.toISOString()} Found=${result != null}`);
+          console.log(`[Email] seq=${msg.seq} uid=${msg.uid} Subject="${subject}" Date=${msgDate.toISOString()} Found=${result != null}`);
         }
         if (result != null && msgDate > latestDate) {
           latestResult = result;
@@ -186,6 +263,7 @@ export class EmailHelpers {
     recipientEmail: string,
     attempt: number,
     extractor: (decodedBody: string) => T | null,
+    opts?: FreshnessOpts,
   ): Promise<T | null> {
     const client = new ImapFlow({
       host: this.config.host!,
@@ -205,7 +283,7 @@ export class EmailHelpers {
           console.log(`[Email] attempt=${attempt} Search returned ${uids.length} UIDs for ${recipientEmail}`);
         }
         if (uids.length === 0) return null;
-        return await this.processMessages(client, uids, attempt, extractor);
+        return await this.processMessages(client, uids, attempt, extractor, recipientEmail, opts);
       } finally {
         lock.release();
       }
@@ -300,7 +378,7 @@ export class EmailHelpers {
    *   2. By TO + recent date
    *   3. By recent date only
    */
-  private async searchInbox(client: ImapFlow, recipientEmail: string, attempt: number): Promise<number[]> {
+  private async searchInbox(client: ImapFlow, recipientEmail: string, _attempt: number): Promise<number[]> {
     // Strategy 1: Search by SUBJECT + TO (most targeted — verification code emails)
     try {
       const result = await client.search({

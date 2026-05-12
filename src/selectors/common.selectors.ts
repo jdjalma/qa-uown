@@ -11,6 +11,8 @@ export const SELECTORS: AppSelectors = {
   spinnerBorder: '.spinner-border',
   spinnerGrow: '.spinner-grow',
   fullPageLoader: '[class*="index-module_loader"]',
+  // Website portal full-screen modal overlay (lingers after async actions, intercepts clicks)
+  loadingOverlay: 'div.position-fixed.background-gray',
 
   // ── Toast notifications ────────────────────────────────────────────
   toastBody: '.Toastify__toast-body',

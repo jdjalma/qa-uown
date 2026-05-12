@@ -188,6 +188,10 @@ export class WebsiteBasePage extends BasePage {
   async goToSidebarLink(desiredOption: string): Promise<void> {
     const normalizedOption = desiredOption.toLowerCase().trim();
 
+    // Wait for any lingering full-screen overlay (post-payment, post-save) before
+    // attempting the click — otherwise it intercepts pointer events and the click times out.
+    await this.waitForSpinner();
+
     // Step 1: Try direct click (item already visible)
     if (await this.findAndClickSidebarItem(desiredOption)) {
       await this.waitForPageTransition(normalizedOption);
