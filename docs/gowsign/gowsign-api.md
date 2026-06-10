@@ -1,0 +1,1415 @@
+# GowSign API - UOWN
+
+> Generated from Postman collection — source: https://documenter.getpostman.com/view/28884504/2sBXcEizW5
+> Raw JSON: ./gowsign-api.postman_collection.json
+
+GowSign API Integration Guide - UOWN
+
+This documentation describes how to integrate with the GowSign API for document signing using the DOCX to PDF flow. This flow allows you to send a Word document (DOCX) encoded in base64 or HTML, which will be automatically converted to PDF and made available for signing.
+
+Table of Contents
+
+- Authentication
+
+- Base URL
+
+- Standard API Response Format
+
+- Create Document (DOCX Flow)
+
+- Request Parameters
+
+- Create Document (Custom HTML Flow)
+
+- Create Document (Strapi Template Flow)
+
+- Response
+
+- Get Document
+
+- List Documents
+
+- Document Status
+
+- Signature Fields
+
+- Examples
+
+- Support
+
+Authentication
+
+All API requests require authentication using an API key. Include your API key in the request header:
+
+x-api-key: YOUR_API_KEY
+
+The API key must be:
+
+- Valid and active
+
+- Not expired (if an expiration date is set)
+
+- Sent from an allowed IP address (if IP restrictions are configured)
+
+Authentication Errors
+
+- 401 Unauthorized: Missing, invalid, or inactive API key
+
+- 401 Unauthorized: IP address not allowed
+
+Base URL
+
+The base URL for all API endpoints is provided by the GowSign team. Contact your integration manager for the specific environment URL.
+
+Example:
+
+https://api.gowsign.com
+
+Standard API Response Format
+
+All API responses follow the same format. The response body always contains the following root-level fields:
+
+Field
+Type
+Description
+
+data
+object
+null
+
+meta
+object
+null
+
+error
+object
+null
+
+valid
+boolean
+Indicates whether the request was successful (true) or not (false).
+
+responseData
+object
+null
+
+Example of a successful response (root structure):
+
+{
+  "data": { ... },
+  "meta": null,
+  "error": null,
+  "valid": true,
+  "responseData": null
+}
+
+Example of an error response (root structure):
+
+{
+  "data": null,
+  "meta": null,
+  "error": {
+    "type": 404,
+    "message": "Document with the given ID not found"
+  },
+  "valid": false,
+  "responseData": null
+}
+
+The response examples for each endpoint show the contents of data; the meta, error, valid, and responseData fields are always present at the root level as shown above.
+
+Create Document (DOCX Flow)
+
+Creates a new document for signing from a DOCX file encoded in base64.
+
+Endpoint: POST /api/document
+
+Headers:
+
+Content-Type: application/json
+x-api-key: YOUR_API_KEY
+
+Request Body
+
+The request body must be a JSON object containing the document information and the requester details.
+
+Request Parameters
+
+Required Parameters
+
+document.documentBase64 (string, required)
+
+The DOCX file encoded as a base64 string. This is the document that will be converted to PDF and made available for signing.
+
+Example:
+
+{
+  "document": {
+    "documentBase64": "UEsDBBQAAAAI..."
+  }
+}
+
+requester (object, required)
+
+Information about the person who will sign the document.
+
+Properties:
+
+- name (string, required): Full name of the person who will sign
+
+- email (string, required): Email address of the person who will sign
+
+- phoneNumber (string, optional): Phone number of the person who will sign
+
+Example:
+
+{
+  "requester": {
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "phoneNumber": "+1234567890"
+  }
+}
+
+Optional Parameters
+
+document.fields (array, optional)
+
+Array of signature fields to be placed on the PDF. Each field defines a location where a signature or initial must be placed.
+
+Field Object Properties:
+
+- term (string, required): Identifier for the field (e.g., "signature_1", "initial_1")
+
+- type (string, required): Type of field - must be either "signature" or "initial"
+
+- required (boolean, required): Whether this field is mandatory for completion
+
+- signer (number, required): Signer index (integer) - currently supports signer 1 (the requester)
+
+Example:
+
+{
+  "document": {
+    "fields": [
+      {
+        "term": "signature_1",
+        "type": "signature",
+        "required": true,
+        "signer": 1
+      },
+      {
+        "term": "initial_1",
+        "type": "initial",
+        "required": true,
+        "signer": 1
+      }
+    ]
+  }
+}
+
+Note: Fields can only be provided when documentBase64 is present.
+
+document.variables (object, optional)
+
+Key-value pairs for document variables. These can be used for dynamic content in the document. (Only works in HTML template)
+
+Example:
+
+{
+  "document": {
+    "variables": {
+      "contractNumber": "CNT-2024-001",
+      "amount": 5000,
+      "isActive": true
+    }
+  }
+}
+
+document.mustReminder (boolean, optional)
+
+Whether to send reminder emails if the document is not signed within the reminder period. Default: false
+
+Example:
+
+{
+  "document": {
+    "mustReminder": true
+  }
+}
+
+document.reminderDaysAmount (number, optional)
+
+Number of days after which to send a reminder email if the document is not signed. Only applies if mustReminder is true. Default: 3
+
+Example:
+
+{
+  "document": {
+    "mustReminder": true,
+    "reminderDaysAmount": 5
+  }
+}
+
+document.expirationDate (string, optional)
+
+ISO 8601 date string indicating when the document will expire and can no longer be signed. If not provided, the document will not expire.
+
+Format: YYYY-MM-DDTHH:mm:ss.sssZ or YYYY-MM-DD
+
+Example:
+
+{
+  "document": {
+    "expirationDate": "2024-12-31T23:59:59.000Z"
+  }
+}
+
+document.isSandbox (boolean, optional)
+
+Whether this is a test/sandbox document. Sandbox documents are marked as test-only and are not legally binding. Default: false
+
+Example:
+
+{
+  "document": {
+    "isSandbox": true
+  }
+}
+
+document.redirect (string, optional)
+
+URL to redirect the user to after the document is signed. If not provided no redirect is made
+
+Example:
+
+{
+  "document": {
+    "redirect": "https://example.com/signed"
+  }
+}
+
+document.callback (object, optional)
+
+Callback data that will be included in webhook notifications. This can contain any key-value pairs that you want to receive back in callback events after sign document.
+
+Example:
+
+{
+  "document": {
+    "callback": {
+      "orderId": "ORD-12345",
+      "customerId": "CUST-67890",
+      "environment": "production"
+    }
+  }
+}
+
+sendSignatureEmail (boolean, optional)
+
+Whether to automatically send an email to the requester with a link to sign the document. Default: true
+
+Example:
+
+{
+  "sendSignatureEmail": false
+}
+
+Create Document (Custom HTML Flow)
+
+Creates a new document for signing from an HTML template provided directly in the request body. The HTML is rendered to PDF server-side. Variable placeholders ({{variableName}}) in the HTML are automatically replaced with values from the variables object, and signature fields are defined inline in the HTML using bracket syntax.
+
+Endpoint: POST /api/document
+
+Headers:
+
+Content-Type: application/json
+x-api-key: YOUR_API_KEY
+
+Request Body
+
+The request body must be a JSON object containing the HTML template, a title, the requester details, and optionally variables and callback data.
+
+Required Parameters
+
+document.customTemplate (string, required)
+
+The full HTML content of the document. This HTML will be rendered to PDF. It may contain:
+
+- Variable placeholders using {{variableName}} syntax — replaced with values from document.variables
+
+- Inline signature fields using bracket syntax (see below)
+
+- Standard HTML/CSS for layout and styling
+
+- Page breaks using
+
+- Images as base64 data URIs
+
+document.customTitle (string, required)
+
+The title of the document. This is displayed in the GowSign interface and in email notifications.
+
+requester (object, required)
+
+Same as DOCX flow — name (required), email (required), phoneNumber (optional).
+
+Optional Parameters
+
+All optional parameters from the DOCX flow are also available here (document.variables, document.mustReminder, document.reminderDaysAmount, document.expirationDate, document.isSandbox, document.redirect, document.callback, sendSignatureEmail), with the same behavior.
+
+Note: document.fields is not available in this flow. Signature fields are defined inline in the HTML. document.documentBase64 must not be provided. 
+
+Variable Substitution
+
+Variables use double curly braces: {{variableName}}. Variable names must consist only of letters, numbers, and underscores. Matching is case-sensitive. If a placeholder has no corresponding key in variables, it is replaced with an empty string. Supported value types: string, number, boolean.
+
+The substitution engine performs simple string replacement only. Loops ({{#items}}...{{/items}}), conditionals ({{#if}}...{{/if}}), nested objects ({{obj.field}}), and arrays are not supported. Any dynamic lists or conditional content must be pre-expanded in the HTML before sending.
+
+Inline Signature Fields
+
+Signature fields are embedded directly in the HTML using [fieldType|param1|param2|...] syntax. Available field types:
+
+Signature: [sig] or [sig|req|signerName]
+
+- req (optional) — marks the field as required
+
+- signerName (optional) — signer identifier (e.g., signer1)
+
+Initials: [initials|req|signerName]
+
+- Same parameters as signature
+
+Date: [date|signerName] or [date|req|signerName]
+
+- Auto-filled date field
+
+Text Input: [text|req|signerName|fieldName|initialValue|placeholder|width]
+
+- fieldName — unique name to retrieve the typed value
+
+- initialValue — pre-filled value (optional)
+
+- placeholder — placeholder text (optional)
+
+- width — field width, e.g. 200px or 50% (optional)
+
+Radio Button: [radio_button|req|signerName|groupName|initialValue|(label;value)(label;value)]
+
+- groupName — unique group name
+
+- Buttons defined as (label;value) pairs
+
+Checkbox: [checkbox|reqN|signerName|groupName|(label;name;initialValue)(label;name;initialValue)]
+
+- reqN — minimum required selections (e.g., req1, req2)
+
+- Checkboxes defined as (label;name;true/false) tuples
+
+Table: [table|tableVariable]
+
+- tableVariable — The name of the data table variable. This name must correspond to a key provided within the variables object.
+
+Structure of tableVariable:
+
+"tableVariable": {  
+  "headers": [],  
+  "rows": []  
+}
+
+Example:
+
+[table|myTable]
+
+"variables": {  
+ "myTable": {  
+    "headers": ["ID", "Full Name", "Age", "Email Address"],  
+    "rows": [  
+     [1, "Alice Johnson", 28, "[alice.johnson@example.com](https://mailto:alice.johnson@example.com)"],  
+     [2, "Bob Smith", 34, "[bob.smith@example.com](https://mailto:bob.smith@example.com)"]  
+  ]  
+ }  
+}
+
+Minimal Example
+
+{
+  "requester": {
+    "name": "Jane Smith",
+    "email": "jane.smith@example.com"
+  },
+  "document": {
+    "customTemplate": "<h1 class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27;>Simple Agreement</h1><p class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27;>I agree to the terms.</p>[sig|req|signer1]",
+    "customTitle": "Simple Agreement"
+  }
+}
+
+Create Document (Strapi Template Flow)
+
+Creates a new document for signing using a template managed in the Strapi CMS. Instead of providing the document content directly, you reference a pre-configured template by its ID. The API fetches the template's HTML content, title, sender configuration, and environment settings from Strapi, applies variable substitution, and generates the PDF.
+
+Endpoint: POST /api/document
+
+Headers:
+
+Content-Type: application/json
+x-api-key: YOUR_API_KEY
+
+Request Body
+
+The request body must be a JSON object containing the Strapi template ID, the requester details, and optionally variables and callback data.
+
+Required Parameters#### document.templateId (string, required)
+
+The unique identifier of the template stored in Strapi CMS. This template contcontent, title, sender settings (email address, logo, subdomain), and the list of available environments.
+
+Example:
+
+{
+  "document": {
+    "templateId": "42"
+  }
+}
+
+requester (object, required)
+
+Same as DOCX flow — name (required), email (required), phoneNumber (optional).
+
+document.callback.environment (string, required)
+
+The environment identifier used to match one of the template's configured environments. Each Strapi template defines one or more environments (e.g., "production", "homologation", "sandbox"). The value provided here must match an existing environment in the template;
+otherwise, the request will fail with an error.
+
+Example:
+
+{
+  "document": {
+    "callback": {
+      "environment": "production"
+    }
+  }
+}
+
+Optional Parameters
+
+All optional parameters from the DOCX flow are also available here (document.variables, document.mustReminder, document.reminderDaysAmount, document.expirationDate, document.isSandbox, document.redirect, document.callback, sendSignatureEmail), with the same behavior.
+
+Note: document.fields is not available in this flow. Signature fields are defined within the Strapi template's HTML content using inline bracket syntax (same as the Custom HTML flow). document.documentBase64 must not be provided. document.customTemplate and document.customTitle must not be provided — the content and title are fetched from the Strapi template. 
+
+Variable Substitution
+
+Variable substitution works the same way as the Custom HTML flow. Placeholders using {{variableName}} syntax in the Strapi template's HTML content are replaced with values from document.variables.
+
+Callback Enrichment
+
+When using the Strapi Template flow, the API automatically enriches the callback object with additional metadata before storing it. The following fields are added:
+
+- event_hash (string): SHA-256 hash generated from the creation timestamp and an integration key, used for integrity verification
+
+- event_time (string): Timestamp of when the document was created
+
+- event_type (string): Always "document_created" for this event
+
+- Meta.related_document_hash (string): The document ID
+
+- Provider (string): Always "GOWSign"
+
+These enriched fields are returned in webhook notifications alongside any custom callback data you provided.
+
+How It Works
+
+- The API receives the templateId and fetches the full template configuration from Strapi CMS
+
+- The template's environment list is checked against the callback.environment value — if no match is found, the request fails
+
+- The HTML content from the template is processed: variable placeholders ({{variableName}}) are replaced with values from document.variables
+
+- The sender configuration (email address, logo, subdomain, redirect URL) is loaded from the template
+
+- The document record is created in the database with status CREATED
+
+- The document is enqueued for PDF generation (HTML → PDF via the documentos queue)
+
+- If sendSignatureEmail is true (default), a signing email is sent to the requester
+
+Minimal Example
+
+{
+  "requester": {
+    "name": "John Doe",
+    "email": "john.doe@example.com"
+  },
+  "document": {
+    "templateId": "42",
+    "callback": {
+      "environment": "production"
+    }
+  }
+}
+
+Complete Example
+
+{
+  "requester": {
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "phoneNumber": "+1234567890"
+  },
+  "document": {
+    "templateId": "42",
+    "variables": {
+      "customerName": "John Doe",
+      "contractNumber": "CNT-2024-001",
+      "amount": 5000
+    },
+    "mustReminder": true,
+    "reminderDaysAmount": 5,
+    "expirationDate": "2024-12-31T23:59:59.000Z",
+    "isSandbox": false,
+    "callback": {
+      "orderId": "ORD-12345",
+      "customerId": "CUST-67890",
+      "environment": "production"
+    }
+  },
+  "sendSignatureEmail": true
+}
+
+Error Scenarios
+
+In addition to the standard errors (authentication, validation), this flow may return:
+
+- 404 Not Found: The templateId does not correspond to any template in Strapi
+
+- 500 Internal Server Error with message "Template not available for the requested environment.": The callback.environment value does not match any environment configured in the Strapi template
+
+- 500 Internal Server Error with message "Template content and title are missing.": The Strapi template exists but has no content or title defined
+
+Response
+
+Success Response
+
+Status Code: 200 OK
+
+Response Body:
+
+{
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "url": "https://subdomain.gowsign.com/document/550e8400-e29b-41d4-a716-446655440000",
+    "status": "CREATED",
+    "strapiTemplateTitle": "Document",
+    "Requester": {
+      "id": "660e8400-e29b-41d4-a716-446655440001",
+      "name": "John Doe",
+      "email": "john.doe@example.com",
+      "phoneNumber": "+1234567890"
+    }
+  },
+  "meta": null,
+  "error": null,
+  "valid": true,
+  "responseData": null
+}
+
+Response Fields (root):
+
+- data (object|null): Document information when successful
+
+- meta (object|null): Optional metadata
+
+- error (object|null): Error details when the request fails
+
+- valid (boolean): Indicates if the request was successful
+
+- responseData (object|null): Optional response messages
+
+Response Fields (data object):
+
+- id (string): Unique document identifier (UUID)
+
+- url (string): URL where the document can be accessed and signed
+
+- status (string): Current status of the document (see Document Status)
+
+- strapiTemplateTitle (string): Title of the document (defaults to "Document" for DOCX flow)
+
+- Requester (object): Information about the person who will sign
+
+- id (string): Unique requester identifier
+
+- name (string): Full name
+
+- email (string): Email address
+
+- phoneNumber (string): Phone number
+
+Error Response
+
+Status Code: 400 Bad Request, 401 Unauthorized, 500 Internal Server Error
+
+Response Body:
+
+{
+  "data": null,
+  "meta": null,
+  "error": {
+    "type": 400,
+    "message": "An error has occurred while validating the request data."
+  },
+  "valid": false,
+  "responseData": null
+}
+
+Error Types (error.type):
+
+- 400 (ValidationError): Request validation failed (missing required fields, invalid format, etc.)
+
+- 401 (Unauthorized): Authentication failed (missing or invalid API key, IP not allowed)
+
+- 404 (NotFound): Resource not found (for GET requests)
+
+- 500 (InternalError): Server error occurred while processing the request
+
+Document Status
+
+Documents can have the following statuses:
+
+- CREATED: Document has been created and is being processed (PDF conversion in progress)
+
+- OUTSTANDING: Document is ready and waiting to be signed
+
+- SIGNED: Document has been signed
+
+- COMPLETED: Document signing process is complete
+
+- EXPIRED: Document has expired and can no longer be signed
+
+- CANCELED: Document has been canceled
+
+Signature Fields
+
+When using signature fields, you can define specific locations on the PDF where signatures or initials must be placed. This provides a structured signing experience.
+
+Field Types
+
+- Signature (type: "signature"): A full signature field where the signer must provide their signature
+
+- Initial (type: "initial"): An initial field where the signer must provide their initials
+
+- Checkbox (type: "check"): A checkbox drawn on the PDF. The system searches for the term text on the page and places a checkbox at that position. The signer can check or leave unchecked; the value is sent in the signing payload and in the Get Document response.
+
+Field Properties
+
+- term: A unique identifier for the field. For signature/initial it is used to find where to place the field on the PDF; for checkboxes it is the text searched on the page to position the checkbox.
+
+- type: Either "signature","initial" or "check"
+
+- required: If true, the document cannot be completed until this field is signed (for checkboxes, the checkbox must be checked).
+
+- signer: Signer index; currently supports signer 1 (the requester). This indicates which signer should fill this field.
+
+- width (optional): Width in pixels for the field on the PDF. If omitted, defaults are used (e.g. 200 for signature/initial).
+
+- height (optional): Height in pixels for the field on the PDF. If omitted, defaults are used (e.g. 50 for signature/initial).
+
+- group (optional, for type: "check" only): Group name for checkboxes. Checkboxes that share the same group are mutually exclusive: when one is checked, the others in the group are unchecked (e.g. “Yes” / “No” or single-choice options).
+
+Note: When you provide a fields array, each field must include width and height as positive numbers.
+
+Field Positioning
+
+The actual positioning of fields on the PDF is handled automatically by the GowSign system. The system searches for each field’s term in the PDF text and places the control (signature, initial, or checkbox) at that position. Fields you define are processed in order, and the system places them on the document accordingly.
+
+Checkbox values on sign and in Get Document
+
+- On sign, the client sends signaturePositions with one entry per field. For type: "check", each entry includes value: true (checked) or false (unchecked).
+
+- The Get Document (and callback) response includes a fields array built from these positions; each item has type and, for checkboxes, value (boolean).
+
+Get Document
+
+Retrieves information about a specific document by its ID.
+
+Endpoint: GET /api/document/{id}
+
+Headers:
+
+x-api-key: YOUR_API_KEY
+
+Path Parameters
+
+- id (string, required): The unique document identifier (UUID)
+
+Query Parameters
+
+- template (string, optional): If set to "true", includes template content in the response (not applicable for DOCX flow)
+
+Success Response
+
+Status Code: 200 OK
+
+Response Body:
+
+{
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "variables": {
+      "name": "Daniel",
+      "product": "New Project"
+    },
+    "callback": {
+      "orderId": "ORD-12345",
+      "environment": "dev"
+    },
+    "strapiTemplateId": "",
+    "strapiTemplateTitle": "Document",
+    "createdDate": "2024-01-15T10:30:00.000Z",
+    "createdPdfHash": "0c320de15586ba8f31c3c96cb4186bf9...",
+    "signedDate": null,
+    "signedPdfHash": null,
+    "url": "https://subdomain.gowsign.com/document/550e8400-e29b-41d4-a716-446655440000",
+    "signatureImage": null,
+    "rubricaImage": null,
+    "isSandbox": false,
+    "status": "OUTSTANDING",
+    "pdfStatus": "SIGNED_PENDING",
+    "redirect": "",
+    "idRequester": "660e8400-e29b-41d4-a716-446655440001",
+    "hasCustomTemplate": false,
+    "expirationDate": null,
+    "mustRemind": false,
+    "reminderDaysAmount": 3,
+    "lastUpdateDate": "2024-01-15T10:35:00.000Z",
+    "docxBlobUrl": "https://storage.example.com/documents/550e8400-e29b-41d4-a716-446655440000.docx",
+    "signatureFields": [
+      {
+        "term": "{{signature:1:y:::customerSign:120:40}}",
+        "type": "signature",
+        "signer": 1,
+        "required": true
+      },
+      {
+        "term": "{{initial:1:y::::25:25}}",
+        "type": "initial",
+        "signer": 1,
+        "required": true
+      }
+    ],
+    "Requester": {
+      "id": "660e8400-e29b-41d4-a716-446655440001",
+      "name": "John Doe",
+      "email": "john.doe@example.com",
+      "phoneNumber": "+1234567890"
+    },
+    "Metadata": null,
+    "pdfUrl": "https://api.gowsign.com/api/document/550e8400-e29b-41d4-a716-446655440000/pdf"
+  },
+  "meta": null,
+  "error": null,
+  "valid": true,
+  "responseData": null
+}
+
+Response Fields (root):
+
+- data (object|null): Document information when successful
+
+- meta (object|null): Optional metadata
+
+- error (object|null): Error details when the request fails
+
+- valid (boolean): Indicates if the request was successful
+
+- responseData (object|null): Optional response messages
+
+Response Fields (data object):
+
+- id (string): Unique document identifier (UUID)
+
+- variables (object): Key-value pairs of variables used in the document (template substitution)
+
+- callback (object|null): Callback data sent when creating the document (returned in webhooks)
+
+- strapiTemplateId (string): Strapi template identifier (empty string for DOCX flow)
+
+- strapiTemplateTitle (string): Document title
+
+- createdDate (string): ISO 8601 date when the document was created
+
+- createdPdfHash (string): Hash of the generated PDF (before signing)
+
+- signedDate (string|null): ISO 8601 date when the document was signed (null if not signed)
+
+- signedPdfHash (string|null): Hash of the signed PDF (null if not signed)
+
+- url (string|null): URL where the document can be accessed and signed
+
+- signatureImage (string|null): URL or data for the signature image (when signed)
+
+- rubricaImage (string|null): URL or data for the rubrica/initial image (when signed)
+
+- isSandbox (boolean): Whether this is a sandbox/test document
+
+- status (string): Current document status — CREATED, OUTSTANDING, SIGNED, COMPLETED, EXPIRED, CANCELED
+
+- pdfStatus (string): PDF generation status — CREATED_PENDING, CREATED_GENERATED, SIGNED_PENDING, SIGNED_GENERATED, AUDIT_TRAIL_PENDING, AUDIT_TRAIL_GENERATED
+
+- redirect (string|null): URL to redirect the user to after signing (empty string if not set)
+
+- idRequester (string): UUID of the requester (signer)
+
+- hasCustomTemplate (boolean): Whether the document uses a custom template
+
+- expirationDate (string|null): ISO 8601 date when the document expires (null if no expiration)
+
+- mustRemind (boolean): Whether reminder emails are sent if the document is not signed
+
+- reminderDaysAmount (number|null): Number of days after which to send a reminder (default 3)
+
+- lastUpdateDate (string|null): ISO 8601 date of the last update
+
+- docxBlobUrl (string|null): URL of the DOCX file in blob storage (DOCX flow; null for template-only documents)
+
+- signatureFields (array|null): Array of signature field definitions. Each item has term (string), type ("signature" or "initial"), signer (number), required (boolean)
+
+- Requester (object): Information about the person who will sign or has signed (id, name, email, phoneNumber)
+
+- Metadata (object|null): Metadata about document access when available (clientName, email, userDateTime, deviceInfo, geoLocation, etc.); null if not yet collected
+
+- pdfUrl (string, optional): URL to download the PDF version of the document (only present for DOCX flow documents after PDF conversion)
+
+Error Response
+
+Status Code: 404 Not Found, 401 Unauthorized, 500 Internal Server Error
+
+List Documents
+
+Retrieves a list of documents with pagination and filtering options.
+
+Endpoint: GET /api/document
+
+Headers:
+
+x-api-key: YOUR_API_KEY
+
+Query Parameters
+
+- page (number, optional): Page number for pagination. Default: 1
+
+- pageSize (number, optional): Number of documents per page. Default: 10
+
+- orderBy (string, optional): Sort order. Format: field:direction (e.g., createdDate:desc, signedDate:asc). Default: createdDate:desc
+
+- search (string, optional): Search term to filter by document title or requester email
+
+- status (string, optional): Filter by document status. Can be specified multiple times for multiple statuses (e.g., ?status=OUTSTANDING&status=SIGNED)
+
+Success Response
+
+Status Code: 200 OK
+
+Response Body:
+
+{
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "url": "https://subdomain.gowsign.com/document/550e8400-e29b-41d4-a716-446655440000",
+      "status": "OUTSTANDING",
+      "strapiTemplateTitle": "Document",
+      "createdDate": "2024-01-15T10:30:00.000Z",
+      "signedDate": null,
+      "lastUpdateDate": "2024-01-15T10:35:00.000Z",
+      "callback": {
+        "orderId": "ORD-12345"
+      },
+      "Requester": {
+        "id": "660e8400-e29b-41d4-a716-446655440001",
+        "name": "John Doe",
+        "email": "john.doe@example.com",
+        "phoneNumber": "+1234567890"
+      }
+    }
+  ],
+  "meta": {
+    "pagination": {
+      "page": 1,
+      "pageSize": 10,
+      "total": 25,
+      "pageCount": 3
+    }
+  },
+  "error": null,
+  "valid": true,
+  "responseData": null
+}
+
+Response Fields (root):
+
+- data (array): Array of document objects (same structure as Get Document response, with subset of fields per item)
+
+- meta (object): Pagination information in meta.pagination
+
+- error (object|null): Error details when the request fails
+
+- valid (boolean): Indicates if the request was successful
+
+- responseData (object|null): Optional response messages
+
+meta.pagination:
+
+- page (number): Current page number
+
+- pageSize (number): Number of items per page
+
+- total (number): Total number of documents matching the filters
+
+- pageCount (number): Total number of pages
+
+Example Requests
+
+Get first page of documents:
+
+GET /api/document?page=1&pageSize=10
+
+Search for documents:
+
+GET /api/document?search=john.doe@example.com
+
+Filter by status:
+
+GET /api/document?status=OUTSTANDING&status=SIGNED
+
+Sort by signed date (descending):
+
+GET /api/document?orderBy=signedDate:desc
+
+Examples
+
+Example 1: Basic Document Creation
+
+Create a document with minimal required parameters:
+
+{
+  "requester": {
+    "name": "Jane Smith",
+    "email": "jane.smith@example.com"
+  },
+  "document": {
+    "documentBase64": "UEsDBBQAAAAI..."
+  }
+}
+
+Example 2: Document with Signature Fields
+
+Create a document with predefined signature fields:
+
+{
+  "requester": {
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "phoneNumber": "+1234567890"
+  },
+  "document": {
+    "documentBase64": "UEsDBBQAAAAI...",
+    "fields": [
+      {
+        "term": "signature_1",
+        "type": "signature",
+        "required": true,
+        "signer": 1
+      },
+      {
+        "term": "initial_1",
+        "type": "initial",
+        "required": true,
+        "signer": 1
+      }
+    ]
+  }
+}
+
+Example 3: Document with Expiration and Reminders
+
+Create a document with expiration date and reminder settings:
+
+{
+  "requester": {
+    "name": "Alice Johnson",
+    "email": "alice.johnson@example.com"
+  },
+  "document": {
+    "documentBase64": "UEsDBBQAAAAI...",
+    "mustReminder": true,
+    "reminderDaysAmount": 7,
+    "expirationDate": "2024-12-31T23:59:59.000Z"
+  }
+}
+
+Example 4: Sandbox Document with Callback
+
+Create a test document with callback data:
+
+{
+  "requester": {
+    "name": "Bob Wilson",
+    "email": "bob.wilson@example.com"
+  },
+  "document": {
+    "documentBase64": "UEsDBBQAAAAI...",
+    "isSandbox": true,
+    "callback": {
+      "orderId": "ORD-12345",
+      "customerId": "CUST-67890",
+      "environment": "sandbox"
+    },
+    "redirect": "https://example.com/test/signed"
+  },
+  "sendSignatureEmail": true
+}
+
+Example 5: Complete Request
+
+Complete example with all optional parameters with docx:
+
+{
+  "requester": {
+    "name": "Charlie Brown",
+    "email": "charlie.brown@example.com",
+    "phoneNumber": "+1987654321"
+  },
+  "document": {
+    "documentBase64": "UEsDBBQAAAAI...",
+    "fields": [
+      {
+        "term": "signature_1",
+        "type": "signature",
+        "required": true,
+        "signer": 1
+      },
+      {
+        "term": "initial_1",
+        "type": "initial",
+        "required": true,
+        "signer": 1
+      }
+    ],
+    "mustReminder": true,
+    "reminderDaysAmount": 5,
+    "expirationDate": "2024-12-31T23:59:59.000Z",
+    "isSandbox": false,
+    "redirect": "https://example.com/contracts/signed",
+    "callback": {
+      "orderId": "ORD-12345",
+      "customerId": "CUST-67890"
+    }
+  },
+  "sendSignatureEmail": true
+}
+
+Support
+
+For integration support, please contact the GowSign technical team.
+
+## Documents
+
+#### POST Create Document - DOCX Flow
+
+`https://staging.gowsign.com/api/document`
+
+Creates a new document for signing from a DOCX file encoded in base64.
+
+**Headers**
+
+| Key | Value |
+|---|---|
+| Content-Type | application/json |
+| x-api-key | YOUR_API_KEY |
+
+**Body**
+
+```json
+{
+    "requester": {
+        "name": "John Doe",
+        "email": "john.doe@example.com",
+        "phoneNumber": "34999999999"
+    },
+    "document": {
+        "documentBase64": "UEsDBBQAAAAAAJhuU1wt5JiBPgkAAD4JAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbDw/eG1sIHZlcnNpb249IjEuMCIgZW5jb2Rpbmc9IlVURi04IiBzdGFuZGFsb25lPSJ5ZXMiPz4KPFR5cGVzIHhtbG5zPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvcGFja2FnZS8yMDA2L2NvbnRlbnQtdHlwZXMiPjxEZWZhdWx0ICBFeHRlbnNpb249ImJpbiIgQ29udGVudFR5cGU9ImFwcGxpY2F0aW9uL3ZuZC5vcGVueG1sZm9ybWF0cy1vZmZpY2Vkb2N1bWVudC5vbGVPYmplY3QiLz48RGVmYXVsdCAgRXh0ZW5zaW9uPSJqcGVnIiBDb250ZW50VHlwZT0iaW1hZ2UvanBlZyIvPjxEZWZhdWx0ICBFeHRlbnNpb249InJlbHMiIENvbnRlbnRUeXBlPSJhcHBsaWNhdGlvbi92bmQub3BlbnhtbGZvcm1hdHMtcGFja2FnZS5yZWxhdGlvbnNoaXBzK3htbCIvPjxEZWZhdWx0ICBFeHRlbnNpb249InhtbCIgQ29udGVudFR5cGU9ImFwcGxpY2F0aW9uL3htbCIvPjxEZWZhdWx0ICBFeHRlbnNpb249InBuZyIgQ29udGVudFR5cGU9ImltYWdlL3BuZyIvPjxEZWZhdWx0ICBFeHRlbnNpb249IndtZiIgQ29udGVudFR5cGU9ImltYWdlL3gtd21mIi8+PE92ZXJyaWRlICBQYXJ0TmFtZT0iL2N1c3RvbVhtbC9pdGVtUHJvcHMxLnhtbCIgQ29udGVudFR5cGU9ImFwcGxpY2F0aW9uL3ZuZC5vcGVueG1sZm9ybWF0cy1vZmZpY2Vkb2N1bWVudC5jdXN0b21YbWxQcm9wZXJ0aWVzK3htbCIvPjxPdmVycmlkZSAgUGFydE5hbWU9Ii93b3JkL2RvY3VtZW50LnhtbCIgQ29udGVudFR5cGU9ImFwcGxpY2F0aW9uL3ZuZC5vcGVueG1sZm9ybWF0cy1vZmZpY2Vkb2N1bWVudC53b3JkcHJvY2Vzc2luZ21sLmRvY3VtZW50Lm1haW4reG1sIi8+PE92ZXJyaWRlICBQYXJ0TmFtZT0iL3dvcmQvc3R5bGVzLnhtbCIgQ29udGVudFR5cGU9ImFwcGxpY2F0aW9uL3ZuZC5vcGVueG1sZm9ybWF0cy1vZmZpY2Vkb2N1bWVudC53b3JkcHJvY2Vzc2luZ21sLnN0eWxlcyt4bWwiLz48T3ZlcnJpZGUgIFBhcnROYW1lPSIvd29yZC90aGVtZS90aGVtZTEueG1sIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm9wZW54bWxmb3JtYXRzLW9mZmljZWRvY3VtZW50LnRoZW1lK3htbCIvPjxPdmVycmlkZSAgUGFydE5hbWU9Ii93b3JkL2ZvbnRUYWJsZS54bWwiIENvbnRlbnRUeXBlPSJhcHBsaWNhdGlvbi92bmQub3BlbnhtbGZvcm1hdHMtb2ZmaWNlZG9jdW1lbnQud29yZHByb2Nlc3NpbmdtbC5mb250VGFibGUreG1sIi8+PE92ZXJyaWRlICBQYXJ0TmFtZT0iL3dvcmQvd2ViU2V0dGluZ3MueG1sIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm9wZW54bWxmb3JtYXRzLW9mZmljZWRvY3VtZW50LndvcmRwcm9jZXNzaW5nbWwud2ViU2V0dGluZ3MreG1sIi8+PE92ZXJyaWRlICBQYXJ0TmFtZT0iL3dvcmQvc2V0dGluZ3MueG1sIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm9wZW54bWxmb3JtYXRzLW9mZmljZWRvY3VtZW50LndvcmRwcm9jZXNzaW5nbWwuc2V0dGluZ3MreG1sIi8+PE92ZXJyaWRlICBQYXJ0TmFtZT0iL3dvcmQvbnVtYmVyaW5nLnhtbCIgQ29udGVudFR5cGU9ImFwcGxpY2F0aW9uL3ZuZC5vcGVueG1sZm9ybWF0cy1vZmZpY2Vkb2N1bWVudC53b3JkcHJvY2Vzc2luZ21sLm51bWJlcmluZyt4bWwiLz48T3ZlcnJpZGUgIFBhcnROYW1lPSIvd29yZC9mb290bm90ZXMueG1sIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm9wZW54bWxmb3JtYXRzLW9mZmljZWRvY3VtZW50LndvcmRwcm9jZXNzaW5nbWwuZm9vdG5vdGVzK3htbCIvPjxPdmVycmlkZSAgUGFydE5hbWU9Ii93b3JkL2VuZG5vdGVzLnhtbCIgQ29udGVudFR5cGU9ImFwcGxpY2F0aW9uL3ZuZC5vcGVueG1sZm9ybWF0cy1vZmZpY2Vkb2N1bWVudC53b3JkcHJvY2Vzc2luZ21sLmVuZG5vdGVzK3htbCIvPjxPdmVycmlkZSAgUGFydE5hbWU9Ii93b3JkL2hlYWRlcjEueG1sIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm9wZW54bWxmb3JtYXRzLW9mZmljZWRvY3VtZW50LndvcmRwcm9jZXNzaW5nbWwuaGVhZGVyK3htbCIvPjxPdmVycmlkZSAgUGFydE5hbWU9Ii93b3JkL2Zvb3RlcjEueG1sIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm9wZW54bWxmb3JtYXRzLW9mZmljZWRvY3VtZW50LndvcmRwcm9jZXNzaW5nbWwuZm9vdGVyK3htbCIvPjxPdmVycmlkZSAgUGFydE5hbWU9Ii9kb2NQcm9wcy9hcHAueG1sIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm9wZW54bWxmb3JtYXRzLW9mZmljZWRvY3VtZW50LmV4dGVuZGVkLXByb3BlcnRpZXMreG1sIi8+PE92ZXJyaWRlICBQYXJ0TmFtZT0iL2RvY1Byb3BzL2NvcmUueG1sIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm9wZW54bWxmb3JtYXRzLXBhY2thZ2UuY29yZS1wcm9wZXJ0aWVzK3htbCIvPjwvVHlwZXM+UEsDBBQAAAAAAJhuU1w2FZxPUAIAAFACAAALAAAAX3JlbHMvLnJlbHM8P3htbCB2ZXJzaW9uPSIxLjAiIGVuY29kaW5nPSJVVEYtOCIgc3RhbmRhbG9uZT0ieWVzIj8+IDxSZWxhdGlvbnNoaXBzIHhtbG5zPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvcGFja2FnZS8yMDA2L3JlbGF0aW9uc2hpcHMiPiA8UmVsYXRpb25zaGlwIElkPSJySWQxIiBUeXBlPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvb2ZmaWNlRG9jdW1lbnQvMjAwNi9yZWxhdGlvbnNoaXBzL29mZmlj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",
+        "callback": {
+            "teste3": "ok",
+            "teste2": false,
+            "environment": "dev",
+            "teste": 123
+        },
+        "fields": [
+            {
+                "term": "{{initial:1:y::::25:25}}",
+                "type": "initial",
+                "required": true,
+                "signer": 1
+            },
+            {
+                "term": "{{signature:1:y:::customerSign:120:40}}",
+                "type": "signature",
+                "required": true,
+                "width": 240,
+                "height": 80,
+                "signer": 1
+            }
+        ],
+        "redirect": "http://www.google.com",
+        "isSandbox": false
+    },
+    "sendSignatureEmail": false
+}
+```
+
+**Examples**
+
+- **Success - 200** — 200 OK
+
+  ```json
+  {
+    "data": {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "url": "https://subdomain.gowsign.com/document/550e8400-e29b-41d4-a716-446655440000",
+      "status": "CREATED",
+      "strapiTemplateTitle": "Document",
+      "Requester": {
+        "id": "660e8400-e29b-41d4-a716-446655440001",
+        "name": "John Doe",
+        "email": "john.doe@example.com",
+        "phoneNumber": "+1234567890"
+      }
+    },
+    "meta": null,
+    "error": null,
+    "valid": true,
+    "responseData": null
+  }
+  ```
+
+#### POST Create Document - Strapi Flow
+
+`https://staging.gowsign.com/api/document`
+
+Creates a new document for signing from a DOCX file encoded in base64.
+
+**Headers**
+
+| Key | Value |
+|---|---|
+| Content-Type | application/json |
+| x-api-key | YOUR_API_KEY |
+
+**Body**
+
+```json
+{
+  "requester": {
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "phoneNumber": "+19071234567"
+  },
+  "sendSignatureEmail": true,
+  "document": {
+    "templateId": "mt1qzbrsbjkp0agv16fk998a",
+    "variables": {
+      "totalOfPayments": "2,500.00",
+      "leaseCost": "800.00",
+      "cashPrice": "1,700.00",
+      "initialPayment": "150.00",
+      "recurringFrequency": "Monthly",
+      "recurringPayment": "$125.00",
+      "numberOfPaymentsWithInitialPayment": "20",
+      "numberOfPayments": "19",
+      "termInMonths": "19",
+      "productCondition": "new",
+      "customerAccountNumber": "ACC-20260227-001",
+      "date": "02/27/2026",
+      "customerFirstName": "John",
+      "customerLastName": "Doe",
+      "customerStreetAddress": "123 Main Street",
+      "customerCity": "Anchorage",
+      "customerState": "AK",
+      "customerZip": "99501",
+      "lessorName": "KW-Choice Alaska LLC",
+      "lessorStreetAddress": "456 Business Ave",
+      "lessorCity": "Anchorage",
+      "lessorState": "AK",
+      "lessorZip": "99502",
+      "lessorPhone": "(907) 555-1234",
+      "retailerName": "Alaska Home Furnishings",
+      "retailerStreetAddress": "789 Retail Blvd",
+      "retailerCity": "Anchorage",
+      "retailerState": "AK",
+      "retailerZip": "99503",
+      "retailerPhone": "(907) 555-5678",
+      "payOffPercent": "65",
+      "returnFee": "30.00",
+      "homeCollectionFee": "15.00",
+      "processingFee": "5.00"
+    },
+    "callback": {
+      "environment": "stg"
+    },
+    "mustReminder": true,
+    "reminderDaysAmount": 5,
+    "isSandbox": true
+  }
+}
+```
+
+**Examples**
+
+- **Success - 200** — 200 OK
+
+  ```json
+  {
+    "data": {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "url": "https://subdomain.gowsign.com/document/550e8400-e29b-41d4-a716-446655440000",
+      "status": "CREATED",
+      "strapiTemplateTitle": "Document",
+      "Requester": {
+        "id": "660e8400-e29b-41d4-a716-446655440001",
+        "name": "John Doe",
+        "email": "john.doe@example.com",
+        "phoneNumber": "+1234567890"
+      }
+    },
+    "meta": null,
+    "error": null,
+    "valid": true,
+    "responseData": null
+  }
+  ```
+
+#### POST Create Document - Custom HTML Flow
+
+`https://staging.gowsign.com/api/document`
+
+Creates a new document for signing from a custom HTML template specified in the request.
+
+**Headers**
+
+| Key | Value |
+|---|---|
+| Content-Type | application/json |
+| x-api-key | YOUR_API_KEY |
+
+**Body**
+
+```json
+{
+    "requester": {
+        "name": "John Doe",
+        "email": "john.doe@example.com",
+        "phoneNumber": "34999999999"
+    },
+    "document": {
+        "variables": {
+            "totalOfPayments": "2500.00",
+            "leaseCost": "800.00",
+            "cashPrice": "1700.00",
+            "initialPayment": "150.00",
+            "recurringPayment": "98.00",
+            "recurringFrequency": "Monthly",
+            "numberOfPaymentsWithInitialPayment": "25",
+            "numberOfPayments": "24",
+            "termInMonths": "24",
+            "productCondition": "New",
+            "customerAccountNumber": "ACC-123456",
+            "date": "02/26/2026",
+            "lessorName": "GOW Solutions LLC",
+            "customerFirstName": "Michael",
+            "customerLastName": "Johnson",
+            "lessorStreetAddress": "123 Main Street",
+            "customerStreetAddress": "456 Oak Avenue",
+            "retailerName": "Retailer Inc.",
+            "lessorCity": "Miami",
+            "lessorState": "FL",
+            "lessorZip": "33101",
+            "customerCity": "Los Angeles",
+            "customerState": "CA",
+            "customerZip": "90001",
+            "retailerStreetAddress": "789 Commerce Blvd",
+            "lessorPhone": "(305) 555-1234",
+            "retailerCity": "Houston",
+            "retailerState": "TX",
+            "retailerZip": "77001",
+            "retailerPhone": "(713) 555-5678",
+            "buyoutPeriod": "90",
+            "buyoutMarkup": "50.00",
+            "payOffPercent": "60",
+            "changePaymentDateFee": "15.00",
+            "returnFee": "25.00",
+            "homeCollectionFee": "30.00",
+            "processingFee": "5.00",
+            "lessorEmailAddress": "contact@gowsolutions.com"
+        },
+        "callback": {
+            "teste": 123,
+            "teste2": false,
+            "teste3": "ok"
+        },
+        "redirect": "",
+        "isSandbox": false,
+        "customTemplate": "<p style=\"display:block;text-align:left;\">\r\n    <img src=\"data:image/png;base64,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\" alt=\"\" width=\"186\" height=\"41\">\r\n</p>\r\n<p style=\"font-size:15px;\">\r\n    &nbsp;\r\n</p>\r\n<p style=\"font-size:15px;text-align:center;\">\r\n    <strong>Rental-Purchase Transaction Disclosure</strong>\r\n</p>\r\n<p style=\"font-size:15px;\">\r\n    The following disclosures are required in relation to Rental-Purchase transactions. As the Lessee, you understand and agree to the following: \r\n</p>\r\n<figure class=\"table\" style=\"width:100%;\">\r\n    <table style=\"border:2px solid #000;margin-left:auto;margin-right:auto;\">\r\n        <tbody>\r\n            <tr>\r\n                <td style=\"border-color:#000;border-width:2px;text-align:left;vertical-align:top;\" rowspan=\"2\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>TOTAL OF PAYMENTS</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>${{totalOfPayments}}</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>This is the amount you will pay to own the Property if all the Renewal Payments are made. You can buy the property for less using an Early Ownership Option.</strong>\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-color:#000;border-width:2px;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>COST OF RENTAL</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>${{leaseCost}}, includes Initial Payment.</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>This is the amount you will pay to lease the Property over buying it outright, assuming all Renewal Payments are made.</strong>\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-color:#000;border-width:2px;text-align:left;vertical-align:top;\" colspan=\"2\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>CASH PRICE</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>${{cashPrice}}</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>This is the amount you would pay to purchase the Property outright from the Lessor.</strong>\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-color:#000;border-width:2px;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>INITIAL PAYMENT</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>${{initialPayment}}</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>This is the amount you pay at signing, which covers the initial lease period, or the period between delivery of the Property and the first Renewal Payment.</strong>\r\n                    </p>\r\n                </td>\r\n            </tr>\r\n            <tr>\r\n                <td style=\"border-color:#000;border-width:2px;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>AMOUNT OF EACH RENEWAL PAYMENT</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>${{recurringPayment}}, {{recurringFrequency}}.</strong>\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-color:#000;border-width:2px;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>NUMBER OF PAYMENTS</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>{{numberOfPaymentsWithInitialPayment}}</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>The Initial Payment followed by {{numberOfPayments}} Renewal Payments to own the Property.</strong>\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-color:#000;border-width:2px;text-align:left;vertical-align:top;\" colspan=\"2\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>RENTAL PERIOD</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>{{termInMonths}} Months (Plus the initial term)</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>This is the duration of the Lease if all Renewal Payments are made. There is no minimum period for which you are obligated under the Lease.</strong>\r\n                    </p>\r\n                </td>\r\n            </tr>\r\n            <tr>\r\n                <td style=\"border-color:#000;border-width:2px;text-align:center;vertical-align:top;\" colspan=\"5\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>The lease property is {{productCondition}} and is being acquired by the Lessor on the Lease Date.</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>Applicable sales tax will be added to all payments.</strong>\r\n                    </p>\r\n                </td>\r\n            </tr>\r\n        </tbody>\r\n    </table>\r\n</figure>\r\n<p style=\"font-size:15px;\">\r\n    &nbsp;\r\n</p>\r\n<p style=\"font-size:15px;\">\r\n    <strong>DO NOT SIGN THIS BEFORE YOU READ THE ENTIRE AGREEMENT, INCLUDING ANY WRITING ON THE REVERSE SIDE, EVEN IF OTHERWISE ADVISED. DO NOT SIGN THIS IF IT CONTAINS ANY BLANK SPACES. YOU ARE ENTITLED TO AN EXACT COPY OF ANY AGREEMENT YOU SIGN. YOU DO NOT ACQUIRE ANY OWNERSHIP RIGHTS UNTIL YOU HAVE COMPLIED WITH THE OWNERSHIP TERMS OF THE AGREEMENT. YOU HAVE THE RIGHT TO EXERCISE AN EARLY BUY-OUT OPTION AS PROVIDED IN THIS AGREEMENT. EXERCISE OF THIS OPTION MAY RESULT IN A REDUCTION OF YOUR TOTAL COST TO ACQUIRE OWNERSHIP UNDER THIS AGREEMENT. IF YOU ELECT TO MAKE WEEKLY RATHER THAN MONTHLY PAYMENTS AND EXERCISE YOUR PURCHASE OPTION, YOU MAY PAY MORE FOR THE LEASED PROPERTY.</strong>\r\n</p>\r\n<p style=\"font-size:15px;\">\r\n    &nbsp;\r\n</p>\r\n<p style=\"font-size:15px;text-align:center;\">\r\n    <strong>---REMAINDER OF PAGE INTENTIONALLY BLANK---</strong>\r\n</p>\r\n<div class=\"page-break\">\r\n    &nbsp;\r\n</div>\r\n<p style=\"font-size:15px;\">\r\n    &nbsp;\r\n</p>\r\n<p style=\"display:block;text-align:left;\">\r\n    <img src=\"data:image/png;base64,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\" alt=\"\" width=\"186\" height=\"41\">\r\n</p>\r\n<p style=\"font-size:15px;\">\r\n    &nbsp;\r\n</p>\r\n<p style=\"font-size:15px;text-align:center;\">\r\n    <strong>ACKNOWLEDGMENT OF RENTAL-PURCHASE TRANSACTION</strong>\r\n</p>\r\n<p style=\"font-size:15px;\">\r\n    The following disclosures are required in relation to Rental-Purchase transactions. As the Lessee, you understand and agree to the following: \r\n</p>\r\n<p style=\"font-size:15px;\">\r\n    &nbsp;\r\n</p>\r\n<ol style=\"list-style-type:decimal;\">\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            You understand that the agreement you are entering for the purchase of {{#products}}{{quantity}} {{description}}{{delimiter:,}}{{/products}} (the ”Property”), is a Rental-Purchase Agreement, and you do not own the Property until you have complied with the ownership terms of the agreement; &nbsp;\r\n        </p>\r\n    </li>\r\n</ol>\r\n<p style=\"font-size:15px;\">\r\n    &nbsp;\r\n</p>\r\n<ol style=\"list-style-type:decimal;\">\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            You understand that the Agreement is not a credit transaction; &nbsp;\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            You understand that you, as the Lessee, have the right to return the Property to the Lessor without additional charge or penalty at any time and will owe nothing further except unpaid rent charges; &nbsp;\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            You understand that you, as the Lessee, have the option to purchase the rented property at any time and the price of early purchase option is provided in Section 6;&nbsp;\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            You understand that you are responsible for maintaining or servicing the rental property as described in Section 3. You are liable for loss, damage in excess of normal wear and tear or destruction of the rented property as mentioned in Section 3;\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            You understand that the cost of lease amount does not include additional charges and fees such as late fee, reinstatement fee, returned payment fee, home collection fee, payment processing fee, or change payment date fees. The fees and charges are explained in Section 8 and 11;\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            You understand that if you return the Property, the Agreement offers reinstatement rights which allow you to get the Property back if you have complied with Section 8 of the Agreement and applicable law; &nbsp;\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            You understand that if you acquire ownership of the Property, the unexpired portion of the manufacturer’s warranty will be transferred to you if the warranty is still in effect and we are allowed to do so. We do not carry any insurance on the Property, nor do we require that you purchase insurance for the Property as explained in Section 4;\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            You have been advised of and have reviewed the Lessor’s Cash Price of the Property, the amount of any periodic payment, and the total number and amount of periodic payments necessary to acquire ownership of the Property; and &nbsp;\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            You have reviewed and acknowledged the terms of the Agreement, including the purchase option rights and the total cost if all scheduled payments are made. &nbsp;\r\n        </p>\r\n    </li>\r\n</ol>\r\n<p style=\"font-size:15px;\">\r\n    &nbsp;\r\n</p>\r\n<p style=\"font-size:15px;\">\r\n    &nbsp;\r\n</p>\r\n<p style=\"font-size:15px;\">\r\n    By signing below, you acknowledge that you have read, reviewed, and understand the above disclosures related to the Rental-Purchase Agreement for the Property. \r\n</p>\r\n<p style=\"font-size:15px;text-align:center;\">\r\n    &nbsp;\r\n</p>\r\n<figure class=\"table\" style=\"width:100%;\">\r\n    <table style=\"border:2px solid #000;margin-left:auto;margin-right:auto;\">\r\n        <tbody>\r\n            <tr>\r\n                <td style=\"border-color:#000;border-width:2px;text-align:left;vertical-align:bottom;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        [sig|req|signer1|Sign2|signer1_sign1] \r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        &nbsp;\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-color:#000;border-width:2px;text-align:both;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        &nbsp;\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        &nbsp;\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-color:#000;border-width:2px;text-align:left;vertical-align:bottom;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        [date|req|signer1] \r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        &nbsp;\r\n                    </p>\r\n                </td>\r\n            </tr>\r\n            <tr>\r\n                <td style=\"border-color:#000;border-width:2px;text-align:both;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>Lessee Signature</strong>\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-color:#000;border-width:2px;text-align:both;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        &nbsp;\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-color:#000;border-width:2px;text-align:both;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>Date</strong>\r\n                    </p>\r\n                </td>\r\n            </tr>\r\n        </tbody>\r\n    </table>\r\n</figure>\r\n<p style=\"font-size:15px;text-align:center;\">\r\n    <strong>---REMAINDER OF PAGE INTENTIONALLY BLANK---</strong>\r\n</p>\r\n<div class=\"page-break\">\r\n    &nbsp;\r\n</div>\r\n<p style=\"display:block;text-align:left;\">\r\n    <img src=\"data:image/png;base64,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\" alt=\"\" width=\"186\" height=\"41\">\r\n</p>\r\n<p style=\"font-size:15px;text-align:center;\">\r\n    <strong>RENTAL-PURCHASE AGREEMENT(“Lease”)</strong>\r\n</p>\r\n<p style=\"font-size:15px;text-align:right;\">\r\n    #{{customerAccountNumber}}\r\n</p>\r\n<figure class=\"table\" style=\"width:100%;\">\r\n    <table style=\"border:2px solid #000;margin-left:auto;margin-right:auto;\">\r\n        <tbody>\r\n            <tr>\r\n                <td style=\"border-style:none;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        Lessor/Owner:\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-style:none;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        Lessee:\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-style:none;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        Lease Date: {{date}}\r\n                    </p>\r\n                </td>\r\n            </tr>\r\n            <tr>\r\n                <td style=\"border-style:none;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        {{lessorName}}\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-style:none;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        {{customerFirstName}} {{customerLastName}}\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-style:none;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        Retailer:\r\n                    </p>\r\n                </td>\r\n            </tr>\r\n            <tr>\r\n                <td style=\"border-style:none;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        {{lessorStreetAddress}}\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-style:none;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        {{customerStreetAddress}}\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-style:none;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        {{retailerName}}\r\n                    </p>\r\n                </td>\r\n            </tr>\r\n            <tr>\r\n                <td style=\"border-style:none;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        {{lessorCity}}, {{lessorState}} {{lessorZip}}\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-style:none;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        {{customerCity}},{{customerState}} {{customerZip}}\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-style:none;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        {{retailerStreetAddress}}\r\n                    </p>\r\n                </td>\r\n            </tr>\r\n            <tr>\r\n                <td style=\"border-style:none;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        {{lessorPhone}}\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-style:none;text-align:left;vertical-align:top;\">\r\n                    &nbsp;\r\n                </td>\r\n                <td style=\"border-style:none;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        {{retailerCity}}, {{retailerState}} {{retailerZip}}\r\n                    </p>\r\n                </td>\r\n            </tr>\r\n            <tr>\r\n                <td style=\"border-style:none;text-align:left;vertical-align:top;\">\r\n                    &nbsp;\r\n                </td>\r\n                <td style=\"border-style:none;text-align:left;vertical-align:top;\">\r\n                    &nbsp;\r\n                </td>\r\n                <td style=\"border-style:none;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        {{retailerPhone}}\r\n                    </p>\r\n                </td>\r\n            </tr>\r\n        </tbody>\r\n    </table>\r\n</figure>\r\n<p style=\"font-size:15px;\">\r\n    THE LEASE CONTAINS AN ARBITRATION PROVISION (SEE §15). UNLESS YOU PROMPTLY REJECT THE ARBITRATION PROVISION, THE ARBITRATION PROVISION WILL HAVE A SUBSTANTIAL EFFECT ON YOUR RIGHTS IN THE EVENT OF A DISPUTE, INCLUDING YOUR RIGHT TO BRING OR PARTICIPATE IN A CLASS ACTION PROCEEDING.\r\n</p>\r\n<figure class=\"table\" style=\"width:100%;\">\r\n    <table style=\"border:2px solid #000;margin-left:auto;margin-right:auto;\">\r\n        <tbody>\r\n            <tr>\r\n                <td style=\"border-color:#000;border-width:2px;text-align:left;vertical-align:top;\" rowspan=\"2\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>TOTAL OF PAYMENTS</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>${{totalOfPayments}}</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>This is the amount you will pay to own the Property if all the Renewal Payments are made. You can buy the property for less using an Early Ownership Option.</strong>\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-color:#000;border-width:2px;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>COST OF RENTAL</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>${{leaseCost}}, includes Initial Payment.</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>This is the amount you will pay to lease the Property over buying it outright, assuming all Renewal Payments are made.</strong>\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-color:#000;border-width:2px;text-align:left;vertical-align:top;\" colspan=\"2\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>CASH PRICE</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>${{cashPrice}}</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>This is the amount you would pay to purchase the Property outright from the Lessor.</strong>\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-color:#000;border-width:2px;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>INITIAL PAYMENT</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>${{initialPayment}}</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>This is the amount you pay at signing, which covers the initial lease period, or the period between delivery of the Property and the first Renewal Payment.</strong>\r\n                    </p>\r\n                </td>\r\n            </tr>\r\n            <tr>\r\n                <td style=\"border-color:#000;border-width:2px;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>AMOUNT OF EACH RENEWAL PAYMENT</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>${{recurringPayment}}, {{recurringFrequency}}.</strong>\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-color:#000;border-width:2px;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>NUMBER OF PAYMENTS</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>{{numberOfPaymentsWithInitialPayment}}</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>The Initial Payment followed by {{numberOfPayments}} Renewal Payments to own the Property.</strong>\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-color:#000;border-width:2px;text-align:left;vertical-align:top;\" colspan=\"2\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>RENTAL PERIOD</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>{{termInMonths}} Months (Plus the initial term)</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>This is the duration of the Lease if all Renewal Payments are made. There is no minimum period for which you are obligated under the Lease.</strong>\r\n                    </p>\r\n                </td>\r\n            </tr>\r\n            <tr>\r\n                <td style=\"border-color:#000;border-width:2px;text-align:center;vertical-align:top;\" colspan=\"5\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>The lease property is {{productCondition}} and is being acquired by the Lessor on the Lease Date above.</strong>\r\n                    </p>\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>Applicable sales tax will be added to all payments.</strong>\r\n                    </p>\r\n                </td>\r\n            </tr>\r\n        </tbody>\r\n    </table>\r\n</figure>\r\n<p style=\"font-size:15px;\">\r\n    <strong>DO NOT SIGN THIS BEFORE YOU READ THE ENTIRE AGREEMENT, INCLUDING ANY WRITING ON THE REVERSE SIDE, EVEN IF OTHERWISE ADVISED. DO NOT SIGN THIS IF IT CONTAINS ANY BLANK SPACES. YOU ARE ENTITLED TO AN EXACT COPY OF ANY AGREEMENT YOU SIGN. YOU HAVE THE RIGHT TO EXERCISE AN EARLY BUY-OUT OPTION AS PROVIDED IN THIS AGREEMENT. EXERCISE OF THIS OPTION MAY RESULT IN A REDUCTION OF YOUR TOTAL COST TO ACQUIRE OWNERSHIP UNDER THIS AGREEMENT. IF YOU ELECT TO MAKE WEEKLY RATHER THAN MONTHLY PAYMENTS AND EXERCISE YOUR PURCHASE OPTION, YOU MAY PAY MORE FOR THE LEASED PROPERTY.</strong>\r\n</p>\r\n<p style=\"font-size:15px;\">\r\n    This Rental Purchase Agreement (“Lease Agreement” or “Lease”) includes the Disclosure Table above and the Additional Lease Terms on the following pages. In the Lease, “you” and “your” mean the person signing the Lease as Lessee, and “we,” “our,” and “us” mean the Lessor/Owner identified above and its successors and assignees. By signing the Lease, 1) you acknowledge that you have read and understand the Lease and its terms; (2) you agree to all its terms, including the Additional Lease Terms below; (3) you are receiving possession of the Property; and (4) you acknowledge receipt of a completed copy of the Lease.\r\n</p>\r\n<figure class=\"table\" style=\"width:100%;\">\r\n    <table style=\"border:2px solid #000;margin-left:auto;margin-right:auto;\">\r\n        <tbody>\r\n            <tr>\r\n                <td style=\"border-bottom:2px solid #000;border-left-style:none;border-right-style:none;border-top-style:none;text-align:both;vertical-align:bottom;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        [sig|req|signer1]\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-style:none;text-align:both;vertical-align:top;\">\r\n                    &nbsp;\r\n                </td>\r\n                <td style=\"border-bottom:2px solid #000;border-left-style:none;border-right-style:none;border-top-style:none;text-align:both;vertical-align:bottom;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        [date|req|signer1]\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-style:none;text-align:both;vertical-align:top;\">\r\n                    &nbsp;\r\n                </td>\r\n                <td style=\"border-bottom:2px solid #000;border-left-style:none;border-right-style:none;border-top-style:none;text-align:both;vertical-align:bottom;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <img src=\"data:image/png;base64,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\" alt=\"\" width=\"125\" height=\"40\">\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-style:none;text-align:both;vertical-align:top;\">\r\n                    &nbsp;\r\n                </td>\r\n                <td style=\"border-bottom:2px solid #000;border-left-style:none;border-right-style:none;border-top-style:none;text-align:both;vertical-align:bottom;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>{{date}}</strong>\r\n                    </p>\r\n                </td>\r\n            </tr>\r\n            <tr>\r\n                <td style=\"border-style:none;text-align:both;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>Lessee Signature</strong>\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-style:none;text-align:both;vertical-align:top;\">\r\n                    &nbsp;\r\n                </td>\r\n                <td style=\"border-style:none;text-align:both;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>Date</strong>\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-style:none;text-align:both;vertical-align:top;\">\r\n                    &nbsp;\r\n                </td>\r\n                <td style=\"border-style:none;text-align:both;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>Lessor Representative</strong>\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-style:none;text-align:left;vertical-align:top;\">\r\n                    &nbsp;\r\n                </td>\r\n                <td style=\"border-style:none;text-align:left;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        <strong>Date</strong>\r\n                    </p>\r\n                </td>\r\n            </tr>\r\n        </tbody>\r\n    </table>\r\n</figure>\r\n<p style=\"font-size:15px;\">\r\n    Intending to be legally bound, {{lessorName}} and Lessee enter this Rental Purchase Agreement as of {{date}}.\r\n</p>\r\n<p style=\"font-size:15px;text-align:center;\">\r\n    <strong>---REMAINDER OF PAGE INTENTIONALLY BLANK---ADDITIONAL LEASE TERMS</strong>\r\n</p>\r\n<div class=\"page-break\">\r\n    &nbsp;\r\n</div>\r\n<ol style=\"list-style-type:decimal;\">\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            <strong>LEASED PROPERTY:</strong> You are leasing the following item(s): {{#products}}{{quantity}}{{description}}{{delimiter:,}}{{/products}} (the “Property”).\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            <strong>TOTAL COST/PAYMENTS:</strong> You are leasing the Property, and you will not own it until you pay the Total of Payments amount or exercise one of the ownership options as outlined in § 6 Early Ownership Options. The Initial Payment is due at signing. The Total of Payments amount does not include fees and other charges that may accrue during the Lease. You may renew the Lease on a {{recurringFrequency}} basis by paying the Renewal Payment amount of ${{recurringPayment}}. The Cost of Rental is ${{leaseCost}}, which represents the difference between the Total of Payments amount and the Cash Price amount. The first Renewal Payment is due on your first pay date following receipt of the Property. Applicable sales tax will be added all payments. The payment amount may change if the applicable sales tax rate changes after the Lease Date. The Cash Price of the Property is ${{cashPrice}}, which is the fair market value of the Property on the Lease Date or the amount we would charge for a cash sale of the Property. You do not acquire ownership rights to the property unless you comply with the ownership terms outlined in the Lease. There is no minimum period or term for which you are obligated under the Lease.\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            <strong>MAINTENANCE AND LIABILITY FOR DAMAGES:</strong> You are responsible for maintaining the Property in its original condition, excluding normal wear and tear. If the Property is lost, stolen, damaged, or destroyed, you will continue to be liable for the Total of Payments remaining on the lease or you may exercise one of the ownership options as outlined in § 6 Early Ownership Options.\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            <strong>INSURANCE AND WARRANTY:</strong> We do not carry any insurance on the Property, nor do we require that you purchase insurance for the Property. If you acquire ownership of the Property, the unexpired portion of the manufacturer’s warranty will be transferred to you if the warranty is still in effect and we are allowed to do so.\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            <strong>OWNERSHIP:</strong> This is a lease transaction, and you do not own the Property unless you comply with the ownership terms outlined in the Lease. The Lease will renew automatically from scheduled payment date to scheduled payment date unless it is terminated or you make all the payments required to acquire the Property. The initial term of the Lease ends when your first Renewal Payment is due. We own the Property until you pay the Total of Payments amount or exercise one of the ownership options as outlined in § 6 Early Ownership Options plus applicable sales tax, fees, and other charges that may accrue. If you want to own this Property now, you should consider cash or credit terms that may be available to you.\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            <strong>EARLY OWNERSHIP OPTIONS:</strong> Exercising either of these Early Ownership Options will allow you to own the Property at a cost less than the Total of Payments.\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            {{buyoutPeriod}} Day Buyout Option: This option is available within {{buyoutPeriod}} days of delivery of the Property. You will own the Property when you have paid the total of the Initial Payment and the Cash Price of the Property {{#if buyoutMarkup != 0}}plus ${{buyoutMarkup}} {{/if}}and any applicable sales tax, fees, and other charges that may have accrued.\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            Early Purchase Option: Any time after delivery of the Property, you will own the Property when you pay, in lump sum, {{payOffPercent}}% of the Remaining Balance (the Total of Payments amount less Renewal Payments made) on the Lease, plus all applicable sales tax, fees, and other charges that may have accrued.\r\n        </p>\r\n    </li>\r\n</ol>\r\n<figure class=\"table\" style=\"width:100%;\">\r\n    <table style=\"border:2px solid #000;margin-left:auto;margin-right:auto;\">\r\n        <tbody>\r\n            <tr>\r\n                <td style=\"border-style:none;text-align:both;vertical-align:top;\">\r\n                    &nbsp;\r\n                </td>\r\n                <td style=\"border-style:none;text-align:both;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        Total of Payments\r\n                    </p>\r\n                </td>\r\n            </tr>\r\n            <tr>\r\n                <td style=\"border-style:none;text-align:both;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        -\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-style:none;text-align:both;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        Renewal Payments made\r\n                    </p>\r\n                </td>\r\n            </tr>\r\n            <tr>\r\n                <td style=\"border-style:none;text-align:both;vertical-align:top;\">\r\n                    &nbsp;\r\n                </td>\r\n                <td style=\"border-bottom:2px solid #000;border-left-style:none;border-right-style:none;border-top-style:none;text-align:both;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        Remaining Balance\r\n                    </p>\r\n                </td>\r\n            </tr>\r\n            <tr>\r\n                <td style=\"border-style:none;text-align:both;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        *\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-style:none;text-align:both;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        {{payOffPercent}}% of Remaining Balance\r\n                    </p>\r\n                </td>\r\n            </tr>\r\n            <tr>\r\n                <td style=\"border-style:none;text-align:both;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        +\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-style:none;text-align:both;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        Applicable Sales Tax\r\n                    </p>\r\n                </td>\r\n            </tr>\r\n            <tr>\r\n                <td style=\"border-style:none;text-align:both;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        +\r\n                    </p>\r\n                </td>\r\n                <td style=\"border-bottom:2px solid #000;border-left-style:none;border-right-style:none;border-top-style:none;text-align:both;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        Fees and Other Charges\r\n                    </p>\r\n                </td>\r\n            </tr>\r\n            <tr>\r\n                <td style=\"border-style:none;text-align:both;vertical-align:top;\">\r\n                    &nbsp;\r\n                </td>\r\n                <td style=\"border-style:none;text-align:both;vertical-align:top;\">\r\n                    <p style=\"font-size:15px;\">\r\n                        Early Purchase Amount\r\n                    </p>\r\n                </td>\r\n            </tr>\r\n        </tbody>\r\n    </table>\r\n</figure>\r\n<ol style=\"list-style-type:decimal;\" start=\"7\">\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            <strong>TERMINATION:</strong> The initial term of the Lease is less than four (4) months, and you can terminate the Lease at any time without penalty by returning the Property to us in accordance with the directions that we give you. You remain liable for any past due payments and any unpaid fees and/or other charges that accrued prior to termination of the Lease. You will also be held liable for payments, as outlined in § 3, if the Property is lost, stolen, damaged, or destroyed prior to its return to us. We may terminate the Lease and recover the Property if you are in default or in breach of the Lease. There is no minimum lease term.\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            <strong>DEFAULT AND REINSTATEMENT:</strong> Your account will be in default if payment is not received on or before the due date. One Late Fee or Reinstatement Fee may be charged to your account on a payment regardless of the length of the period that the payment remains in default. <strong>LATE FEE</strong>: <strong>You will be charged a Late Fee if your payments are due monthly and we have not received payment within seven (7) days of its due date. You will be charged a Late Fee if your payments are due more frequently than monthly, and we have not received payment within three (3) days of its due date. The Late Fee will be $5.00. REINSTATEMENT: You have the right to reinstate the Lease. If you fail to make a timely payment, you may reinstate the Lease, without losing any right or option previously acquired, by paying all past due amounts including applicable fees and other charges that may have accrued, before within five (5) days of the renewal date if your payments are due monthly, or within two (2) days of the renewal date if your payments are due more frequently than monthly. If the Property was returned during the reinstatement period, other than through judicial process, the right to reinstate the Lease is extended for 30 days after the the date of return of the property.</strong>\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            <strong>PAYMENT METHOD: </strong>You authorize us to initiate electronic fund transfers (EFT’s) from the account identified below or any substitute bank account (“Bank Account”), or charge the credit card (“Card”) identified below for each scheduled (or renewal) payment, including applicable sales tax, fees, and other charges that may have accrued. Bank Account information – {{#banks}}{{name}}; Routing No.:{{routingNumber}}; Account No.: {{accountNumber}}{{delimiter:;}}{{/banks}}. Card information – {{#cards}}{{provider}}, Account No.: {{number}}{{delimiter:;}}{{/cards}}.\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            <strong>RECURRING EFT AND CARD CHARGE AUTHORIZATION:</strong> You authorize us to initiate an EFT over the ACH network (or another network of our choosing) from the Bank Account for any payment you owe under the Lease on or after its due date. We are not responsible for any bank fees you incur in connection with returned payments. Instead of or in addition to any of the EFTs and Card charges described in this section, you also authorize us to process any EFTs or Card charges you subsequently confirm by phone, text message, or email. Returned Payment: In the event that this EFT is returned unpaid, you authorize us to charge your Card or other substitute account for such payment. You also authorize us to include any fee that you owe under the Lease. You agree that we may resubmit any returned EFT or Card charge as permitted by law and network rules. Compliance: You agree that the ACH transaction, debit card, and/or credit card you authorized will comply with applicable law. Correction: In the event that we make an error in processing an EFT or Card charge, you authorize us to initiate an EFT or Card charge to correct the error. Updating Payment Information: You may update the Bank Account and Card information by contacting us by phone at&nbsp;{{lessorPhone}} (“Phone”) or by emailing us at {{lessorEmailAddress}} (“Email”). Any payment modification requests must be made at least three (3) business days before the scheduled payment date or far enough in advance to allow for us to reasonably act on it.&nbsp; Terminating Authorization: This authorization remains in force until you revoke it in writing by Email (defined above) at least three (3) business days before the next scheduled payment or far enough in advance for us to reasonably act on it. If any payment cannot be obtained by EFT or Card charge, you remain responsible for such payment. Change Payment Date: You may request a change to your scheduled payment dates by contacting us by Phone or Email (defined above). In order to process the requested change, you must complete and return the Change Payment Date form and pay the Change Payment Date Fee as applicable. We must receive the form at least three (3) business days before the next scheduled payment date. Changes are generally granted if the new payment due dates coincide with the dates you receive income and the change does not materially increase the Lease term. You will be charged a Change Payment Date Fee of ${{changePaymentDateFee}} if the requested new payment due date is more than five (5) days after the currently scheduled payment date.\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            <strong>ADDITIONAL FEES:</strong> RETURNED PAYMENT FEE:<strong> </strong>A fee of ${{returnFee}} will be charged to the Lease for any payment that returns as unpaid. HOME COLLECTION FEE: A fee of ${{homeCollectionFee}} will be charged, up to three (3) times per six (6) months, each time we make a trip to your home and collect any payment. PAYMENT PROCESSING FEE: A fee of ${{processingFee}} will be charged when you call and speak to our representative who then processes a payment on the Lease. Any charge in addition to Renewal Payments must be reasonable as related to the service performed.\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            <strong>ACCOUNT AND MARKETING COMMUNICATIONS:</strong>&nbsp;ACCOUNT and ELECTRONIC COMMUNICATIONS: Phone Calling and Text Messaging Consent: If you have listed any phone number in the documents we receive from you or you give us an updated contact number, you authorize us, our affiliates, successors in interest, and assignees to call, and or message you using systems, including an automated dialer, artificial/pre-recorded &nbsp;messages, and SMS text messaging systems, to provide messages to you about your account, including, but not limited to: scheduled payments, missed payments, account status, Lease information, other important account information, and to verify your identity and contact information. Some phone messages are artificial/pre-recorded and are played by a machine automatically when the phone is answered, whether answered by you or someone else. These messages may also be recorded by your answering machine and may be heard by a third person. You also give us permission to communicate account information to you by e-mail and online through our Customer Portal located on our website, and/or through our software application. You understand that with these calls, texts, or e-mails, you may incur a charge from the company that provides you with telecommunications, wireless and/or internet services and your service provider’s message and data rates may apply. You understand and agree that we may monitor and/or record any of the phone calls between you and us.&nbsp; MARKETING COMMUNICATIONS:&nbsp; We may share your name, contact information, and Lease information with our affiliates and with nonaffiliated companies that may or may not extend credit to consumers. Your information may be used by us and/or these companies for marketing purposes. If you do not opt-out to receiving such communications, you give us permission to market our products to you by using automated phone dialing, artificial/pre-recorded messages, and SMS text messaging systems. You also acknowledge that we are not requiring you to provide authorization for these marketing communications as a condition for doing business with us. You have the right to prevent this sharing and these marketing communications. To exercise this right, call us at&nbsp;{{lessorPhone}}. Opting out of marketing communications does not affect Account or Electronic Communications described above. By providing your phone number you have expressly consented, in writing, to receive Account Communications (including SMS text messages) that may use an automatic dialing system and artificial/pre-recorded messages as explained in this Section, regardless of your choice of Marketing Communications.\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            <strong>CREDIT REPORTING:</strong> You authorize us to make inquiries concerning your credit history and standing. We may report information about the Lease to credit bureaus. Late payments, missed payments, or other defaults on the Lease may be reflected in your credit report. If you believe that any information that we have furnished to a consumer reporting agency is inaccurate, or if you believe that you have been the victim of identity theft in connection with any Lease made by us, write to us at {{lessorStreetAddress}} {{lessorCity}}, {{lessorState}} {{lessorZip}}, attention CREDIT REPORTING. In your letter, (i) provide your name, mailing address, and phone number; (ii) identify the specific information that is being disputed; (iii) explain the basis for the dispute; and (iv) provide any supporting documentation you have that may substantiate the basis of the dispute. If you believe that you have been the victim of identity theft, please submit an identity theft affidavit or identity theft report.\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            <strong>MISCELLANEOUS:</strong> Entire Agreement: The Lease constitutes the entire agreement between you and us concerning the Property. Assignment: We may sell, transfer, or assign the Lease. Notice of such assignment will be provided only if a change is made to the method of payment or any contact information. Prohibited Acts: You may not sell, assign, mortgage, pawn, pledge, encumber, hock, or otherwise dispose of the Property. You may not remove the Property from your current residence without our written consent. Each of the foregoing acts is a breach of the Lease, as is failing to make Renewal Payments and/or pay fees and other charges. Right to Take Possession: If you are in breach of the Lease or you do not renew, we have the right to take possession of the Property without breaching the peace. You agree to pay all costs we incur in taking possession of the Property to the extent permitted by law. Accord and Satisfaction: Any statement accompanying your payment to the effect that your balance is paid in full will not bind us. Our deposit of any such payments will not constitute an accord and satisfaction, and we may apply the payment to your account. Governing Law: The Lease is governed by the laws of the state where you reside at the time the Lease is executed without regard to its conflict of law principles.\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            <strong>DISPUTE RESOLUTION AND ARBITRATION CLAUSE:</strong>\r\n        </p>\r\n    </li>\r\n</ol>\r\n<p style=\"font-size:15px;\">\r\n    (a) GENERALLY. If you have a concern or dispute, you may send us a written notice describing it and your desired resolution to {{lessorStreetAddress}} {{lessorCity}}, {{lessorState}} {{lessorZip}}. Unless prohibited by applicable law and unless you reject this Dispute Resolution and Arbitration Clause (the \"Clause\") in accordance with subsection (k) Your Right To Opt Out below, if your concern or dispute is not resolved within 30 days of our receipt of your written notice, you agree that any continuing dispute, controversy or claim arising out of or relating to any aspect of the relationship between you and us, will be submitted for arbitration, in accordance with the terms and procedures set forth in this Clause.\r\n</p>\r\n<p style=\"font-size:15px;\">\r\n    (b) ARBITRATION. Arbitration is a method of resolving any claim, dispute, or controversy (collectively, a \"Claim\") without filing a lawsuit in court. Either you or we (each, a \"Party\") may choose at any time, including after a lawsuit is filed, to have any Claim related to this Lease Agreement decided by individual, final, and binding arbitration. Any claim or dispute is to be arbitrated by a single arbitration on an individual basis and not as a class action. The arbitrator shall apply governing substantive law and the applicable statute of limitations. The tribunal shall have the power to rule on any challenge to its own jurisdiction or to the validity or enforceabililty of any portion of the agreement to arbitrate. <strong>In arbitration, you and us each give up the right to a trial by judge or jury. </strong>The Federal Arbitration Act (9 U.S.C. §§ 1-16) (“FAA”) governs this Lease Agreement, which evidences a transaction involving interstate commerce.\r\n</p>\r\n<p style=\"font-size:15px;\">\r\n    (c) CLAIMS COVERED. This Clause governs all Claims involving the parties and the word “Claims” has the broadest possible meaning. Such Claims include but are not limited to the following: 1) Claims in contract, tort, regulatory or otherwise; 2) Claims regarding the interpretation, scope, or validity of this clause, or arbitrability of any issue; 3) Claims between you and us, your/our employees, agents, heirs, successors, assigns, subsidiaries, or affiliates; 4) Claims relating to the retention, protection, use, or transfer of information about you or any of your accounts; 5) Claims that arose before the execution of this Agreement or any current or prior consumer contract between you and us, such as claims related to advertising or disclosures; 6) Claims that arise after the termination of this Agreement ; 7) Claims arising out of or relating to your application for a lease, this Agreement, or any resulting transaction or relationship, including that with the retailer, or any such relationship with third parties who do not sign this Agreement. Claims that applicable federal statues exempt from arbitration, overriding the FAA are not covered.\r\n</p>\r\n<p style=\"font-size:15px;\">\r\n    (d) CLASS ARBITRATION/ACTION WAIVER. The parties agree to arbitrate solely on an individual basis, and that this agreement does not permit class arbitration or any claims brought as a plaintiff or class member in any class or representative arbitration proceeding. The arbitral tribual may not consolidate more than one person’s claims, and may not otherwise preside over any form of a representative or class proceeding. Regardless of anything else in this Lease Agreement, or the arbitration provider’s rules or procedures, any disputes relating to the interpretation, applicability, scope, waiver, and enforceability of this Class Arbitration Waiver, including but not limited to any claim that all or part of this Class Arbitration Waiver is void or voidable, may be determined only by a court—not by the Arbitrator.\r\n</p>\r\n<p style=\"font-size:15px;\">\r\n    (e) <strong>RIGHTS YOU AND WE AGREE TO GIVE UP.</strong> If either you or we choose to arbitrate a Claim, then you and we agree to waive the following rights:\r\n</p>\r\n<ul style=\"list-style-type:disc;\">\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            <strong>Right to a trial, whether by a judge or jury</strong>\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            <strong>Right to participate as a class representative or a class member in any class claim you may have against us whether in court or in arbitration</strong>\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            <strong>Broad rights to discovery as are available in a lawsuit</strong>\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            <strong>Right to appeal the decision of an arbitrator</strong>\r\n        </p>\r\n    </li>\r\n    <li>\r\n        <p style=\"margin-left:40px;\">\r\n            <strong>Other rights that are available in a lawsuit</strong>\r\n        </p>\r\n    </li>\r\n</ul>\r\n<p style=\"font-size:15px;\">\r\n    (f) <strong>RIGHTS YOU AND WE DO NOT GIVE UP. </strong>You and we retain the right to seek remedies in small claims court for disputes or claims within that Court’s jurisdiction, unless such action is transferred, removed or appealed to a different court. If a Claim is arbitrated, you and we will continue to have the following rights, without waiving this arbitration provision as to any Claim: 1) Right to file bankruptcy in court; 2) Right to enforce the ownership interest in the Property, whether by taking possession or through a court of law; 3) Right to take legal action to enforce the arbitrator’s decision; 4) Right to request that a court of law review whether the arbitrator exceeded its authority; 5) Right to exercise self-help remedies, including setoff rights, and 6) Right to obtain injunctive relief (including public injunctive relief), attachment, garnishment, or appointment of a receiver by a court of competent jurisdiction.\r\n</p>\r\n<p style=\"font-size:15px;\">\r\n    (g) SMALL CLAIMS COURT OPTION. Notwithstanding the foregoing, you and us each have the right to file an individual action in small claims court if it is within the jurisdiction of the small claims court and remains in that court. The defendant or counterclaim defendant in such a small claims court action may not elect to have the claim resolved by binding arbitration. If your jurisdiction permits small claims court judgments to be appealed to a court of general jurisdiction for a trial de novo, we agree that any such appeal shall be resolved in arbitration in accordance with this Agreement instead of in that court of general jurisdiction.\r\n</p>\r\n<p style=\"font-size:15px;\">\r\n    (h) ARBITRATION PROCESS. The arbitration will be administered by the American Arbitration Association (“AAA”) and, except as provided in this Lease Agreement, shall proceed in accordance with the AAA’s Consumer Arbitration Rules (the \"Rules\"). Either Party must contact the AAA, via telephone or through <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"http://www.adr.org\">www.adr.org</a>, and the other Party to start arbitration. The Rules may be obtained from the AAA. If the AAA is unavailable or unwilling to administer the matter consistent with this Clause, the parties may agree to or a court of competent jurisdiction shall select an arbitrator to administer the arbitration or otherwise fulfill the duties of the AAA under this Clause. Any such substitute arbitrator shall apply the terms of this Clause and the Rules, as modified by this Clause.\r\n</p>\r\n<p style=\"font-size:15px;\">\r\n    The arbitration hearing shall be conducted in the federal district in which you reside. If there is a conflict between the Rules and this Agreement, this Agreement shall govern. This Lease Agreement is subject to the Federal Arbitration Act (9 U.S.C. § 1 et seq.) and the Federal Rules of Evidence. The arbitrator will be selected under the administrator’s rules, except that the arbitrator must be a lawyer with at least ten (10) years of experience or a retired judge unless the parties agree otherwise. The arbitration decision shall be in writing with a supporting opinion. If you initiate the arbitration we will reimburse filing fees and other costs or fees of arbitration, provided each party will be initially responsible for its own attorneys’ fees and related costs. Unless prohibited by law, the arbitrator may award fees, costs, and reasonable attorneys’ fees to the party who substantially prevails in the arbitration.\r\n</p>\r\n<p style=\"font-size:15px;\">\r\n    (i) EFFECT OF ARBITRATION AWARD. Judicial review shall be governed by the Federal Arbitration Act. 9 U.S.C. §§ 9-11. The decision of the Arbitrator may be entered and enforced as a final judgment in any court of competent jurisdiction. The arbitrator’s award will be final and binding, except for: (i) any appeal right under the FAA; and (ii) Claims involving more than $50,000 (including Claims that may reasonably require injunctive relief costing more than $50,000). For Claims involving more than $50,000, any party may appeal the award to a three-arbitrator panel appointed by the administrator, which will reconsider anew any aspect of the initial award that is appealed. The panel’s decision will be final and binding, except for any appeal right under the FAA.\r\n</p>\r\n<p style=\"font-size:15px;\">\r\n    (j) SEVERABILITY AND SURVIVAL. Any portion of this arbitration clause that is unenforceable shall be severed, and the remaining provisions shall be enforced. This arbitration provision shall survive any termination, payoff or transfer of this Lease.\r\n</p>\r\n<p style=\"font-size:15px;\">\r\n    (k) YOUR RIGHT TO OPT OUT. You may opt out of this Clause by posting a letter, within 30 days of signing this Lease, to: {{lessorName}}, {{lessorStreetAddress}} {{lessorCity}}, {{lessorState}} {{lessorZip}}, stating your name, the Lease number, and intent to opt out of the arbitration provision. An opt out notice applies only to this Lease and does not affect the validity or enforceability of any past or future arbitration agreements between you and us. If you do not opt out, this arbitration provision overrides any different dispute resolution agreement between us.\r\n</p>\r\n<p style=\"font-size:15px;text-align:center;\">\r\n    [<i>End of Lease Terms</i>]\r\n</p>",
+        "customTitle": "Rental-Purchase Agreement",
+        "sendSignatureEmail": false
+    }
+}
+```
+
+**Examples**
+
+- **Success - 200** — 200 OK
+
+  ```json
+  {
+    "data": {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "url": "https://subdomain.gowsign.com/document/550e8400-e29b-41d4-a716-446655440000",
+      "status": "CREATED",
+      "strapiTemplateTitle": "Document",
+      "Requester": {
+        "id": "660e8400-e29b-41d4-a716-446655440001",
+        "name": "John Doe",
+        "email": "john.doe@example.com",
+        "phoneNumber": "+1234567890"
+      }
+    },
+    "meta": null,
+    "error": null,
+    "valid": true,
+    "responseData": null
+  }
+  ```
+
+#### GET Get Document
+
+`https://staging.gowsign.com/api/document/`
+
+Retrieves information about a specific document by its ID.
+
+**Headers**
+
+| Key | Value |
+|---|---|
+| x-api-key | YOUR_API_KEY |
+
+#### GET List Documents
+
+`https://staging.gowsign.com/api/document?page=1&pageSize=10`
+
+Retrieves a paginated list of documents.
+
+**Headers**
+
+| Key | Value |
+|---|---|
+| x-api-key | YOUR_API_KEY |

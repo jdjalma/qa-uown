@@ -15,3 +15,6 @@ export * from './seon.body.js';
 export * from './bank-account.body.js';
 export * from './customer.body.js';
 export * from './gowsign-template.body.js';
+export * from './correspondence.body.js';
+export * from './tms-audit.body.js';
+export * from './tms-payment.body.js';

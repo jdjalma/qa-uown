@@ -692,7 +692,7 @@ Validates the Error Log page (`/errorLog`) in the Origination portal, which trac
 
 **Key patterns used:**
 - `ErrorLogPage` — extends `OriginationBasePage`; location `src/pages/origination/error-log.page.ts`
-- `.tab-pane.active` scoping — ALL filter interactions scoped to the active tab panel to avoid false positives from the Origination nav bar search input (which shares the same `input[name='search']` selector). See `context/test-patterns.md` → "Tab Panel Scoping" section
+- `.tab-pane.active` scoping — ALL filter interactions scoped to the active tab panel to avoid false positives from the Origination nav bar search input (which shares the same `input[name='search']` selector). See skill [[e2e-examples]] (Tab Panel Scoping pattern)
 - `getByRole('tab', { name: '...' })` + `aria-selected` — preferred method for checking tab active state (more reliable than CSS class inspection)
 - `getByRole('button', { name: 'Search' })` scoped to `.tab-pane.active` — disambiguates from other "Search" buttons on the page
 - `expandFilters()` idempotent — checks `.collapse.show` class before toggling; safe to call multiple times

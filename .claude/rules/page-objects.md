@@ -56,5 +56,5 @@ Quando aplicar:
 - Refatorando page object existente com falhas → rodar protocolo ANTES de mexer no código
 - Migrando seletor XPath/CSS para semântico (`getByRole`) → validar via MCP que role/name reais batem
 
-Protocolo completo: [`.claude/context/shared/dom-investigation-protocol.md`](../context/shared/dom-investigation-protocol.md)
+Protocolo completo: skill [[dom-investigation]] em `.claude/skills/dom-investigation/SKILL.md`
 

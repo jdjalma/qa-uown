@@ -40,6 +40,12 @@ export interface FilterSelectors {
   filterSingleValue: string;
   filterClearIndicator: string;
   filterMultiValueLabel: string;
+  // Task #1292 — multi-select rollout (Origination)
+  // Bottom filter container button (leads-style block with Filters + Search button).
+  // The class is a CSS-module hash; anchor on the stable prefix `index-module_filterButton__`.
+  // Distinct from the Overview KPIs top filter (`overview_filterButton__`), which is single-select and out of scope.
+  multiSelectFilterButton: string;
+  multiSelectValueContainer: string;
 }
 
 export interface ModalSelectors {
@@ -80,6 +86,19 @@ export interface SearchSelectors {
   searchTypeDropdown: string;
   searchButton: string;
   searchResultAccountLink: string;
+  // ── Quick search bar (Origination + Servicing) — svc#454 ──
+  /** Desktop-only wrapper for the quick search form (Bootstrap `d-lg-block`, ≥992px). */
+  quickSearchForm: string;
+  /** Search-type toggle anchor (CSS-module hash unstable — match via prefix). */
+  quickSearchTypeToggle: string;
+  /** Dropdown menu container that appears after clicking the toggle. */
+  quickSearchTypeMenu: string;
+  /** Menu items (the 9–10 searchType options) inside the dropdown. */
+  quickSearchTypeMenuItem: string;
+  /** Autocomplete result list (rendered below the input after the BFF request resolves). */
+  quickSearchAutocompleteList: string;
+  /** Each result inside the autocomplete list — anchor on the customer link prefix. */
+  quickSearchAutocompleteResult: string;
 }
 
 export interface CustomerSummarySelectors {
@@ -381,18 +400,21 @@ export interface NewApplicationSelectors {
   naMainPostalCode: string;
   naMainCity: string;
 
-  // Consumer-facing application wizard — Page 2 (Employment)
-  naMainEmployerName: string;
-  naMainPayFrequencyDropdown: string;
+  // Consumer-facing application wizard - Page 2 (Employment)
+  naMainPayScheduleDropdown: string;
   naMainLastPayDate: string;
   naMainNextPayDate: string;
   naMainMonthlyIncome: string;
-  naEmploymentDurationDropdown: string;
 
-  // Consumer-facing application wizard — Page 3 (Consent)
+  // Consumer-facing application wizard - Page 3 (Consent)
   naIsAgreedToStatements: string;
-  naIsAgreedToPrivacy: string;
+  naIsAgreedToPrivacyPolicy: string;
   naBankruptcyDropdown: string;
+
+  // Wizard footer buttons
+  naSendApplicationNextBtn: string;
+  naSendApplicationPrevBtn: string;
+  naSendApplicationSubmitBtn: string;
 
   // Invoice / Lease creation on customer page
   naLeaseAddNew: string;
@@ -494,6 +516,28 @@ export interface ServicingInformationSelectors {
   svInfoSecondDueDateInput: string;   // second due date input in servicing info form
 }
 
+// ── Settlement Amount panel + modal (uown/frontend/servicing#512) ───────
+//
+// "Account & Contract Overview" sub-panel of "Servicing Information"
+// exposes a clickable "Settlement Amount" label. Clicking it opens a
+// Bootstrap modal titled "Settlement Breakdown" with per-line items.
+//
+// Selectors validated via MCP Playwright in qa1 (SPEC §7 + diretrizes do
+// usuário 2026-05-22). The label is a `<div>` (NOT a button/link), so
+// `getByRole` does not match — we anchor on the exact text content.
+export interface SettlementAmountSelectors {
+  /** Clickable "Settlement Amount" label in the Account & Contract Overview panel. */
+  settlementAmountLabel: string;
+  /** Modal container — Bootstrap `.modal.show` whose body contains "Settlement Breakdown". */
+  settlementBreakdownModal: string;
+  /** Modal title `<h*>` text — used to confirm the modal opened. */
+  settlementBreakdownModalTitle: string;
+  /** Each row inside the breakdown — `<tr>` or list item. Implementer iterates these. */
+  settlementBreakdownRow: string;
+  /** Close (X) button for the breakdown modal. */
+  settlementBreakdownClose: string;
+}
+
 export interface PaymentArrangementSelectors {
   paymentArrangementCheckbox: string;                           // #paymentArrangement
   arrangementStartDateInput: string;                            // #startDate
@@ -557,10 +601,50 @@ export interface SalesRepPanelSelectors {
   salesRepSaveButton: string;   // CollapsableEditLayout primary save button (scoped to panel)
 }
 
+// ── Origination — Lease Documents Panel (Customer page — Task #521 LEASEMOD) ──
+// CSS-module hash classes — use [class*=] prefix matchers (pitfall #26).
+export interface LeasePanelSelectors {
+  leasePanelHeader: string;
+  leasePanelHeaderTitle: string;
+  leasePanelContractItem: string;
+  leasePanelContractTitleButton: string;
+  leasePanelContractSubtitle1: string;
+  leasePanelContractSubtitle2: string;
+  leasePanelContractTimestamp: string;
+}
+
 // ── Origination — Open to Buy page ────────────────────────────────────────────
 export interface OpenToBuySelectors {
   openToBuyNavLink: string;         // Sidebar link to /openToBuy
   openToBuyExportCsvButton: string; // Export / CSV button on Open to Buy page
+}
+
+// ── Origination — Column-Order Tests (task #1295) ────────────────────────────
+//
+// Selectors used by Overview/Leads/Funding table-order assertions. Kept generic
+// enough to be reused by future table-related specs (sort regression, scroll
+// container probing, CSV export). DOM-first findings from qa1 (SPEC § 0.5):
+//   - Tables are Bootstrap `<table>` wrapped in `<div class="table-responsive">`
+//   - CSV export on Leads/Funding labelled `Download CSV` / `Email CSV` / `Export CSV`
+//   - Overview exposes a `Config Columns` trigger (gear icon) — show/hide only,
+//     no drag-reorder, no persistence (in-memory React state)
+export interface ColumnOrderSelectors {
+  /** Bootstrap scrollable wrapper around the main agent table. Used by CT-04 to
+   *  assert customer-name <th> bounding box is fully visible at scrollLeft=0. */
+  tableResponsiveContainer: string;
+  /** Generic "scrollable ancestor" fallback when `.table-responsive` is absent. */
+  scrollableAncestor: string;
+  /** Overview-only — "Config Columns" trigger (gear icon link). */
+  configColumnsTrigger: string;
+  /** Config Columns side-panel container ("Configure the view"). */
+  configColumnsPanel: string;
+  /** Individual column checkbox inside the Config Columns panel (by name attr). */
+  configColumnsCheckbox: (name: string) => string;
+  /** CSV export trigger probe — matches Download/Export CSV (direct download).
+   *  Email-variant is excluded; race the download event in test. */
+  csvDownloadTrigger: string;
+  /** CSV email-variant trigger (sends CSV via email — no direct download). */
+  csvEmailTrigger: string;
 }
 
 // ── Servicing — CC History / Edit Pending CC Payment Modal ────────────────────
@@ -574,6 +658,11 @@ export interface CcHistorySelectors {
   ccEditSaveButton: string;
   ccEditCancelButton: string;
   ccEditRemoveButton: string;
+  // Sticky Recover (svc#485)
+  stickyStatusColumnName: string;
+  stickyTxnIdColumnName: string;
+  stickyAttemptsColumnName: string;
+  stickyLastRetryColumnName: string;
 }
 
 // ── Origination — CCBIN (Send Application) ───────────────────────────────────
@@ -647,6 +736,38 @@ export interface MerchantProgramsSectionSelectors {
   mpsStatusBadge: string;
   mpsStatusTooltip: string;
   mpsEditAction: string;
+}
+
+// ── Servicing — EPO panel (svc#531 R1.52.0 — 16m EPO for CA) ─────────────────
+// "Account & Contract Overview" + "Early Payoff / 90-Day Pay Off" sections on
+// /customer-information/{accountPk}. Each label `<div>` is followed by a
+// sibling `<div>` value — page object reads the pair via xpath sibling.
+export interface ServicingEpoPanelSelectors {
+  svcEpoBalanceLabel: string;
+  svcNinetyDayTotalLabel: string;
+  svcNinetyDayExpiryLabel: string;
+  svcNinetyDayEligibleLabel: string;
+  svcEpoFeePctLabel: string;
+  svcCostCashPriceLabel: string;
+  svcProcessingFeeLabel: string;
+  svcBuyoutFeeLabel: string;
+  svcTaxRateLabel: string;
+  svcTotalContractAmountLabel: string;
+  svcContractBalanceLabel: string;
+  svcSettlementAmountFieldLabel: string;
+}
+
+// ── Customer Portal — Overview + Payment (svc#531 R1.52.0) ───────────────────
+// Customer-facing portal cards and the /payment page Pay Off radio. Mobile
+// viewport 375x667 per CLAUDE.md regra #15.
+export interface CustomerPortalOverviewSelectors {
+  wsBalanceIfPaidOffLabel: string;
+  wsPayOffButton: string;
+  wsContractBalanceLabel: string;
+  wsPaymentDueLabel: string;
+  wsNextPaymentDueDateLabel: string;
+  wsPaymentPageBalancePaidOffRadioLabel: string;
+  wsMakeAPaymentButton: string;
 }
 
 // ── Servicing — Customer Documents tab (/documents/{accountPk}) ─────────────
@@ -781,6 +902,31 @@ export interface GowSignDocumentViewerSelectors {
   gsAchGridRows: string;
 }
 
+// ── AMS — Merchants list (/merchants) and Users page Add User modal — svc#504 ──
+// MR!1430 + MR!170 (R1.52.0). Merchants page consumes new GET /uown/merchants;
+// Users page lazy-loads getAllAvailableMerchants only when "Add User" is clicked.
+// DOM refs validated via MCP Playwright in qa1 (2026-05-22).
+export interface AmsMerchantsSelectors {
+  /** Sidebar nav link for Merchants section (Bootstrap d-lg-block; requires ≥992px viewport). */
+  amsMerchantsNavLink: string;
+  /** Filters toggle button (opens the search + active-state filter panel). */
+  amsMerchantsFiltersButton: string;
+  /** Search input inside the opened Filters panel. */
+  amsMerchantsSearchInput: string;
+  /** Search submit button inside the opened Filters panel. */
+  amsMerchantsSearchSubmitButton: string;
+  /** Active-status combobox — opens a list of "Active" / "Inactive" options. Placeholder is "Please select". */
+  amsMerchantsActiveCombobox: string;
+  /** OPEN-state combobox container — scope for option label lookups. */
+  amsMerchantsActiveComboboxOpen: string;
+  /** Option row container in the open Active combobox — CSS-Module class `[class*="customOptionStyles"]`. Page object filters by exact label text. 6ª passada (F-003 fix definitivo). */
+  amsMerchantsActiveOptionRow: string;
+  /** Last Login column header in the merchants table (rendered regardless of cell content). */
+  amsMerchantsLastLoginHeader: string;
+  /** "Add User" button on /users page — triggers lazy load of /uown/getAllAvailableMerchants. */
+  amsAddUserButton: string;
+}
+
 // ── AMS — Users list, User Details & Merchant Association (Task #74) ────────
 export interface AmsUserSelectors {
   // Users list (/users) — react-data-table-component
@@ -872,14 +1018,17 @@ export interface AppSelectors extends
   NewApplicationSelectors,
   MerchantSettingSelectors,
   ServicingInformationSelectors,
+  SettlementAmountSelectors,
   PaymentArrangementSelectors,
   ErrorLogSelectors,
   MoveDueDateSelectors,
   AmsUserSelectors,
+  AmsMerchantsSelectors,
   InvitationSelectors,
   OptOutAiSelectors,
   LeadsTableSelectors,
   SalesRepPanelSelectors,
+  LeasePanelSelectors,
   OpenToBuySelectors,
   CcHistorySelectors,
   CcBinSelectors,
@@ -890,7 +1039,10 @@ export interface AppSelectors extends
   MerchantProgramsSectionSelectors,
   BankAccountModalSelectors,
   ServicingDocumentsSelectors,
-  GowSignDocumentViewerSelectors {}
+  GowSignDocumentViewerSelectors,
+  ColumnOrderSelectors,
+  ServicingEpoPanelSelectors,
+  CustomerPortalOverviewSelectors {}
 
 export interface AmsUserSelectors {
   amsRdtTable: string;

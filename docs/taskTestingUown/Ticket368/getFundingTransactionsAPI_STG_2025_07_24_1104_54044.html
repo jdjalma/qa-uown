@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>UownUnifiedFlow – Test Report</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <style>
+        body { background: #f7f7fb; }
+        .card { border-radius: 16px; box-shadow: 0 2px 24px 0 #aeacbe1f; }
+        h1, h2 { font-weight: bold; }
+        .summary-table th { background: #6b4bb6 !important; color: #fff !important; }
+        .summary-table tr { background: #f7f7fb; }
+        .table-responsive { margin-bottom: 2rem; }
+        .filterOutput { width: 100%; max-width: 420px; margin: 1rem 0; }
+        .btn-successful { background: #00b67a !important; }
+        .btn-partial { background: #f9a825 !important; }
+        .btn-unsuccessful { background: #e74c3c !important; }
+        .btn-all { background: #343a40 !important; }
+        .successful { background: #e7ffe8 !important; }
+        .partiallySuccessful { background: #fff8e1 !important; }
+        .unsuccessful { background: #ffeaea !important; }
+        .insight-card { border-left: 8px solid #6b4bb6;}
+        .stat-number { font-size: 2.3rem; font-weight: bold;}
+        .stat-label { font-size: 1.1rem; color: #6c757d;}
+        #detailedDataTable tbody tr:hover { background: #f1ebfa; }
+    </style>
+</head>
+<body>
+<div class="container mt-4">
+    <!-- HEADER -->
+    <div class="text-center mb-2">
+        <h1 class="fw-bold" style="font-size:2.2rem; margin-bottom: .2rem;">
+            UownUnifiedFlow – Test Report
+        </h1>
+        <div class="mt-2 mb-1">
+            <span class="badge bg-info text-dark px-3 py-2 me-2" style="font-size:1.05rem;">
+                Environment: STG
+            </span>
+        </div>
+        <div class="mt-1 text-muted" style="font-size:1rem;">
+            Generated on: 2025/07/24 at 11:05
+        </div>
+    </div>
+
+    <div class="row mb-4 g-4">
+        <div class="col-md-3">
+            <div class="card p-3 insight-card">
+                <div class="stat-number">1</div>
+                <div class="stat-label">Total Executions</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 insight-card" style="border-color:#00b67a;">
+                <div class="stat-number">1</div>
+                <div class="stat-label">Successful</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 insight-card" style="border-color:#f9a825;">
+                <div class="stat-number">0</div>
+                <div class="stat-label">Partially Successful</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 insight-card" style="border-color:#e74c3c;">
+                <div class="stat-number">0</div>
+                <div class="stat-label">Failed</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card p-3">
+                <div id="dataPie" style="width:100%; min-height:340px;"></div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card p-3">
+                <div id="dataBar" style="width:100%; min-height:340px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card p-3 mb-4">
+        <h2 class="text-center mb-3"><u>Summary</u></h2>
+        <div class="table-responsive">
+            <table id="summaryDataTable" class="table summary-table">
+                <thead>
+                <tr>
+                    <th style="width:60%;">Result</th>
+                    <th style="width:40%;">Count</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr><td>Successful</td><td>1</td></tr>
+                <tr><td>Partially Successful</td><td>0</td></tr>
+                <tr><td>Failed</td><td>0</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card p-3 mb-4">
+        <h2 class="text-center mb-3"><u>Detailed</u></h2>
+        <div class="mb-2 text-center text-secondary"><small>Note: filters will currently overwrite each other.</small></div>
+        <div class="mb-3 d-flex flex-wrap gap-2 justify-content-center">
+            <button name="displayAll" class="btn btn-all text-white">Display All</button>
+            <button name="displaySuccessful" class="btn btn-successful text-white">Display Only Successful</button>
+            <button name="displayPartial" class="btn btn-partial text-white">Display Only Partially Successful</button>
+            <button name="displayUnsuccessful" class="btn btn-unsuccessful text-white">Display Only Failed</button>
+        </div>
+        <div class="mb-2 d-flex justify-content-center">
+            <input type="text" id="filterOutputDetailedData" class="form-control filterOutput" target_table="detailedDataTable" onkeyup="filterOutput(this);" placeholder="Search through all fields...">
+        </div>
+        <div class="table-responsive">
+            <table id="detailedDataTable" class="table table-hover table-bordered table-sm">
+                <tr>
+                    <th>Run Number</th>
+                    <th>Environment</th>
+                    <th>Start Time</th>
+                    <th>Lead Source</th>
+                    <th>Merchant Name</th>
+                    <th>Merchant Id</th>
+                    <th>Lead Pk</th>
+                    <th>Account Pk</th>
+                    <th>Website Account Pk</th>
+                    <th>State</th>
+                    <th>Zip Code</th>
+                    <th>City</th>
+                    <th>ACH Payment Date</th>
+                    <th>ACH Payment Amount</th>
+                    <th>CC Payment Date</th>
+                    <th>CC Payment Amount</th>
+                    <th>Application Type</th>
+                    <th>Browser</th>
+                    <th>End Time</th>
+                    <th>Comments</th>
+                    <th>Result</th>
+                    <th>Steps</th>
+                </tr>
+<tr><td>1</td><td>stg</td><td>2025-07-24 11:04:48</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>--</td><td>Not yet specified</td><td>Not yet specified</td><td>Not yet specified</td><td>--</td><td>0</td><td>--</td><td>0</td><td>Not yet specified</td><td>chrome</td><td>2025-07-24 11:04:54</td><td>--</td><td>Successful</td><td><details><summary>Ver Detalhes</summary><b>Request Body:</b><br><pre>{"password":"U0wn_payTomorrow","toDate":"2025-07-30","username":"payTomorrow","refMerchantCodes":["OL90294-0001","OL90402-0001"]}</pre><br><b>Response (400):</b><br><pre>{<br>  "message": "Both fromDate and toDate must be provided",<br>  "status": "BAD_REQUEST"<br>}</pre></details></td><td><button class="btn btn-primary btn-sm" onclick="showStepsForRun(1)">View Steps</button></td></tr>
+</table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="stepsModal" tabindex="-1" aria-labelledby="stepsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="stepsModalLabel">Test Steps</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="stepsModalBody">
+                <!-- Steps will appear here via JS -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    google.charts.load('current', {'packages':['corechart','bar']});
+    google.charts.setOnLoadCallback(drawChart);
+
+    function drawChart() {
+        var chartData = [
+            ['Result', 'Count'],
+            ['Successful', 1],
+        ['Partially Successful', 0],
+        ['Failed', 0]
+    ];
+        var chartColors = ['#00b67a', '#f9a825', '#e74c3c'];
+
+        var pieData = google.visualization.arrayToDataTable(chartData);
+        var pieOptions = {
+            colors: chartColors,
+            legend: { position: 'top', alignment: 'center', textStyle: {fontSize: 14} },
+            chartArea: {width:'85%', height:'70%'}
+        };
+        var pieChart = new google.visualization.PieChart(document.getElementById('dataPie'));
+        pieChart.draw(pieData, pieOptions);
+
+        var barData = google.visualization.arrayToDataTable(chartData);
+        var barOptions = {
+            colors: chartColors,
+            legend: { position: 'none' },
+            chartArea: {width:'80%', height:'70%'},
+            hAxis: {minValue: 0, format: '0', title: 'Count'},
+            vAxis: {title: 'Result'}
+        };
+        var barChart = new google.visualization.BarChart(document.getElementById('dataBar'));
+        barChart.draw(barData, barOptions);
+    }
+</script>
+
+<script type="text/javascript">
+    var showAll = document.getElementsByName("displayAll");
+    var showSuccessful = document.getElementsByName("displaySuccessful");
+    var showPartial = document.getElementsByName("displayPartial");
+    var showUnsuccessful = document.getElementsByName("displayUnsuccessful");
+
+    for (var i = 0; i < showAll.length; i++) { showAll[i].addEventListener("click", filterDetailedTable);}
+    for (var i = 0; i < showSuccessful.length; i++) { showSuccessful[i].addEventListener("click", filterDetailedTable);}
+    for (var i = 0; i < showPartial.length; i++) { showPartial[i].addEventListener("click", filterDetailedTable);}
+    for (var i = 0; i < showUnsuccessful.length; i++) { showUnsuccessful[i].addEventListener("click", filterDetailedTable);}
+
+    function filterDetailedTable() {
+        var table = document.getElementById("detailedDataTable");
+        var tr = table.getElementsByTagName("tr");
+        var n_td;
+        var verdict;
+        switch(this.name) {
+            case "displayAll":
+                for (var i = 1; i < tr.length; i++) { tr[i].style.display = ""; }
+                break;
+            case "displaySuccessful":
+                filterButton("Successful"); break;
+            case "displayPartial":
+                filterButton("Partially Successful"); break;
+            case "displayUnsuccessful":
+                for (var i = 1; i < tr.length; i++) {
+                    n_td = tr[i].getElementsByTagName("td").length;
+                    verdict = tr[i].getElementsByTagName("td")[n_td - 2].innerText;
+                    if (verdict != "Successful" && verdict != "Partially Successful") {
+                        tr[i].style.display = "";
+                    } else {
+                        tr[i].style.display = "none";
+                    }
+                }
+                break;
+        }
+    }
+    function filterButton(filterValue) {
+        var table = document.getElementById("detailedDataTable");
+        var tr = table.getElementsByTagName("tr");
+        var n_td;
+        var verdict;
+        for (var i = 1; i < tr.length; i++) {
+            n_td = tr[i].getElementsByTagName("td").length;
+            verdict = tr[i].getElementsByTagName("td")[n_td - 2].innerText;
+            if (verdict == filterValue) {
+                tr[i].style.display = "";
+            } else {
+                tr[i].style.display = "none";
+            }
+        }
+    }
+    function filterOutput(callingElement) {
+        var filterId = callingElement.getAttribute("id");
+        var tableId = callingElement.getAttribute("target_table");
+        var table = document.getElementById(tableId);
+        var filter = document.getElementById(filterId).value.toUpperCase();
+        var tr = table.getElementsByTagName("tr");
+        var n_td, filterFound, cellValue;
+        for (var i = 1; i < tr.length; i++) {
+            filterFound = false;
+            n_td = tr[i].getElementsByTagName("td").length;
+            for (var x = 0; x < n_td; x++) {
+                cellValue = tr[i].getElementsByTagName("td")[x].innerText;
+                if (cellValue && cellValue.toUpperCase().indexOf(filter) > -1) {
+                    filterFound = true; break;
+                }
+            }
+            tr[i].style.display = filterFound ? "" : "none";
+        }
+    }
+</script>
+
+<!-- MODAL FOR STEPS CUCUMBER -->
+<script>
+    /*
+     * Function to display steps for each run using the modal
+     * The runNumber argument is the execution number (1 for first, 2 for second, etc)
+     */
+    function showStepsForRun(runNumber) {
+        if (!window.CUCUMBER_MESSAGES) {
+            document.getElementById('stepsModalBody').innerHTML = '<div class="alert alert-danger">Cucumber steps JSON not found!</div>';
+            var modal = new bootstrap.Modal(document.getElementById('stepsModal'));
+            modal.show();
+            return;
+        }
+        const messages = window.CUCUMBER_MESSAGES;
+
+        const pickles = messages.filter(msg => msg.pickle).map(msg => msg.pickle);
+        const testCases = messages.filter(msg => msg.testCase).map(msg => msg.testCase);
+        const testCasesStarted = messages.filter(msg => msg.testCaseStarted).map(msg => msg.testCaseStarted);
+        const testStepsFinished = messages.filter(msg => msg.testStepFinished).map(msg => msg.testStepFinished);
+
+        const testCaseStarted = testCasesStarted[runNumber-1];
+        if (!testCaseStarted) {
+            document.getElementById('stepsModalBody').innerHTML = '<div class="alert alert-warning">Execution not found!</div>';
+            var modal = new bootstrap.Modal(document.getElementById('stepsModal'));
+            modal.show();
+            return;
+        }
+        const testCase = testCases.find(tc => tc.id === testCaseStarted.testCaseId);
+
+        const stepsStatus = {};
+        testStepsFinished
+            .filter(sf => sf.testCaseStartedId === testCaseStarted.id)
+            .forEach(sf => {
+                stepsStatus[sf.testStepId] = sf.testStepResult.status;
+            });
+
+        const pickle = pickles.find(p => p.id === testCase.pickleId);
+        const steps = pickle.steps.map(pStep => {
+            const testStep = testCase.testSteps.find(ts => ts.pickleStepId === pStep.id);
+            return {
+                text: pStep.text,
+                status: testStep ? stepsStatus[testStep.id] : 'UNDEFINED'
+            };
+        });
+
+        let html = '<ol>';
+        steps.forEach(s => {
+            let badge = '';
+            if (s.status === 'PASSED') badge = '<span class="badge bg-success">PASSED</span>';
+            else if (s.status === 'FAILED') badge = '<span class="badge bg-danger">FAILED</span>';
+            else badge = `<span class="badge bg-secondary">${s.status}</span>`;
+            html += `<li class="mb-2">${badge} <span>${s.text}</span></li>`;
+        });
+        html += '</ol>';
+        document.getElementById('stepsModalBody').innerHTML = html;
+
+        var modal = new bootstrap.Modal(document.getElementById('stepsModal'));
+        modal.show();
+    }
+</script>
+<!-- Your window.CUCUMBER_MESSAGES = [...] must be injected before this script or before <script>window.SCENARIOS_REPORT = [{"scenario":"Valid request with refMerchantCodes filter returns expected data","steps":[{"text":"I set the environment to \"stg\", project to \"uown\", subdomain to \"origination\", navigate to login","status":"PASSED"},{"text":"I set the browser to \"chrome\", stealth mode if the following argument is yes: \"yes\"","status":"PASSED"},{"text":"Timeout multiplier is set to: \"2\"","status":"PASSED"},{"text":"Relevant variables are reset","status":"PASSED"},{"text":"UownCreateAccount Relevant variables are reset","status":"PASSED"},{"text":"Window is closed - 'always', 'on success', 'never': \"never\"","status":"PASSED"},{"text":"Write test results to a data file if the following argument is yes: \"yes\"","status":"PASSED"},{"text":"Screenshots are taken - 'always', 'on success', 'on failure', 'never': \"always\"","status":"PASSED"},{"text":"Presentation mode is on if the following argument is yes: \"yes\"","status":"PASSED"},{"text":"Checks are enabled if the following argument is yes: \"yes\"","status":"PASSED"},{"text":"Strict mode is enabled if the following argument is yes: \"no\"","status":"PASSED"},{"text":"DDMM Dates are processed in reverse if the following argument is yes: \"yes\"","status":"PASSED"},{"text":"Servicing is enabled if the following argument is yes: \"yes\"","status":"PASSED"},{"text":"Website is enabled if the following argument is yes: \"yes\"","status":"PASSED"},{"text":"Begin UownUnifiedFlow","status":"PASSED"},{"text":"Run the funding transactions API for merchant \"ProgressMobility,MSAPowersports\" with:","status":"PASSED"},{"text":"the response status should be 400","status":"PASSED"},{"text":"the response should contain status message \"Both fromDate and toDate must be provided\"","status":"PASSED"},{"text":"Test is successful","status":"PASSED"}]}];</script>
+<script>window.CUCUMBER_MESSAGES = [{"pickle":{"id":"2a21ebaa-68f6-4d1e-804a-55b495a622a6","uri":"file:///D:/projects/legacy-java-cucumber/ui_automation/src/test/resources/uownfeatures/templates/specific_tickets/R6.25.1.42.0_getFundingTransactionsForDateRange_Ticket368.feature","name":"Valid request with refMerchantCodes filter returns expected data","language":"en","steps":[{"text":"I set the environment to \"stg\", project to \"uown\", subdomain to \"origination\", navigate to login","id":"4dbdaed8-d3f4-4809-9ba8-5e86e5530fbf","astNodeIds":["7dc60721-88a4-4446-bb2d-094a21212f40","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"I set the browser to \"chrome\", stealth mode if the following argument is yes: \"yes\"","id":"6d47f444-6ac7-4f46-b1e8-df6111fdc6af","astNodeIds":["b35d61ca-6d22-42e6-8742-b2e4676c443c","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Timeout multiplier is set to: \"2\"","id":"6fa35ec4-df5c-4775-8685-1592805969ee","astNodeIds":["8875e9c5-7152-4d37-8db8-7222c0f77c0b","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Relevant variables are reset","id":"dc65a028-078b-4228-a403-1e01dee11aac","astNodeIds":["4e72197e-aa26-47b0-89d3-66cb953a6019","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"UownCreateAccount Relevant variables are reset","id":"b50905bd-01c1-44d3-97cf-0e6bd7d0353f","astNodeIds":["b7bde088-f394-46a1-83fb-ea0674a12204","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Window is closed - \u0027always\u0027, \u0027on success\u0027, \u0027never\u0027: \"never\"","id":"30ae5a1b-c210-4775-8cc0-0348206bfbbd","astNodeIds":["53b98872-70d7-4eb2-93d0-a4c52317e6cf","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Write test results to a data file if the following argument is yes: \"yes\"","id":"198a5362-9ed0-46fb-b4c9-cc916a5a9b75","astNodeIds":["39eb14c3-db4b-4199-894e-3a25bd1ee469","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Screenshots are taken - \u0027always\u0027, \u0027on success\u0027, \u0027on failure\u0027, \u0027never\u0027: \"always\"","id":"a03826d0-46fa-4a35-a75e-acbea5d8d4d0","astNodeIds":["b199a1d3-82e1-417d-8ba7-baa756d4ef38","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Presentation mode is on if the following argument is yes: \"yes\"","id":"4f4d3949-f803-47c5-b247-40cbed3ffc61","astNodeIds":["7817bb04-2c57-4623-a937-4cb3b16d1744","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Checks are enabled if the following argument is yes: \"yes\"","id":"b530b8ce-a589-4fcb-b12b-b5d92969c41a","astNodeIds":["b3168976-8128-45f4-9449-2ec971c39a19","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Strict mode is enabled if the following argument is yes: \"no\"","id":"f793f40b-42e8-4a5a-bcfa-2725a7148206","astNodeIds":["6d5d547b-4119-4d4f-9c04-46b67ed96d47","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"DDMM Dates are processed in reverse if the following argument is yes: \"yes\"","id":"557d67c7-1180-445d-bbcb-64bb02a7c13f","astNodeIds":["f248c545-331c-41bb-b110-7b9c3bd429a1","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Servicing is enabled if the following argument is yes: \"yes\"","id":"51c63340-b3e2-4935-b2d7-2ab7ec09e042","astNodeIds":["18bde06d-9532-437c-aa7f-424269adce87","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Website is enabled if the following argument is yes: \"yes\"","id":"17d9fc26-20de-4370-8f44-016325dcda84","astNodeIds":["ad2b971c-a9a9-40a7-b528-b57b2b42b14f","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Begin UownUnifiedFlow","id":"a013ac6e-e59e-4b8d-9bc9-439ef907f8eb","astNodeIds":["60c8afd5-e371-4b2a-b5cf-934c84f14411","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Run the funding transactions API for merchant \"ProgressMobility,MSAPowersports\" with:","argument":{"dataTable":{"rows":[{"cells":[{"value":"toDate"}]},{"cells":[{"value":"2025-07-30"}]}]}},"id":"d815e769-ca82-41ac-af52-d1bee9369c8c","astNodeIds":["ad3ffc1b-e550-4da6-a451-79e9b257b125","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"the response status should be 400","id":"eb9d3ced-764c-429d-b059-f67a05dba7a1","astNodeIds":["d9110259-a9a0-4dea-a50f-8ce75e2f9397","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"the response should contain status message \"Both fromDate and toDate must be provided\"","id":"b7e84166-e5da-4963-af6d-8c94003ff589","astNodeIds":["21df7c4f-2066-4fe5-b20a-cbdfd9f7fafa","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Test is successful","id":"bc2605c3-bc1a-413b-a1ad-a1e7b4438147","astNodeIds":["569c8d73-18be-433a-81de-515d1408a6e2","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]}],"tags":[{"name":"@UOWNStg","astNodeId":"ca0369ec-e037-4e28-8b6a-36d5a93ddc0e"}],"astNodeIds":["74823ed6-58ff-46b5-9f8b-53826564e5a8","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]}},{"testCase":{"id":"9ab10d20-4748-4716-a187-620ee5c8e6c7","pickleId":"2a21ebaa-68f6-4d1e-804a-55b495a622a6","testSteps":[{"id":"00736feb-d66e-42f1-9b53-a575fadebe89","hookId":"50c87fa4-35fc-4977-8fe2-b5b7664b1157"},{"id":"4abf02fd-7667-43d7-9e16-7fbba8c1c5d8","pickleStepId":"4dbdaed8-d3f4-4809-9ba8-5e86e5530fbf","stepDefinitionIds":["cb27b716-e1d6-4b2c-956c-c22c2c654727"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":25,"value":"\"stg\""}},{"parameterTypeName":"anonymous","group":{"start":43,"value":"\"uown\""}},{"parameterTypeName":"anonymous","group":{"start":64,"value":"\"origination\""}},{"parameterTypeName":"anonymous","group":{"start":91,"value":"login"}}]}]},{"id":"83788fc6-6b36-465e-97d2-df690b0c6b82","pickleStepId":"6d47f444-6ac7-4f46-b1e8-df6111fdc6af","stepDefinitionIds":["f8f4f5bc-d28a-4917-beea-d31f0a3ea8d9"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":22,"value":"chrome"}},{"parameterTypeName":"anonymous","group":{"start":79,"value":"yes"}}]}]},{"id":"033fbde8-c3be-4e95-a552-c7b38e732d1a","pickleStepId":"6fa35ec4-df5c-4775-8685-1592805969ee","stepDefinitionIds":["75c2b0d9-fb27-4718-b691-f3579797f1f1"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":31,"value":"2"}}]}]},{"id":"8742c74e-8466-4e2c-8945-c9b5251a2c21","pickleStepId":"dc65a028-078b-4228-a403-1e01dee11aac","stepDefinitionIds":["05678f62-35eb-42d4-a211-25078ad66df9"],"stepMatchArgumentsLists":[{}]},{"id":"57ee2641-2ed9-4312-a7fa-d7fd1a280798","pickleStepId":"b50905bd-01c1-44d3-97cf-0e6bd7d0353f","stepDefinitionIds":["e6a573e3-aaf2-4e9b-a6f4-022317fac7d8"],"stepMatchArgumentsLists":[{}]},{"id":"da53724f-2f4f-4a48-8f68-657bb937e72f","pickleStepId":"30ae5a1b-c210-4775-8cc0-0348206bfbbd","stepDefinitionIds":["3cf93b30-c7ca-440c-9f0c-a530c1e40c18"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":53,"value":"never"}}]}]},{"id":"053f8e75-6eac-4a2e-b0bf-35369c0a2bff","pickleStepId":"198a5362-9ed0-46fb-b4c9-cc916a5a9b75","stepDefinitionIds":["637d0751-d5e3-41fd-b5d4-bdc2a2d2363b"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":69,"value":"yes"}}]}]},{"id":"a663f97c-bf29-40d6-bebc-b01ef20d879e","pickleStepId":"a03826d0-46fa-4a35-a75e-acbea5d8d4d0","stepDefinitionIds":["178f2f21-f73d-492a-9bb9-829f98d87daa"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":72,"value":"always"}}]}]},{"id":"4fe53297-7ed5-45b6-863f-2290ce7fb586","pickleStepId":"4f4d3949-f803-47c5-b247-40cbed3ffc61","stepDefinitionIds":["f86d699a-b1be-46f3-b45f-f24d10bd6c51"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":59,"value":"yes"}}]}]},{"id":"7c6b27bc-b450-4e68-bdd9-c2613a0a800e","pickleStepId":"b530b8ce-a589-4fcb-b12b-b5d92969c41a","stepDefinitionIds":["192ad830-012c-4145-a8fc-3c2a0e8b4217"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":54,"value":"yes"}}]}]},{"id":"6a158af9-c46b-43f1-a446-05ffa7d66a5b","pickleStepId":"f793f40b-42e8-4a5a-bcfa-2725a7148206","stepDefinitionIds":["9edc302a-4559-4307-a3ee-47d46e28ea92"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"string","group":{"start":57,"value":"\"no\"","children":[{"start":58,"value":"no","children":[{}]},{"children":[{}]}]}}]}]},{"id":"7afb0d25-a958-4c24-89cf-96ed5ba28768","pickleStepId":"557d67c7-1180-445d-bbcb-64bb02a7c13f","stepDefinitionIds":["3e30aa82-41ef-4d5e-b445-323d564a0af3"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"string","group":{"start":70,"value":"\"yes\"","children":[{"start":71,"value":"yes","children":[{}]},{"children":[{}]}]}}]}]},{"id":"c243ebe6-b8f8-41c8-98a0-1f9c71c53d9f","pickleStepId":"51c63340-b3e2-4935-b2d7-2ab7ec09e042","stepDefinitionIds":["c4983a51-0678-4f52-8b4c-12fc823f5141"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"string","group":{"start":55,"value":"\"yes\"","children":[{"start":56,"value":"yes","children":[{}]},{"children":[{}]}]}}]}]},{"id":"9b19bdc1-e3cc-4ee3-a12c-ba67d9455c5a","pickleStepId":"17d9fc26-20de-4370-8f44-016325dcda84","stepDefinitionIds":["63ac90e8-9f27-4801-a1a6-f50bf5506b22"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"string","group":{"start":53,"value":"\"yes\"","children":[{"start":54,"value":"yes","children":[{}]},{"children":[{}]}]}}]}]},{"id":"1852f6b7-9b53-48d2-a37c-0c089848d208","pickleStepId":"a013ac6e-e59e-4b8d-9bc9-439ef907f8eb","stepDefinitionIds":["23f7e680-ed56-4807-bb3e-38880293b0af"],"stepMatchArgumentsLists":[{}]},{"id":"890e9521-69ac-45ac-85c2-200286765489","pickleStepId":"d815e769-ca82-41ac-af52-d1bee9369c8c","stepDefinitionIds":["9197f56e-8f73-48c9-9ddb-31006e2ad0fa"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"string","group":{"start":46,"value":"\"ProgressMobility,MSAPowersports\"","children":[{"start":47,"value":"ProgressMobility,MSAPowersports","children":[{}]},{"children":[{}]}]}}]}]},{"id":"546abd8b-ad34-40d1-840f-af138f6984c1","pickleStepId":"eb9d3ced-764c-429d-b059-f67a05dba7a1","stepDefinitionIds":["990b2ccf-b21e-499f-b2ba-726d443f1aaa"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"int","group":{"start":30,"value":"400"}}]}]},{"id":"897c78cc-7392-4599-a484-6a3c30bee8a5","pickleStepId":"b7e84166-e5da-4963-af6d-8c94003ff589","stepDefinitionIds":["302b6ef1-e589-4da9-a8d0-e38175916ebe"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"string","group":{"start":43,"value":"\"Both fromDate and toDate must be provided\"","children":[{"start":44,"value":"Both fromDate and toDate must be provided","children":[{}]},{"children":[{}]}]}}]}]},{"id":"8edf1c16-e253-4840-b6ee-cad7ad505d1a","pickleStepId":"bc2605c3-bc1a-413b-a1ad-a1e7b4438147","stepDefinitionIds":["3b5988f8-f42f-476c-a292-501d539c3aaf"],"stepMatchArgumentsLists":[{}]},{"id":"46bd8644-2b55-4dd7-95a2-8f06dff7ccac","hookId":"ee79b858-f363-4617-b1db-197bbaf81ba4"}]}},{"testCaseStarted":{"timestamp":{"seconds":"1753365882","nanos":589737300},"testCaseId":"9ab10d20-4748-4716-a187-620ee5c8e6c7","id":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":8086500}},"timestamp":{"seconds":"1753365882","nanos":604848100},"testStepId":"00736feb-d66e-42f1-9b53-a575fadebe89","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":10993500}},"timestamp":{"seconds":"1753365882","nanos":620916000},"testStepId":"4abf02fd-7667-43d7-9e16-7fbba8c1c5d8","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"seconds":"5","nanos":488336200}},"timestamp":{"seconds":"1753365888","nanos":110251400},"testStepId":"83788fc6-6b36-465e-97d2-df690b0c6b82","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{}},"timestamp":{"seconds":"1753365888","nanos":111256400},"testStepId":"033fbde8-c3be-4e95-a552-c7b38e732d1a","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":1000700}},"timestamp":{"seconds":"1753365888","nanos":112257100},"testStepId":"8742c74e-8466-4e2c-8945-c9b5251a2c21","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{}},"timestamp":{"seconds":"1753365888","nanos":113258000},"testStepId":"57ee2641-2ed9-4312-a7fa-d7fd1a280798","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":1000000}},"timestamp":{"seconds":"1753365888","nanos":114258000},"testStepId":"da53724f-2f4f-4a48-8f68-657bb937e72f","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{}},"timestamp":{"seconds":"1753365888","nanos":114258000},"testStepId":"053f8e75-6eac-4a2e-b0bf-35369c0a2bff","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{}},"timestamp":{"seconds":"1753365888","nanos":114258000},"testStepId":"a663f97c-bf29-40d6-bebc-b01ef20d879e","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{}},"timestamp":{"seconds":"1753365888","nanos":115257900},"testStepId":"4fe53297-7ed5-45b6-863f-2290ce7fb586","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":1002100}},"timestamp":{"seconds":"1753365888","nanos":116260000},"testStepId":"7c6b27bc-b450-4e68-bdd9-c2613a0a800e","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{}},"timestamp":{"seconds":"1753365888","nanos":116260000},"testStepId":"6a158af9-c46b-43f1-a446-05ffa7d66a5b","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":999500}},"timestamp":{"seconds":"1753365888","nanos":117259500},"testStepId":"7afb0d25-a958-4c24-89cf-96ed5ba28768","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{}},"timestamp":{"seconds":"1753365888","nanos":117766900},"testStepId":"c243ebe6-b8f8-41c8-98a0-1f9c71c53d9f","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{}},"timestamp":{"seconds":"1753365888","nanos":118774200},"testStepId":"9b19bdc1-e3cc-4ee3-a12c-ba67d9455c5a","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":1006600}},"timestamp":{"seconds":"1753365888","nanos":121284600},"testStepId":"1852f6b7-9b53-48d2-a37c-0c089848d208","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"seconds":"1","nanos":899535800}},"timestamp":{"seconds":"1753365890","nanos":20820400},"testStepId":"890e9521-69ac-45ac-85c2-200286765489","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":17037900}},"timestamp":{"seconds":"1753365890","nanos":38857500},"testStepId":"546abd8b-ad34-40d1-840f-af138f6984c1","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":1508100}},"timestamp":{"seconds":"1753365890","nanos":40365600},"testStepId":"897c78cc-7392-4599-a484-6a3c30bee8a5","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"seconds":"4","nanos":1064300}},"timestamp":{"seconds":"1753365894","nanos":41429900},"testStepId":"8edf1c16-e253-4840-b6ee-cad7ad505d1a","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":468681400}},"timestamp":{"seconds":"1753365894","nanos":510111300},"testStepId":"46bd8644-2b55-4dd7-95a2-8f06dff7ccac","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}}];</script>
+</body> -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>window.SCENARIOS_REPORT = [{"scenario":"Valid request with refMerchantCodes filter returns expected data","steps":[{"text":"I set the environment to \"stg\", project to \"uown\", subdomain to \"origination\", navigate to login","status":"PASSED"},{"text":"I set the browser to \"chrome\", stealth mode if the following argument is yes: \"yes\"","status":"PASSED"},{"text":"Timeout multiplier is set to: \"2\"","status":"PASSED"},{"text":"Relevant variables are reset","status":"PASSED"},{"text":"UownCreateAccount Relevant variables are reset","status":"PASSED"},{"text":"Window is closed - 'always', 'on success', 'never': \"never\"","status":"PASSED"},{"text":"Write test results to a data file if the following argument is yes: \"yes\"","status":"PASSED"},{"text":"Screenshots are taken - 'always', 'on success', 'on failure', 'never': \"always\"","status":"PASSED"},{"text":"Presentation mode is on if the following argument is yes: \"yes\"","status":"PASSED"},{"text":"Checks are enabled if the following argument is yes: \"yes\"","status":"PASSED"},{"text":"Strict mode is enabled if the following argument is yes: \"no\"","status":"PASSED"},{"text":"DDMM Dates are processed in reverse if the following argument is yes: \"yes\"","status":"PASSED"},{"text":"Servicing is enabled if the following argument is yes: \"yes\"","status":"PASSED"},{"text":"Website is enabled if the following argument is yes: \"yes\"","status":"PASSED"},{"text":"Begin UownUnifiedFlow","status":"PASSED"},{"text":"Run the funding transactions API for merchant \"ProgressMobility,MSAPowersports\" with:","status":"PASSED"},{"text":"the response status should be 400","status":"PASSED"},{"text":"the response should contain status message \"Both fromDate and toDate must be provided\"","status":"PASSED"},{"text":"Test is successful","status":"PASSED"}]}];</script>
+<script>window.CUCUMBER_MESSAGES = [{"pickle":{"id":"2a21ebaa-68f6-4d1e-804a-55b495a622a6","uri":"file:///D:/projects/legacy-java-cucumber/ui_automation/src/test/resources/uownfeatures/templates/specific_tickets/R6.25.1.42.0_getFundingTransactionsForDateRange_Ticket368.feature","name":"Valid request with refMerchantCodes filter returns expected data","language":"en","steps":[{"text":"I set the environment to \"stg\", project to \"uown\", subdomain to \"origination\", navigate to login","id":"4dbdaed8-d3f4-4809-9ba8-5e86e5530fbf","astNodeIds":["7dc60721-88a4-4446-bb2d-094a21212f40","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"I set the browser to \"chrome\", stealth mode if the following argument is yes: \"yes\"","id":"6d47f444-6ac7-4f46-b1e8-df6111fdc6af","astNodeIds":["b35d61ca-6d22-42e6-8742-b2e4676c443c","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Timeout multiplier is set to: \"2\"","id":"6fa35ec4-df5c-4775-8685-1592805969ee","astNodeIds":["8875e9c5-7152-4d37-8db8-7222c0f77c0b","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Relevant variables are reset","id":"dc65a028-078b-4228-a403-1e01dee11aac","astNodeIds":["4e72197e-aa26-47b0-89d3-66cb953a6019","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"UownCreateAccount Relevant variables are reset","id":"b50905bd-01c1-44d3-97cf-0e6bd7d0353f","astNodeIds":["b7bde088-f394-46a1-83fb-ea0674a12204","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Window is closed - \u0027always\u0027, \u0027on success\u0027, \u0027never\u0027: \"never\"","id":"30ae5a1b-c210-4775-8cc0-0348206bfbbd","astNodeIds":["53b98872-70d7-4eb2-93d0-a4c52317e6cf","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Write test results to a data file if the following argument is yes: \"yes\"","id":"198a5362-9ed0-46fb-b4c9-cc916a5a9b75","astNodeIds":["39eb14c3-db4b-4199-894e-3a25bd1ee469","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Screenshots are taken - \u0027always\u0027, \u0027on success\u0027, \u0027on failure\u0027, \u0027never\u0027: \"always\"","id":"a03826d0-46fa-4a35-a75e-acbea5d8d4d0","astNodeIds":["b199a1d3-82e1-417d-8ba7-baa756d4ef38","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Presentation mode is on if the following argument is yes: \"yes\"","id":"4f4d3949-f803-47c5-b247-40cbed3ffc61","astNodeIds":["7817bb04-2c57-4623-a937-4cb3b16d1744","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Checks are enabled if the following argument is yes: \"yes\"","id":"b530b8ce-a589-4fcb-b12b-b5d92969c41a","astNodeIds":["b3168976-8128-45f4-9449-2ec971c39a19","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Strict mode is enabled if the following argument is yes: \"no\"","id":"f793f40b-42e8-4a5a-bcfa-2725a7148206","astNodeIds":["6d5d547b-4119-4d4f-9c04-46b67ed96d47","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"DDMM Dates are processed in reverse if the following argument is yes: \"yes\"","id":"557d67c7-1180-445d-bbcb-64bb02a7c13f","astNodeIds":["f248c545-331c-41bb-b110-7b9c3bd429a1","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Servicing is enabled if the following argument is yes: \"yes\"","id":"51c63340-b3e2-4935-b2d7-2ab7ec09e042","astNodeIds":["18bde06d-9532-437c-aa7f-424269adce87","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Website is enabled if the following argument is yes: \"yes\"","id":"17d9fc26-20de-4370-8f44-016325dcda84","astNodeIds":["ad2b971c-a9a9-40a7-b528-b57b2b42b14f","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Begin UownUnifiedFlow","id":"a013ac6e-e59e-4b8d-9bc9-439ef907f8eb","astNodeIds":["60c8afd5-e371-4b2a-b5cf-934c84f14411","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Run the funding transactions API for merchant \"ProgressMobility,MSAPowersports\" with:","argument":{"dataTable":{"rows":[{"cells":[{"value":"toDate"}]},{"cells":[{"value":"2025-07-30"}]}]}},"id":"d815e769-ca82-41ac-af52-d1bee9369c8c","astNodeIds":["ad3ffc1b-e550-4da6-a451-79e9b257b125","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"the response status should be 400","id":"eb9d3ced-764c-429d-b059-f67a05dba7a1","astNodeIds":["d9110259-a9a0-4dea-a50f-8ce75e2f9397","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"the response should contain status message \"Both fromDate and toDate must be provided\"","id":"b7e84166-e5da-4963-af6d-8c94003ff589","astNodeIds":["21df7c4f-2066-4fe5-b20a-cbdfd9f7fafa","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]},{"text":"Test is successful","id":"bc2605c3-bc1a-413b-a1ad-a1e7b4438147","astNodeIds":["569c8d73-18be-433a-81de-515d1408a6e2","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]}],"tags":[{"name":"@UOWNStg","astNodeId":"ca0369ec-e037-4e28-8b6a-36d5a93ddc0e"}],"astNodeIds":["74823ed6-58ff-46b5-9f8b-53826564e5a8","35aaa1d3-09fb-4e64-8d58-90eba49b253d"]}},{"testCase":{"id":"9ab10d20-4748-4716-a187-620ee5c8e6c7","pickleId":"2a21ebaa-68f6-4d1e-804a-55b495a622a6","testSteps":[{"id":"00736feb-d66e-42f1-9b53-a575fadebe89","hookId":"50c87fa4-35fc-4977-8fe2-b5b7664b1157"},{"id":"4abf02fd-7667-43d7-9e16-7fbba8c1c5d8","pickleStepId":"4dbdaed8-d3f4-4809-9ba8-5e86e5530fbf","stepDefinitionIds":["cb27b716-e1d6-4b2c-956c-c22c2c654727"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":25,"value":"\"stg\""}},{"parameterTypeName":"anonymous","group":{"start":43,"value":"\"uown\""}},{"parameterTypeName":"anonymous","group":{"start":64,"value":"\"origination\""}},{"parameterTypeName":"anonymous","group":{"start":91,"value":"login"}}]}]},{"id":"83788fc6-6b36-465e-97d2-df690b0c6b82","pickleStepId":"6d47f444-6ac7-4f46-b1e8-df6111fdc6af","stepDefinitionIds":["f8f4f5bc-d28a-4917-beea-d31f0a3ea8d9"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":22,"value":"chrome"}},{"parameterTypeName":"anonymous","group":{"start":79,"value":"yes"}}]}]},{"id":"033fbde8-c3be-4e95-a552-c7b38e732d1a","pickleStepId":"6fa35ec4-df5c-4775-8685-1592805969ee","stepDefinitionIds":["75c2b0d9-fb27-4718-b691-f3579797f1f1"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":31,"value":"2"}}]}]},{"id":"8742c74e-8466-4e2c-8945-c9b5251a2c21","pickleStepId":"dc65a028-078b-4228-a403-1e01dee11aac","stepDefinitionIds":["05678f62-35eb-42d4-a211-25078ad66df9"],"stepMatchArgumentsLists":[{}]},{"id":"57ee2641-2ed9-4312-a7fa-d7fd1a280798","pickleStepId":"b50905bd-01c1-44d3-97cf-0e6bd7d0353f","stepDefinitionIds":["e6a573e3-aaf2-4e9b-a6f4-022317fac7d8"],"stepMatchArgumentsLists":[{}]},{"id":"da53724f-2f4f-4a48-8f68-657bb937e72f","pickleStepId":"30ae5a1b-c210-4775-8cc0-0348206bfbbd","stepDefinitionIds":["3cf93b30-c7ca-440c-9f0c-a530c1e40c18"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":53,"value":"never"}}]}]},{"id":"053f8e75-6eac-4a2e-b0bf-35369c0a2bff","pickleStepId":"198a5362-9ed0-46fb-b4c9-cc916a5a9b75","stepDefinitionIds":["637d0751-d5e3-41fd-b5d4-bdc2a2d2363b"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":69,"value":"yes"}}]}]},{"id":"a663f97c-bf29-40d6-bebc-b01ef20d879e","pickleStepId":"a03826d0-46fa-4a35-a75e-acbea5d8d4d0","stepDefinitionIds":["178f2f21-f73d-492a-9bb9-829f98d87daa"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":72,"value":"always"}}]}]},{"id":"4fe53297-7ed5-45b6-863f-2290ce7fb586","pickleStepId":"4f4d3949-f803-47c5-b247-40cbed3ffc61","stepDefinitionIds":["f86d699a-b1be-46f3-b45f-f24d10bd6c51"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":59,"value":"yes"}}]}]},{"id":"7c6b27bc-b450-4e68-bdd9-c2613a0a800e","pickleStepId":"b530b8ce-a589-4fcb-b12b-b5d92969c41a","stepDefinitionIds":["192ad830-012c-4145-a8fc-3c2a0e8b4217"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"anonymous","group":{"start":54,"value":"yes"}}]}]},{"id":"6a158af9-c46b-43f1-a446-05ffa7d66a5b","pickleStepId":"f793f40b-42e8-4a5a-bcfa-2725a7148206","stepDefinitionIds":["9edc302a-4559-4307-a3ee-47d46e28ea92"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"string","group":{"start":57,"value":"\"no\"","children":[{"start":58,"value":"no","children":[{}]},{"children":[{}]}]}}]}]},{"id":"7afb0d25-a958-4c24-89cf-96ed5ba28768","pickleStepId":"557d67c7-1180-445d-bbcb-64bb02a7c13f","stepDefinitionIds":["3e30aa82-41ef-4d5e-b445-323d564a0af3"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"string","group":{"start":70,"value":"\"yes\"","children":[{"start":71,"value":"yes","children":[{}]},{"children":[{}]}]}}]}]},{"id":"c243ebe6-b8f8-41c8-98a0-1f9c71c53d9f","pickleStepId":"51c63340-b3e2-4935-b2d7-2ab7ec09e042","stepDefinitionIds":["c4983a51-0678-4f52-8b4c-12fc823f5141"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"string","group":{"start":55,"value":"\"yes\"","children":[{"start":56,"value":"yes","children":[{}]},{"children":[{}]}]}}]}]},{"id":"9b19bdc1-e3cc-4ee3-a12c-ba67d9455c5a","pickleStepId":"17d9fc26-20de-4370-8f44-016325dcda84","stepDefinitionIds":["63ac90e8-9f27-4801-a1a6-f50bf5506b22"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"string","group":{"start":53,"value":"\"yes\"","children":[{"start":54,"value":"yes","children":[{}]},{"children":[{}]}]}}]}]},{"id":"1852f6b7-9b53-48d2-a37c-0c089848d208","pickleStepId":"a013ac6e-e59e-4b8d-9bc9-439ef907f8eb","stepDefinitionIds":["23f7e680-ed56-4807-bb3e-38880293b0af"],"stepMatchArgumentsLists":[{}]},{"id":"890e9521-69ac-45ac-85c2-200286765489","pickleStepId":"d815e769-ca82-41ac-af52-d1bee9369c8c","stepDefinitionIds":["9197f56e-8f73-48c9-9ddb-31006e2ad0fa"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"string","group":{"start":46,"value":"\"ProgressMobility,MSAPowersports\"","children":[{"start":47,"value":"ProgressMobility,MSAPowersports","children":[{}]},{"children":[{}]}]}}]}]},{"id":"546abd8b-ad34-40d1-840f-af138f6984c1","pickleStepId":"eb9d3ced-764c-429d-b059-f67a05dba7a1","stepDefinitionIds":["990b2ccf-b21e-499f-b2ba-726d443f1aaa"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"int","group":{"start":30,"value":"400"}}]}]},{"id":"897c78cc-7392-4599-a484-6a3c30bee8a5","pickleStepId":"b7e84166-e5da-4963-af6d-8c94003ff589","stepDefinitionIds":["302b6ef1-e589-4da9-a8d0-e38175916ebe"],"stepMatchArgumentsLists":[{"stepMatchArguments":[{"parameterTypeName":"string","group":{"start":43,"value":"\"Both fromDate and toDate must be provided\"","children":[{"start":44,"value":"Both fromDate and toDate must be provided","children":[{}]},{"children":[{}]}]}}]}]},{"id":"8edf1c16-e253-4840-b6ee-cad7ad505d1a","pickleStepId":"bc2605c3-bc1a-413b-a1ad-a1e7b4438147","stepDefinitionIds":["3b5988f8-f42f-476c-a292-501d539c3aaf"],"stepMatchArgumentsLists":[{}]},{"id":"46bd8644-2b55-4dd7-95a2-8f06dff7ccac","hookId":"ee79b858-f363-4617-b1db-197bbaf81ba4"}]}},{"testCaseStarted":{"timestamp":{"seconds":"1753365882","nanos":589737300},"testCaseId":"9ab10d20-4748-4716-a187-620ee5c8e6c7","id":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":8086500}},"timestamp":{"seconds":"1753365882","nanos":604848100},"testStepId":"00736feb-d66e-42f1-9b53-a575fadebe89","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":10993500}},"timestamp":{"seconds":"1753365882","nanos":620916000},"testStepId":"4abf02fd-7667-43d7-9e16-7fbba8c1c5d8","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"seconds":"5","nanos":488336200}},"timestamp":{"seconds":"1753365888","nanos":110251400},"testStepId":"83788fc6-6b36-465e-97d2-df690b0c6b82","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{}},"timestamp":{"seconds":"1753365888","nanos":111256400},"testStepId":"033fbde8-c3be-4e95-a552-c7b38e732d1a","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":1000700}},"timestamp":{"seconds":"1753365888","nanos":112257100},"testStepId":"8742c74e-8466-4e2c-8945-c9b5251a2c21","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{}},"timestamp":{"seconds":"1753365888","nanos":113258000},"testStepId":"57ee2641-2ed9-4312-a7fa-d7fd1a280798","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":1000000}},"timestamp":{"seconds":"1753365888","nanos":114258000},"testStepId":"da53724f-2f4f-4a48-8f68-657bb937e72f","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{}},"timestamp":{"seconds":"1753365888","nanos":114258000},"testStepId":"053f8e75-6eac-4a2e-b0bf-35369c0a2bff","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{}},"timestamp":{"seconds":"1753365888","nanos":114258000},"testStepId":"a663f97c-bf29-40d6-bebc-b01ef20d879e","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{}},"timestamp":{"seconds":"1753365888","nanos":115257900},"testStepId":"4fe53297-7ed5-45b6-863f-2290ce7fb586","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":1002100}},"timestamp":{"seconds":"1753365888","nanos":116260000},"testStepId":"7c6b27bc-b450-4e68-bdd9-c2613a0a800e","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{}},"timestamp":{"seconds":"1753365888","nanos":116260000},"testStepId":"6a158af9-c46b-43f1-a446-05ffa7d66a5b","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":999500}},"timestamp":{"seconds":"1753365888","nanos":117259500},"testStepId":"7afb0d25-a958-4c24-89cf-96ed5ba28768","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{}},"timestamp":{"seconds":"1753365888","nanos":117766900},"testStepId":"c243ebe6-b8f8-41c8-98a0-1f9c71c53d9f","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{}},"timestamp":{"seconds":"1753365888","nanos":118774200},"testStepId":"9b19bdc1-e3cc-4ee3-a12c-ba67d9455c5a","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":1006600}},"timestamp":{"seconds":"1753365888","nanos":121284600},"testStepId":"1852f6b7-9b53-48d2-a37c-0c089848d208","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"seconds":"1","nanos":899535800}},"timestamp":{"seconds":"1753365890","nanos":20820400},"testStepId":"890e9521-69ac-45ac-85c2-200286765489","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":17037900}},"timestamp":{"seconds":"1753365890","nanos":38857500},"testStepId":"546abd8b-ad34-40d1-840f-af138f6984c1","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":1508100}},"timestamp":{"seconds":"1753365890","nanos":40365600},"testStepId":"897c78cc-7392-4599-a484-6a3c30bee8a5","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"seconds":"4","nanos":1064300}},"timestamp":{"seconds":"1753365894","nanos":41429900},"testStepId":"8edf1c16-e253-4840-b6ee-cad7ad505d1a","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}},{"testStepFinished":{"testStepResult":{"status":"PASSED","duration":{"nanos":468681400}},"timestamp":{"seconds":"1753365894","nanos":510111300},"testStepId":"46bd8644-2b55-4dd7-95a2-8f06dff7ccac","testCaseStartedId":"c7bf79bd-35b6-4c48-80e5-539ea46bb16f"}}];</script>
+</body>
+</html>

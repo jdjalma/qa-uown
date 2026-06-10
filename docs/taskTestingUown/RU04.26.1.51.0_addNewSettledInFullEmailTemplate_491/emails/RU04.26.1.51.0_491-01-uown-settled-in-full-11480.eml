@@ -1,0 +1,350 @@
+Delivered-To: fintechgroup777@gmail.com
+Received: by 2002:a05:7412:7a93:20b0:1cd:e7c8:4e21 with SMTP id hu19-n2csp3638480rdb;
+        Thu, 23 Apr 2026 08:21:01 -0700 (PDT)
+X-Received: by 2002:a05:690c:c50e:b0:7b8:926e:3ef1 with SMTP id 00721157ae682-7b9ece7715cmr272550087b3.9.1776957661719;
+        Thu, 23 Apr 2026 08:21:01 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1776957661; cv=none;
+        d=google.com; s=arc-20240605;
+        b=Nw0tC3V5QUzmjfDWbiGsdMvSeVILmK1SVlqFl+hSRWTlIHg5pJgGAyVYTcPWsmc3bl
+         F9ZQ/j6BOb94ThDWCAx69/gHusAGWeMHu4E88ObThsPv1uZRMHQh82WQrB7zMhvb1VJv
+         yzJUG7bAVgPcxq6dWfSztF8iD05TR23oh5CAFTIHPRTBGcgiXNL/dBBWiOQuyVAmwMej
+         HXW/Ffq/Hn1rlau2s4/K3W5f2fAYKU60Nz/l2gldu/qdk18OEbonGcxV3C1eALbnnBmj
+         WZMzOsGynrJkHfh7/wpTK1POMv6KZyvp/GPJWO2Imt0OCxFHgd5YX4eocRqTdMnQD8zt
+         wIEg==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20240605;
+        h=to:subject:message-id:mime-version:from:date
+         :content-transfer-encoding:dkim-signature:dkim-signature;
+        bh=xHt2o78wsbPyKC+uqKytvdbep4kegAT7E+Y4S56NmDM=;
+        fh=lKPJbLZlVaD6fyGOC9menm74AWQRjTQA2QO6UsmqfIk=;
+        b=ABXp/gGrXCpEvAv34R70G80iOZHQk44q5f4iW5aHXTLFfbTEzqOM+hOeMuHDJkLnuS
+         k7YUjciiWBF3xM+8L9/zkOwiQt5dnXXHH+yjsADnSQpCw1yyv+fvI4YAlPOi9fa2PhSF
+         ov/CVh7gIo4UgUGq9mzYnLW2f844AbLuV2PABVOM5FiwH2B5iVkmF9JSuVpIil6MynX7
+         mJTIB/fU0hc+1wG19180AXlqa985WSjV292QyyyUlRmUA9rkbP2Zt61RZiAs8r0aylxr
+         d87RhzXaXWf1GWUc3iyUgzfq6CZZDYYsQetDgE25q/5NoKHQy7EoDWUb2YVEjjU08H2L
+         Iv2w==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@uownleasing.com header.s=s1 header.b=BlxKpYhC;
+       dkim=pass header.i=@sendgrid.info header.s=smtpapi header.b="yuVcF/NA";
+       spf=pass (google.com: domain of bounces+34082517-6b28-fintechgroup777=gmail.com@em3357.uownleasing.com designates 159.183.125.108 as permitted sender) smtp.mailfrom="bounces+34082517-6b28-fintechgroup777=gmail.com@em3357.uownleasing.com";
+       dmarc=pass (p=QUARANTINE sp=QUARANTINE dis=NONE) header.from=uownleasing.com
+Return-Path: <bounces+34082517-6b28-fintechgroup777=gmail.com@em3357.uownleasing.com>
+Received: from wfbttdsc.outbound-mail.sendgrid.net (wfbttdsc.outbound-mail.sendgrid.net. [159.183.125.108])
+        by mx.google.com with ESMTPS id af79cd13be357-8e7da3abe3esi1934152185a.360.2026.04.23.08.21.01
+        for <fintechgroup777@gmail.com>
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
+        Thu, 23 Apr 2026 08:21:01 -0700 (PDT)
+Received-SPF: pass (google.com: domain of bounces+34082517-6b28-fintechgroup777=gmail.com@em3357.uownleasing.com designates 159.183.125.108 as permitted sender) client-ip=159.183.125.108;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@uownleasing.com header.s=s1 header.b=BlxKpYhC;
+       dkim=pass header.i=@sendgrid.info header.s=smtpapi header.b="yuVcF/NA";
+       spf=pass (google.com: domain of bounces+34082517-6b28-fintechgroup777=gmail.com@em3357.uownleasing.com designates 159.183.125.108 as permitted sender) smtp.mailfrom="bounces+34082517-6b28-fintechgroup777=gmail.com@em3357.uownleasing.com";
+       dmarc=pass (p=QUARANTINE sp=QUARANTINE dis=NONE) header.from=uownleasing.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=uownleasing.com;
+	h=content-transfer-encoding:content-type:date:from:mime-version:subject:
+	to:cc:content-type:date:feedback-id:from:subject:to;
+	s=s1; t=1776957661; bh=xHt2o78wsbPyKC+uqKytvdbep4kegAT7E+Y4S56NmDM=;
+	b=BlxKpYhCZo96GYfbcY2hV10URj0pL8MOQpHqzyRzRqwl2e8KNC3QENhShj7xFWTIFtSo
+	b/m4lpQdnOQBAMqZkLnQzIOQK2oXoaRoihXwXKKcGN0o35bvhpBcxwu7rjhX3E+h1VAr7x
+	7u6AnFS6CsdNPzPy2cY9lyD1ZCDjEn5KdWQP8rZ+77QnaRSC0Twb3Y9WKgA3kbsprXdsWH
+	Z/MOX7ZZ2JivtFtiS4LNVE/b2+CNB1M8+u5AfMxkqW4AF+RztKM/3qAA++EeLwGhzgxqqx
+	zkMpnnD283z0XlT60HLQ2wkg8S8/Iu+wUmksojxHjEAJRgv4S8EIvY8T11Lxcj2w==
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=sendgrid.info;
+	h=content-transfer-encoding:content-type:date:from:mime-version:subject:
+	to:cc:content-type:date:feedback-id:from:subject:to;
+	s=smtpapi; t=1776957661; bh=xHt2o78wsbPyKC+uqKytvdbep4kegAT7E+Y4S56NmDM=;
+	b=yuVcF/NA2AV+BWrfFXts01ypu+tgb78049ZTDaAZB8gVXZ2+yt0m2zTt5BEIbsKpk1sY
+	8m5UxBayKx6GMParKkiqbcVYID7HVgph0iGy0PRo70KK8rrV6l05Rh4Or10zT9oT2+SDhb
+	FHD3atbWqnp0MG+TJllad84haoCR/VUxI=
+Received: by recvd-754bd8c8db-n7pp5 with SMTP id recvd-754bd8c8db-n7pp5-1-69EA38DD-D
+	2026-04-23 15:21:01.042393219 +0000 UTC m=+149846.303322291
+Received: from MzQwODI1MTc (unknown)
+	by geopod-ismtpd-13 (SG) with HTTP
+	id eUOnnqkcSWWqpONvWEUcyA
+	Thu, 23 Apr 2026 15:21:00.995 +0000 (UTC)
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/html; charset=utf-8
+Date: Thu, 23 Apr 2026 15:21:01 +0000 (UTC)
+From: uown.dev@uownleasing.com
+Mime-Version: 1.0
+Message-ID: <eUOnnqkcSWWqpONvWEUcyA@geopod-ismtpd-13>
+Subject: Settled in Full - Account #11480
+X-SG-EID: 
+ =?us-ascii?Q?u001=2EJ5sA5mlXzb+Z7aWwhUoA+YsSkvxYgG8mgSRqacY+8N7oLnVkDOvnqR3SE?=
+ =?us-ascii?Q?baufb05rbj+=2FPuT7flTXu5fAJReD4qA8kW2ZgyX?=
+ =?us-ascii?Q?h3ONNby11j28KhhyzR3yq7lbGRhmAtnikSdE2E3?=
+ =?us-ascii?Q?U2B279t2VDjmtAAPin0PPL3R9HfYSGCKdFgTSiA?=
+ =?us-ascii?Q?+gmjrW70YM16pSN3eRXgIP13cY1WW6M0fqUK72Z?=
+ =?us-ascii?Q?Q=3D=3D?=
+To: fintechgroup777@gmail.com
+X-Entity-ID: u001.5cWs5X4nonScT0kz4uMg8w==
+
+<html lang=3D"en"><head>
+  <title>UOwn Settled in Full Email</title>
+</head>
+<body>
+<div style=3D"width: 600px">
+  <div style=3D"
+	      overflow: visible;
+	      height: 52px;
+	      margin: 7px 0;
+	      clear: both;
+	      text-align: center;
+	      ">
+    <img style=3D"
+	        width: 132px;
+	        height: 62px;
+	        overflow: visible;
+	      " src=3D"https://storage.googleapis.com/uown/logo_top_62.png" srcset=
+=3D"https://storage.googleapis.com/uown/logo-top_62.png 1x, https://storage=
+.googleapis.com/uown/logo-top_62@2x.png 2x">
+  </div>
+  <div style=3D"
+        overflow: visible;
+        white-space: normal;
+        text-align: left;
+        font-family: Helvetica Neue;
+        font-style: normal;
+        font-weight: normal;
+        font-size: 14px;
+        color: #222222;
+        margin: 20px 0;
+      ">
+    <div style=3D"margin: 35px auto;width: 500;">10500 University Center Dr=
+.
+		<br>Suite 150
+		<br>Tampa, FL 33612
+		<br>Phone: (877) 357-5474
+		<br>Fax: (877) 353-8706
+		<br>Email: Accountmanagement@Uownleasing.com
+	</div>
+  </div>
+  <div style=3D"
+        overflow: visible;
+        white-space: normal;
+        text-align: left;
+        font-family: Helvetica Neue;
+        font-style: normal;
+        font-weight: normal;
+        font-size: 14px;
+        color: #222222;
+      ">
+    <div style=3D"margin: 0 auto;margin-top: 35px;width: 500;">
+      Date: <span>Apr 23, 2026</span>
+    </div>
+  </div>
+  <div style=3D"
+        overflow: visible;
+        white-space: normal;
+        text-align: left;
+        font-family: Helvetica Neue;
+        font-style: normal;
+        font-weight: normal;
+        font-size: 14px;
+        color: #222222;
+        margin: 20px 0;
+      ">
+    <div style=3D"margin: 35px auto;width: 500;">Personal and Confidential =
+for:
+		<br><span>Karen</span> <span>Hernandez</span>
+		<br><span>5204 Lake Dr</span> <span></span>
+    <br><span>Atlanta</span> , <span>GA</span>  <span>30301</span>
+		<br><br>UOWN Account Number: <span>11480</span>
+	</div>
+  </div>
+  <div style=3D"
+        overflow: visible;
+        white-space: normal;
+        text-align: left;
+        font-family: Helvetica Neue;
+        font-style: normal;
+        font-weight: normal;
+        font-size: 16px;
+        color: #222222;
+        margin: 20px 0;
+      ">
+    <div style=3D"margin: 35px auto;width: 500;">Dear <span>Karen</span> <s=
+pan>Hernandez</span>,
+		<br>
+		<br>This letter confirms that on <span>2026-04-23</span> we processed a p=
+ayment in the amount of <span>200.00</span>. The above referenced account i=
+s now closed and (settled) in full.*
+		<br>
+		<br>Customer satisfaction is our primary focus. Our goal is to provide yo=
+u with the best quality products at the most reasonable price.
+		<br><br> Thank you for choosing Uown! <br><br>
+
+	</div>
+  </div>
+  <div style=3D"
+        overflow: visible;
+        white-space: normal;
+        text-align: center;
+        font-family: Helvetica Neue;
+        font-style: normal;
+        font-weight: normal;
+        font-size: 14px;
+        color: #222222;
+        margin: 20px 0;
+      ">
+    <div style=3D"margin: 35px auto;width: 420;">* If any lease term paymen=
+ts do not clear, the paid/settled in full status of the account will be voi=
+ded.
+	</div>
+  </div>
+  <div style=3D"
+            background-color: rgba(247,247,247,1);
+            padding: 30px 0;
+            width: 572px;
+            margin-left: 12px;
+            margin-top: 41px;
+            ">
+    <div style=3D"
+        overflow: visible;
+        text-align: center;
+        font-family: Helvetica Neue;
+        font-style: normal;
+        font-weight: bold;
+        font-size: 18px;
+        color: rgba(34, 34, 34, 1);
+        text-transform: uppercase;
+      ">
+      WE=E2=80=99RE HERE TO HELP!
+    </div>
+    <p style=3D"
+        overflow: visible;
+        text-align: center;
+        font-family: Helvetica Neue;
+        font-style: normal;
+        font-weight: normal;
+        font-size: 14px;
+        color: rgba(34, 34, 34, 1);
+      ">
+      Call the number below to speak to one of<br>our customer service repr=
+esentatives.
+    </p>
+    <p style=3D"
+        overflow: visible;
+        text-align: center;
+        font-family: Helvetica Neue;
+        font-style: normal;
+        font-weight: normal;
+        font-size: 14px;
+        color: rgba(94, 203, 245, 1);
+      ">
+      <a href=3D"https://portal.uownleasing.com" target=3D"_blank">www.uown=
+leasing.com</a>
+    </p>
+    <div style=3D"margin: 23px 0;">
+      <div style=3D"
+      width: 572px;
+      display: block;
+      height: 53px;
+      ">
+        <div style=3D"width: 377px;margin: 0px auto;">
+          <div style=3D"
+            overflow: visible;
+            font-family: Helvetica Neue;
+            font-style: normal;
+            font-weight: bold;
+            font-size: 14px;
+            color: rgba(94, 203, 245, 1);
+            text-align: center;
+          ">
+            Mon - Fri<span style=3D"font-style: normal; font-weight: normal=
+;">: <span>8:00 AM =E2=80=93 11:00 PM (EST)</span></span><br>
+            Sat<span style=3D"font-style: normal; font-weight: normal;">: <=
+span>9:00 AM =E2=80=93 11:00 PM (EST)</span></span><br>
+            Sun<span style=3D"font-style: normal; font-weight: normal;">: <=
+span>10:00 AM =E2=80=93 11:00 PM (EST)</span></span>
+          </div>
+        </div>
+      </div>
+      <div style=3D"
+      width: 572px;
+      display: block;
+      height: 53px;
+      ">
+        <div style=3D"width: 572px;">
+          <div style=3D"
+			    overflow: visible;
+			    font-family: Helvetica Neue;
+			    font-style: normal;
+			    font-weight: bold;
+			    font-size: 14px;
+			    color: rgba(94, 203, 245, 1);
+			    text-align: center;
+			  ">
+            info@uownleasing.com<br>
+            (877) 357-5474
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style=3D"
+        overflow: visible;
+        text-align: center;
+        font-family: Helvetica Neue;
+        font-style: normal;
+        font-weight: bold;
+        font-size: 14px;
+        color: rgba(34, 34, 34, 1);
+        text-transform: uppercase;
+        margin: 13px 0;
+        clear: both;
+      ">
+      FOLLOW US ON SOCIAL MEDIA!
+    </div>
+    <div style=3D"display: block; margin-bottom: 10px; height: 20px; text-a=
+lign: center;">
+      <div style=3D"margin: 0 auto; display: inline-block;">
+        <a href=3D"https://www.facebook.com/uownl/" target=3D"_blank" style=
+=3D"float: left;">
+          <img style=3D"
+            overflow: visible;
+            width: 19.77px;
+            height: 19.771px;
+            transform: matrix(1, 0, 0, 1, 0, 0);
+            fill: rgba(94, 203, 245, 1);
+          " src=3D"https://storage.googleapis.com/uown/icon-facebook.png">
+        </a>
+        <a href=3D"https://twitter.com/UownL" target=3D"_blank" style=3D"fl=
+oat: left; margin: 0 15px;">
+          <img style=3D"
+            overflow: visible;
+            width: 22.595px;
+            height: 18.351px;
+            transform: matrix(1, 0, 0, 1, 0, 0);
+          " src=3D"https://storage.googleapis.com/uown/icon-twitter.png">
+        </a>
+        <a href=3D"https://www.instagram.com/uownleasing/" target=3D"_blank=
+" style=3D"float: left;">
+          <img style=3D"
+            overflow: visible;
+            width: 19.781px;
+            height: 19.777px;
+            transform: matrix(1, 0, 0, 1, 0, 0);
+			" src=3D"https://storage.googleapis.com/uown/icon-instagram.png">
+        </a>
+      </div>
+    </div>
+  </div>
+  <div style=3D"
+    overflow: visible;
+    height: 52px;
+    background-color: rgba(94, 203, 245, 1);
+    margin: -1px 0;
+    clear: both;
+    text-align: center;
+    ">
+    <img style=3D"
+      width: 83px;
+      height: 38px;
+      overflow: visible;
+      margin: 6px;
+    " src=3D"https://storage.googleapis.com/uown/logos-05.png" srcset=3D"ht=
+tps://storage.googleapis.com/uown/logos-05.png 1x, https://storage.googleap=
+is.com/uown/logos-05@2x.png 2x">
+  </div>
+</div>
+</body></html>

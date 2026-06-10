@@ -72,13 +72,26 @@ export class LosPartnerApplicationClient extends BaseClient {
   /**
    * Search application status.
    * POST /uown/los/merchant/applications/search
+   *
+   * Auth: validated inline by `LosRequestMessageConstraintValidator.validateApplicationStatusRequest`
+   * via body fields `userName`/`setupPassword`/`merchantNumber` (use `buildApplicationStatusBody`).
+   * NO Spring Security / `@PreAuthorize` on `LosExternalMerchantController` — do NOT inject bearer token.
+   *
+   * @param body - Search criteria (use `buildApplicationStatusBody(merchant, leadUuid)`)
+   * @param apiVersion - X-API-Version header value (default `'2'`); pass `null` to omit
    */
   async searchApplicationStatus(
     body?: Record<string, unknown>,
+    apiVersion: string | null = '2',
   ): Promise<ApiResponse<LosPartnerApplicationResponse>> {
-    return this.post<LosPartnerApplicationResponse>(
+    const extraHeaders: Record<string, string> = {};
+    if (apiVersion !== null) {
+      extraHeaders['X-API-Version'] = apiVersion;
+    }
+    return this.postWithOverride<LosPartnerApplicationResponse>(
       '/uown/los/merchant/applications/search',
       body ?? {},
+      extraHeaders,
     );
   }
 

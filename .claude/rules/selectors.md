@@ -43,7 +43,7 @@ paths:
 - Falha de seletor com `TimeoutError` / `not visible` / `0 elements` / `strict mode violation` → rodar o protocolo, NÃO aumentar timeout
 - `getByRole('button', ...)` só vale se o elemento é `<button>` OU tem `role="button"` explícito. Anchor (`<a>`) é `role="link"` por padrão
 - Suspeita de responsive (`d-lg-block`, `d-none d-md-block`, hamburger menu): fixar viewport 1440×900 antes de inspecionar
-- Protocolo completo: [`.claude/context/shared/dom-investigation-protocol.md`](../context/shared/dom-investigation-protocol.md)
+- Protocolo completo: skill [[dom-investigation]] em `.claude/skills/dom-investigation/SKILL.md`
 
 ```
 ❌ Trocar getByRole por XPath "porque não funciona" sem inspecionar DOM

@@ -934,6 +934,38 @@ export class DatabaseHelpers {
   }
 
   /**
+   * Authorized synthetic processor stand-in for MULTI-INSTALLMENT CC arrangements.
+   *
+   * A weekly CC arrangement (today → today+28) produces N CC SALEs: the one posting
+   * today processes synchronously (APPROVED); the future-dated ones (today+7/14/21/28)
+   * stay PENDING with `posting_date > CURRENT_DATE`. dev3 has no real processor sweep to
+   * approve them when their posting date arrives, so the arrangement is stuck at
+   * IN_PROGRESS forever — `simulateCcSweepForArrangement` (date-gated) cannot move them.
+   *
+   * This helper approves ALL remaining PENDING CC SALEs for the arrangement regardless of
+   * posting_date — standing in for the processor callbacks that dev3 cannot emit. Same
+   * authorized Exception-3 DB-mutation scope as S4/S5's ACH SETTLED/RETURNED stand-ins
+   * (user authorization granted 2026-06-01, CLAUDE.md Exception 3). Caller then runs
+   * `recalculateArrangementStatus` to derive the terminal SUCCESS state.
+   *
+   * Primary-source evidence (dev3, 2026-06-01): arrangement pk=100 had 5 CC SALEs —
+   * pk3328 APPROVED (posting today) + pk3329-3332 PENDING (posting +7/+14/+21/+28),
+   * arrangement stuck at IN_PROGRESS.
+   *
+   * @returns Number of CC SALE transactions approved (0 if none pending).
+   */
+  async approveAllPendingCcSalesForArrangement(arrangementPk: string): Promise<number> {
+    return this.executeUpdate(
+      `UPDATE uown_sv_credit_card_transaction
+       SET status = 'APPROVED'
+       WHERE payment_arrangement_pk = $1
+         AND status = 'PENDING'
+         AND cc_action = 'SALE'`,
+      [arrangementPk],
+    );
+  }
+
+  /**
    * Recalculates arrangement status based on its CC transaction states.
    * Mirrors the Java state machine in `BootstrapService`:
    *
@@ -1264,6 +1296,133 @@ export class DatabaseHelpers {
       'SELECT internal_status FROM uown_los_lead WHERE pk = $1',
       [leadPk],
     );
+  }
+
+  // ── Account brand helper (task #518 — Finalize Purchase Email) ──────
+  //
+  // `uown_sv_account.company` stores the brand string ("UOWN", "KORNERSTONE",
+  // possibly others). Used in brand-mismatch pre-condition checks per
+  // ssn-test-catalog §7.2 — CT-02/CT-04 of task #518 assert the
+  // Kornerstone-flavored template was queued for a KS-brand account.
+  //
+  // Single-shot read (no polling) — the account row exists by the time the
+  // test reaches the brand-check assertion. Returns null when the account
+  // does not exist or `company` is NULL.
+
+  /**
+   * Returns the `company` (brand) string from `uown_sv_account` for the
+   * given account PK.
+   *
+   * @param accountPk Numeric or string PK of `uown_sv_account.pk`.
+   * @returns `'UOWN' | 'KORNERSTONE' | string | null` — actual values are
+   *          taken verbatim from the column; callers should compare against
+   *          known brand constants (see SsnTestCatalog §7.2).
+   */
+  async getAccountCompanyByPk(
+    accountPk: number | string,
+  ): Promise<string | null> {
+    return this.getSingleString(
+      'SELECT company FROM uown_sv_account WHERE pk = $1',
+      [accountPk],
+    );
+  }
+
+  // ── Lead lookup by applicant email (task #518) ─────────────────────
+  //
+  // After the UI new-application wizard submits, the lead row is persisted
+  // asynchronously (a few seconds). This helper polls until the lead↔email
+  // pair appears, then returns the lead PK, account PK (if account row was
+  // already created), and the `uuid` (application short-code).
+  //
+  // Schema notes (verified against docs/taskTestingUown/database-schema.md):
+  //   - `uown_los_lead` has NO `email` column directly. The applicant email
+  //     lives in `uown_los_email.email_address` keyed by `lead_pk`.
+  //   - `uown_sv_account.lead_pk` is the FK back to the lead (1:1 in
+  //     practice; the LEFT JOIN tolerates the gap between lead creation and
+  //     account materialization).
+  //   - "applicationShortCode" maps to `uown_los_lead.uuid` (the
+  //     varchar(255) column used as the public-facing short code; the
+  //     separate `uown_los_lead_short_code` table is a newer audit trail
+  //     and not the wizard-time short code).
+
+  /**
+   * Resolves the lead just created via the UI new-application wizard from
+   * the applicant's email address. Polls with exponential backoff (default
+   * 30 s) because the lead row is persisted asynchronously after wizard
+   * submit.
+   *
+   * @param email Applicant email used in the wizard (matched
+   *              case-insensitively against `uown_los_email.email_address`).
+   * @param opts.minCreatedAfter Optional defense-in-depth filter — only
+   *              consider leads whose `row_created_timestamp` is `>=` this
+   *              instant. Useful to avoid matching older runs that recycled
+   *              the same email.
+   * @param opts.timeoutMs Total polling budget (default 30_000 ms).
+   * @returns `{ leadPk, accountPk, applicationShortCode }`.
+   * @throws When no matching lead appears within the timeout.
+   */
+  async resolveLeadFromApplicantEmail(
+    email: string,
+    opts: { minCreatedAfter?: Date; timeoutMs?: number } = {},
+  ): Promise<{
+    leadPk: number;
+    accountPk: number | null;
+    applicationShortCode: string;
+  }> {
+    const { minCreatedAfter, timeoutMs = 30_000 } = opts;
+
+    const params: unknown[] = [email];
+    let timestampClause = '';
+    if (minCreatedAfter) {
+      params.push(minCreatedAfter.toISOString());
+      timestampClause = 'AND l.row_created_timestamp >= $2';
+    }
+
+    const sql = `
+      SELECT l.pk AS lead_pk,
+             a.pk AS account_pk,
+             l.uuid AS application_short_code
+        FROM uown_los_lead l
+        JOIN uown_los_email e ON e.lead_pk = l.pk
+        LEFT JOIN uown_sv_account a ON a.lead_pk = l.pk
+       WHERE UPPER(e.email_address) = UPPER($1)
+         ${timestampClause}
+       ORDER BY l.row_created_timestamp DESC NULLS LAST, l.pk DESC
+       LIMIT 1
+    `;
+
+    const result = await this.pollUntil<{
+      leadPk: number;
+      accountPk: number | null;
+      applicationShortCode: string;
+    }>(
+      async () => {
+        const row = await this.queryOne<{
+          lead_pk: number | string;
+          account_pk: number | string | null;
+          application_short_code: string | null;
+        }>(sql, params);
+        if (!row || row.application_short_code == null) return null;
+        return {
+          leadPk: Number(row.lead_pk),
+          accountPk: row.account_pk != null ? Number(row.account_pk) : null,
+          applicationShortCode: row.application_short_code,
+        };
+      },
+      timeoutMs,
+      'resolveLeadFromApplicantEmail',
+    );
+
+    if (!result) {
+      throw new Error(
+        `resolveLeadFromApplicantEmail: no lead found for email=${email} ` +
+          `within ${timeoutMs}ms` +
+          (minCreatedAfter
+            ? ` (minCreatedAfter=${minCreatedAfter.toISOString()})`
+            : ''),
+      );
+    }
+    return result;
   }
 
   // ── NeuroID verification helpers ───────────────────────────────────

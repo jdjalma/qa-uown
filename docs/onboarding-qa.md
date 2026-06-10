@@ -63,7 +63,7 @@ O fluxo de trabalho segue estas etapas:
 ### h) Relatório na tarefa
 
 - Trato o relatório e insiro na tarefa do GitLab
-- Formato: padrão próprio do projeto (definido em `.claude/context/shared/e2e-test-report-standard.md`)
+- Formato: padrão próprio do projeto (definido pela skill [[test-report-standard]])
 - **Não usamos Gherkin/Cucumber** — migramos de Selenium+Cucumber para Playwright e não adicionamos a camada de Cucumber porque não é utilizada pela equipe de desenvolvimento
 
 ---
@@ -147,28 +147,25 @@ Contendo:
 
 ### Agentes de IA
 
-O projeto usa **13 subagentes especializados** orquestrados pelo `CLAUDE.md`. Cada um tem função atômica:
+O projeto usa **5 agentes especializados** orquestrados pelo `CLAUDE.md`. Cada um carrega skills (em `.claude/skills/`) sob demanda — sem slash commands; os agents decidem.
 
-| Agente | O que faz |
-|--------|-----------|
-| `subagent-fetch-task` | Busca issue do GitLab, extrai requisitos |
-| `subagent-spec-test` | Gera SPEC de teste (cenários, dados, validações) |
-| `subagent-impl-e2e` | Implementa teste E2E a partir do SPEC |
-| `subagent-impl-api` | Implementa teste API-only |
-| `subagent-impl-page-object` | Cria page object novo |
-| `subagent-impl-api-client` | Cria client API tipado |
-| `subagent-validate-results` | Executa teste e gera relatório |
-| `subagent-debug-flaky` | Diagnostica e corrige testes instáveis |
-| `subagent-docs-update` | Atualiza documentação (sempre por último) |
+| Agente | Papel |
+|--------|-------|
+| `qa-planner` | QA Strategist — analisa escopo, valida AC, prioriza por risco, escolhe estratégia, produz SPEC |
+| `qa-implementer` | QA Engineer — implementa testes, page objects, API clients, helpers, DB validation |
+| `qa-debugger` | QA Investigator — DOM-first, root-cause, classificação conservadora, alimenta catálogo de pitfalls |
+| `qa-validator` | QA Reviewer — roda testes, valida cobertura vs risco, produz report |
+| `qa-doc-keeper` | Knowledge Curator — atualiza catálogos e pitfalls (SEMPRE último) |
 
-Esses agentes rodam em **pipelines** conforme o tipo de tarefa:
+Fluxo padrão por tipo de tarefa:
 
-| Tipo | Pipeline |
-|------|----------|
-| `new-flow` | spec → artefatos → teste → validação → docs |
-| `new-api` | spec → client → teste → validação → docs |
-| `debug` | debug-flaky → audit → validate → docs |
-| `qa-flow` | Fluxo completo de QA em 10 fases (comando `/qa-flow`) |
+| Sinal da tarefa | Sequência |
+|------------------|-----------|
+| Nova feature / novo teste | `qa-planner` → `qa-implementer` → `qa-validator` → `qa-doc-keeper` |
+| Teste falhando / flaky | `qa-debugger` → (`qa-validator` se relatório existe) → `qa-doc-keeper` |
+| Atualizar docs / catálogo | `qa-doc-keeper` |
+
+> Detalhes completos em [`CLAUDE.md`](../CLAUDE.md) (orquestrador) e em cada `.claude/agents/{name}.md`.
 
 ---
 

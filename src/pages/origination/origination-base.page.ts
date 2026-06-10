@@ -6,23 +6,28 @@ export class OriginationBasePage extends BasePage {
   readonly overviewLink = this.page.locator('a:has-text("Overview"), [href*="overview"]');
   readonly alertsLink = this.page.locator('a:has-text("Alerts"), [href*="alerts"]');
 
+  // Sidebar items in the Origination portal are rendered capitalized
+  // ("Overview", "Funding", "Leads", ...). `BasePage.sideMenuNavigateTo` falls
+  // back to `getByText(section, { exact: true })` as a last resort — which is
+  // case-sensitive — so we MUST pass the section name with the same casing the
+  // sidebar uses, otherwise CT-13 (and any nav from a fallback path) misses.
   async navigateToOverview(): Promise<void> {
-    await this.sideMenuNavigateTo('overview');
+    await this.sideMenuNavigateTo('Overview');
   }
 
   async navigateToFundingQueue(): Promise<void> {
-    await this.sideMenuNavigateTo('funding');
+    await this.sideMenuNavigateTo('Funding');
   }
 
   async navigateToAlerts(): Promise<void> {
-    await this.sideMenuNavigateTo('alerts');
+    await this.sideMenuNavigateTo('Alerts');
   }
 
   async navigateToCustomers(): Promise<void> {
-    await this.sideMenuNavigateTo('customers');
+    await this.sideMenuNavigateTo('Customers');
   }
 
   async navigateToLeads(): Promise<void> {
-    await this.sideMenuNavigateTo('leads');
+    await this.sideMenuNavigateTo('Leads');
   }
 }

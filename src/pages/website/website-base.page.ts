@@ -188,68 +188,55 @@ export class WebsiteBasePage extends BasePage {
   async goToSidebarLink(desiredOption: string): Promise<void> {
     const normalizedOption = desiredOption.toLowerCase().trim();
 
-    // Wait for any lingering full-screen overlay (post-payment, post-save) before
-    // attempting the click — otherwise it intercepts pointer events and the click times out.
-    await this.waitForSpinner();
-
     // Step 1: Try direct click (item already visible)
     if (await this.findAndClickSidebarItem(desiredOption)) {
       await this.waitForPageTransition(normalizedOption);
       return;
     }
 
-    // Step 2: Expand the parent dropdown(s) for this item, then retry
+    // Step 2: Expand the parent dropdown, then click the sub-item immediately
     if (await this.expandDropdownAndClick(desiredOption, normalizedOption)) return;
 
-    // Step 3: Expand ALL dropdowns as last resort
-    await this.expandAllSidebarDropdowns();
-    if (await this.findAndClickSidebarItem(desiredOption)) {
-      await this.waitForPageTransition(normalizedOption);
-      return;
-    }
-
-    // Step 4: Fallback — navigate by URL slug
+    // Step 3: Fallback — navigate by URL slug
+    // (skip expandAllSidebarDropdowns — too slow for website portal's short session)
     await this.navigateBySidebarUrlFallback(normalizedOption);
   }
 
-  /** Try multiple selector strategies to find and click a sidebar item */
+  /** Try to find and click a sidebar item (fast — 500ms timeout) */
   private async findAndClickSidebarItem(desiredOption: string): Promise<boolean> {
-    // Sidebar items are <span class="...sideBarContainer__item..."> elements.
-    // Scope to that class — other spans elsewhere in the DOM (hidden header/breadcrumb
-    // duplicates with the same text) would otherwise match `.first()` and never be clickable.
     const item = this.page
       .locator('[class*="sideBarContainer__item"]')
       .filter({ hasText: new RegExp(`^\\s*${desiredOption}\\s*$`, 'i') })
       .first();
-    if (await item.isVisible({ timeout: 1_500 }).catch(() => false)) {
+    if (await item.isVisible({ timeout: 500 }).catch(() => false)) {
       await item.click();
       return true;
     }
     return false;
   }
 
-  /** Expand parent dropdown(s) for the desired option, then try to click it */
+  /** Expand parent dropdown, then click the sub-item */
   private async expandDropdownAndClick(desiredOption: string, normalizedOption: string): Promise<boolean> {
     const dropdownParents: Record<string, string[]> = {
       'make payment': ['Payments'],
       'payment methods': ['Payments'],
+      'payment flexibility': ['Payments'],
       'update contact info': ['Account Settings'],
     };
     const parents = dropdownParents[normalizedOption] || ['Payments', 'Account Settings'];
     for (const parentLabel of parents) {
-      // Same scoping as findAndClickSidebarItem — avoid hidden duplicate spans.
       const parentEl = this.page
         .locator('[class*="sideBarContainer__item"]')
         .filter({ hasText: new RegExp(`^\\s*${parentLabel}\\s*$`, 'i') })
         .first();
-      if (await parentEl.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      if (await parentEl.isVisible({ timeout: 500 }).catch(() => false)) {
         await parentEl.click();
-        // Wait briefly for dropdown expansion (children render under the same scope)
-        await this.page.locator('[class*="sideBarContainer__item"]')
+        // Wait for sub-item to appear after dropdown expansion
+        const subItem = this.page.locator('[class*="sideBarContainer__item"]')
           .filter({ hasText: new RegExp(`^\\s*${desiredOption}\\s*$`, 'i') })
-          .first()
-          .waitFor({ state: 'visible', timeout: 3_000 }).catch(() => {});
-        if (await this.findAndClickSidebarItem(desiredOption)) {
+          .first();
+        if (await subItem.waitFor({ state: 'visible', timeout: 2_000 }).then(() => true).catch(() => false)) {
+          await subItem.click();
           await this.waitForPageTransition(normalizedOption);
           return true;
         }
@@ -283,6 +270,26 @@ export class WebsiteBasePage extends BasePage {
       'update contact info': '/update-contact',
     };
     const path = urlMap[normalizedOption] || `/${normalizedOption.replace(/\s+/g, '-')}`;
+
+    // Try SPA-friendly navigation first: click a known sidebar link to get to overview,
+    // then retry the target. page.goto() reloads the page and loses the SPA auth.
+    if (normalizedOption !== 'account summary') {
+      const overviewLink = this.page
+        .locator('[class*="sideBarContainer__item"]')
+        .filter({ hasText: /^\s*Account Summary\s*$/i })
+        .first();
+      if (await overviewLink.isVisible({ timeout: 2_000 }).catch(() => false)) {
+        console.log(`[Website] Sidebar fallback: returning to overview before retrying "${normalizedOption}"`);
+        await overviewLink.click();
+        await this.waitForPageTransition('account summary');
+        await this.expandAllSidebarDropdowns();
+        if (await this.findAndClickSidebarItem(normalizedOption.split(' ').map(w => w[0].toUpperCase() + w.slice(1)).join(' '))) {
+          await this.waitForPageTransition(normalizedOption);
+          return;
+        }
+      }
+    }
+
     const baseUrl = this.page.url().split('/').slice(0, 3).join('/');
     console.log(`[Website] Sidebar fallback: navigating directly to ${baseUrl}${path}`);
     await this.page.goto(`${baseUrl}${path}`);
@@ -387,6 +394,47 @@ export class WebsiteBasePage extends BasePage {
   }
 
   // ── Website Payments ──────────────────────────────────────────────
+
+  async makeAchPaymentFromCurrentPage(amount: string): Promise<void> {
+    // Select "Other" radio and fill amount
+    const otherRadio = this.page.locator(SELECTORS.wsOtherAmountRadio);
+    await otherRadio.waitFor({ state: 'visible', timeout: 10_000 });
+    await otherRadio.click();
+
+    // The wsPaymentAmountField selector includes #other (radio) — use only the text input
+    const paymentField = this.page.locator('input[name="paymentAmount"], input[type="number"]').first();
+    await paymentField.waitFor({ state: 'visible', timeout: 5_000 });
+    await paymentField.click({ clickCount: 3 });
+    await paymentField.fill(amount);
+
+    // Check the ACH/bank checkbox
+    const achCheckbox = this.page.locator(SELECTORS.wsAchCheckbox).first();
+    if (await achCheckbox.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      if (await achCheckbox.isChecked()) {
+        await achCheckbox.uncheck();
+        await sleep(300);
+      }
+      await achCheckbox.check();
+    }
+
+    const payBtn = this.page.locator(SELECTORS.wsPaymentSubmitButton).first();
+    await payBtn.click();
+
+    const successToast = this.page.locator(SELECTORS.toastSuccess);
+    await successToast.waitFor({ state: 'visible', timeout: 30_000 });
+    console.log(`[Website] ACH payment of $${amount} submitted`);
+  }
+
+  async makeCcPaymentFromCurrentPage(amount: string): Promise<void> {
+    await this.selectPaymentAmount(amount);
+    await this.selectLastCcCheckbox();
+
+    const payBtn = this.page.locator(SELECTORS.wsPaymentSubmitButton).first();
+    await payBtn.waitFor({ state: 'visible', timeout: 10_000 });
+    await payBtn.click({ force: true });
+
+    await this.waitForPaymentResult('CC', amount);
+  }
 
   /**
    * Makes an ACH payment on the website Make Payment page.

@@ -159,10 +159,43 @@ function generateInvoiceNumber(): string {
 
 // ── Builders ────────────────────────────────────────────────────────
 
+/**
+ * Optional overrides for the sendApplication body. Designed so callers can
+ * explicitly drive term length (13 vs 16 months) and state without mutating
+ * the default applicant data inline. No defaults are silently injected — if
+ * the caller omits a field, the legacy behavior is preserved.
+ *
+ * `termMonths` is informational on its own (the body does not carry a term
+ * column); pair it with `programName` so the backend resolves the matching
+ * `uown_merchant_program`. `merchantPk` and `programPk` are accepted for
+ * caller convenience (callers may forward them to helpers like
+ * `ensureMerchantReady` or downstream lookups) but are not serialized into
+ * the wire body — sendApplication identifies the merchant via credentials.
+ */
+export interface SendApplicationOverrides {
+  /** Override the applicant state (defaults to `applicant.state`). */
+  state?: string;
+  /** Override `desiredPaymentFrequency` (default `WEEKLY`). */
+  desiredPaymentFrequency?: string;
+  /** Override `mainPayFrequency` (default `WEEKLY`). */
+  mainPayFrequency?: string;
+  /** Forward `programName` so backend resolves the correct merchant program. */
+  programName?: string;
+  /**
+   * Override `mainAnnualIncome` (default `56000`). Higher income pushes the
+   * `BlackBoxApproval` amount up, which in turn determines `EligibleTerms`
+   * coming out of the underwriter. Required for forcing 16m eligibility in
+   * environments where the default tier caps at 13m. See memory
+   * `reference_qa1_16m_eligibility_blocked`.
+   */
+  mainAnnualIncome?: number;
+}
+
 export function buildSendApplicationBody(
   merchant: MerchantInfo,
   applicant: ApplicantInfo,
   order?: OrderInfo,
+  overrides?: SendApplicationOverrides,
 ): SendApplicationBody {
   const now = new Date();
   const lastPayDate = new Date(now);
@@ -181,7 +214,7 @@ export function buildSendApplicationBody(
     mainSSN: applicant.ssn,
     mainAddress1: applicant.address,
     mainCity: applicant.city,
-    mainStateOrProvince: applicant.state,
+    mainStateOrProvince: overrides?.state ?? applicant.state,
     mainPostalCode: applicant.zip,
     mainCellPhone: applicant.phone,
     emailAddress: applicant.email,
@@ -191,14 +224,18 @@ export function buildSendApplicationBody(
     languagePreference: 'E',
     iovationFingerprintText: 'fingerPrintText',
     ipaddress: DEFAULT_TEST_IP,
-    desiredPaymentFrequency: 'WEEKLY',
-    mainAnnualIncome: 56000,
-    mainPayFrequency: 'WEEKLY',
+    desiredPaymentFrequency: overrides?.desiredPaymentFrequency ?? 'WEEKLY',
+    mainAnnualIncome: overrides?.mainAnnualIncome ?? 56000,
+    mainPayFrequency: overrides?.mainPayFrequency ?? 'WEEKLY',
     mainNextPayDate: formatDateCompact(nextPayDate),
     mainLastPayDate: formatDateCompact(lastPayDate),
     mainEmploymentDuration: '_1_TO_2_YEARS',
     shipToSameAsConsumer: true,
   };
+
+  if (overrides?.programName) {
+    body.programName = overrides.programName;
+  }
 
   if (order) {
     // Build charges that sum exactly to orderTotal (following API contract)

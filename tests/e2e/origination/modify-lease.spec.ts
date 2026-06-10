@@ -27,11 +27,15 @@ import {
   driveLeadToFunding,
 } from "@helpers/index.js";
 
+// Origination portal requires 1440x900 viewport to properly render the
+// collapsible action buttons panel (Modify Lease, Cancel Lease, etc.).
+test.use({ viewport: { width: 1440, height: 900 } });
+
 // ── Scenario 1: Modify lease reducing value (SIGNED) ─────────────────
 
 const reduceValueData = {
   state: "CA",
-  merchant: "ProgressMobility",
+  merchant: "TireAgent",
   tag: buildTags(TestTag.REGRESSION),
 };
 
@@ -84,6 +88,7 @@ test.describe(
           // Delete existing items
           const tempPage = new OriginationCustomerPage(p);
           await tempPage.deleteAllInvoiceItems();
+          await p.locator(SELECTORS.naNumberOfItems).waitFor({ state: 'visible', timeout: 10_000 });
 
           // Add new item with reduced price
           const reducedPrice = Math.floor(approvedAmount * 0.5);
@@ -146,7 +151,7 @@ test.describe(
 
 const increaseValueData = {
   state: "CA",
-  merchant: "ProgressMobility",
+  merchant: "TireAgent",
   tag: buildTags(TestTag.REGRESSION),
 };
 
@@ -207,6 +212,7 @@ test.describe(
         const toastText = await customerPage.modifyLease(async (p) => {
           const tempPage = new OriginationCustomerPage(p);
           await tempPage.deleteAllInvoiceItems();
+          await p.locator(SELECTORS.naNumberOfItems).waitFor({ state: 'visible', timeout: 10_000 });
 
           // Add item at full approved amount
           await p.locator(SELECTORS.naNumberOfItems).fill("1");
@@ -276,7 +282,7 @@ test.describe(
 
 const apiModifyData = {
   state: "CA",
-  merchant: "ProgressMobility",
+  merchant: "TireAgent",
   tag: buildTags(TestTag.REGRESSION),
 };
 
@@ -362,7 +368,7 @@ test.describe(
 
 const minimumAmountData = {
   state: "CA",
-  merchant: "ProgressMobility",
+  merchant: "TireAgent",
   tag: buildTags(TestTag.REGRESSION),
 };
 
@@ -407,6 +413,7 @@ test.describe(
           toastText = await customerPage.modifyLease(async (p) => {
             const tempPage = new OriginationCustomerPage(p);
             await tempPage.deleteAllInvoiceItems();
+          await p.locator(SELECTORS.naNumberOfItems).waitFor({ state: 'visible', timeout: 10_000 });
 
             // Add item with very low price ($1)
             await p.locator(SELECTORS.naNumberOfItems).fill("1");
@@ -442,7 +449,7 @@ test.describe(
 
 const fundingModifyData = {
   state: "CA",
-  merchant: "ProgressMobility",
+  merchant: "TireAgent",
   tag: buildTags(TestTag.REGRESSION),
 };
 

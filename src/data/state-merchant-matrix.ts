@@ -55,7 +55,7 @@ export interface StateMatrixRow {
 
 /**
  * Full 50-state matrix (DC excluded).
- * Distribution: GOWSIGN=1, SIGNWELL=46, BLOCKED=4. Total=51 rows.
+ * Distribution: GOWSIGN=2, SIGNWELL=45, BLOCKED=4. Total=51 rows.
  */
 export const STATE_MATRIX: readonly StateMatrixRow[] = [
   // ── SR-GOWSIGN ──────────────────────────────────────────────────────────────
@@ -348,9 +348,11 @@ export const STATE_MATRIX: readonly StateMatrixRow[] = [
     validMerchant: 'TerraceFinance',
   },
   {
+    // TX: GowSign template deployed via svc#515 (2026-05-26).
+    // Previously SIGNWELL (fallback); now routes to GOWSIGN like CA.
     state: 'TX',
     allowed: true,
-    expectedProvider: 'SIGNWELL',
+    expectedProvider: 'GOWSIGN',
     lessor: 'Mollie, LLC, dba Uown',
     validMerchant: 'TerraceFinance',
   },

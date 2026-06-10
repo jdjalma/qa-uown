@@ -26,6 +26,9 @@ target/
 *.jpg
 *.jpeg
 
+# Playwright MCP snapshots (temporary debug artifacts from MCP tooling)
+.playwright-mcp/
+
 # IDE
 .idea/
 .vscode/

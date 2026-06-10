@@ -1,0 +1,87 @@
+Environment,Sweep,Check,Double Check,Task Status,Notes
+Dev3,emailSweep,José,,Waiting Double Check,Nivel A: 9 emails PENDING->SENT OK. Estava is_active=false; ativado via resumeScheduledTask.
+,,,,,
+Dev3,RecurringPaymentReminderSweep,José,,Waiting Double Check,Nivel A: 4 emails enfileirados PENDING OK.
+Dev3,CreateScheduledACHPaymentsSweep,José,,BUG - Reportado ao Dev,Nivel A: BUG confirmado SW-BUG-001. Unknown alias [pk] - alias mismatch binario vs SQL (pk=15). Reportado ao dev 2026-06-02.
+Dev3,CreateScheduledCreditCardPaymentsSweep,José,,BUG - Reportado ao Dev,Nivel A: BUG confirmado SW-BUG-001. Unknown alias [accountPk] - alias mismatch binario vs SQL (pk=16). Reportado ao dev 2026-06-02.
+,,,,,
+,,,,,
+,,,,,
+Dev3,getStatusDatePaymentsListSweep,José,,Waiting Double Check,Nivel C: trigger-acceptance HTTP 200 + presenca nos logs.
+Dev3,storedDocServiceSweep,José,,Waiting Double Check,Nivel A: processa 2-5 documentos do uown_stored_doc por run (upload para GCS/storage). Roda a cada 5 min; processed=3/2/5 confirmado em multiplos runs consecutivos. Sem SQL configurado - logica interna Java.
+,,,,,
+Dev3,checkLeadExpirationSweep,José,,Waiting Double Check,Nivel A: lead 1101 (signed_time=2026-02-01) SIGNED->EXPIRED OK. Comportamento inconsistente em runs subsequentes.
+,,,,,
+Dev3,rerunACHPaymentsSweep,José,,Waiting Double Check,Nivel A: RERUN ACH pk=295 criado para conta 86 (R01 RETURNED SCHEDULED). processed=1 confirmado.
+,,,,,
+Dev3,updateTaxRatesSweep,José,,Waiting Double Check,Nivel A: processed=1 - conta 64 processada. last_tax_updated_time atualizado de 2025-07-31 para 2026-06-03 apos o sweep.
+,,,,,
+Dev3,delinquencyOfferEmailSweep,José,,SKIP - Provisioning Gap Dev3,"SKIP: SW-BUG-002 - relation ""uown_accounts_to_be_sold"" nao existe em dev3. Tabela existe em stg."
+Dev3,delinquencyReminderEmailSweep,José,,SKIP - Provisioning Gap Dev3,"SKIP: SW-BUG-002 - relation ""uown_accounts_to_be_sold"" nao existe em dev3. Tabela existe em stg."
+Dev3,latePaymentNoticeEmailSweep,José,,Waiting Double Check,Nivel A: processed=37 - 37 contas com atraso selecionadas e email DaysPastDueMonthlyEmail enfileirado em uown_email_queue. Acumulado: 982 STORED + 7 PICKED_TO_STORE. Roda multiplas vezes ao dia (35-37 por run).
+Dev3,paidInFullAccountEmailSweep,José,,Waiting Double Check,Nivel A: processed=1 por run - 1 conta PAID_IN_FULL selecionada e email PaidInFullEmail enfileirado em uown_email_queue. Acumulado: 13 STORED. Consistente em todos os runs do dia.
+,,,,,
+,,,,,
+Dev3,checkSignedAndFundingLeaseCountSweep,José,,Waiting Double Check,Nivel C: sweep de monitoramento - retorna contagem de leads signed/funded nos ultimos 10 min. Sem registros de negocio a criar. processed=0 esperado.
+,,,,,
+,,,,,
+,,,,,
+Dev3,customerPortalReminderSweep,José,,Waiting Double Check,Nivel A: 14 emails PENDING OK. SW-OBS-006: re-envia no dia 2 sem guarda diaria - escalar ao produto.
+Dev3,settledInFullAccountEmailSweep,José,,Waiting Double Check,Nivel A: email enfileirado para conta SETTLED_IN_FULL OK.
+,,,,,
+,,,,,
+,,,,,
+Dev3,chargeSigningFeeSweep,José,,Waiting Double Check,Nivel B: SQL selecionou leads elegiveis (106/108/113/119/132 - FUNDED com CC auth aprovado sem capture). Ultimo run 2026-05-14 processed=67. Trigger hoje retornou 200 sem novo log - leads provavelmente ja processados na run anterior.
+Dev3,removeRatingLetterSweep,José,,Waiting Double Check,Nivel A: rating P removido em 3 contas (138/165/167). Dados tornados elegiveis via DB. processed=3 confirmado.
+Dev3,refreshTrustPilotAccessKeySweep,José,,Waiting Double Check,Nivel C: sweep de renovacao de token externo (TrustPilot API). HTTP 200 + log OK. Sem DB records para validar - comportamento correto para refresh de token.
+Dev3,pastDueEpoPoolAmountReportSweep,José,,Waiting Double Check,Nivel A: processed=12 - 5 contas elegiveis (accts 71/35/63/101/45 com EPO partial_payment > 0 e receivable vencido). Relatorio gerado OK.
+Dev3,redistributeDelinquentEpoPoolSweep,José,,Waiting Double Check,Nivel A: processed=1 - conta 37 redistribuida (EPO $220.50 >= due amount $91.68). Confirmado via sweep log.
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+Dev3,generateExportBlacklistReport,José,,Waiting Double Check,Nivel A: processed=1 - 1 registro na blacklist selecionado e relatorio gerado OK.
+Dev3,generateDueDateMovesReport,José,,Waiting Double Check,Nivel A: processed=1 - due_date_move pk=11 (conta 219 +2 dias) selecionado. Relatorio gerado OK.
+Dev3,rerunACHWeeklyReport,José,,Waiting Double Check,Nivel A: processed=1 - RERUN ACH pk=94 (conta 67 R01) selecionado. Relatorio gerado OK (sent_timestamp ajustado para janela exata do sweep e restaurado apos).
+,,,,,
+,,,,,
+,,,,,
+Dev3,CCDailyScheduledDeniedRerun,José,,BUG - Reportado ao Dev,"Nivel A: BUG confirmado SW-BUG-001 - mesmo alias mismatch (pk=68). aliases ""accountPkk""/""amountt""/""postingDatee"" incompativeis com binario atual."
+,,,,,
+Dev3,dailyTaxCloudPaymentsSync,José,,Waiting Double Check,Nivel A: 5 payments sincronizados com TaxCloud (pks 2578-2582 SENT). Confirmado em uown_tax_cloud. Nome no sweep_logs: DailyTaxCloudPaymentsSync (D maiusculo).
+,,,,,
+,,,,,
+Dev3,refreshKountAccessTokenSweep,José,,Waiting Double Check,Nivel C: sweep de renovacao de token externo (Kount API). HTTP 200 + log OK. Sem DB records para validar - comportamento correto para refresh de token.
+Dev3,refreshGdsAccessTokenSweep,José,,Waiting Double Check,Nivel C: sweep de renovacao de token externo (GDS API). HTTP 200 + log OK. Sem DB records para validar - comportamento correto para refresh de token.
+,,,,,
+Dev3,StickyRecoverCancelSweep,José,,Waiting Double Check,Nivel B: processed=0 - sem CC DENIED de 7 dias via CHANNEL_PAYMENTS_CC no momento do teste. Sem erro.
+Dev3,FirstPaymentReminderSweep,José,,Waiting Double Check,Nivel A: CORRECAO - NAO e refresh de token Kount. E sweep de email de lembrete de 1a parcela (taskService.sendFirstPaymentReminders via QuartzTask). Reexecutado 2026-06-03 (email S3): lead fresh 1397 -> conta 224 com first_payment_due_date+2 - email FirstPaymentReminder confirmado em uown_email_queue e correspondence_log.
+Dev3,SendACHPaymentsSweep,José,,Waiting Double Check,Nivel A: processed=2 (accts 95/97) PENDING->PICKED_TO_SEND OK. Profituity nao configurado em dev3 (esperado).
+Dev3,SendCreditCardPaymentsSweep,José,,Waiting Double Check,Nivel A: reexecutado 2026-06-03 (payment-scheduling S2). CC PENDING pk=3401 conta 219 seeded - sweep promoveu PENDING->PICKED_TO_SEND (selecao via SQL exato confirmada). Logica propria OK. Charge organico depende do CreateScheduledCC (SW-BUG-001 alias) e do connector de CC ausente em dev3.
+Dev3,getSendACHPaymentsStatusSweep,José,,Waiting Double Check,Nivel A: reexecutado 2026-06-03 (payment-scheduling S1). send_sv_ach_payment pk=84 SENT+ReadyToProcess - processed=1 e row confirmada STATUS_UPDATE_PENDING. Selecao+mecanismo OK.
+Dev3,eSignDocumentStatusSweep,José,,Waiting Double Check,Nivel A: reexecutado 2026-06-03 (business S11). Contrato 458 resetado para SENT + esign_mode=EMAIL - elegivel via SQL exato - sweep transicionou para STATUS_UPDATE. Logica de negocio completa confirmada (antes nao havia documento elegivel).
+Dev3,getCompletedESignDocumentStatusSweep,José,,Waiting Double Check,Nivel B: processed=2 em todos os runs - sweep seleciona 2 documentos e tenta buscar o PDF assinado no SignWell. SignWell retorna 404 (documentos expirados/deletados no provedor). Selecao e logica de fetch funcionam; bloqueio e externo (documentos nao existem mais no SignWell em dev3).
+Dev3,UnutilizedApprovalSweep,José,,Waiting Double Check,Nivel B: reexecutado 2026-06-03 (business S8). Lead 1278 com uw decision_made_at=CURRENT_DATE-7 - elegivel via SQL exato (count=1). [OBSERVACAO] nenhum email UnutilizedApproval enfileirado - dedup Java ou canal distinto. Selecao provada. Escalar a observacao.
+Dev3,rerunCCPaymentsSweep,José,,Waiting Double Check,Nivel B: reexecutado 2026-06-03 (cc-rerun S1). Conta 219 seeded DENIED+NSF+SCHEDULED SALE - selecao via SQL exato confirmada. processed=0 (re-charge async precisa connector). Selecao+mecanismo provados.
+Dev3,storedDocSmsServiceSweep,José,,Waiting Double Check,Nivel C: sem SQL configurado. processed=0 em todos os runs recentes - sem documentos com SMS queue pendente em uown_stored_doc. Sweep acorda mas nao encontra nada para enviar.
+Dev3,reverseAchPaymentsSweep,José,,Waiting Double Check,Nivel B: reexecutado 2026-06-03 (payment-scheduling S3). ACH pk=128 conta 109 RETURNED seeded - selecao via SQL exato confirmada. processed=0 pois reverse precisa de processador ACH ausente em dev3. Selecao+mecanismo provados.
+Dev3,dailyFundingReportSweep,José,,Waiting Double Check,Nivel B: SQL provado (merchants DAILY configurados: Daniel's Jewelers pk=42 e Fraser Engines pk=37). Sem funding de ontem para gerar relatorio no momento do teste.
+Dev3,weeklyFundingReportSweep,José,,Waiting Double Check,Nivel B: SQL provado (merchants WEEKLY configurados). Sem funding na janela dos ultimos 7 dias no momento do teste.
+Dev3,monthlyFundingReportSweep,José,,Waiting Double Check,Nivel B: SQL provado (merchants MONTHLY configurados). Sem funding na janela do ultimo mes no momento do teste.
+Dev3,paidOutAccountsSweep,José,,Waiting Double Check,Nivel A: reexecutado 2026-06-03 (business S9). Conta 84 com total_contract=0 - sweep marcou account_status=PAID_OUT. Logica de negocio completa confirmada.
+Dev3,monitorSweep,José,,Waiting Double Check,Nivel C: HTTP 200 + log OK. SW-OBS-007: emailBody vazio intermitente (4 ocorrencias nos ultimos 7d) - escalar ao dev.
+Dev3,paymentGatewayFixSweep,José,,Waiting Double Check,Nivel B: processed=1-2 por run - sweep seleciona CC transactions com status ERROR e gateway_transaction_id nulo para reprocessar. NullPointerException em alguns registros (rowCreatedTimestamp null). Selecao SQL provada e reprocessamento parcial confirmado; bug intermitente impede processamento completo.
+Dev3,monthlyTaxReportSweep,José,,Waiting Double Check,Nivel C: sem SQL configurado (null). HTTP 200 + log OK. Logica interna nao verificavel via DB.
+Dev3,danielJewelersLeadReportSweep,José,,Waiting Double Check,Nivel B: processed=1 - SQL selecionou lead 1244 (OL90205-0079 atualizado ontem). FTPS upload falhou com FTPConnectionClosedException - servidor FTP nao configurado em dev3 (esperado). Logica de selecao provada.
+Dev3,monthlyConsolidatedFundingReportSweep,José,,Waiting Double Check,Nivel B: SQL provado (merchants com send_merged_funding_report=true). Sem funding FULLY_FUNDED no ultimo mes no momento do teste.
+Dev3,sendDailyPaymentsSharepointSweep,José,,Waiting Double Check,Nivel A: processed=47 - 47 pagamentos dos ultimos 14 dias selecionados e enviados ao Sharepoint.
+Dev3,generateVerventOnBoardingFileSweep,José,,SKIP - Provisioning Gap Dev3,SKIP: SW-BUG-003 - column ss.tax_per_scheduled_payment nao existe em dev3. Coluna existe em stg.
+Dev3,generateMerchantLeaseReport,José,,Waiting Double Check,Nivel B: SQL provado (leads FUNDED com contrato assinado). Sem leads atualizados ontem no momento do teste.
+Dev3,IdempotentCCSweep,José,,Waiting Double Check,Nivel B: reexecutado 2026-06-03 (cc-rerun S5). Conta 223 seeded SALE hoje com gateway timeout e vendor CHANNEL_PAYMENTS_CC - selecao via SQL exato confirmada. processed=0 (re-charge async precisa connector). A selecao NAO depende de SW-BUG-001.
+Dev3,delinquencyRerunCCPaymentsSweep,José,,Waiting Double Check,Nivel A: reexecutado 2026-06-03 (cc-rerun S4). Correcao do SW-OBS-005: a flag run.cc.transaction.for.delinquency.delinquencyRerunCCPaymentsSweep esta = TRUE em uown_configuration_management (nao false). Conta 67 (delinq 100+d com cartao on-file e rating null) selecionada via SQL exato. Seed anterior 222 era inelegivel (rating P + cartoes is_deleted=true). Sweep processa contas reais (account-level).
+Dev3,dailyDelinquencyRerunCCSweep,José,,Waiting Double Check,Nivel B: reexecutado 2026-06-03 (cc-rerun S3). Conta 221 seeded APPROVED SALE hoje + delinquencia - selecao via SQL exato confirmada. Re-charge nao executa pois a flag config run.cc.transaction.for.delinquency.dailyDelinquencyRerunCCSweep esta AUSENTE em dev3 (default false) - so loga nota. NAO e SW-BUG-001. Habilitar a chave para validar o re-charge.
+Dev3,cancelProtectionPlanSweep,José,,Waiting Double Check,Nivel C: HTTP 200 + log OK. SW-OBS-008: NullPointerException ocasional (3 ocorrencias nos ultimos 7d) ao processar registros com campo defaultValue=null - escalar ao dev.
+Dev3,dailyTaxCloudRefundsSync,José,,Waiting Double Check,Nivel B: reverse_date_timestamp do payment pk=2549 atualizado para hoje via DB. Sweep disparado (HTTP 200). Nome no sweep_logs: DailyTaxCloudRefundsSync (D maiusculo). TaxCloud refund nao inserido - possivel que dev3 nao tenha FTPS/TaxCloud configurado para refunds.
+Dev3,ProgramActivationDeactivationSweep,José,,Waiting Double Check,Nivel C: sem SQL configurado (null). HTTP 200 + log OK. Logica de ativacao/desativacao de programas nao verificavel via DB.

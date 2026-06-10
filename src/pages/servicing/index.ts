@@ -1,6 +1,7 @@
 export { ServicingBasePage } from './servicing-base.page.js';
 export { ServicingCustomerPage } from './customer.page.js';
 export { PaymentTransactionPage } from './payment-transaction.page.js';
+export { PaymentHistoryPage } from './payment-history.page.js';
 export { AchHistoryPage } from './ach-history.page.js';
 export { ScheduledPaymentPage } from './scheduled-payment.page.js';
 export { LogPage } from './log.page.js';
@@ -11,3 +12,7 @@ export { ServicingSearchPage } from './servicing-search.page.js';
 export { CreditCardHistoryPage } from './credit-card-history.page.js';
 export { BankAccountPage } from './bank-account.page.js';
 export { ServicingDocumentsPage, SERVICING_DOCUMENTS_SELECTORS } from './documents.page.js';
+export { SettlementBreakdownModal } from './settlement-breakdown.modal.js';
+export type { SettlementBreakdownRow } from './settlement-breakdown.modal.js';
+export { ServicingAccountSummaryPage } from './account-summary.page.js';
+export type { ServicingEpoPanelReading } from './account-summary.page.js';

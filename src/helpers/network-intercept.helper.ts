@@ -199,6 +199,67 @@ export function attachNeuroIdListeners(page: Page): NeuroIdCapture {
   };
 }
 
+// ── Generic Endpoint Call Counter ──────────────────────────────────
+//
+// Counts requests to a specific endpoint (e.g., `/uown/los/submitApplication`).
+// Listens on `request` (fired before the response arrives) so we observe what
+// the browser actually sent — even if the backend never responds.
+
+export interface EndpointCallCounter {
+  /** Total matching requests observed since attach (or since last `reset`). */
+  count: () => number;
+  /** Reset the counter to 0 — useful between sub-steps within one test. */
+  reset: () => void;
+  /** All matching URLs observed since attach (debug aid). */
+  urls: () => string[];
+  /** Stop listening. Call in test teardown or before re-attaching. */
+  detach: () => void;
+}
+
+/**
+ * Attach a counter on the given Page that increments for every request whose
+ * URL contains `urlSubstring` and whose method matches `method` (default POST).
+ *
+ * Match is substring-only (case-insensitive on the path) — pass a stable
+ * fragment of the endpoint (e.g., `/uown/los/submitApplication`).
+ *
+ * Example:
+ *   const counter = attachEndpointCallCounter(page, '/uown/los/submitApplication');
+ *   await page.goto(completeUrl);
+ *   await missingDataForm.fillAndSubmit(card);
+ *   await page.waitForResponse('**\/submitApplication');
+ *   expect(counter.count()).toBe(1);
+ *   counter.detach();
+ */
+export function attachEndpointCallCounter(
+  page: Page,
+  urlSubstring: string,
+  method: string = 'POST',
+): EndpointCallCounter {
+  const needle = urlSubstring.toLowerCase();
+  const wantMethod = method.toUpperCase();
+  let matchedUrls: string[] = [];
+
+  const onRequest = (request: Request): void => {
+    if (request.method().toUpperCase() !== wantMethod) return;
+    if (!request.url().toLowerCase().includes(needle)) return;
+    matchedUrls.push(request.url());
+  };
+
+  page.on('request', onRequest);
+
+  return {
+    count: () => matchedUrls.length,
+    reset: () => {
+      matchedUrls = [];
+    },
+    urls: () => [...matchedUrls],
+    detach: () => {
+      page.off('request', onRequest);
+    },
+  };
+}
+
 /** Serialize the capture to JSON (pretty-printed) for `test.info().attach(...)`. */
 export function dumpCaptured(capture: NeuroIdCapture): string {
   return JSON.stringify(

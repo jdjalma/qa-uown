@@ -27,7 +27,12 @@ import {
 
 // ── Parameterized test data ──────────────────────────────────────────
 
-const testData = {
+const scenarios = [
+  { term: '13m', ssnSuffix: undefined },
+  { term: '16m', ssnSuffix: '916' },
+] as const;
+
+const baseTestData = {
   state: 'OH',
   merchant: 'TireAgent',
   paymentFrequency: 'Weekly' as const,
@@ -36,24 +41,32 @@ const testData = {
 
 // ── Test suite ───────────────────────────────────────────────────────
 
-test.describe(`TireAgent Unified Flow - ${testData.state}/${testData.merchant}`, { tag: testData.tag.split(' ') }, () => {
-  test('Creating Uown account via PayPair portal', async ({ page, ctx, merchantConfig: mSetup }) => {
+for (const scenario of scenarios) {
+test.describe(`TireAgent Unified Flow - ${baseTestData.state}/${baseTestData.merchant} (${scenario.term})`, { tag: baseTestData.tag.split(' ') }, () => {
+  test(`Creating Uown account via PayPair portal (${scenario.term})`, async ({ page, ctx, merchantConfig: mSetup }) => {
     test.setTimeout(720_000); // 12 min — PayPair flow is multi-step
 
     await test.step('Ensure merchant config', async () => {
-      await mSetup.configureByName(testData.merchant, 'lifecycle');
+      await mSetup.configureByName(baseTestData.merchant, 'lifecycle');
     });
 
     const { env, address, merchant, applicant, order } = buildTestData({
-      state: testData.state,
-      merchant: testData.merchant,
+      state: baseTestData.state,
+      merchant: baseTestData.merchant,
       orderTotal: String(DEFAULT_TIRE_AGENT_PRODUCT.price + DEFAULT_TIRE_AGENT_PRODUCT.taxAmount),
-      orderDescription: 'TireAgent unified flow',
+      orderDescription: `TireAgent unified flow (${scenario.term})`,
       sanitizeNames: true,
     });
 
     // Override phone with PayPair-compatible prefix (111/222)
     applicant.phone = generatePayPairTestPhone();
+
+    // Override SSN for 16m eligibility (suffix 916 forces 16m in BlackBox mock)
+    if (scenario.ssnSuffix) {
+      const prefix = String(100000 + Math.floor(Math.random() * 900000));
+      applicant.ssn = `${prefix}${scenario.ssnSuffix}`;
+    }
+    console.log(`[Setup] Term: ${scenario.term}, SSN: ${applicant.ssn}`);
 
     const paypair = new PayPairPortalPage(page);
 
@@ -81,7 +94,7 @@ test.describe(`TireAgent Unified Flow - ${testData.state}/${testData.merchant}`,
         email: applicant.email,
         street: address.street,
         city: address.city,
-        state: testData.state,
+        state: baseTestData.state,
         postalCode: address.zipCode,
         country: 'US',
       });
@@ -98,6 +111,7 @@ test.describe(`TireAgent Unified Flow - ${testData.state}/${testData.merchant}`,
       await paypair.fillCartInfo(cartJson);
       await paypair.clickGetLease();
     });
+
 
     // ═══════════════════════════════════════════════════════════════
     //  PHASE 3: PHONE OTP VERIFICATION
@@ -128,7 +142,7 @@ test.describe(`TireAgent Unified Flow - ${testData.state}/${testData.merchant}`,
     });
 
     await test.step('Select payment frequency', async () => {
-      await paypair.selectPaymentFrequency(testData.paymentFrequency);
+      await paypair.selectPaymentFrequency(baseTestData.paymentFrequency);
     });
 
     await test.step('Continue with Uown plan', async () => {
@@ -273,3 +287,4 @@ test.describe(`TireAgent Unified Flow - ${testData.state}/${testData.merchant}`,
   });
   });
 });
+}

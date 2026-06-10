@@ -1,9 +1,9 @@
 import { OriginationBasePage } from './origination-base.page.js';
 import { SELECTORS } from '../../selectors/common.selectors.js';
-import { findFirstMatchingRow, goToNextPage } from '../../helpers/table.helpers.js';
+import { findFirstMatchingRow, getNormalizedHeaders, getColumnIndexByHeaderText, goToNextPage } from '../../helpers/table.helpers.js';
 
 export class OverviewPage extends OriginationBasePage {
-  readonly dashboardCards = this.page.locator('.dashboard-card, .overview-card');
+  readonly dashboardCards = this.page.locator(SELECTORS.dashboardCard);
   readonly totalApplications = this.page.locator('[data-metric="totalApplications"]');
   readonly approvedCount = this.page.locator('[data-metric="approved"]');
   readonly pendingCount = this.page.locator('[data-metric="pending"]');
@@ -161,6 +161,59 @@ export class OverviewPage extends OriginationBasePage {
       .waitFor({ state: 'hidden', timeout: 3_000 }).catch(() => {});
 
     return trimmed;
+  }
+
+  // ── Column-order assertions (task #1295) ─────────────────────────────
+
+  /** Returns the table headers in display order, with sort-indicator arrows stripped. */
+  async readHeaderOrder(): Promise<string[]> {
+    return getNormalizedHeaders(this.page);
+  }
+
+  /** Returns the 0-based column index whose header matches `label` (normalized, case-insensitive). */
+  async getColumnIndexByHeaderText(label: string): Promise<number> {
+    const headers = await this.readHeaderOrder();
+    return getColumnIndexByHeaderText(headers, label);
+  }
+
+  /** Returns the cell text of all `<td>` in the given 0-based row index. */
+  async getRowCells(rowIndex: number): Promise<string[]> {
+    const rows = this.page.locator(SELECTORS.tableRow);
+    return rows.nth(rowIndex).locator(SELECTORS.tableCell).allTextContents();
+  }
+
+  /**
+   * Opens the "Config Columns" side panel (Overview only).
+   * Waits for the panel container to be visible.
+   */
+  async clickConfigColumns(): Promise<void> {
+    const trigger = this.page.locator(SELECTORS.configColumnsTrigger).first();
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+    await this.page.locator(SELECTORS.configColumnsPanel).first()
+      .waitFor({ state: 'visible', timeout: 5_000 })
+      .catch(() => {
+        // Some renderings expose the checkboxes inline (no modal wrapper); the
+        // caller's next `toggleColumn` call will surface the real problem.
+      });
+  }
+
+  /**
+   * Toggles a single column visibility checkbox by name (e.g. 'Sales Rep Code').
+   * Assumes the Config Columns panel is already open.
+   */
+  async toggleColumn(name: string): Promise<void> {
+    const checkbox = this.page.locator(SELECTORS.configColumnsCheckbox(name)).first();
+    await checkbox.waitFor({ state: 'attached', timeout: 5_000 });
+    await checkbox.click();
+  }
+
+  /** Closes the Config Columns panel via Escape. */
+  async closeConfigColumns(): Promise<void> {
+    await this.page.keyboard.press('Escape');
+    await this.page.locator(SELECTORS.configColumnsPanel).first()
+      .waitFor({ state: 'hidden', timeout: 3_000 })
+      .catch(() => {});
   }
 
   // ── Private helpers ──────────────────────────────────────────────────

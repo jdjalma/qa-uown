@@ -63,19 +63,34 @@ const EMAIL_TEMPLATE_POLL_BACKOFF = 1.5;
 
 // ── 1. Email template name (polled) ──────────────────────────────────────
 
+/** Default LIKE pattern — preserves task #489 (approval email) behavior. */
+const DEFAULT_EMAIL_TEMPLATE_PATTERN = '%ApprovalEmail%';
+
 /**
  * Returns the most-recent `template_name` from `uown_email_queue` whose
- * name matches `%ApprovalEmail%` for the given lead. Polls for up to 15 s
- * with exponential backoff (1 s → 3 s, ×1.5) because the row is written
- * a few seconds AFTER approval email dispatch.
+ * name matches the given SQL `LIKE` pattern for the given lead. Polls for
+ * up to 15 s with exponential backoff (1 s → 3 s, ×1.5) because the row is
+ * written a few seconds AFTER email dispatch.
+ *
+ * Defaults to `%ApprovalEmail%` for backward compatibility with task #489
+ * call sites. Task #518 callers pass `%FinalizePurchaseEmail%` (UOWN) or
+ * `%KORNERSTONE_FinalizePurchaseEmail%` (KS) to assert the brand-specific
+ * template was queued.
  *
  * Returns `null` if no matching row appears within the timeout — the caller
  * uses this to distinguish "email not queued at all" from "queued with the
  * wrong template_name".
+ *
+ * @param db DatabaseHelpers instance (from base-test.ts `db` fixture).
+ * @param leadPk PK of `uown_los_lead.pk`.
+ * @param pattern Optional SQL `LIKE` pattern (default `%ApprovalEmail%`).
+ *                Caller is responsible for `%` wildcards; the pattern is
+ *                passed verbatim as a bound parameter (no string concat).
  */
 export async function getEmailTemplateName(
   db: DatabaseHelpers,
   leadPk: number | string,
+  pattern: string = DEFAULT_EMAIL_TEMPLATE_PATTERN,
 ): Promise<string | null> {
   const deadline = Date.now() + EMAIL_TEMPLATE_POLL_TIMEOUT_MS;
   let interval = EMAIL_TEMPLATE_POLL_INITIAL_MS;
@@ -86,10 +101,10 @@ export async function getEmailTemplateName(
         `SELECT template_name
            FROM uown_email_queue
           WHERE lead_pk = $1
-            AND template_name LIKE '%ApprovalEmail%'
+            AND template_name LIKE $2
           ORDER BY pk DESC
           LIMIT 1`,
-        [leadPk],
+        [leadPk, pattern],
       );
       if (row?.template_name) return row.template_name;
     } catch (error) {
@@ -102,6 +117,24 @@ export async function getEmailTemplateName(
     );
   }
   return null;
+}
+
+/**
+ * Sibling of {@link getEmailTemplateName} with an explicit, required
+ * `pattern` argument — for callers (task #518) that want the pattern to be
+ * load-bearing in the call site rather than relying on the default. Thin
+ * delegate so we keep one polling implementation.
+ *
+ * @param db DatabaseHelpers instance.
+ * @param leadPk PK of `uown_los_lead.pk`.
+ * @param pattern SQL `LIKE` pattern (caller supplies `%` wildcards).
+ */
+export async function getEmailTemplateNameByPattern(
+  db: DatabaseHelpers,
+  leadPk: number | string,
+  pattern: string,
+): Promise<string | null> {
+  return getEmailTemplateName(db, leadPk, pattern);
 }
 
 // ── 2. Correspondence audit logs ─────────────────────────────────────────

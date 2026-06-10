@@ -426,4 +426,24 @@ export class MerchantEditPage extends OriginationBasePage {
     const icon = this.page.locator(SELECTORS.merchantClonedFromIcon).first();
     return icon.isVisible({ timeout: 5_000 }).catch(() => false);
   }
+
+  // --- Funding on Hold (Task #1318) ---
+
+  /** Returns the current checked state of the "Funding on Hold" checkbox. */
+  async getFundingOnHoldState(): Promise<boolean> {
+    const cb = this.page.locator(SELECTORS.merchantHoldFundingCheckbox).first();
+    await cb.waitFor({ state: 'attached', timeout: 10_000 });
+    return cb.isChecked();
+  }
+
+  /** Sets the "Funding on Hold" checkbox to the given value. No-op if already in that state. */
+  async setFundingOnHold(value: boolean): Promise<void> {
+    const cb = this.page.locator(SELECTORS.merchantHoldFundingCheckbox).first();
+    await cb.waitFor({ state: 'visible', timeout: 10_000 });
+    await cb.scrollIntoViewIfNeeded();
+    const current = await cb.isChecked();
+    if (current !== value) {
+      await cb.click();
+    }
+  }
 }

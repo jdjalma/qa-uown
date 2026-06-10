@@ -1,0 +1,183 @@
+Delivered-To: fintechgroup777+490_uown_4432301_428164@gmail.com
+Received: by 2002:a05:7412:7a93:20b0:1cd:e7c8:4e21 with SMTP id hu19-n2csp2050446rdb;
+        Tue, 21 Apr 2026 03:13:56 -0700 (PDT)
+X-Received: by 2002:a05:622a:1f99:b0:50d:a987:89b2 with SMTP id d75a77b69052e-50e36c12741mr250634731cf.31.1776766436366;
+        Tue, 21 Apr 2026 03:13:56 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t76766436; cv=none;
+        d=google.com; s=arc-20240605;
+        b=VQiK0Vqo0rXjoMsP+vh72ZPvMMcKbcK3q43D4eX2vQV39ysxse+ZeN5vTz5s0xmmGg
+         Vuqxe+c8+4a1jFvNYc21/kTDGbe5BBV9L1IkeooQq9uvqJ2THamw04N9JjyXzDZkGjTu
+         tXtXDnlJe2/yAseTV51tnmHYvs0YeqtTgjH05U+c9h5pSKRI3HQYiqCKHiJBqU/dFAkA
+         T7VLjO8cz+yD8GTOrqzDHn7611utgvd9gCWkXgcE7MqKTxMwUhW6XsWivn+uWNLHOpnP
+         Qq0fUS7f07qLmZAO2Afe3UjbizSrwP1No/0hg8JzpDBFMEOLmnVjcK19kbyj2xV3H4iz
+         1gEg=ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20240605;
+        h=to:subject:message-id:mime-version:from:date
+         :content-transfer-encoding:dkim-signature:dkim-signature;
+        bh=gK9qPG7Z1AIIvFePuremrO9dKnk/rwJCCVuDYjsq3RU=;
+        fh=rMu+zZXaTbFuFF7n5m/FJd7pbM4UlVHEP9FaKhoRrKs=;
+        b=LqP7ilI6EJ8jXIIWhpKQBtZ9Ed1nwj/x+E2XsgQOTmqWOkfaft9bAViqdCIFT1bTjC
+         I0HmTWdM4ZpucFNNRqk43B8A+/G3cgJumsCiwPv3dkGOkiZ+vz9g240Vy2jlfgMVXsyU
+         mED6DE4+66Qoh6/uGDc+hi/56GJLmLTZ+dM4jsLTG3Swacfb0vE8JMx0aJjiqsPtndO0
+         7fRy4Z2mAczJNyBb28rX5+zK0ZaiBPEZ5awFH5wpYukDAGiBKm3sLsfRJz71aFWTdzVD
+         sUb2HKfxYll3U6oz9vxkw5rwvDQt7bulC5m2jhpeHT8/aTgy7ZlvOtb2lXyYdhyD/HdI
+         7bdg==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@uownleasing.com header.s=s1 header.b=qMec9XCo;
+       dkim=pass header.i=@sendgrid.info header.s=smtpapi header.b=KAW7rQNA;
+       spf=pass (google.com: domain of bounces+34082517-432a-fintechgroup777+490_uown_4432301_428164=gmail.com@em3357.uownleasing.com designates 159.183.125.108 as permitted sender) smtp.mailfrom="bounces+34082517-432a-fintechgroup777+490_uown_4432301_428164=gmail.com@em3357.uownleasing.com";
+       dmarc=pass (p=QUARANTINE sp=QUARANTINE dis=NONE) header.from=uownleasing.com
+Return-Path: <bounces+34082517-432a-fintechgroup777+490_uown_4432301_428164=gmail.com@em3357.uownleasing.com>
+Received: from wfbttdsc.outbound-mail.sendgrid.net (wfbttdsc.outbound-mail.sendgrid.net. [159.183.125.108])
+        by mx.google.com with ESMTPS id 6a1803df08f44-8b02ac66acfsi180066456d6.99.2026.04.21.03.13.55
+        for <fintechgroup777+490_uown_4432301_428164@gmail.com>
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits8/128);
+        Tue, 21 Apr 2026 03:13:56 -0700 (PDT)
+Received-SPF: pass (google.com: domain of bounces+34082517-432a-fintechgroup777+490_uown_4432301_428164=gmail.com@em3357.uownleasing.com designates 159.183.125.108 as permitted sender) client-ip9.183.125.108;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@uownleasing.com header.s=s1 header.b=qMec9XCo;
+       dkim=pass header.i=@sendgrid.info header.s=smtpapi header.b=KAW7rQNA;
+       spf=pass (google.com: domain of bounces+34082517-432a-fintechgroup777+490_uown_4432301_428164=gmail.com@em3357.uownleasing.com designates 159.183.125.108 as permitted sender) smtp.mailfrom="bounces+34082517-432a-fintechgroup777+490_uown_4432301_428164=gmail.com@em3357.uownleasing.com";
+       dmarc=pass (p=QUARANTINE sp=QUARANTINE dis=NONE) header.from=uownleasing.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=uownleasing.com;
+	h=content-transfer-encoding:content-type:date:from:mime-version:subject:
+	to:cc:content-type:date:feedback-id:from:subject:to;
+	s=s1; t76766434; bh=gK9qPG7Z1AIIvFePuremrO9dKnk/rwJCCVuDYjsq3RU=;
+	b=qMec9XConpDWY5ZZ+SrdtHiexlqkKJ9h0xbUkowppit14Eas99VUOTZ7ZTWFnqFT8oMa
+	//2xlR12eax19ZeLol33aJ4To4tqX8HIrIb4hK9zVAoUb2WR3F+b+kmdBcLy73cg67cYMF
+	09huwmnT7dsZ7UL2Kec2JELP/idaLy0nFi7x1XfGrIlIA0t+Mdis4OH86suG/Bi5SUxw3I
+	8jZYc/ya8hdkiHYPmR1j/SIPIyOXg2jKToF8NvK9VOmK24hu0YSXickIgAQ+l5tUZRVPQR
+	JD0UcbOysSVWufXsW/gfi0jfhr7rD2V5XllvWRSCzSFlg5cPH/euUCb4Gtzj/CnA=DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=sendgrid.info;
+	h=content-transfer-encoding:content-type:date:from:mime-version:subject:
+	to:cc:content-type:date:feedback-id:from:subject:to;
+	s=smtpapi; t76766434; bh=gK9qPG7Z1AIIvFePuremrO9dKnk/rwJCCVuDYjsq3RU=;
+	b=KAW7rQNA47xrwdUZpw/V2xYFf9rC5bOTlqgmUZXFsfT2EuWKkvRISjjOTBM56N199Hgf
+	NpMwYeDw7Ni+biJ0Wzn4IkBttBOZYWIif6x0GOBLWW0GvNUqvAbb9k3GbDxjO/J7+LJfM6
+	xs74GGNsiB+/XOxbiHsDzyZhSRx/5wwOAReceived: by recvd-7d6cb76894-4n5kh with SMTP id recvd-7d6cb76894-4n5kh-1-69E74DE2-24
+	2026-04-21 10:13:54.399449691 +0000 UTC m=+925854.297790286
+Received: from MzQwODI1MTc (unknown)
+	by geopod-ismtpd-20 (SG) with HTTP
+	id neFV0qTMQbWbVFfYt3yADQ
+	Tue, 21 Apr 2026 10:13:54.280 +0000 (UTC)
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/html; charset=utf-8
+Date: Tue, 21 Apr 2026 10:13:54 +0000 (UTC)
+From: uown.dev@uownleasing.com
+Mime-Version: 1.0
+Message-ID: <neFV0qTMQbWbVFfYt3yADQ@geopod-ismtpd-20>
+Subject: Customer Portal Reminder Email
+X-SG-EID: 
+ =?us-ascii?Q?u001.J5sA5mlXzb+Z7aWwhUoA+YsSkvxYgG8mgSRqacY+8N4x9dhIb4ga7Ml/4? =?us-ascii?Q?GgpDTtohZml8wQjVU6I4ZKijHgfygtVztk10ouN? =?us-ascii?Q?a4UcyYuSteManiF144s0BosMwdXbA9MyLa2WK7m? =?us-ascii?Q?YDjuFwCLApiNuuxMvDZ3nQT/UtuRg/VwGGa/9xm? =?us-ascii?Q?rsg0gTGD8gVI7LhnLi8hcfa1nPVJO7+d3Z+4rC3? =?us-ascii?Q?qvE7rSoagieqRmJZTZ9Ui++w5jml0HSQ750gBPS?= =?us-ascii?Q?FCj8?To: fintechgroup777+490_uown_4432301_428164@gmail.com
+X-Entity-ID: u001.5cWs5X4nonScT0kz4uMg8w=
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Manage Your Uown Account Anytime</title>
+</head>
+
+<body style="margin:0; padding:0; font-family: Arial, sans-serif; background-color:#6d6e71;">
+
+  <div style="max-width:600px; margin:0 auto; background:#ffffff;">
+
+    <!-- LOGO -->
+    <div style="text-align:center; padding-top: 20px;">
+      <a href="https://portal.uownleasing.com">
+        <img src="https://storage.googleapis.com/uown/uown_logo_png.png" style="max-width:60%; height:auto;" />
+      </a>
+    </div>
+
+    <!-- CONTENT -->
+    <div style="padding:20px; color:#10526a; font-size:16px; line-height:1.6;">
+
+      <p>
+        <strong>Daniel</strong>, manage your account any time!
+      </p>
+
+      <p style="margin-top:15px;">
+        Your <strong>Uown Customer Portal</strong> makes it easy to stay on top of your lease anytime, anywhere.
+      </p>
+
+      <p style="margin-top:15px;">
+        <strong>In the portal you can quickly:</strong>
+      </p>
+
+      <ul style="padding-left:10px; list-style-type: none;">
+        <li><span style="font-family: Arial, sans-serif;">â </span>View your account and lease details</li>
+        <li><span style="font-family: Arial, sans-serif;">â </span>Make or schedule payments</li>
+        <li><span style="font-family: Arial, sans-serif;">â </span>Update your contact information</li>
+        <li><span style="font-family: Arial, sans-serif;">â </span>Review important account updates</li>
+      </ul>
+
+      <p style="margin-top:15px; margin-bottom:0px;">
+        All you need to get started is your <strong>email address or mobile number</strong> to receive your secure
+        verification code.
+      </p>
+
+    </div>
+
+    <!-- BUTTON -->
+    <div style="text-align:center; padding: 10px 20px;">
+      <a href="https://portal.uownleasing.com"
+        style="background-color:#5acbf5; color:#ffffff; text-decoration:none; padding:12px 20px; border-radius:6px; display:inline-block; font-size:16px;">
+        Start your Customer Portal
+      </a>
+    </div>
+
+    <!-- DIVIDER -->
+    <div style="text-align:center;">
+      <div style="border-top:1px solid #66a6ae; width:50%; margin: 20px auto 0 auto;"></div>
+    </div>
+
+    <!-- CONTACT IMAGE -->
+    <div style="text-align:center; padding:10px;">
+      <a href="https://uownleasing.com/contact/" target="_blank">
+        <img src="https://storage.googleapis.com/uown/UownEmail_Contact%20us.png"
+          style="max-width:100%; height:auto;" />
+      </a>
+    </div>
+
+    <!-- SOCIAL TEXT -->
+    <div style="text-align:center; padding:10px; font-size:14px; color:#10526a;">
+      Stay connected with us on social media for updates and tips.
+    </div>
+
+    <!-- SOCIAL ICONS -->
+    <div style="text-align:center; padding-bottom:5px; font-size:0;">
+
+      <a href="https://www.facebook.com/UownL" target="_blank" style="display:inline-block; margin:0 5px;">
+        <img src="https://storage.googleapis.com/uown/icon-facebook.png" height="25" style="display:block; border:0;" />
+      </a>
+
+      <a href="https://www.linkedin.com/company/mngh-llc/posts/?feedView=all" target="_blank"
+        style="display:inline-block; margin:0 5px;">
+        <img src="https://storage.googleapis.com/uown/icon-linkedin.png" height="25" style="display:block; border:0;" />
+      </a>
+
+      <a href="https://www.instagram.com/uownleasing" target="_blank" style="display:inline-block; margin:0 5px;">
+        <img src="https://storage.googleapis.com/uown/icon-instagram.png" height="25"
+          style="display:block; border:0;" />
+      </a>
+
+    </div>
+
+    <!-- DIVIDER -->
+    <div style="text-align:center;">
+      <div style="border-top:1px solid #66a6ae; width:50%; margin:20px auto;"></div>
+    </div>
+
+    <!-- FOOTER -->
+    <div style="text-align:center; padding:0 15px 15px 15px; font-size:12px; color:#23496d;">
+      <p>
+        Uown Leasing, 10500 University Center Drive, Suite 150,
+      </p>
+      <p>
+        Tampa,Florida,33612,USA,(877) 353-8696
+      </p>
+    </div>
+
+  </div>
+
+</body>
+
+</html>

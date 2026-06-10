@@ -2,6 +2,7 @@ import { expect } from '@playwright/test';
 import { ServicingBasePage } from './servicing-base.page.js';
 import { SearchPage } from '../search.page.js';
 import { SELECTORS } from '../../selectors/common.selectors.js';
+import { dismissCustomerInfoConfirmation } from '../../helpers/servicing-dialogs.helpers.js';
 
 
 export class ServicingCustomerPage extends ServicingBasePage {
@@ -31,13 +32,17 @@ export class ServicingCustomerPage extends ServicingBasePage {
     await searchPage.quickSearchInput.clear();
     await searchPage.quickSearchInput.fill(searchTerm);
 
-    // Try autocomplete first
-    const autocompleteLink = this.page.locator('[class*="searchBarQuickSearchResultItem"], nav a[href*="/customer-information/"]').first();
+    // Try autocomplete first.
+    // Only match the dedicated autocomplete item class — NOT "nav a[href*='/customer-information/']"
+    // which can falsely match persistent sidebar links in STG and navigate to the wrong page.
+    const autocompleteLink = this.page.locator('[class*="searchBarQuickSearchResultItem"]').first();
     if (await autocompleteLink.isVisible({ timeout: 3_000 }).catch(() => false)) {
       await autocompleteLink.click();
       await this.waitForSpinner();
-    } else {
-      // Press Enter to submit search and go to search results page
+    }
+
+    // If autocomplete didn't land on a customer page, fall back to Enter + first result link.
+    if (!this.page.url().includes('/customer-information/')) {
       await searchPage.quickSearchInput.press('Enter');
       await this.waitForSpinner();
 
@@ -339,15 +344,10 @@ export class ServicingCustomerPage extends ServicingBasePage {
     await envelopeIcon.waitFor({ state: 'visible', timeout: 10_000 });
 
     // The "Customer Information Confirmation" modal auto-appears when an account page loads.
-    // It MUST be closed via its "Confirm" button — not dismissAllModals() — because only
+    // It MUST be closed via its "Confirm" button (handled by the helper) — only
     // handleConfirm() sets isVerified: true in utilityStore, preventing React from
     // continuously re-showing the modal (which destabilises the InviteModal animation).
-    const verifyModal = this.page.locator('.modal').filter({ hasText: 'Customer Information Confirmation' }).first();
-    if (await verifyModal.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await verifyModal.getByRole('button', { name: 'Confirm' }).click();
-      await verifyModal.waitFor({ state: 'hidden', timeout: 8_000 }).catch(() => {});
-      await this.page.locator(SELECTORS.modalBackdrop).waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
-    }
+    await dismissCustomerInfoConfirmation(this.page);
 
     await this.dismissAllModals();
     await this.page.locator(SELECTORS.modalBackdrop).waitFor({ state: 'hidden', timeout: 3_000 }).catch(() => {});
@@ -389,15 +389,10 @@ export class ServicingCustomerPage extends ServicingBasePage {
     await envelopeIcon.waitFor({ state: 'visible', timeout: 10_000 });
 
     // The "Customer Information Confirmation" modal auto-appears when an account page loads.
-    // It MUST be closed via its "Confirm" button — not dismissAllModals() — because only
+    // It MUST be closed via its "Confirm" button (handled by the helper) — only
     // handleConfirm() sets isVerified: true in utilityStore, preventing React from
     // continuously re-showing the modal (which destabilises the InviteModal animation).
-    const verifyModal = this.page.locator('.modal').filter({ hasText: 'Customer Information Confirmation' }).first();
-    if (await verifyModal.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await verifyModal.getByRole('button', { name: 'Confirm' }).click();
-      await verifyModal.waitFor({ state: 'hidden', timeout: 8_000 }).catch(() => {});
-      await this.page.locator(SELECTORS.modalBackdrop).waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
-    }
+    await dismissCustomerInfoConfirmation(this.page);
 
     await this.dismissAllModals();
     await this.page.locator(SELECTORS.modalBackdrop).waitFor({ state: 'hidden', timeout: 3_000 }).catch(() => {});

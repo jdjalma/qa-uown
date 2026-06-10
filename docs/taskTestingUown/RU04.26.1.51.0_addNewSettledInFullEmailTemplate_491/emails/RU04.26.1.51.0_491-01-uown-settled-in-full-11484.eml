@@ -1,0 +1,338 @@
+Delivered-To: fintechgroup777@gmail.com
+Received: by 2002:a05:7412:7a93:20b0:1cd:e7c8:4e21 with SMTP id hu19-n2csp3768288rdb;
+        Thu, 23 Apr 2026 11:55:31 -0700 (PDT)
+X-Received: by 2002:a05:622a:a64c:b0:50e:5fe2:83aa with SMTP id d75a77b69052e-50e5fe290c0mr215840071cf.12.1776970530815;
+        Thu, 23 Apr 2026 11:55:30 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1776970530; cv=none;
+        d=google.com; s=arc-20240605;
+        b=jnKNi9B8769rR/kZ3J9YD+jTvATMJ5G8sjnAV97eX0svDhFo6FEWMBdBz4hKmAYkF1
+         etFgcbIVmOMN6mCXU42i4Nu14EeZw/ic8jSjBfBu64xpiGaxWbVhr4dmlAGnodPT5hhR
+         uiXAXaSY9lWnfYzQtgO/zEFfd7fV7l6gaPHcpBaAzJs4PAAe9C8tjm8mcR3Hm50wsgA7
+         SqMB4ePbMlXuWvBYOqklz0o4gk4Vuk0w1htniYegMPjP0UVCgGQhrQPTKO/XK9T028xc
+         1owPze2tTlDWkWSCHznBSz3/9K6A5uzUm6egqFt5EfG3XnPh7EzAAQw5j0NXDkvMYnMQ
+         i1SQ==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20240605;
+        h=to:subject:message-id:mime-version:from:date
+         :content-transfer-encoding:dkim-signature:dkim-signature;
+        bh=8p7ELJR4r8Edg0ZRAFIW0XtaqiPP1RN60uRi/V1T8po=;
+        fh=lKPJbLZlVaD6fyGOC9menm74AWQRjTQA2QO6UsmqfIk=;
+        b=NgHK6GdO85ePvOutM3v4pwY9B0WVJ9cd4C9KYJceejPEIG3XbegBYp1sB49U3DJC3l
+         eYVGVyxIWRazvUAd74TI1dg9wR4LnKLwcHLiENs9xyvMMrqusy0pnzuUyAj0Jk2cHUxx
+         eNJbPNSFZN9yPlZ7MwqcwcELZcSMnurc/6/lbWTAPxXfz+VxyeoxFcUy9nxF3mWwj8go
+         UPWJOLgCufdXvqyv9QyveZ3m/95i+pNXgLPX5yVb0i6GmLnLmw+MQWBfUBP/S4irYVC9
+         Ts9kOwme0VjhOhe08BWlti45J7/SPJmomnjdvLGmz2nTmKey25czYGOMrPy8y+HUm26N
+         WcfQ==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@uownleasing.com header.s=s1 header.b=WDvsKuX+;
+       dkim=pass header.i=@sendgrid.info header.s=smtpapi header.b=d9p3BXKf;
+       spf=pass (google.com: domain of bounces+34082517-6b28-fintechgroup777=gmail.com@em3357.uownleasing.com designates 159.183.125.108 as permitted sender) smtp.mailfrom="bounces+34082517-6b28-fintechgroup777=gmail.com@em3357.uownleasing.com";
+       dmarc=pass (p=QUARANTINE sp=QUARANTINE dis=NONE) header.from=uownleasing.com
+Return-Path: <bounces+34082517-6b28-fintechgroup777=gmail.com@em3357.uownleasing.com>
+Received: from wfbttdsc.outbound-mail.sendgrid.net (wfbttdsc.outbound-mail.sendgrid.net. [159.183.125.108])
+        by mx.google.com with ESMTPS id d75a77b69052e-50fce77c3d1si36889341cf.47.2026.04.23.11.55.30
+        for <fintechgroup777@gmail.com>
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
+        Thu, 23 Apr 2026 11:55:30 -0700 (PDT)
+Received-SPF: pass (google.com: domain of bounces+34082517-6b28-fintechgroup777=gmail.com@em3357.uownleasing.com designates 159.183.125.108 as permitted sender) client-ip=159.183.125.108;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@uownleasing.com header.s=s1 header.b=WDvsKuX+;
+       dkim=pass header.i=@sendgrid.info header.s=smtpapi header.b=d9p3BXKf;
+       spf=pass (google.com: domain of bounces+34082517-6b28-fintechgroup777=gmail.com@em3357.uownleasing.com designates 159.183.125.108 as permitted sender) smtp.mailfrom="bounces+34082517-6b28-fintechgroup777=gmail.com@em3357.uownleasing.com";
+       dmarc=pass (p=QUARANTINE sp=QUARANTINE dis=NONE) header.from=uownleasing.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=uownleasing.com;
+	h=content-transfer-encoding:content-type:date:from:mime-version:subject:
+	to:cc:content-type:date:feedback-id:from:subject:to;
+	s=s1; t=1776970530; bh=8p7ELJR4r8Edg0ZRAFIW0XtaqiPP1RN60uRi/V1T8po=;
+	b=WDvsKuX+PugLtq08wjHLCZDQnx5+yeTkgd4OXS6H5ehvRGviY+RnDmA08KguyXIxtYDg
+	CM9U9vuU6CFR+a4eH3Bu15/oZ5Bq+kTy1v6srsagrj0JMT30Celx+gZCgj77iUluqbP4Ls
+	S1cNyzO/oluzMKRXXC9tC0EBznW7JudLEV/GeG8Ou1c1Vde1BCpiMLj2XtOreQdChbJMUX
+	I1HW/LZbeGCFi9iVPHrtictVITx/eZks8yC8TwGiUwkitzlGW+HYGslAiLNsA2CgfMKuOP
+	jkGMQ+4Hb2fd8xpSPDxfYHyWJiOvj9SytwQG5ft/JCEY9c9Ir89wb/6hV7F+PwlQ==
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=sendgrid.info;
+	h=content-transfer-encoding:content-type:date:from:mime-version:subject:
+	to:cc:content-type:date:feedback-id:from:subject:to;
+	s=smtpapi; t=1776970530; bh=8p7ELJR4r8Edg0ZRAFIW0XtaqiPP1RN60uRi/V1T8po=;
+	b=d9p3BXKf+JT7ebByY9oeKZGPkp3BvMcs2SEMUO9BgTwhGVZL4ISC153q7uaMGlc0Zt5L
+	5j3czGrjudBXuSelF+HpTkKCBREzaTukq0eo3YcvA1OsMs+TRLRrnl53HcJNmAgoXEpKYd
+	A2FqKkRWvB8ZEUUMy77dlDQUPdiQ4L2Rw=
+Received: by recvd-665b7cd8f8-q4b9s with SMTP id recvd-665b7cd8f8-q4b9s-1-69EA6B22-1
+	2026-04-23 18:55:30.001403044 +0000 UTC m=+161857.495401774
+Received: from MzQwODI1MTc (unknown)
+	by geopod-ismtpd-19 (SG) with HTTP
+	id kFxekJCaQ0ixNJ93rsHY6A
+	Thu, 23 Apr 2026 18:55:29.964 +0000 (UTC)
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/html; charset=utf-8
+Date: Thu, 23 Apr 2026 18:55:30 +0000 (UTC)
+From: uown.dev@uownleasing.com
+Mime-Version: 1.0
+Message-ID: <kFxekJCaQ0ixNJ93rsHY6A@geopod-ismtpd-19>
+Subject: Settled in Full - Account #11484
+X-SG-EID: 
+ =?us-ascii?Q?u001=2EJ5sA5mlXzb+Z7aWwhUoA+YsSkvxYgG8mgSRqacY+8N6KRW23p5v7nh7HO?=
+ =?us-ascii?Q?U9Trnp5eveA0K3STNb+Rc6WeAW2tiVxsVdCGx2e?=
+ =?us-ascii?Q?WccGloKmV5mYoKeTH6KtYmi9oqdTkgc00D3BUoz?=
+ =?us-ascii?Q?td1UAH+rLrmAZJrPABD1szCi1Gx5q1d9aI=2F+4XS?=
+ =?us-ascii?Q?1ehYlpY3xwbgR0G2euD44djEEoAU1VDdB9GcG9D?=
+ =?us-ascii?Q?g=3D=3D?=
+To: fintechgroup777@gmail.com
+X-Entity-ID: u001.5cWs5X4nonScT0kz4uMg8w==
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional //EN" "http://www=
+.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- After deploy: reload SettledInFullEmail in DMS (e.g. loadTemplates). A=
+lign subject with title. -->
+<html xmlns=3D"http://www.w3.org/1999/xhtml" xmlns:o=3D"urn:schemas-microso=
+ft-com:office:office" xmlns:v=3D"urn:schemas-microsoft-com:vml" lang=3D"en"=
+>
+<head>
+    <title>Your Account Is Paid in Full =E2=80=94 You're All Set!</title>
+    <meta property=3D"og:title" content=3D"Your Account Is Paid in Full =E2=
+=80=94 You're All Set!" />
+    <meta name=3D"twitter:title" content=3D"Your Account Is Paid in Full =
+=E2=80=94 You're All Set!" />
+<meta name=3D"x-apple-disable-message-reformatting" />
+<meta http-equiv=3D"Content-Type" content=3D"text/html; charset=3DUTF-8" />
+<meta http-equiv=3D"X-UA-Compatible" content=3D"IE=3Dedge" />
+<meta name=3D"viewport" content=3D"width=3Ddevice-width, initial-scale=3D1.=
+0" />
+<style type=3D"text/css">
+a.cta_button{-moz-box-sizing:content-box !important;-webkit-box-sizing:cont=
+ent-box !important;box-sizing:content-box !important;vertical-align:middle}
+@media only screen and (max-width:639px){img.stretch-on-mobile{height:auto =
+!important;width:100% !important}
+.hse-body-wrapper-td{text-align:center !important}
+.hse-column-container{width:100% !important;max-width:100% !important;margi=
+n-left:auto !important;margin-right:auto !important}
+.hs_padded{padding-left:20px !important;padding-right:20px !important;text-=
+align:center !important}
+.hse-social-outer{width:100% !important}
+.hse-social-outer td{text-align:center !important}
+.display_block_on_small_screens{display:block}
+.social-network-cell{display:inline-block}
+}
+@media only screen and (min-width:640px){.hse-column-container{max-width:60=
+0px !important;width:600px !important}
+}
+p{margin:0}
+table{border-spacing:0;border-collapse:collapse}
+img{-ms-interpolation-mode:bicubic;border:none}
+</style>
+<!--[if gte mso 9]>
+<xml><o:OfficeDocumentSettings><o:AllowPNG/><o:PixelsPerInch>96</o:PixelsPe=
+rInch></o:OfficeDocumentSettings></xml>
+<![endif]-->
+<!--[if mso]>
+<style type=3D"text/css">body,td{font-family:Arial,Helvetica,sans-serif;}.h=
+se-body-wrapper-table{background-color:#6d6e71;}</style>
+<![endif]-->
+<meta name=3D"robots" content=3D"noindex,follow" />
+</head>
+<body id=3D"hs_body" bgcolor=3D"#6d6e71" style=3D"margin:0 !important;paddi=
+ng:0 !important;font-family:Arial,sans-serif;font-size:15px;color:#10526a;w=
+ord-break:break-word">
+    <div id=3D"preview_text" style=3D"display:none;font-size:1px;color:#6d6=
+e71;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;" la=
+ng=3D"en">Congrats on completing your lease with Uown, Testfnfih!</div>
+    <div class=3D"hse-body-background" lang=3D"en" style=3D"background-colo=
+r:#6d6e71" bgcolor=3D"#6d6e71">
+      <table role=3D"presentation" class=3D"hse-body-wrapper-table" cellpad=
+ding=3D"0" cellspacing=3D"0" style=3D"margin:0;padding:0;width:100% !import=
+ant;min-width:320px !important" width=3D"100%">
+        <tbody><tr>
+          <td class=3D"hse-body-wrapper-td" valign=3D"top" style=3D"font-fa=
+mily:Arial,sans-serif;font-size:15px;color:#10526a;word-break:break-word;pa=
+dding-top:10px;padding-bottom:20px">
+            <div id=3D"hs_cos_wrapper_main" style=3D"color:inherit;font-siz=
+e:inherit;line-height:inherit">
+  <div id=3D"section-0" class=3D"hse-section hse-section-first" style=3D"pa=
+dding-left:0;padding-right:0">
+      <div class=3D"hse-column-container" style=3D"min-width:280px;max-widt=
+h:600px;margin:0 auto;background-color:#ffffff" bgcolor=3D"#ffffff">
+<!--[if (mso)|(IE)]><table align=3D"center" cellpadding=3D"0" cellspacing=
+=3D"0" role=3D"presentation" width=3D"600" bgcolor=3D"#ffffff"><tr><td widt=
+h=3D"600" valign=3D"top"><![endif]-->
+<div class=3D"hse-column hse-size-12">
+<table class=3D"hse-image-wrapper stretch-on-mobile" role=3D"presentation" =
+width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"><tbody><tr>
+      <td class=3D"hs_padded" align=3D"center" valign=3D"top" style=3D"font=
+-family:Arial,sans-serif;color:#10526a;word-break:break-word;text-align:cen=
+ter;padding:10px 20px;font-size:0">
+        <a href=3D"https://www.uownleasing.com/login" target=3D"_blank" sty=
+le=3D"color:#00a4bd">
+        <img alt=3D"Uown Logo - You've got this" src=3D"https://storage.goo=
+gleapis.com/uown/uown_logo_png.png" class=3D"stretch-on-mobile" style=3D"ou=
+tline:none;text-decoration:none;border:none;max-width:100%;font-size:16px" =
+width=3D"350" />
+        </a>
+      </td>
+    </tr></tbody></table>
+</div>
+<!--[if (mso)|(IE)]></td></tr></table><![endif]-->
+    </div>
+  </div>
+  <div id=3D"section-1" class=3D"hse-section" style=3D"padding-left:0;paddi=
+ng-right:0">
+      <div class=3D"hse-column-container" style=3D"min-width:280px;max-widt=
+h:600px;margin:0 auto;background-color:#ffffff" bgcolor=3D"#ffffff">
+<!--[if (mso)|(IE)]><table align=3D"center" cellpadding=3D"0" cellspacing=
+=3D"0" role=3D"presentation" width=3D"600" bgcolor=3D"#ffffff"><tr><td widt=
+h=3D"600" valign=3D"top"><![endif]-->
+<div class=3D"hse-column hse-size-12">
+<table role=3D"presentation" cellpadding=3D"0" cellspacing=3D"0" width=3D"1=
+00%"><tbody><tr><td class=3D"hs_padded" style=3D"font-family:Arial,sans-ser=
+if;font-size:15px;color:#10526a;word-break:break-word;padding:10px 20px">
+<p style=3D"font-size:16px;line-height:175%">Great News <span style=3D"font=
+-family:Tahoma,sans-serif;">=E2=80=94 You're All Set!</span></p>
+<p style=3D"font-size:16px;line-height:175%">&#160;</p>
+<p style=3D"font-size:16px;line-height:175%"><span style=3D"font-family:Tah=
+oma,sans-serif;">Hi <span>Testfnfih</span>!</span></p>
+<p style=3D"font-size:16px;line-height:175%">&#160;</p>
+<p style=3D"font-size:16px;line-height:175%">We're happy to let you know th=
+at we've successfully processed your recent payment of&#160;<span style=3D"=
+font-weight:bold;">$<span>100.00</span></span><span style=3D"font-weight:no=
+rmal;">.</span></p>
+<p style=3D"font-size:16px;line-height:175%">&#160;</p>
+<p style=3D"font-size:16px;line-height:175%"><span style=3D"font-weight:nor=
+mal;">Your Uown account is now&#160;<span style=3D"font-weight:bold;">settl=
+ed in full and officially closed</span><span style=3D"font-weight:normal;">=
+ <span style=3D"font-family:Tahoma,sans-serif;">=E2=80=94 congratulations!&=
+#160;</span></span></span></p>
+<p style=3D"font-size:16px;line-height:175%">&#160;</p>
+<p style=3D"font-size:16px;line-height:175%;font-weight:bold"><span style=
+=3D"font-family:Arial,sans-serif;">Account Number: <span>11484</span></span=
+></p>
+<p style=3D"font-size:16px;line-height:175%;font-weight:bold"><span style=
+=3D"font-family:Arial,sans-serif;">Settlement Date: <span>Apr 21, 2026</spa=
+n></span></p>
+<p style=3D"font-size:16px;line-height:175%;font-weight:bold">&#160;</p>
+</td></tr></tbody></table>
+</div>
+<!--[if (mso)|(IE)]></td></tr></table><![endif]-->
+    </div>
+  </div>
+  <div id=3D"section_1770923484235" class=3D"hse-section hse-section-last" =
+style=3D"padding-left:0;padding-right:0">
+      <div class=3D"hse-column-container" style=3D"min-width:280px;max-widt=
+h:600px;margin:0 auto;background-color:#ffffff" bgcolor=3D"#ffffff">
+<!--[if (mso)|(IE)]><table align=3D"center" cellpadding=3D"0" cellspacing=
+=3D"0" role=3D"presentation" width=3D"600" bgcolor=3D"#ffffff"><tr><td widt=
+h=3D"600" valign=3D"top"><![endif]-->
+<div class=3D"hse-column hse-size-12">
+<table role=3D"presentation" cellpadding=3D"0" cellspacing=3D"0" width=3D"1=
+00%"><tbody><tr><td class=3D"hs_padded" style=3D"padding:10px 20px 0">
+<p style=3D"font-size:1px;border-top:1px solid #ae9566;width:50%;margin:0 a=
+uto;">&#160;</p>
+</td></tr></tbody></table>
+<table role=3D"presentation" cellpadding=3D"0" cellspacing=3D"0" width=3D"1=
+00%"><tbody><tr><td class=3D"hs_padded" style=3D"font-family:Arial,sans-ser=
+if;font-size:15px;color:#10526a;word-break:break-word;padding:10px 20px">
+<h2 style=3D"margin:0;line-height:175%;font-size:22px">What This Means</h2>
+<h3 style=3D"font-size:17px;margin:0;line-height:175%;font-weight:normal"><=
+span style=3D"font-size:16px;">You've completed your lease, and there are n=
+o remaining payments due on this account. Thank you for staying on track an=
+d choosing Uown as your path to ownership.&#160;</span></h3>
+<p style=3D"line-height:175%"><br /><span style=3D"font-size:16px;">We're p=
+roud to have helped you get what you needed <span style=3D"font-weight:norm=
+al;"><span style=3D"font-family:Tahoma,sans-serif;">=E2=80=94 and we hope t=
+o serve you again in the future.&#160;</span></span></span></p>
+</td></tr></tbody></table>
+<table role=3D"presentation" cellpadding=3D"0" cellspacing=3D"0" width=3D"1=
+00%"><tbody><tr><td class=3D"hs_padded" style=3D"padding:10px 20px 0">
+<p style=3D"font-size:1px;border-top:1px solid #ae9566;width:50%;margin:0 a=
+uto;">&#160;</p>
+</td></tr></tbody></table>
+<table role=3D"presentation" cellpadding=3D"0" cellspacing=3D"0" width=3D"1=
+00%"><tbody><tr><td class=3D"hs_padded" style=3D"font-family:Arial,sans-ser=
+if;font-size:15px;color:#10526a;word-break:break-word;padding:10px 20px">
+<h2 style=3D"margin:0;line-height:175%;font-size:22px"><span style=3D"font-=
+weight:bold;color:#31c3e7;"><span style=3D"font-family:Tahoma,sans-serif;">=
+<span style=3D"font-weight:normal;">&#128161;</span></span><span style=3D"f=
+ont-family:Arial,sans-serif;">Important Reminder</span></span><span style=
+=3D"font-family:Arial,sans-serif;">&#160;</span></h2>
+<p style=3D"font-size:16px;line-height:175%"><span style=3D"font-family:Tah=
+oma,sans-serif;"><span style=3D"font-family:Arial,sans-serif;">If any sched=
+uled lease payment does not successfully clear, the paid-in-full status of =
+the account may be voided according to your lease agreement.</span>&#160;</=
+span></p>
+</td></tr></tbody></table>
+<table role=3D"presentation" cellpadding=3D"0" cellspacing=3D"0" width=3D"1=
+00%"><tbody><tr><td class=3D"hs_padded" style=3D"padding:10px 20px 0">
+<p style=3D"font-size:1px;border-top:1px solid #ae9566;width:50%;margin:0 a=
+uto;">&#160;</p>
+</td></tr></tbody></table>
+<table class=3D"hse-image-wrapper stretch-on-mobile" role=3D"presentation" =
+width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"><tbody><tr>
+      <td class=3D"hs_padded" align=3D"center" valign=3D"top" style=3D"font=
+-family:Arial,sans-serif;color:#10526a;word-break:break-word;text-align:cen=
+ter;padding:10px 20px;font-size:0">
+        <a href=3D"https://www.uownleasing.com/contact/" target=3D"_blank" =
+style=3D"color:#00a4bd">
+        <img alt=3D"Contact us" src=3D"https://storage.googleapis.com/uown/=
+UownEmail_Contact%20us.png" class=3D"stretch-on-mobile" style=3D"outline:no=
+ne;text-decoration:none;border:none;max-width:100%;font-size:16px" width=3D=
+"560" />
+        </a>
+      </td>
+    </tr></tbody></table>
+<table role=3D"presentation" cellpadding=3D"0" cellspacing=3D"0" width=3D"1=
+00%"><tbody><tr><td class=3D"hs_padded" style=3D"font-family:Arial,sans-ser=
+if;font-size:15px;color:#10526a;padding:10px 20px 0">
+<p style=3D"line-height:175%;text-align:center" align=3D"center">Stay conne=
+cted with us on social media for updates and tips.</p>
+</td></tr></tbody></table>
+<table role=3D"presentation" class=3D"hse-social-outer" width=3D"100%" cell=
+padding=3D"0" cellspacing=3D"0" align=3D"center" style=3D"width:100%"><tbod=
+y><tr><td align=3D"center" style=3D"text-align:center;padding:0 20px 10px">
+<table role=3D"presentation" align=3D"center" border=3D"0" cellpadding=3D"0=
+" cellspacing=3D"0" style=3D"margin:0 auto"><tbody><tr>
+      <td class=3D"social-network-cell" align=3D"center" style=3D"padding:8=
+px 5px;text-align:center">
+        <a href=3D"https://www.facebook.com/UownL" target=3D"_blank" style=
+=3D"text-decoration:none !important"><img src=3D"https://storage.googleapis=
+.com/uown/facebook_circle_color.png" alt=3D"Facebook" height=3D"25" style=
+=3D"outline:none;border:none;height:25px;vertical-align:middle" width=3D"25=
+" /></a>
+      </td>
+      <td class=3D"social-network-cell" align=3D"center" style=3D"padding:8=
+px 5px;text-align:center">
+        <a href=3D"https://www.linkedin.com/company/mngh-llc/posts/?feedVie=
+w=3Dall" target=3D"_blank" style=3D"text-decoration:none !important"><img s=
+rc=3D"https://storage.googleapis.com/uown/linkedin_circle_color.png" alt=3D=
+"LinkedIn" height=3D"25" style=3D"outline:none;border:none;height:25px;vert=
+ical-align:middle" width=3D"25" /></a>
+      </td>
+      <td class=3D"social-network-cell" align=3D"center" style=3D"padding:8=
+px 5px;text-align:center">
+        <a href=3D"https://www.instagram.com/uownleasing" target=3D"_blank"=
+ style=3D"text-decoration:none !important"><img src=3D"https://storage.goog=
+leapis.com/uown/instagram_circle_color.png" alt=3D"Instagram" height=3D"25"=
+ style=3D"outline:none;border:none;height:25px;vertical-align:middle" width=
+=3D"25" /></a>
+      </td>
+    </tr></tbody></table>
+</td></tr></tbody></table>
+<table role=3D"presentation" cellpadding=3D"0" cellspacing=3D"0" width=3D"1=
+00%"><tbody><tr><td class=3D"hs_padded" style=3D"padding:10px 20px">
+<p style=3D"font-size:1px;border-top:1px solid #ae9566;width:50%;margin:0 a=
+uto;">&#160;</p>
+</td></tr></tbody></table>
+<table role=3D"presentation" cellpadding=3D"0" cellspacing=3D"0" width=3D"1=
+00%"><tbody><tr><td class=3D"hs_padded" align=3D"center" style=3D"font-fami=
+ly:Arial,sans-serif;font-size:12px;line-height:135%;color:#23496d;padding:1=
+0px 20px;text-align:center">
+          <p style=3D"margin:0;text-align:center">Uown Leasing, 10500 Unive=
+rsity Center Drive, Suite 150, Tampa, Florida, 33612, USA, (877) 353-8696</=
+p>
+</td></tr></tbody></table>
+</div>
+<!--[if (mso)|(IE)]></td></tr></table><![endif]-->
+    </div>
+  </div>
+            </div>
+          </td>
+        </tr></tbody></table>
+    </div>
+</body>
+</html>

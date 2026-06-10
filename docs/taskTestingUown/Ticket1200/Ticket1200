@@ -1,0 +1,1084 @@
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+https://gitlab.com/uown/frontend/origination/-/issues/1200
+
+UOWN | Origination | Allow adding non-standard email domains
+Aberto
+  Tíquete criado 2 dias atrás por Yuri Araujo
+Synopsis
+On the Merchant page, users can add email addresses to multiple fields, including fields that are enabled only when a specific toggle is turned on. Currently, when attempting to add an email with a non-standard domain (e.g. sample@bds.services), the UI does not allow the email to be added.
+
+It was observed that emails with this domain already exist in the system, likely added directly via database, indicating that the Front End validation is preventing these domains from being added through the UI.
+
+The system must allow these types of valid domains to be added directly via the UI to avoid future issues and manual database interventions.
+
+Feature Request | Business Requirements
+
+
+
+        
+      Adjust Front End email validation to accept valid non-standard domains
+
+        
+      Allow these emails to be added in:
+
+
+        
+      Standard Merchant email fields
+
+        
+      Fields enabled by the Send Automated Funding Report toggle
+
+
+
+        
+      Do not change behavior of already stored emails
+
+        
+      Avoid the need for direct database updates for new entries
+
+        
+      The system should allow adding emails with valid domains, even if they are not commonly used
+
+        
+      Emails like sample@bds.services should be accepted normally via the UI
+
+![alt text](image.png)
+
+Steps-to-Reproduce
+
+
+
+        
+      Go to Origination
+
+
+        
+      Navigate to the Merchants page
+
+        
+      Open the edit page for any Merchant
+
+        
+      In the middle column, locate the Send Automated Funding Report toggle
+
+        
+      Turn the toggle ON
+
+        
+      Observe that two new email fields appear
+
+        
+      In the Funding Report Emails field, try adding sample@bds.services
+
+Testing Steps
+Confirm that now, after reproducing the case:
+
+Go to Origination
+
+Navigate to the Merchants page
+Open the edit page for any Merchant
+In the middle column, locate the Send Automated Funding Report toggle
+Turn the toggle ON
+Observe that two new email fields appear
+In the Funding Report Emails field, try adding sample@bds.services
+
+
+The email is added successfully.
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+## UOWN | Origination | Permitir adicionar domínios de e-mail não padrão
+
+**Status:** Aberto
+**Tíquete criado:** há 2 dias por Yuri Araujo
+
+---
+
+### **Sinopse**
+
+Na página de **Merchant**, os usuários podem adicionar endereços de e-mail em múltiplos campos, incluindo campos que são habilitados apenas quando um determinado *toggle* é ativado. Atualmente, ao tentar adicionar um e-mail com um domínio não padrão (por exemplo, `sample@bds.services`), a interface não permite que o e-mail seja adicionado.
+
+Foi observado que e-mails com esse domínio já existem no sistema, provavelmente inseridos diretamente via banco de dados, o que indica que a validação no **Front End** está impedindo que esses domínios sejam adicionados pela interface.
+
+O sistema deve permitir que esses tipos de domínios válidos sejam adicionados diretamente pela UI, evitando problemas futuros e intervenções manuais no banco de dados.
+
+---
+
+### **Solicitação de Funcionalidade | Requisitos de Negócio**
+
+* Ajustar a validação de e-mail no **Front End** para aceitar domínios não padrão válidos
+* Permitir que esses e-mails sejam adicionados em:
+
+  * Campos padrão de e-mail do Merchant
+  * Campos habilitados pelo *toggle* **Send Automated Funding Report**
+* Não alterar o comportamento de e-mails já armazenados
+* Evitar a necessidade de atualizações diretas no banco de dados para novos registros
+* O sistema deve permitir a adição de e-mails com domínios válidos, mesmo que não sejam comumente utilizados
+* E-mails como `sample@bds.services` devem ser aceitos normalmente pela UI
+
+![alt text](image.png)
+
+---
+
+### **Passos para Reproduzir**
+
+* Acessar o **Origination**
+* Navegar até a página **Merchants**
+* Abrir a página de edição de qualquer Merchant
+* Na coluna do meio, localizar o *toggle* **Send Automated Funding Report**
+* Ativar o *toggle*
+* Observar que dois novos campos de e-mail aparecem
+* No campo **Funding Report Emails**, tentar adicionar `sample@bds.services`
+
+---
+
+### **Passos de Teste**
+
+Confirmar que, após reproduzir o caso:
+
+* Acessar o **Origination**
+* Navegar até a página **Merchants**
+* Abrir a página de edição de qualquer Merchant
+* Na coluna do meio, localizar o *toggle* **Send Automated Funding Report**
+* Ativar o *toggle*
+* Observar que dois novos campos de e-mail aparecem
+* No campo **Funding Report Emails**, tentar adicionar `sample@bds.services`
+
+**Resultado esperado:**
+O e-mail é adicionado com sucesso.
+
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Alteracoes dev:
+
+ 3 arquivos
++
+14
+−
+6
+Arquivos
+3
+Pesquisar (por exemplo, *.vue) (F)
+
+packages/com
+‎mon-utilities‎
+
+src
+‎/lib‎
+
+permi
+‎ssions‎
+
+inde
+‎x.ts‎
++12 -4
+
+valid
+‎ations‎
+
+inde
+‎x.ts‎
++1 -1
+
+packag
+‎e.json‎
++1 -1
+
+ packages/common-utilities/src/lib/permissions/index.ts 
++
+12
+−
+4
+
+Visualizado
+@@ -6,6 +6,14 @@ export interface PermissionCategory {
+  [key: string]: boolean | PermissionCategory;
+}
+
+/**
+ * Accepts both PermissionCategory (open index signature) and closed/structural
+ * shapes (e.g. origination AccessPermissions). Uses Record<string, any> so
+ * closed interfaces without an index signature are assignable; the helpers
+ * use optional chaining and runtime checks for safety.
+ */
+export type FlexibleCategory = PermissionCategory | Record<string, any>;
+
+/**
+ * Main permissions interface matching backend JSON structure.
+ * Permissions are organized into access and restricted categories.
+@@ -13,12 +21,12 @@ export interface PermissionCategory {
+export interface Permissions {
+  restricted: {
+    view: {
+      full: PermissionCategory;
+      partial?: PermissionCategory;
+      full: FlexibleCategory;
+      partial?: FlexibleCategory;
+    };
+    modify: PermissionCategory;
+    modify: FlexibleCategory;
+  };
+  access: PermissionCategory;
+  access: FlexibleCategory;
+}
+
+/**
+ packages/common-utilities/src/lib/validations/index.ts 
++
+1
+−
+1
+
+Visualizado
+@@ -144,7 +144,7 @@ export const isCreditCardCurrent = (ccMonth = '', ccYear = ''): boolean => {
+ * @returns {Boolean}
+ */
+export const isValidEmail = (testStr: string): boolean => {
+  const regex = new RegExp(/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/g);
+  const regex = new RegExp(/^[\w-.]+@([\w-]+\.)+[\w-]{2,}$/g);
+  return regex.test(testStr);
+};
+
+ packages/common-utilities/package.json 
++
+1
+−
+1
+
+Visualizado
+{
+  "name": "@uownleasing/common-utilities",
+  "version": "0.0.54",
+  "version": "0.0.56",
+  "publishConfig": {
+    "registry": "https://nexus.uownleasing.com/repository/npm-hosted/"
+  }
+
+
+ 2 arquivos
++
+5
+−
+5
+Arquivos
+2
+Pesquisar (por exemplo, *.vue) (F)
+
+packag
+‎e.json‎
++1 -1
+
+yarn
+‎.lock‎
++4 -4
+
+ package.json 
++
+1
+−
+1
+
+Visualizado
+@@ -31,7 +31,7 @@
+    "@typescript-eslint/eslint-plugin": "5.14.0",
+    "@typescript-eslint/parser": "5.14.0",
+    "@uownleasing/common-ui": "0.0.403",
+    "@uownleasing/common-utilities": "0.0.52",
+    "@uownleasing/common-utilities": "0.0.56",
+    "@uownleasing/mobx-persist-session": "0.0.1",
+    "@uownleasing/server-utilities": "0.0.23",
+    "adblock-detect-react": "^1.3.1",
+ yarn.lock 
++
+4
+−
+4
+
+Visualizado
+@@ -1699,10 +1699,10 @@
+    react-idle-timer "4.6.4"
+    react-toastify "8.2.0"
+
+"@uownleasing/common-utilities@0.0.52":
+  version "0.0.52"
+  resolved "https://nexus.uownleasing.com/repository/npm-hosted/@uownleasing/common-utilities/-/common-utilities-0.0.52.tgz#c53e9df987cc52ac11066b78d22379e270161219"
+  integrity sha512-bvs7sWvE4nTQEWueg6TgRU3PUYh9OlHJxsVGlGbpI+sz3doMyBYdIq2n+aWvtCHSay67cYotub222IM3jrUJDQ==
+"@uownleasing/common-utilities@0.0.56":
+  version "0.0.56"
+  resolved "https://nexus.uownleasing.com/repository/npm-hosted/@uownleasing/common-utilities/-/common-utilities-0.0.56.tgz#269289cf84470618d2c9c922bf2d81a76dc2ec45"
+  integrity sha512-WKGmZgDu024Fs9kHlDVERIFrAOYQBkXgHj1ddc3QBx3OLBS6Bu/pEQ+QdYx6lLpMQlv5EbvomoprHXxm94MMYA==
+  dependencies:
+    axios "0.27.2"
+    country-data "^0.0.31"
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---
+
+## 1. Contexto técnico relevante (base para os testes)
+
+Alteração principal:
+
+```ts
+// Antes
+/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/g
+
+// Depois
+/^[\w-.]+@([\w-]+\.)+[\w-]{2,}$/g
+```
+
+Impacto direto:
+
+* Domínios com TLD maior que 4 caracteres agora são aceitos (`.services`, `.technology`, `.solutions`, etc.)
+* **Não houve mudança estrutural na validação**, apenas no tamanho mínimo do TLD
+* Regras como:
+
+  * apenas **um @**
+  * domínio obrigatório
+  * TLD obrigatório
+    **continuam válidas**
+
+---
+
+## 2. Requisitos de Teste – Validação Funcional (Front End)
+
+### 2.1 Aceitação de domínios não padrão (positivo)
+
+**REQ-FE-EMAIL-001**
+O sistema deve permitir adicionar e-mails com domínios válidos não padrão.
+
+Exemplos válidos:
+
+* `sample@bds.services`
+* `user@company.solutions`
+* `finance@uownleasing.technology`
+* `admin@test.global`
+* `contact@domain.international`
+
+Resultado esperado:
+
+* O e-mail é aceito
+* O e-mail é exibido corretamente no campo
+* O formulário pode ser salvo sem erro
+
+---
+
+### 2.2 Campos onde a validação deve funcionar
+
+**REQ-FE-EMAIL-002**
+A validação deve funcionar corretamente nos seguintes campos:
+
+* Campos padrão de e-mail do Merchant
+* Campos habilitados pelo toggle **Send Automated Funding Report**
+
+Resultado esperado:
+
+* O comportamento é consistente em todos os campos
+* Não há divergência de validação entre campos
+
+---
+
+### 2.3 Toggle Send Automated Funding Report
+
+**REQ-FE-EMAIL-003**
+Ao ativar o toggle **Send Automated Funding Report**, os campos adicionais de e-mail devem aceitar domínios não padrão.
+
+Passos:
+
+* Ativar o toggle
+* Inserir `sample@bds.services`
+
+Resultado esperado:
+
+* O e-mail é aceito normalmente
+* Nenhuma mensagem de erro de validação é exibida
+
+---
+
+## 3. Requisitos de Teste – Validação Negativa (E-mails inválidos)
+
+### 3.1 Estrutura inválida – Arrobas
+
+**REQ-FE-EMAIL-NEG-001**
+O sistema deve rejeitar e-mails com múltiplos `@`.
+
+Exemplos inválidos:
+
+* `test@@domain.com`
+* `te@st@domain.com`
+* `test@domain@com`
+
+Resultado esperado:
+
+* O e-mail não é aceito
+* Mensagem de validação é exibida
+
+---
+
+### 3.2 Estrutura inválida – Ausência de partes obrigatórias
+
+**REQ-FE-EMAIL-NEG-002**
+O sistema deve rejeitar e-mails sem usuário ou domínio.
+
+Exemplos inválidos:
+
+* `@domain.com`
+* `user@`
+* `user@.com`
+* `user@domain`
+* `userdomain.com`
+
+---
+
+### 3.3 Domínio inválido
+
+**REQ-FE-EMAIL-NEG-003**
+O sistema deve rejeitar domínios com estrutura inválida.
+
+Exemplos inválidos:
+
+* `user@domain..com`
+* `user@-domain.com`
+* `user@domain-.com`
+* `user@domain,com`
+* `user@domain/com`
+
+---
+
+### 3.4 TLD inválido
+
+**REQ-FE-EMAIL-NEG-004**
+O sistema deve rejeitar TLDs inválidos.
+
+Exemplos inválidos:
+
+* `user@domain.c` (TLD com apenas 1 caractere)
+* `user@domain.`
+* `user@domain.123`
+
+---
+
+### 3.5 Caracteres inválidos
+
+**REQ-FE-EMAIL-NEG-005**
+O sistema deve rejeitar caracteres não permitidos.
+
+Exemplos inválidos:
+
+* `us er@domain.com`
+* `user@do main.com`
+* `user@domain!.com`
+* `user#domain.com`
+
+---
+
+## 4. Requisitos de Teste – Regressão
+
+### 4.1 E-mails padrão continuam válidos
+
+**REQ-REG-EMAIL-001**
+E-mails comuns devem continuar sendo aceitos.
+
+Exemplos:
+
+* `test@gmail.com`
+* `admin@yahoo.com`
+* `finance@company.com`
+
+---
+
+### 4.2 E-mails já salvos não sofrem impacto
+
+**REQ-REG-EMAIL-002**
+E-mails já armazenados no sistema devem:
+
+* Continuar sendo exibidos corretamente
+* Não disparar erros de validação ao editar o Merchant
+* Não exigir alteração ou remoção
+
+---
+
+## 5. Requisitos de Teste – Persistência e UX
+
+### 5.1 Persistência correta
+
+**REQ-DATA-EMAIL-001**
+Após salvar o Merchant:
+
+* O e-mail deve persistir após reload da página
+* O e-mail deve aparecer corretamente ao reabrir a edição
+
+---
+
+### 5.2 Feedback ao usuário
+
+**REQ-UX-EMAIL-001**
+Mensagens de erro devem ser claras quando o e-mail for inválido.
+
+Exemplo esperado:
+
+* “Please enter a valid email address”
+
+---
+
+## 6. Checklist rápido para execução manual
+
+* [ ] Domínio `.services` aceito
+* [ ] Domínio longo (>4 chars) aceito
+* [ ] Dois `@` rejeitado
+* [ ] Domínio sem TLD rejeitado
+* [ ] Caracteres inválidos rejeitados
+* [ ] Campos padrão e toggle funcionam igual
+* [ ] Dados persistem após salvar
+* [ ] Nenhum impacto em e-mails antigos
+
+---
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+---
+
+## 1. E-mails **VÁLIDOS** (devem ser aceitos)
+
+### 1.1 Domínios não padrão (foco da tarefa)
+
+```
+sample@bds.services
+user@company.solutions
+finance@uownleasing.technology
+admin@global.international
+contact@domain.foundation
+support@empresa.consulting
+```
+
+### 1.2 Domínios padrão (regressão)
+
+```
+test@gmail.com
+admin@yahoo.com
+finance@company.com
+user@outlook.com
+```
+
+### 1.3 Subdomínios válidos
+
+```
+user@mail.company.services
+support@reports.finance.global
+admin@sub.domain.technology
+```
+
+---
+
+## 2. E-mails **INVÁLIDOS** (devem ser rejeitados)
+
+### 2.1 Múltiplos arrobas
+
+```
+test@@domain.com
+te@st@domain.com
+test@domain@com
+```
+
+---
+
+### 2.2 Estrutura incompleta
+
+```
+@domain.com
+user@
+user@domain
+userdomain.com
+```
+
+---
+
+### 2.3 Domínio inválido
+
+```
+user@domain..com
+user@domain,com
+user@domain/com
+```
+
+---
+
+### 2.4 TLD inválido
+
+```
+user@domain.c
+user@domain.
+user@domain.1
+```
+
+---
+
+### 2.5 Caracteres inválidos
+
+```
+us er@domain.com
+user@do main.com
+user@domain!.com
+user#domain.com
+```
+
+---
+
+## 3. Casos **LIMITE / EDGE CASES** (validação importante)
+
+> Úteis para confirmar que a validação não ficou permissiva demais.
+
+```
+u@d.services
+a.b-c_d@sub-domain.services
+```
+
+⚠️ Observação importante para QA
+A regex **NÃO aceita**:
+
+* `+` no usuário
+* caracteres especiais além de `.` `-` `_`
+
+Portanto:
+
+```
+test+alias@domain.com
+```
+
+**deve ser rejeitado**, mesmo sendo tecnicamente válido segundo RFC — isso é esperado com a regex atual.
+
+---
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---
+
+## Scenario Outline: Aceitar e-mails válidos (domínios padrão, não padrão e subdomínios)
+
+```markdown
+- Given the user accesses Origination
+- And navigates to the Merchants page
+- And opens the edit page for any Merchant
+- And turns ON the "Send Automated Funding Report" toggle
+- When the user adds the email "<Email>" in the Funding Report Emails field
+- Then the email is accepted
+- And no validation error is displayed
+```
+
+Examples:
+
+| Email                                                                   |
+| ----------------------------------------------------------------------- |
+| [sample@bds.services](mailto:sample@bds.services)                       |
+| [user@company.solutions](mailto:user@company.solutions)                 |
+| [finance@uownleasing.technology](mailto:finance@uownleasing.technology) |
+| [admin@global.international](mailto:admin@global.international)         |
+| [contact@domain.foundation](mailto:contact@domain.foundation)           |
+| [support@empresa.consulting](mailto:support@empresa.consulting)         |
+| [test@gmail.com](mailto:test@gmail.com)                                 |
+| [admin@yahoo.com](mailto:admin@yahoo.com)                               |
+| [finance@company.com](mailto:finance@company.com)                       |
+| [user@outlook.com](mailto:user@outlook.com)                             |
+| [user@mail.company.services](mailto:user@mail.company.services)         |
+| [support@reports.finance.global](mailto:support@reports.finance.global) |
+| [admin@sub.domain.technology](mailto:admin@sub.domain.technology)       |
+
+| Data     | Value |
+| -------- | ----- |
+| Merchant | ANY   |
+
+Screenshot
+
+**PASS**
+
+---
+
+## Scenario Outline: Rejeitar e-mails inválidos – múltiplos arrobas
+
+```markdown
+- Given the user accesses Origination
+- And navigates to the Merchants page
+- And opens the edit page for any Merchant
+- And turns ON the "Send Automated Funding Report" toggle
+- When the user adds the email "<Email>" in the Funding Report Emails field
+- Then the email is not accepted
+- And a validation error is displayed
+```
+
+Examples:
+
+| Email                                    |
+| ---------------------------------------- |
+| test@@domain.com                         |
+| te@[st@domain.com](mailto:st@domain.com) |
+| test@domain@com                          |
+
+| Data     | Value |
+| -------- | ----- |
+| Merchant | ANY   |
+
+Screenshot
+
+**PASS**
+
+---
+
+## Scenario Outline: Rejeitar e-mails inválidos – estrutura incompleta
+
+```markdown
+- Given the user accesses Origination
+- And navigates to the Merchants page
+- And opens the edit page for any Merchant
+- And turns ON the "Send Automated Funding Report" toggle
+- When the user adds the email "<Email>" in the Funding Report Emails field
+- Then the email is not accepted
+- And a validation error is displayed
+```
+
+Examples:
+
+| Email          |
+| -------------- |
+| @domain.com    |
+| user@          |
+| user@domain    |
+| userdomain.com |
+
+| Data     | Value |
+| -------- | ----- |
+| Merchant | ANY   |
+
+Screenshot
+
+**PASS**
+
+---
+
+## Scenario Outline: Rejeitar e-mails inválidos – domínio inválido
+
+```markdown
+- Given the user accesses Origination
+- And navigates to the Merchants page
+- And opens the edit page for any Merchant
+- And turns ON the "Send Automated Funding Report" toggle
+- When the user adds the email "<Email>" in the Funding Report Emails field
+- Then the email is not accepted
+- And a validation error is displayed
+```
+
+Examples:
+
+| Email            |
+| ---------------- |
+| user@domain..com |
+| user@domain,com  |
+| user@domain/com  |
+
+| Data     | Value |
+| -------- | ----- |
+| Merchant | ANY   |
+
+Screenshot
+
+**PASS**
+
+---
+
+## Scenario Outline: Rejeitar e-mails inválidos – TLD inválido
+
+```markdown
+- Given the user accesses Origination
+- And navigates to the Merchants page
+- And opens the edit page for any Merchant
+- And turns ON the "Send Automated Funding Report" toggle
+- When the user adds the email "<Email>" in the Funding Report Emails field
+- Then the email is not accepted
+- And a validation error is displayed
+```
+
+Examples:
+
+| Email                                 |
+| ------------------------------------- |
+| [user@domain.c](mailto:user@domain.c) |
+| user@domain.                          |
+| user@domain.1                         |
+
+| Data     | Value |
+| -------- | ----- |
+| Merchant | ANY   |
+
+Screenshot
+
+**PASS**
+
+---
+
+## Scenario Outline: Rejeitar e-mails inválidos – caracteres não permitidos
+
+```markdown
+- Given the user accesses Origination
+- And navigates to the Merchants page
+- And opens the edit page for any Merchant
+- And turns ON the "Send Automated Funding Report" toggle
+- When the user adds the email "<Email>" in the Funding Report Emails field
+- Then the email is not accepted
+- And a validation error is displayed
+```
+
+Examples:
+
+| Email                                                 |
+| ----------------------------------------------------- |
+| us [er@domain.com](mailto:er@domain.com)              |
+| user@do main.com                                      |
+| user@domain!.com                                      |
+| user#domain.com                                       |
+| [test+alias@domain.com](mailto:test+alias@domain.com) |
+
+| Data     | Value |
+| -------- | ----- |
+| Merchant | ANY   |
+
+Screenshot
+
+**PASS**
+
+---
+
+## Scenario: Não impactar e-mails já existentes no sistema (regressão)
+
+```markdown
+- Given the user accesses Origination
+- And navigates to the Merchants page
+- And opens a Merchant that already has stored emails
+- When the edit page is loaded
+- Then all previously stored emails are displayed correctly
+- And no validation error is triggered
+- And the Merchant can be saved without modifying the emails
+```
+
+**PASS**
+
+---
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+## Tests in qa2
+
+---
+
+## Scenario Outline 1: Accept valid emails (standard domains, non-standard domains, and subdomains)
+
+```markdown
+- Given the user accesses Origination
+- And navigates to the Merchants page
+- And opens the edit page for any Merchant
+- And turns ON the "Send Automated Funding Report" toggle
+- When the user adds the email "<Email>" in the Funding Report Emails field
+- Then the email is accepted
+- And no validation error is displayed
+```
+
+Examples:
+
+| Email                                                                   |
+| ----------------------------------------------------------------------- |
+| [sample@bds.services](mailto:sample@bds.services)                       |
+| [user@company.solutions](mailto:user@company.solutions)                 |
+| [finance@uownleasing.technology](mailto:finance@uownleasing.technology) |
+| [admin@global.international](mailto:admin@global.international)         |
+| [contact@domain.foundation](mailto:contact@domain.foundation)           |
+| [support@empresa.consulting](mailto:support@empresa.consulting)         |
+| [test@gmail.com](mailto:test@gmail.com)                                 |
+| [admin@yahoo.com](mailto:admin@yahoo.com)                               |
+| [finance@company.com](mailto:finance@company.com)                       |
+| [user@outlook.com](mailto:user@outlook.com)                             |
+| [user@mail.company.services](mailto:user@mail.company.services)         |
+| [support@reports.finance.global](mailto:support@reports.finance.global) |
+| [admin@sub.domain.technology](mailto:admin@sub.domain.technology)       |
+
+| Data     | Value |
+| -------- | ----- |
+| Merchant | ANY   |
+
+Screenshot
+
+**PASS**
+
+---
+
+## Scenario Outline 2: Reject invalid emails – multiple at signs
+
+```markdown
+- Given the user accesses Origination
+- And navigates to the Merchants page
+- And opens the edit page for any Merchant
+- And turns ON the "Send Automated Funding Report" toggle
+- When the user adds the email "<Email>" in the Funding Report Emails field
+- Then the email is not accepted
+- And a validation error is displayed
+```
+
+Examples:
+
+| Email                                    |
+| ---------------------------------------- |
+| test@@domain.com                         |
+| te@[st@domain.com](mailto:st@domain.com) |
+| test@domain@com                          |
+
+| Data     | Value |
+| -------- | ----- |
+| Merchant | ANY   |
+
+Screenshot
+
+**PASS**
+
+---
+
+## Scenario Outline 3: Reject invalid emails – incomplete structure
+
+```markdown
+- Given the user accesses Origination
+- And navigates to the Merchants page
+- And opens the edit page for any Merchant
+- And turns ON the "Send Automated Funding Report" toggle
+- When the user adds the email "<Email>" in the Funding Report Emails field
+- Then the email is not accepted
+- And a validation error is displayed
+```
+
+Examples:
+
+| Email          |
+| -------------- |
+| @domain.com    |
+| user@          |
+| user@domain    |
+| userdomain.com |
+
+| Data     | Value |
+| -------- | ----- |
+| Merchant | ANY   |
+
+Screenshot
+
+**PASS**
+
+---
+
+## Scenario Outline 4: Reject invalid emails – invalid domain
+
+```markdown
+- Given the user accesses Origination
+- And navigates to the Merchants page
+- And opens the edit page for any Merchant
+- And turns ON the "Send Automated Funding Report" toggle
+- When the user adds the email "<Email>" in the Funding Report Emails field
+- Then the email is not accepted
+- And a validation error is displayed
+```
+
+Examples:
+
+| Email            |
+| ---------------- |
+| user@domain..com |
+| user@domain,com  |
+| user@domain/com  |
+
+| Data     | Value |
+| -------- | ----- |
+| Merchant | ANY   |
+
+Screenshot
+
+**PASS**
+
+---
+
+## Scenario Outline 5: Reject invalid emails – invalid TLD
+
+```markdown
+- Given the user accesses Origination
+- And navigates to the Merchants page
+- And opens the edit page for any Merchant
+- And turns ON the "Send Automated Funding Report" toggle
+- When the user adds the email "<Email>" in the Funding Report Emails field
+- Then the email is not accepted
+- And a validation error is displayed
+```
+
+Examples:
+
+| Email                                 |
+| ------------------------------------- |
+| [user@domain.c](mailto:user@domain.c) |
+| user@domain.                          |
+| user@domain.1                         |
+
+| Data     | Value |
+| -------- | ----- |
+| Merchant | ANY   |
+
+Screenshot
+
+**PASS**
+
+---
+
+## Scenario Outline 6: Reject invalid emails – unsupported characters
+
+```markdown
+- Given the user accesses Origination
+- And navigates to the Merchants page
+- And opens the edit page for any Merchant
+- And turns ON the "Send Automated Funding Report" toggle
+- When the user adds the email "<Email>" in the Funding Report Emails field
+- Then the email is not accepted
+- And a validation error is displayed
+```
+
+Examples:
+
+| Email                                                 |
+| ----------------------------------------------------- |
+| us [er@domain.com](mailto:er@domain.com)              |
+| user@do main.com                                      |
+| user@domain!.com                                      |
+| user#domain.com                                       |
+| [test+alias@domain.com](mailto:test+alias@domain.com) |
+
+| Data     | Value |
+| -------- | ----- |
+| Merchant | ANY   |
+
+Screenshot
+
+**PASS**
+
+---
+
+## Scenario 7: Do not impact already stored emails (regression)
+
+```markdown
+- Given the user accesses Origination
+- And navigates to the Merchants page
+- And opens a Merchant that already has stored emails
+- When the edit page is loaded
+- Then all previously stored emails are displayed correctly
+- And no validation error is triggered
+- And the Merchant can be saved without modifying the emails
+```
+
+**PASS**
+
+---

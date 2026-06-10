@@ -18,7 +18,6 @@
  *   - Rendering the same HTML the customer sees gives an equivalent text
  *     surface for cross-validation, which is the spec intent (US-DOC-12).
  */
-import { PDFParse } from 'pdf-parse';
 import type { Page } from '@playwright/test';
 
 export interface PdfEpoChartRow {
@@ -37,6 +36,16 @@ export interface ContractValues {
   paymentAmount?: number;
   numberOfPayments?: number;
   rentalPeriod?: string;
+  /**
+   * Promotional / early-payoff amount labelled in the rendered contract
+   * (e.g. "3-Month-Promotional-Payoff-Option", "Pay Off Amount", "Early
+   * Payoff"). Populated for svc#531 (R1.52.0 — 16-month EPO for CA) so
+   * CT-A4 can cross-validate Lease docs (T0) against Servicing / Customer
+   * Portal. Undefined when no labelled value is found in `rawText`; callers
+   * should fall back to `epoChart[0].epo` (the EPO at payment 1, which
+   * sits within the 90-day window by construction).
+   */
+  earlyPayoffAmount?: number;
   epoChart: PdfEpoChartRow[];
   rawText: string;
 }
@@ -66,6 +75,10 @@ function extractAfterLabel(
 }
 
 export async function extractContractValues(pdfData: Buffer | Uint8Array): Promise<ContractValues> {
+  // Lazy import: pdfjs-dist (pdf-parse dep) calls `new DOMMatrix()` at module load time,
+  // which fails in Node.js workers without the @napi-rs/canvas polyfill. Deferring the
+  // import to call time means other specs that don't use PDF parsing load cleanly.
+  const { PDFParse } = await import('pdf-parse');
   const data = pdfData instanceof Uint8Array ? pdfData : new Uint8Array(pdfData);
   const parser = new PDFParse({ data });
   const result = await parser.getText();
@@ -113,6 +126,20 @@ export async function extractContractValues(pdfData: Buffer | Uint8Array): Promi
     }
   }
 
+  const earlyPayoffAmount = parseMoney(
+    extractAfterLabel(
+      compact,
+      [
+        '3[-\\s]?Month[-\\s]?Promotional[-\\s]?Payoff[-\\s]?Option[^$]{0,80}',
+        'Early\\s*Pay[-\\s]?Off\\s*Amount',
+        'Promotional\\s*Pay[-\\s]?Off',
+        'Pay[-\\s]?Off\\s*Amount',
+        '90[-\\s]?Day\\s*Total',
+      ],
+      40,
+    ),
+  );
+
   return {
     agreementNumber,
     lesseeName,
@@ -123,9 +150,41 @@ export async function extractContractValues(pdfData: Buffer | Uint8Array): Promi
     paymentAmount,
     numberOfPayments,
     rentalPeriod,
+    earlyPayoffAmount,
     epoChart,
     rawText: text,
   };
+}
+
+/**
+ * Resolves the 90-day payoff amount visible in the lease contract PDF.
+ *
+ * Priority order (svc#531 §G2):
+ *   1. `earlyPayoffAmount` extracted from a labelled paragraph
+ *      (e.g. "3-Month-Promotional-Payoff-Option").
+ *   2. `epoChart[0].epo` — the EPO at the first scheduled payment, which
+ *      sits within the 90-day window by construction (payment 1 is at
+ *      week 1 / 2 / 4 depending on frequency, always under 90 days).
+ *
+ * Returns `undefined` when neither source is available, letting callers
+ * decide whether the assertion is a hard failure or `[OBSERVAÇÃO]`.
+ *
+ * NOTE: the labelled extraction relies on regex over `pdf-parse` text and
+ * is template-sensitive (memory `feedback_consult_svc_when_unsure`). The
+ * caller should attach `rawText` to the test report so a missed extractor
+ * is debuggable from artifacts, not by re-running the test.
+ */
+export function read90DayPayoffFromContract(
+  values: ContractValues,
+): number | undefined {
+  if (typeof values.earlyPayoffAmount === 'number' && Number.isFinite(values.earlyPayoffAmount)) {
+    return values.earlyPayoffAmount;
+  }
+  const firstRow = values.epoChart.find((r) => r.paymentNumber === 1);
+  if (firstRow && Number.isFinite(firstRow.epo)) {
+    return firstRow.epo;
+  }
+  return undefined;
 }
 
 export async function captureContractPdf(page: Page, sourceUrl: string): Promise<Buffer> {

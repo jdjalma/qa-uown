@@ -51,14 +51,14 @@ export async function navigateToOriginationCustomer(
     await page.waitForURL('**/customers/**', { timeout: 3_000 }).catch(() => {});
   }
 
-  // Last resort: navigate directly via URL
-  const directUrl = `/customers/${searchId}`;
-  console.log(`[Navigation] All search attempts failed — navigating directly to ${directUrl}`);
-  await page.goto(directUrl, { waitUntil: 'domcontentloaded' });
-  await page.waitForLoadState('networkidle').catch(() => {});
-  const customerPage = new OriginationCustomerPage(page);
-  await customerPage.waitForSpinner();
-  return customerPage;
+  // No direct page.goto fallback by design: a full reload wipes the SPA's in-memory JWT.
+  // On CI runners that hit the cluster-internal HTTP URL, the Secure session cookie is
+  // dropped by the browser, leaving the route-guard with no auth → renders empty shell.
+  // Failing loudly here is preferable to silently navigating to a broken state.
+  throw new Error(
+    `[Navigation] navigateToOriginationCustomer failed after ${MAX_ATTEMPTS} UI search attempts for "${searchId}". `
+    + `Current URL: ${page.url()}`,
+  );
 }
 
 /** Check if a string looks like a UUID (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx) */

@@ -163,7 +163,7 @@ fintech-playwright/
 
 ### Page Object Hierarchy
 
-> **Source of truth.** Outros arquivos (`rules/page-objects.md`, `agents/subagent-page-object.md`) referenciam esta seção — não duplicar a árvore em outro lugar.
+> **Source of truth.** Outros arquivos (`rules/page-objects.md`, skill [[page-object-pattern]]) referenciam esta seção — não duplicar a árvore em outro lugar.
 
 ```
 BasePage                              # Never instantiate directly — src/pages/base.page.ts
@@ -216,7 +216,7 @@ BaseClient
 ApiResponse<T> = { ok, status, statusText, headers, body: T, raw }
 ```
 
-**Domain Clients** (catálogo completo + métodos em `subagent-impl-api-client.md` e `context/shared/helpers-catalog.md / shared/api-clients-catalog.md / shared/page-objects-catalog.md`):
+**Domain Clients** (catálogo completo + métodos em skills [[api-client-pattern]], [[helpers-catalog]], [[page-object-pattern]]):
 
 - `ApplicationClient` — sendApplication, getApplicationStatus, submitApplication, getMissingFields, authorizeCreditCard
 - `InvoiceClient` — sendInvoice

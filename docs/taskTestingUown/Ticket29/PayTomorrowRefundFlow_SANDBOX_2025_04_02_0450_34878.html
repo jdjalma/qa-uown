@@ -1,0 +1,359 @@
+<html>
+    <head>
+        <title>PayTomorrowRefundFlow Report (https://origination-sandbox.uownleasing.com/) - 2025/04/02 at 0450</title>
+        <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+        <script type="text/javascript">
+                google.charts.load('current', {'packages':['corechart']});
+                google.charts.setOnLoadCallback(drawChart);
+
+                function drawChart() {
+
+                    var data = google.visualization.arrayToDataTable([
+                        ['Result', 'Count'],
+                        ["Successful", 2]
+                    ]);
+
+                    var options = {
+                        colors: ["#009900"]
+                    };
+
+                    var chart = new google.visualization.PieChart(document.getElementById('dataPie'));
+
+                    chart.draw(data, options);
+
+                }
+
+            </script>
+
+        <style>
+
+                #summaryDataTable {
+                    border-collapse: collapse; /* Collapse borders */
+                    margin: auto;
+                    width: 75%;
+                    border: 1px solid #ddd; /* Add a grey border */
+                    font-size: 18px; /* Increase font-size */
+                }
+
+                #detailedDataTable {
+                    border-collapse: collapse; /* Collapse borders */
+                    margin: auto;
+                    border: 1px solid #ddd; /* Add a grey border */
+                    font-size: 14px; /* Increase font-size */
+                }
+
+                #summaryDataTable th, #summaryDataTable td, #detailedDataTable th, #detailedDataTable td {
+                    text-align: left; /* Left-align text */
+                    border: 1px solid black;
+                    padding: 12px; /* Add padding */
+                }
+
+                #summaryDataTable tr, #detailedDataTable tr {
+                    /* Add a bottom border to all table rows */
+                    border-bottom: 1px solid #ddd;
+                }
+
+                #summaryDataTable tr.header, #summaryDataTable tr:hover {
+                    /* Add a grey background color to the table header and on hover */
+                    background-color: #f1f1f1;
+                }
+
+                tr.successful {
+                    background-color: #00cc00;
+                }
+
+                tr.partiallySuccessful {
+                    background-color: #cc6600;
+                }
+
+                tr.unsuccessful {
+                    background-color: #cc0f00;
+                }
+
+                .button {
+                    border: none;
+                    color: white;
+                    padding: 15px 32px;
+                    text-align: center;
+                    text-decoration: none;
+                    display: inline-block;
+                    font-size: 16px;
+                }
+
+                [name=displayAll] {
+                    background-color: #000000;
+                }
+
+                [name=displaySuccessful] {
+                    background-color: #00cc00;
+                }
+
+                [name=displayPartial] {
+                    background-color: #cc6600;
+                }
+
+                [name=displayUnsuccessful] {
+                    background-color: #cc0f00;
+                }
+
+                .filterOutput {
+                    width: 50%;
+                    font-size: 16px;
+                    padding: 12px 20px 12px 40px;
+                    border: 1px solid #ddd;
+                    margin-top: 12px;
+                    margin-bottom: 12px;
+                }
+
+            </style>
+    </head>
+    <body>
+    <h1><center><u>PayTomorrowRefundFlow Report (https://origination-sandbox.uownleasing.com/) - 2025/04/02 at 0450</u></center></h1>
+
+    <div id="dataPie" style="margin: auto; width: 900px; height: 500px;"></div>
+
+    <hr>
+
+    <h2><center><u>Summary</u></center></h2>
+
+    <table id="summaryDataTable">
+        <tr class="header">
+            <th style="width:60%;">Result</th>
+            <th style="width:40%;">Count</th>
+        </tr>
+        <tr>
+				<td>Successful</td>
+				<td>2</td>
+			</tr>
+
+    </table>
+
+    <hr>
+
+    <h2><center><u>Detailed</u></center></h2>
+
+    <p style="margin-top: 12px; margin-bottom: 12px;"><b>Please note filters will currently overwrite each other. WIP!</b></p>
+
+    <button name="displayAll" class="button" onclick="">Display All</button>
+    <button name="displaySuccessful" class="button">Display Only Successful</button>
+    <button name="displayPartial" class="button">Display Only Partially Successful</button>
+    <button name="displayUnsuccessful" class="button">Display Only Unsuccessful</button>
+    <br>
+    <input type="text" id="filterOutputDetailedData" class="filterOutput" target_table="detailedDataTable" onkeyup="filterOutput(this);" placeholder="Search through all fields...">
+    <br>
+
+    <table id="detailedDataTable">
+        <tr class="header">
+				<th>RunNumber</th>
+				<th>Environment</th>
+				<th>StartTime</th>
+				<th>LeadSource</th>
+				<th>MerchantName</th>
+				<th>MerchantId</th>
+				<th>LeadPk</th>
+				<th>AccountPk</th>
+				<th>WebsiteAccountPk</th>
+				<th>State</th>
+				<th>ZipCode</th>
+				<th>City</th>
+				<th>ACHPaymentDate</th>
+				<th>ACHPaymentAmount</th>
+				<th>CCPaymentDate</th>
+				<th>CCPaymentAmount</th>
+				<th>ApplicationType</th>
+				<th>Browser</th>
+				<th>EndTime</th>
+				<th>Comments</th>
+				<th>Result</th>
+			</tr>
+			<tr class="successful">
+				<td>1</td>
+				<td>sandbox</td>
+				<td>04_02_0444</td>
+				<td>payTomorrow</td>
+				<td>MSAPowersports</td>
+				<td>OL90402-0001</td>
+				<td>87260</td>
+				<td>5467</td>
+				<td>null</td>
+				<td>null</td>
+				<td>null</td>
+				<td>null</td>
+				<td>null</td>
+				<td>0</td>
+				<td>null</td>
+				<td>0</td>
+				<td>Not yet specified</td>
+				<td>chrome</td>
+				<td>04_02_0450</td>
+				<td>N/A</td>
+				<td>Successful</td>
+			</tr>
+			<tr class="successful">
+				<td>2</td>
+				<td>sandbox</td>
+				<td>04_02_0450</td>
+				<td>payTomorrow</td>
+				<td>MSAPowersports</td>
+				<td>OL90402-0001</td>
+				<td>87261</td>
+				<td>5468</td>
+				<td>null</td>
+				<td>null</td>
+				<td>null</td>
+				<td>null</td>
+				<td>null</td>
+				<td>0</td>
+				<td>null</td>
+				<td>0</td>
+				<td>Not yet specified</td>
+				<td>chrome</td>
+				<td>04_02_0456</td>
+				<td>N/A</td>
+				<td>Successful</td>
+			</tr>
+
+    </table>
+
+    <hr>
+
+    <script type="text/javascript">
+
+        var showAll = document.getElementsByName("displayAll");
+        var showSuccessful = document.getElementsByName("displaySuccessful");
+        var showPartial = document.getElementsByName("displayPartial");
+        var showUnsuccessful = document.getElementsByName("displayUnsuccessful");
+
+        for (var i = 0; i < showAll.length; i++) {
+            showAll[i].addEventListener("click", filterDetailedTable);
+        }
+
+        for (var i = 0; i < showSuccessful.length; i++) {
+            showSuccessful[i].addEventListener("click", filterDetailedTable);
+        }
+
+        for (var i = 0; i < showPartial.length; i++) {
+            showPartial[i].addEventListener("click", filterDetailedTable);
+        }
+
+        for (var i = 0; i < showUnsuccessful.length; i++) {
+            showUnsuccessful[i].addEventListener("click", filterDetailedTable);
+        }
+
+        function filterDetailedTable() {
+
+            var table = document.getElementById("detailedDataTable");
+            var tr = table.getElementsByTagName("tr");
+            var n_td;
+            var verdict;
+
+            switch(this.name) {
+
+                // i starts from 1 since the top row will be header
+
+                case "displayAll":
+
+                    for (var i = 1; i < tr.length; i++) {
+                        tr[i].style.display = "";
+                    }
+                    break;
+
+                case "displaySuccessful":
+
+                    filterButton("Successful");
+
+                    break;
+
+                case "displayPartial":
+
+                    filterButton("Partially successful");
+
+                    break;
+
+                case "displayUnsuccessful":
+
+                    for (var i = 1; i < tr.length; i++) {
+                        n_td = tr[i].getElementsByTagName("td").length;
+                        verdict = tr[i].getElementsByTagName("td")[n_td - 1].innerText;
+                        if (verdict != "Successful" && verdict != "Partially successful") {
+                            tr[i].style.display = "";
+                        } else {
+                            tr[i].style.display = "none";
+                        }
+                    }
+
+                    break;
+
+            }
+
+        }
+
+        function filterButton(filterValue) {
+
+            var table = document.getElementById("detailedDataTable");
+            var tr = table.getElementsByTagName("tr");
+            var n_td;
+            var verdict;
+
+            for (var i = 1; i < tr.length; i++) {
+                n_td = tr[i].getElementsByTagName("td").length;
+                verdict = tr[i].getElementsByTagName("td")[n_td - 1].innerText;
+                if (verdict == filterValue) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+
+        }
+
+        function filterOutput(callingElement) {
+
+            var filterId = callingElement.getAttribute("id");
+            var tableId = callingElement.getAttribute("target_table");
+
+            var table = document.getElementById(tableId);
+            var filter = document.getElementById(filterId).value.toUpperCase();
+            var tr = table.getElementsByTagName("tr");
+            var n_td;
+            var verdict;
+            var filterFound;
+            var cellValue;
+
+            for (var i = 1; i < tr.length; i++) {
+
+                filterFound = false;
+
+                n_td = tr[i].getElementsByTagName("td").length;
+
+                for (var x = 0; x < n_td; x++) {
+
+                    cellValue = tr[i].getElementsByTagName("td")[x].innerText;
+                    if (cellValue) {
+
+                        if (cellValue.toUpperCase().indexOf(filter) > -1) {
+                            filterFound = true;
+                            break;
+                        }
+
+                    }
+
+                }
+
+                if (filterFound) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+
+            }
+
+        }
+
+
+    </script>
+
+    </body>
+
+</html>
+

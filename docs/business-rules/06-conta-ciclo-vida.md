@@ -68,24 +68,30 @@ O rating letter e uma classificacao de uma unica letra que indica o **status de 
 
 ### Significado de Cada Rating
 
-| Rating | Significado | Impacto no Sistema |
-|--------|-----------|-------------------|
-| **S** | Standard/Satisfactory (normal) | Auto-pay funciona normalmente. Processamento padrao |
-| **P** | Promise to Pay (acordo de pagamento) | **Desliga auto-pay ACH e CC**. Atribuido quando cliente faz payment arrangement via portal ou agente. Excluido de sweeps de pagamento |
-| **C** | Confirmed Bankruptcy (falencia confirmada) | **Desliga auto-pay ACH e CC**. Conta em status de cobranca ativa. Excluido de sweeps |
-| **M** | MR Money Owed / Military (SCRA/protecao militar) | **Desliga auto-pay ACH e CC**. Protecao sob Servicemembers Civil Relief Act |
-| **D** | Pending Bankruptcy (falencia pendente) | Retentativas diarias de CC negado sao puladas |
-| **B** | Discharged Bankruptcy (falencia encerrada) | Excluido de lembretes de primeiro pagamento e criacao de pagamentos recorrentes |
-| **E** | Pickup Requested (solicitacao de retirada) | Excluido de email "Settled in Full" |
-| **F** | Fraud (fraude confirmada) | Excluido de email "Settled in Full" |
-| **G** | Pickup Completed - Settlement (retirada concluida + acordo) | Conta retirada e acordo negociado |
-| **J** | Opt out payment reminders (cliente optou por nao receber lembretes) | Excluido de sweeps de lembretes de pagamento |
-| **L** | Legal (em processo juridico) | Conta em processo legal ativo |
-| **R** | DNC Dialer / Revoke (nao ligar / consentimento revogado) | Excluido de discador automatico; cliente revogou consentimento de contato |
-| **S** (Sold) | Sold (vendido) | Aplicado quando conta e vendida a comprador de divida |
-| **U** | Pickup Completed - Product (retirada concluida - produto mantido) | Produto retirado mas cliente manteve responsabilidade |
+> **Fonte de verdade:** `common/src/main/java/com/uownleasing/common/enumeration/RatingLetter.java` — qualquer divergencia entre esta tabela e o enum deve ser resolvida em favor do enum.
 
-> **Nota:** Os ratings que **desligam auto-pay** sao: **C, P, M**. Os que **excluem de email "Settled in Full"** sao: **E, F, U**.
+| Rating | Significado (enum) | Impacto sistemico (filtros SQL reais) |
+|--------|--------------------|--------------------------------------|
+| `NULL` | Conta sem rating — saudavel | Sem exclusao. Processamento padrao de auto-pay e sweeps. |
+| **P** | Payment Arrangement | Excluido de `ScheduledACHPayments`, `ScheduledCreditCardPayments`, `RerunACH/CC`, `CCDailyScheduledDeniedRerun`, `StickyRecoverSweep`, `CCVintageRun`, `DelinquencyRerunCC`. **Removido automaticamente apos 60 dias** (`RemoveRatingLetterSql`). |
+| **C** | Confirmed Bankruptcy (falencia confirmada) | Maior exclusao do sistema — excluido de `FirstPaymentReminder`, `ScheduledACH/CC`, `RerunACH/CC`, `CustomerPortalReminder`, `CCDailyScheduledDeniedRerun`, `StickyRecoverSweep`, `CCVintageRun`, `DelinquencyRerunCC`. |
+| **D** | Pending Bankruptcy (falencia pendente) | Excluido de `RerunACH/CC`, `CCDailyScheduledDeniedRerun`, `CustomerPortalReminder`, `StickyRecoverSweep`, `CCVintageRun`, `DelinquencyRerunCC`. NAO excluido do scheduled inicial. |
+| **B** | Discharged Bankruptcy (falencia encerrada) | Excluido de `FirstPaymentReminder`, `ScheduledACH/CC`, `CustomerPortalReminder`, `StickyRecoverSweep`, `CCVintageRun`, `DelinquencyRerunCC`. NAO excluido de `RerunACH/CC`. |
+| **M** | MR Money Owed | **Nao consta em nenhum filtro SQL conhecido no svc.** Doc anterior afirmava que `M` desliga auto-pay; o codigo nao evidencia exclusao via SQL. Possivel toggle separado em `cc.auto_pay`/`account.auto_pay_types` — TBD investigacao confirmatoria. |
+| **F** | Fraud (fraude confirmada) | Excluido de email "Settled in Full" + `CustomerPortalReminder` + `CCVintageRun` + `DelinquencyRerunCC`. **NAO excluido** de Scheduled/Rerun/Sticky — fraude confirmada ainda passa pelos sweeps de cobranca. |
+| **E** | Pickup Requested (retirada solicitada) | Excluido de email "Settled in Full" + `CCVintageRun` + `DelinquencyRerunCC`. |
+| **U** | Pickup Completed Product (produto retirado, cliente manteve responsabilidade) | Excluido de email "Settled in Full" + `CustomerPortalReminder` + `CCVintageRun` + `DelinquencyRerunCC`. |
+| **G** | Pickup Completed Settlement (retirada + acordo negociado) | Excluido de `CustomerPortalReminder` + `CCVintageRun` + `DelinquencyRerunCC`. |
+| **S** | Sold Accounts (conta vendida a debt buyer) | Excluido de `CustomerPortalReminder` + `CCVintageRun` + `DelinquencyRerunCC`. **NAO excluido** de Scheduled/Rerun/Sticky. |
+| **R** | DNC Dialer/Revoke (nao ligar / consentimento revogado) | Sem exclusao SQL conhecida — provavelmente bloqueia discador automatico/SMS via flag separada nao-SQL. |
+| **J** | Opt Out Payment Reminders (opt-out de lembretes) | Usado em `= 'J'` no `CreateSkitDelinquentSweep` (bypassa criacao de tarefas Skit/dialer/SMS). |
+| **L** | Legal (em processo juridico) | Excluido de `CCVintageRun` + `DelinquencyRerunCC`. |
+
+> **Observacoes importantes:**
+>
+> 1. **Nao existe letra "Standard"** — conta normal tem `rating IS NULL`. A presenca da letra **S** indica `Sold Accounts`, nao "Standard".
+> 2. **Nenhum filtro SQL exclui `M`** atualmente. Documentacao historica menciona que `M` desliga auto-pay, mas o codigo nao evidencia esse comportamento via filtro SQL — pode ser feito por outro mecanismo (toggle de `cc.auto_pay`, intervencao do agente, etc.).
+> 3. **Sweeps de "rerun/recovery" (RerunACH/CC, DelinquencyRerunCC, StickyRecoverSweep) tem listas de exclusao diferentes entre si** — `StickyRecoverSweep` exclui apenas `B,C,D,P`, enquanto `DelinquencyRerunCC` exclui `B,C,P,S,D,E,F,G,L,U`. A inconsistencia e candidata a revisao de produto.
 
 ### Como o Rating Muda
 
@@ -337,13 +343,12 @@ Garante que o AutoPay reflita corretamente os metodos de pagamento disponiveis. 
 
 ### Impacto do Rating Letter
 
-O rating letter tem **precedencia** sobre flags explicitas de AutoPay:
-
 | Evento | Acao |
 |--------|------|
-| Rating alterado para C, P ou M | **Desliga AutoPay** (ACH e CC) |
-| Rating removido (setado para null) | AutoPay recalculado com base nos instrumentos disponiveis |
-| Rating alterado para outro valor | AutoPay mantido, horario do rating registrado |
+| Rating alterado para `C` (Confirmed Bankruptcy) ou `P` (Payment Arrangement) | **Excluido de todos os sweeps de pagamento** (ACH/CC scheduled, rerun, sticky recover) via filtros SQL — comportamento equivalente a "AutoPay desligado" |
+| Rating alterado para `M` (MR Money Owed) | **Comportamento sistemico nao confirmado** — doc historica afirmava que desliga AutoPay, mas nenhum filtro SQL atual exclui `M`. Investigar se ha toggle separado em `cc.auto_pay` ou intervencao manual do agente |
+| Rating removido (setado para `NULL`) | Conta volta ao processamento padrao; instrumentos de AutoPay re-elegiveis |
+| Rating alterado para outro valor | Impacto varia por filtro SQL — ver tabela §19 acima |
 
 ### Auditoria
 

@@ -24,11 +24,11 @@ When multiple Claude Code terminals edit the same repository, use PID-based lock
 .claude/locks/{file_path_with_underscores}.lock
 ```
 
-Full protocol: `.claude/context/shared/agent-coordination.md`
+Full protocol: orchestrator (CLAUDE.md) coordinates agent invocation
 
 ## Payment Arrangement Signatures (CRITICAL — common source of errors)
 
-See `.claude/context/shared/common-operations.md` for complete cookbook.
+See skill [[common-operations]] for complete cookbook.
 
 Quick reference — these are the CORRECT signatures:
 

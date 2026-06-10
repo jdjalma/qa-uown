@@ -1,0 +1,580 @@
+[
+  {
+    "uuid": "257408da-ffb0-4056-bc1c-354b669b3739",
+    "lead_pk": "6559321",
+    "merchant_code": "OW90218-0001",
+    "merchant_name": "Tire Agent",
+    "merchant_state": "NY",
+    "merchant_client_type": "TIRE_AGENT",
+    "customer_state": "CA",
+    "lead_status": "SIGNED",
+    "esign_pk": "510909",
+    "esign_client": "GOWSIGN",
+    "blob_bytes": 654698,
+    "pdf_text_chars": 35221,
+    "template_id_in_request": null,
+    "template_guess": "standard",
+    "assertions_pass": "5/5",
+    "file": "lead-6559321_OW90218-0001_NY_GOWSIGN.pdf",
+    "analysis": [
+      {
+        "label": "no leftover {{var}} placeholders",
+        "pass": true
+      },
+      {
+        "label": "standard: no Security Deposit",
+        "pass": true
+      },
+      {
+        "label": "standard uses Lease terminology",
+        "pass": true
+      },
+      {
+        "label": "standard delivery-fee phrasing",
+        "pass": true
+      },
+      {
+        "label": "standard: no jewelry \"Cash Price of the item(s)\"",
+        "pass": true
+      }
+    ]
+  },
+  {
+    "uuid": "b9428490-dba7-4378-8fe9-340691542b54",
+    "lead_pk": "6559322",
+    "merchant_code": "OL90205-0079",
+    "merchant_name": "Daniel's Jewelers",
+    "merchant_state": "CA",
+    "merchant_client_type": "DANIELS_JEWELERS",
+    "customer_state": "CA",
+    "lead_status": "SIGNED",
+    "esign_pk": "510911",
+    "esign_client": "GOWSIGN",
+    "blob_bytes": 675542,
+    "pdf_text_chars": 39275,
+    "template_id_in_request": null,
+    "template_guess": "jewelry",
+    "assertions_pass": "7/9",
+    "file": "lead-6559322_OL90205-0079_CA_GOWSIGN.pdf",
+    "analysis": [
+      {
+        "label": "no leftover {{var}} placeholders",
+        "pass": true
+      },
+      {
+        "label": "[BDD 2.1] Security Deposit clause present",
+        "pass": true
+      },
+      {
+        "label": "[BUG-01] Security Deposit value populated",
+        "pass": false,
+        "detail": "Security Deposit in the amount of $ "
+      },
+      {
+        "label": "[BUG-01] EPO Cash Price populated",
+        "pass": false,
+        "detail": "your EPO price is the Cash Price, $ , less 100% of lease payments made (not including any taxes or fees), plus t"
+      },
+      {
+        "label": "[BDD 2.5] Jurisdiction clause",
+        "pass": true
+      },
+      {
+        "label": "[BDD 2.5] Limitation of Liability clause",
+        "pass": true
+      },
+      {
+        "label": "[BDD 2.4] Jewelry delivery-fee phrasing",
+        "pass": true
+      },
+      {
+        "label": "[Cross-contam] no Kornerstone branding",
+        "pass": true
+      },
+      {
+        "label": "[Cross-contam] no CS@kornerstoneliving.com",
+        "pass": true
+      }
+    ]
+  },
+  {
+    "uuid": "c01a1aea-838d-4ea6-b636-e6716e83546f",
+    "lead_pk": "6559323",
+    "merchant_code": "KS3015",
+    "merchant_name": "5TH AVE. FURNITURE WAREHOUSE, INC",
+    "merchant_state": "NY",
+    "merchant_client_type": "KORNERSTONE",
+    "customer_state": "CA",
+    "lead_status": "SIGNED",
+    "esign_pk": "510913",
+    "esign_client": "GOWSIGN",
+    "blob_bytes": 655547,
+    "pdf_text_chars": 35224,
+    "template_id_in_request": null,
+    "template_guess": "standard",
+    "assertions_pass": "5/5",
+    "file": "lead-6559323_KS3015_NY_GOWSIGN.pdf",
+    "analysis": [
+      {
+        "label": "no leftover {{var}} placeholders",
+        "pass": true
+      },
+      {
+        "label": "standard: no Security Deposit",
+        "pass": true
+      },
+      {
+        "label": "standard uses Lease terminology",
+        "pass": true
+      },
+      {
+        "label": "standard delivery-fee phrasing",
+        "pass": true
+      },
+      {
+        "label": "standard: no jewelry \"Cash Price of the item(s)\"",
+        "pass": true
+      }
+    ]
+  },
+  {
+    "uuid": "14830f11-c846-4f10-bbc7-a51e928ad0e0",
+    "lead_pk": "6559324",
+    "merchant_code": "KS10150",
+    "merchant_name": "Paramount Jewelers",
+    "merchant_state": "SC",
+    "merchant_client_type": "KORNERSTONE",
+    "customer_state": "CA",
+    "lead_status": "SIGNED",
+    "esign_pk": "510915",
+    "esign_client": "GOWSIGN",
+    "blob_bytes": 655746,
+    "pdf_text_chars": 35217,
+    "template_id_in_request": null,
+    "template_guess": "standard",
+    "assertions_pass": "5/5",
+    "file": "lead-6559324_KS10150_SC_GOWSIGN.pdf",
+    "analysis": [
+      {
+        "label": "no leftover {{var}} placeholders",
+        "pass": true
+      },
+      {
+        "label": "standard: no Security Deposit",
+        "pass": true
+      },
+      {
+        "label": "standard uses Lease terminology",
+        "pass": true
+      },
+      {
+        "label": "standard delivery-fee phrasing",
+        "pass": true
+      },
+      {
+        "label": "standard: no jewelry \"Cash Price of the item(s)\"",
+        "pass": true
+      }
+    ]
+  },
+  {
+    "uuid": "c53b0b27-b3a4-47a2-af31-daa3688683ed",
+    "lead_pk": "6559338",
+    "merchant_code": "OW90218-0001",
+    "merchant_name": "Tire Agent",
+    "merchant_state": "NY",
+    "merchant_client_type": "TIRE_AGENT",
+    "customer_state": "TX",
+    "lead_status": "SIGNED",
+    "esign_pk": "510917",
+    "esign_client": "SIGNWELL",
+    "blob_bytes": 461079,
+    "pdf_text_chars": 29990,
+    "template_id_in_request": null,
+    "template_guess": "standard",
+    "assertions_pass": "5/5",
+    "file": "lead-6559338_OW90218-0001_NY_SIGNWELL.pdf",
+    "analysis": [
+      {
+        "label": "no leftover {{var}} placeholders",
+        "pass": true
+      },
+      {
+        "label": "standard: no Security Deposit",
+        "pass": true
+      },
+      {
+        "label": "standard uses Lease terminology",
+        "pass": true
+      },
+      {
+        "label": "standard delivery-fee phrasing",
+        "pass": true
+      },
+      {
+        "label": "standard: no jewelry \"Cash Price of the item(s)\"",
+        "pass": true
+      }
+    ]
+  },
+  {
+    "uuid": "6b4364d4-1ede-49ba-8b4f-3d20aa9496ff",
+    "lead_pk": "6559345",
+    "merchant_code": "OL90205-0079",
+    "merchant_name": "Daniel's Jewelers",
+    "merchant_state": "CA",
+    "merchant_client_type": "DANIELS_JEWELERS",
+    "customer_state": "TX",
+    "lead_status": "SIGNED",
+    "esign_pk": "510919",
+    "esign_client": "SIGNWELL",
+    "blob_bytes": 425716,
+    "pdf_text_chars": 29940,
+    "template_id_in_request": null,
+    "template_guess": "standard",
+    "assertions_pass": "5/5",
+    "file": "lead-6559345_OL90205-0079_CA_SIGNWELL.pdf",
+    "analysis": [
+      {
+        "label": "no leftover {{var}} placeholders",
+        "pass": true
+      },
+      {
+        "label": "standard: no Security Deposit",
+        "pass": true
+      },
+      {
+        "label": "standard uses Lease terminology",
+        "pass": true
+      },
+      {
+        "label": "standard delivery-fee phrasing",
+        "pass": true
+      },
+      {
+        "label": "standard: no jewelry \"Cash Price of the item(s)\"",
+        "pass": true
+      }
+    ]
+  },
+  {
+    "uuid": "d946ffb9-e73f-4820-a9ab-67d7267d2064",
+    "lead_pk": "6559346",
+    "merchant_code": "KS3015",
+    "merchant_name": "5TH AVE. FURNITURE WAREHOUSE, INC",
+    "merchant_state": "NY",
+    "merchant_client_type": "KORNERSTONE",
+    "customer_state": "TX",
+    "lead_status": "SIGNED",
+    "esign_pk": "510921",
+    "esign_client": "SIGNWELL",
+    "blob_bytes": 472514,
+    "pdf_text_chars": 29968,
+    "template_id_in_request": null,
+    "template_guess": "standard",
+    "assertions_pass": "5/5",
+    "file": "lead-6559346_KS3015_NY_SIGNWELL.pdf",
+    "analysis": [
+      {
+        "label": "no leftover {{var}} placeholders",
+        "pass": true
+      },
+      {
+        "label": "standard: no Security Deposit",
+        "pass": true
+      },
+      {
+        "label": "standard uses Lease terminology",
+        "pass": true
+      },
+      {
+        "label": "standard delivery-fee phrasing",
+        "pass": true
+      },
+      {
+        "label": "standard: no jewelry \"Cash Price of the item(s)\"",
+        "pass": true
+      }
+    ]
+  },
+  {
+    "uuid": "93648f4f-4a83-4557-8da9-2f33edec099f",
+    "lead_pk": "6559347",
+    "merchant_code": "KS10150",
+    "merchant_name": "Paramount Jewelers",
+    "merchant_state": "SC",
+    "merchant_client_type": "KORNERSTONE",
+    "customer_state": "TX",
+    "lead_status": "SIGNED",
+    "esign_pk": "510923",
+    "esign_client": "SIGNWELL",
+    "blob_bytes": 429371,
+    "pdf_text_chars": 29969,
+    "template_id_in_request": null,
+    "template_guess": "standard",
+    "assertions_pass": "5/5",
+    "file": "lead-6559347_KS10150_SC_SIGNWELL.pdf",
+    "analysis": [
+      {
+        "label": "no leftover {{var}} placeholders",
+        "pass": true
+      },
+      {
+        "label": "standard: no Security Deposit",
+        "pass": true
+      },
+      {
+        "label": "standard uses Lease terminology",
+        "pass": true
+      },
+      {
+        "label": "standard delivery-fee phrasing",
+        "pass": true
+      },
+      {
+        "label": "standard: no jewelry \"Cash Price of the item(s)\"",
+        "pass": true
+      }
+    ]
+  },
+  {
+    "uuid": "3b6bd796-a552-4f81-9045-0b9c66975b89",
+    "lead_pk": "6559349",
+    "merchant_code": "KS10150",
+    "merchant_name": "Paramount Jewelers",
+    "merchant_state": "SC",
+    "merchant_client_type": "KORNERSTONE",
+    "customer_state": "NC",
+    "lead_status": "SIGNED",
+    "esign_pk": "510925",
+    "esign_client": "SIGNWELL",
+    "blob_bytes": 398349,
+    "pdf_text_chars": 19694,
+    "template_id_in_request": null,
+    "template_guess": "standard",
+    "assertions_pass": "4/5",
+    "file": "lead-6559349_KS10150_SC_SIGNWELL.pdf",
+    "analysis": [
+      {
+        "label": "no leftover {{var}} placeholders",
+        "pass": true
+      },
+      {
+        "label": "standard: no Security Deposit",
+        "pass": true
+      },
+      {
+        "label": "standard uses Lease terminology",
+        "pass": true
+      },
+      {
+        "label": "standard delivery-fee phrasing",
+        "pass": true
+      },
+      {
+        "label": "standard: no jewelry \"Cash Price of the item(s)\"",
+        "pass": false
+      }
+    ]
+  },
+  {
+    "uuid": "65283db6-0b73-47bd-a042-53ee532f45f4",
+    "lead_pk": "6559350",
+    "merchant_code": "KS3015",
+    "merchant_name": "5TH AVE. FURNITURE WAREHOUSE, INC",
+    "merchant_state": "NY",
+    "merchant_client_type": "KORNERSTONE",
+    "customer_state": "NC",
+    "lead_status": "SIGNED",
+    "esign_pk": "510927",
+    "esign_client": "SIGNWELL",
+    "blob_bytes": 402210,
+    "pdf_text_chars": 19694,
+    "template_id_in_request": null,
+    "template_guess": "standard",
+    "assertions_pass": "4/5",
+    "file": "lead-6559350_KS3015_NY_SIGNWELL.pdf",
+    "analysis": [
+      {
+        "label": "no leftover {{var}} placeholders",
+        "pass": true
+      },
+      {
+        "label": "standard: no Security Deposit",
+        "pass": true
+      },
+      {
+        "label": "standard uses Lease terminology",
+        "pass": true
+      },
+      {
+        "label": "standard delivery-fee phrasing",
+        "pass": true
+      },
+      {
+        "label": "standard: no jewelry \"Cash Price of the item(s)\"",
+        "pass": false
+      }
+    ]
+  },
+  {
+    "uuid": "7d5c34c6-4820-4b6e-8214-57cc55ba9254",
+    "lead_pk": "6559353",
+    "merchant_code": "OW90218-0001",
+    "merchant_name": "Tire Agent",
+    "merchant_state": "NY",
+    "merchant_client_type": "TIRE_AGENT",
+    "customer_state": "NC",
+    "lead_status": "SIGNED",
+    "esign_pk": "510929",
+    "esign_client": "SIGNWELL",
+    "blob_bytes": 397743,
+    "pdf_text_chars": 19705,
+    "template_id_in_request": null,
+    "template_guess": "standard",
+    "assertions_pass": "4/5",
+    "file": "lead-6559353_OW90218-0001_NY_SIGNWELL.pdf",
+    "analysis": [
+      {
+        "label": "no leftover {{var}} placeholders",
+        "pass": true
+      },
+      {
+        "label": "standard: no Security Deposit",
+        "pass": true
+      },
+      {
+        "label": "standard uses Lease terminology",
+        "pass": true
+      },
+      {
+        "label": "standard delivery-fee phrasing",
+        "pass": true
+      },
+      {
+        "label": "standard: no jewelry \"Cash Price of the item(s)\"",
+        "pass": false
+      }
+    ]
+  },
+  {
+    "uuid": "780e19cc-4666-45ee-83b8-3065bd1f9225",
+    "lead_pk": "6559354",
+    "merchant_code": "OW90218-0001",
+    "merchant_name": "Tire Agent",
+    "merchant_state": "NY",
+    "merchant_client_type": "TIRE_AGENT",
+    "customer_state": "FL",
+    "lead_status": "SIGNED",
+    "esign_pk": "510931",
+    "esign_client": "SIGNWELL",
+    "blob_bytes": 462782,
+    "pdf_text_chars": 29283,
+    "template_id_in_request": null,
+    "template_guess": "standard",
+    "assertions_pass": "3/5",
+    "file": "lead-6559354_OW90218-0001_NY_SIGNWELL.pdf",
+    "analysis": [
+      {
+        "label": "no leftover {{var}} placeholders",
+        "pass": true
+      },
+      {
+        "label": "standard: no Security Deposit",
+        "pass": true
+      },
+      {
+        "label": "standard uses Lease terminology",
+        "pass": true
+      },
+      {
+        "label": "standard delivery-fee phrasing",
+        "pass": false
+      },
+      {
+        "label": "standard: no jewelry \"Cash Price of the item(s)\"",
+        "pass": false
+      }
+    ]
+  },
+  {
+    "uuid": "b42f6bea-bbb5-4ffa-a557-c548c3c216b3",
+    "lead_pk": "6559356",
+    "merchant_code": "KS3015",
+    "merchant_name": "5TH AVE. FURNITURE WAREHOUSE, INC",
+    "merchant_state": "NY",
+    "merchant_client_type": "KORNERSTONE",
+    "customer_state": "FL",
+    "lead_status": "SIGNED",
+    "esign_pk": "510933",
+    "esign_client": "SIGNWELL",
+    "blob_bytes": 396735,
+    "pdf_text_chars": 29235,
+    "template_id_in_request": null,
+    "template_guess": "standard",
+    "assertions_pass": "3/5",
+    "file": "lead-6559356_KS3015_NY_SIGNWELL.pdf",
+    "analysis": [
+      {
+        "label": "no leftover {{var}} placeholders",
+        "pass": true
+      },
+      {
+        "label": "standard: no Security Deposit",
+        "pass": true
+      },
+      {
+        "label": "standard uses Lease terminology",
+        "pass": true
+      },
+      {
+        "label": "standard delivery-fee phrasing",
+        "pass": false
+      },
+      {
+        "label": "standard: no jewelry \"Cash Price of the item(s)\"",
+        "pass": false
+      }
+    ]
+  },
+  {
+    "uuid": "cf24feed-1b7a-4358-9e53-636048b4bc58",
+    "lead_pk": "6559357",
+    "merchant_code": "KS10150",
+    "merchant_name": "Paramount Jewelers",
+    "merchant_state": "SC",
+    "merchant_client_type": "KORNERSTONE",
+    "customer_state": "FL",
+    "lead_status": "SIGNED",
+    "esign_pk": "510935",
+    "esign_client": "SIGNWELL",
+    "blob_bytes": 444809,
+    "pdf_text_chars": 29241,
+    "template_id_in_request": null,
+    "template_guess": "standard",
+    "assertions_pass": "3/5",
+    "file": "lead-6559357_KS10150_SC_SIGNWELL.pdf",
+    "analysis": [
+      {
+        "label": "no leftover {{var}} placeholders",
+        "pass": true
+      },
+      {
+        "label": "standard: no Security Deposit",
+        "pass": true
+      },
+      {
+        "label": "standard uses Lease terminology",
+        "pass": true
+      },
+      {
+        "label": "standard delivery-fee phrasing",
+        "pass": false
+      },
+      {
+        "label": "standard: no jewelry \"Cash Price of the item(s)\"",
+        "pass": false
+      }
+    ]
+  }
+]

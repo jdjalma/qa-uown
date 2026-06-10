@@ -1,0 +1,1498 @@
+{
+	"info": {
+		"_postman_id": "44430479-f33d-497f-ad70-04bbeda337fa",
+		"name": "UOWN Leasing - Smoke Tests",
+		"description": "Smoke tests for the UOWN Leasing API - Workflow 1 (Complete Application with Cart).\n\n**Flow:**\n1. sendApplication (with cart) - Approved\n2. getApplicationStatus - Verify UW_APPROVED\n3. settleApplication - Attempt settlement\n4. getApplicationStatus - Final status check\n5. sendApplication (declined) - SSN ending in 9\n6. sendApplication (validation error) - Past date\n\n**Sandbox Rules:**\n- SSN ending in 0-8 = APPROVED\n- SSN ending in 9 = DECLINED\n- Minimum lease amount: $250",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "40390315"
+	},
+	"item": [
+		{
+			"name": "Smoke Test - Happy Path",
+			"item": [
+				{
+					"name": "1. sendApplication (with cart) - Approved",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// === RANDOM DATA GENERATION ===",
+									"",
+									"const firstNames = ['James', 'Mary', 'Robert', 'Patricia', 'John', 'Jennifer', 'Michael', 'Linda', 'David', 'Elizabeth', 'William', 'Barbara', 'Richard', 'Susan', 'Joseph', 'Jessica', 'Thomas', 'Sarah', 'Charles', 'Karen', 'Daniel', 'Lisa', 'Matthew', 'Nancy', 'Anthony', 'Betty'];",
+									"const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin', 'Lee', 'Thompson', 'White', 'Harris', 'Clark', 'Lewis', 'Walker'];",
+									"",
+									"function randomPick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }",
+									"function randomBetween(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }",
+									"",
+									"// Name",
+									"pm.collectionVariables.set('firstName', randomPick(firstNames));",
+									"pm.collectionVariables.set('lastName', randomPick(lastNames));",
+									"",
+									"// DOB (age 25-55)",
+									"var y = randomBetween(1970, 2000);",
+									"var m = String(randomBetween(1,12)).padStart(2,'0');",
+									"var d = String(randomBetween(1,28)).padStart(2,'0');",
+									"pm.collectionVariables.set('dob', m + d + y);",
+									"",
+									"// SSN NOT ending in 9 (approved)",
+									"var ssn = String(randomBetween(100,899)) + String(randomBetween(10,99)) + String(randomBetween(100,999)) + String(randomBetween(0,8));",
+									"pm.collectionVariables.set('ssn', ssn);",
+									"",
+									"// Email",
+									"var domains = ['outlook.com','gmail.com','yahoo.com','hotmail.com'];",
+									"pm.collectionVariables.set('email', pm.collectionVariables.get('firstName').toLowerCase() + pm.collectionVariables.get('lastName').toLowerCase() + Date.now() + '@' + randomPick(domains));",
+									"",
+									"// Address",
+									"var streets = ['Main St','Oak Ave','Maple Dr','Cedar Ln','Pine Rd','Elm Blvd','Washington Ave','Park Pl','Lake Dr','Hill St'];",
+									"pm.collectionVariables.set('address', randomBetween(100,9999) + ' ' + randomPick(streets));",
+									"",
+									"var cities = [{c:'Houston',z:'77494'},{c:'Dallas',z:'75201'},{c:'Austin',z:'73301'},{c:'Phoenix',z:'85001'},{c:'Denver',z:'80201'},{c:'Atlanta',z:'30301'},{c:'Orlando',z:'32801'},{c:'Charlotte',z:'28201'}];",
+									"var city = randomPick(cities);",
+									"pm.collectionVariables.set('city', city.c);",
+									"pm.collectionVariables.set('zip', city.z);",
+									"",
+									"// Phone",
+									"pm.collectionVariables.set('phone', String(randomBetween(201,989)) + String(randomBetween(200,999)) + String(randomBetween(1000,9999)));",
+									"",
+									"// Employer",
+									"var employers = ['Amazon','Google','Microsoft','Apple','Meta','Tesla','Walmart','Target','BestBuy','Home Depot','Costco','Nike','FedEx','UPS','Bank of America'];",
+									"pm.collectionVariables.set('employer', randomPick(employers));",
+									"",
+									"// Income ($35k-$120k)",
+									"pm.collectionVariables.set('income', randomBetween(80000, 120000));",
+									"",
+									"// Pay dates",
+									"var today = new Date();",
+									"var lp = new Date(today.getFullYear(), today.getMonth(), 1);",
+									"pm.collectionVariables.set('lastPayDate', String(lp.getMonth()+1).padStart(2,'0') + String(lp.getDate()).padStart(2,'0') + lp.getFullYear());",
+									"var np = new Date(today.getFullYear(), today.getMonth()+1, 1);",
+									"pm.collectionVariables.set('nextPayDate', String(np.getMonth()+1).padStart(2,'0') + String(np.getDate()).padStart(2,'0') + np.getFullYear());",
+									"",
+									"// Order ($300-$3000)",
+									"var amt = randomBetween(300, 800);",
+									"pm.collectionVariables.set('orderAmt', amt);",
+									"",
+									"// Product",
+									"var products = [",
+									"  {n:'Smart TV 55-inch 4K',s:'TV-55-4K',c:'Electronics'},",
+									"  {n:'MacBook Pro 14-inch',s:'MBP-14',c:'Computers'},",
+									"  {n:'Samsung Galaxy S24',s:'SGS-24',c:'Mobile'},",
+									"  {n:'PlayStation 5 Console',s:'PS5-STD',c:'Gaming'},",
+									"  {n:'KitchenAid Stand Mixer',s:'KA-MIX',c:'Appliances'},",
+									"  {n:'Dyson V15 Vacuum',s:'DYS-V15',c:'Appliances'},",
+									"  {n:'LG Washer Dryer Combo',s:'LG-WD',c:'Appliances'},",
+									"  {n:'Dell XPS Desktop',s:'DELL-XPS',c:'Computers'},",
+									"  {n:'Bose Soundbar 900',s:'BOSE-900',c:'Audio'}",
+									"];",
+									"var prod = randomPick(products);",
+									"pm.collectionVariables.set('prodName', prod.n);",
+									"pm.collectionVariables.set('prodSku', prod.s + '-' + randomBetween(1000,9999));",
+									"pm.collectionVariables.set('prodCat', prod.c);",
+									"pm.collectionVariables.set('serial', 'SN-' + Date.now());",
+									"",
+									"console.log('=== SMOKE TEST DATA ===');",
+									"console.log('Name:', pm.collectionVariables.get('firstName'), pm.collectionVariables.get('lastName'));",
+									"console.log('SSN:', ssn, '(last digit=' + ssn.slice(-1) + ' -> APPROVED)');",
+									"console.log('Email:', pm.collectionVariables.get('email'));",
+									"console.log('Address:', pm.collectionVariables.get('address') + ', ' + city.c + ' ' + city.z);",
+									"console.log('Employer:', pm.collectionVariables.get('employer'), '| Income: $' + pm.collectionVariables.get('income'));",
+									"console.log('Product:', prod.n, '| $' + amt);",
+									"console.log('======================');"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var res = pm.response.json();",
+									"",
+									"pm.test('Status code is 200', function() { pm.response.to.have.status(200); });",
+									"pm.test('No faults', function() { pm.expect(res.faults).to.eql(false); });",
+									"pm.test('Application APPROVED', function() { pm.expect(res.appApprovalStatus).to.eql('APPROVED'); });",
+									"pm.test('Account number returned', function() { pm.expect(res.accountNumber).to.be.a('string').and.not.be.empty; });",
+									"pm.test('Credit limit > 0', function() { pm.expect(res.creditLimit).to.be.greaterThan(0); });",
+									"pm.test('Payment details with redirect URL', function() {",
+									"    pm.expect(res.paymentDetailsList).to.be.an('array').with.length.greaterThan(0);",
+									"    pm.expect(res.paymentDetailsList[0].redirectUrl).to.include('/complete');",
+									"});",
+									"pm.test('Invoice items returned', function() { pm.expect(res.invoiceItems).to.be.an('array').with.length.greaterThan(0); });",
+									"pm.test('Customer name matches', function() {",
+									"    pm.expect(res.customerFirstName).to.eql(pm.collectionVariables.get('firstName'));",
+									"    pm.expect(res.customerLastName).to.eql(pm.collectionVariables.get('lastName'));",
+									"});",
+									"",
+									"if (res.accountNumber) {",
+									"    pm.collectionVariables.set('accountNumber', res.accountNumber);",
+									"    console.log('accountNumber:', res.accountNumber);",
+									"}",
+									"if (res.paymentDetailsList && res.paymentDetailsList.length > 0) {",
+									"    pm.collectionVariables.set('redirectUrl', res.paymentDetailsList[0].redirectUrl);",
+									"    console.log('Signing URL:', res.paymentDetailsList[0].redirectUrl);",
+									"}",
+									"",
+									"// Extract shortCode and planId from redirectUrl",
+									"if (res.paymentDetailsList && res.paymentDetailsList.length > 0) {",
+									"    const signingUrl = res.paymentDetailsList[0].redirectUrl;",
+									"    const match = signingUrl.match(/\\/([^\\/]+)\\/complete/);",
+									"    if (match) {",
+									"        pm.collectionVariables.set(\"shortCode\", match[1]);",
+									"        console.log(\"shortCode:\", match[1]);",
+									"    }",
+									"    const planMatch = signingUrl.match(/[?&]planId=([^&]+)/);",
+									"    if (planMatch) {",
+									"        pm.collectionVariables.set(\"planId\", planMatch[1]);",
+									"        console.log(\"planId:\", planMatch[1]);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userName\": \"tireAgent\",\n    \"setupPassword\": \"U0wn_tireAgent_G4eDIH\",\n    \"merchantNumber\": \"OW90218-0001\",\n\n    \"mainFirstName\": \"{{firstName}}\",\n    \"mainLastName\": \"{{lastName}}\",\n    \"mainDOB\": \"{{dob}}\",\n    \"mainSSN\": \"{{ssn}}\",\n    \"emailAddress\": \"{{email}}\",\n    \"mainAddress1\": \"{{address}}\",\n    \"mainCity\": \"{{city}}\",\n    \"mainPostalCode\": \"{{zip}}\",\n    \"mainCellPhone\": \"{{phone}}\",\n    \"mainPastBankruptcy\": false,\n    \"mainCurrentOrFutureBankruptcy\": false,\n    \"languagePreference\": \"E\",\n    \"mainEmployerName\": \"{{employer}}\",\n    \"mainNextPayDate\": \"{{nextPayDate}}\",\n    \"mainLastPayDate\": \"{{lastPayDate}}\",\n    \"mainPayFrequency\": \"MONTHLY\",\n    \"seonFingerprintText\": \"fingerPrintText\",\n    \"ipaddress\": \"192.168.0.2\",\n    \"desiredPaymentFrequency\": \"WEEKLY\",\n    \"mainAnnualIncome\": {{income}},\n\n    \"shipToSameAsConsumer\": true,\n    \"merchandiseSubtotal\": {{orderAmt}},\n    \"discountAmount\": 0.00,\n    \"deliveryCharge\": 0.00,\n    \"installationCharge\": 0.00,\n    \"salesTax\": 0.00,\n    \"miscellaneousFees\": 0.00,\n    \"depositAmount\": 0.00,\n    \"orderTotal\": {{orderAmt}},\n\n    \"lineItem\": [\n        {\n            \"lineItemLineNumber\": \"101\",\n            \"lineItemSerialNumber\": \"{{serial}}\",\n            \"lineItemProductNumber\": \"{{prodSku}}\",\n            \"lineItemProductDescription\": \"{{prodName}}\",\n            \"lineItemProductCategory\": \"{{prodCat}}\",\n            \"lineItemType\": \"D\",\n            \"lineItemQuantityOrdered\": 1,\n            \"lineItemUnitPrice\": {{orderAmt}},\n            \"lineItemBasePrice\": {{orderAmt}},\n            \"lineItemTaxAmount\": 0.00,\n            \"lineItemExtendedPrice\": {{orderAmt}}\n        }\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{svc_base}}/uown/los/sendApplication",
+							"host": [
+								"{{svc_base}}"
+							],
+							"path": [
+								"uown",
+								"los",
+								"sendApplication"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. getApplicationStatus - Verify Approved",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var res = pm.response.json();",
+									"",
+									"pm.test('Status code is 200', function() { pm.response.to.have.status(200); });",
+									"pm.test('Application found', function() { pm.expect(res.applicationFound).to.eql(true); });",
+									"pm.test('Application submitted', function() { pm.expect(res.applicationSubmitted).to.eql(true); });",
+									"pm.test('Status is UW_APPROVED', function() { pm.expect(res.currentStatus).to.eql('UW_APPROVED'); });",
+									"pm.test('canContinue is true or null', function() { pm.expect([true, null]).to.include(res.canContinue); });",
+									"pm.test('Approved amount > 0', function() { pm.expect(res.approvedAmount).to.be.greaterThan(0); });",
+									"pm.test('Account number matches', function() { pm.expect(res.accountNumber).to.eql(pm.collectionVariables.get('accountNumber')); });",
+									"pm.test('No faults', function() { pm.expect(res.faults).to.eql(false); });",
+									"",
+									"console.log('Status:', res.currentStatus, '| Approved:', res.approvedAmount, '| OTB:', res.openToBuy);",
+									"",
+									"if (res.leadPk) {",
+									"    pm.collectionVariables.set(\"leadPk\", res.leadPk);",
+									"    console.log(\"leadPk:\", res.leadPk);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userName\": \"tireAgent\",\n    \"setupPassword\": \"U0wn_tireAgent_G4eDIH\",\n    \"merchantNumber\": \"OW90218-0001\",\n    \"localeString\": \"en_US\",\n    \"accountNumber\": \"{{accountNumber}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{svc_base}}/uown/los/getApplicationStatus",
+							"host": [
+								"{{svc_base}}"
+							],
+							"path": [
+								"uown",
+								"los",
+								"getApplicationStatus"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. getMissingFields - Trigger merchantProgramPk",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function() { pm.response.to.have.status(200); });",
+									"",
+									"var res = pm.response.json();",
+									"pm.test(\"No error message\", function() {",
+									"    pm.expect(res.message || \"\").to.not.include(\"error\");",
+									"});",
+									"",
+									"console.log(\"Missing fields:\", JSON.stringify(res.missingFields));",
+									"console.log(\"Calculated fees:\", res.calculatedFees);",
+									"console.log(\"Security deposit:\", res.securityDeposit);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{svcApiKey}}"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{svc_base}}/uown/los/missing-fields/{{shortCode}}?planId={{planId}}",
+							"host": [
+								"{{svc_base}}"
+							],
+							"path": [
+								"uown",
+								"los",
+								"missing-fields",
+								"{{shortCode}}"
+							],
+							"query": [
+								{
+									"key": "planId",
+									"value": "{{planId}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4. submitApplication - Sign Contract (CC + Bank)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function() { pm.response.to.have.status(200); });",
+									"",
+									"// submitApplication returns JSON when Accept: application/json",
+									"var res = pm.response.json();",
+									"",
+									"pm.test(\"No error\", function() {",
+									"    pm.expect(res.error).to.be.oneOf([null, undefined, '']);",
+									"});",
+									"",
+									"var embeddedUrl = res.embeddedSigningUrl || '';",
+									"pm.test(\"Embedded signing URL returned\", function() {",
+									"    pm.expect(embeddedUrl).to.include(\"signwell.com\");",
+									"});",
+									"",
+									"console.log(\"Submit OK\");",
+									"console.log(\"First payment: $\" + res.firstPaymentAmount);",
+									"console.log(\"Total contract: $\" + res.totalContractAmount);",
+									"console.log(\"Term: \" + res.termInMonths + \" months\");",
+									"console.log(\"Embedded URL: \" + embeddedUrl);",
+									"",
+									"console.log(\"Next: auto-signing via SignWell API (test mode)\");"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{svcApiKey}}"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"leadPk\": \"{{leadPk}}\",\n  \"bankAccountNumber\": \"12345678\",\n  \"bankRoutingNumber\": \"121042882\",\n  \"bankAccountType\": \"CHECKING\",\n  \"bankAccountCustomerFirstName\": \"{{firstName}}\",\n  \"bankAccountCustomerLastName\": \"{{lastName}}\",\n  \"achAutoPay\": true,\n  \"desiredPaymentFrequency\": \"WEEKLY\",\n  \"planId\": \"{{planId}}\",\n  \"ccInfo\": {\n    \"leadPk\": \"{{leadPk}}\",\n    \"ccFirstName\": \"{{firstName}}\",\n    \"ccLastName\": \"{{lastName}}\",\n    \"ccNumber\": \"5146315000000055\",\n    \"cvc\": \"123\",\n    \"ccType\": \"MASTERCARD\",\n    \"ccExp\": \"12/2030\",\n    \"autoPay\": true,\n    \"preAuthStatus\": \"SUCCESS\"\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{svc_base}}/uown/los/submitApplication",
+							"host": [
+								"{{svc_base}}"
+							],
+							"path": [
+								"uown",
+								"los",
+								"submitApplication"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4a. changeLeadStatus - Force SIGNED (skip e-sign)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function() { pm.response.to.have.status(200); });",
+									"",
+									"var res = pm.response.json();",
+									"",
+									"pm.test(\"No error\", function() { pm.expect(res.error).to.be.oneOf([null, undefined, '']); });",
+									"pm.test(\"Lead status changed to SIGNED\", function() {",
+									"    pm.expect(res.newLeadStatus).to.eql('SIGNED');",
+									"});",
+									"",
+									"console.log(\"Lead status:\", res.oldLeadStatus, \"->\", res.newLeadStatus);",
+									"console.log(\"leadPk:\", res.leadPk);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{svcApiKey}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userName\": \"tireAgent\",\n  \"setupPassword\": \"U0wn_tireAgent_G4eDIH\",\n  \"merchantNumber\": \"OW90218-0001\",\n  \"leadPk\": {{leadPk}},\n  \"newLeadStatus\": \"SIGNED\",\n  \"comment\": \"Smoke test - skip e-sign\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{svc_base}}/uown/los/changeLeadStatus",
+							"host": [
+								"{{svc_base}}"
+							],
+							"path": [
+								"uown",
+								"los",
+								"changeLeadStatus"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "5. getApplicationStatus - Verify Contract Signed",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"var res = pm.response.json();",
+									"",
+									"pm.test(\"Status code is 200\", function() { pm.response.to.have.status(200); });",
+									"pm.test(\"Application found\", function() { pm.expect(res.applicationFound).to.eql(true); });",
+									"pm.test(\"Status is SIGNED or beyond\", function() {",
+									"    pm.expect([\"SIGNED\", \"SETTLED\", \"FUNDING\", \"FUNDED\"]).to.include(res.currentStatus);",
+									"});",
+									"pm.test(\"No faults\", function() { pm.expect(res.faults).to.eql(false); });",
+									"",
+									"console.log(\"Status:\", res.currentStatus);",
+									"console.log(\"Signed:\", res.hasSignedLease);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userName\": \"tireAgent\",\n  \"setupPassword\": \"U0wn_tireAgent_G4eDIH\",\n  \"merchantNumber\": \"OW90218-0001\",\n  \"localeString\": \"en_US\",\n  \"accountNumber\": \"{{accountNumber}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{svc_base}}/uown/los/getApplicationStatus",
+							"host": [
+								"{{svc_base}}"
+							],
+							"path": [
+								"uown",
+								"los",
+								"getApplicationStatus"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "6. settleApplication - Request Funding",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var res = pm.response.json();",
+									"",
+									"pm.test('Status code is 200', function() { pm.response.to.have.status(200); });",
+									"pm.test('No faults', function() { pm.expect(res.faults).to.eql(false); });",
+									"pm.test('Transaction status is A0 or A1', function() { pm.expect(['A0','A1']).to.include(res.transactionStatus); });",
+									"pm.test('Account number returned', function() { pm.expect(res.accountNumber).to.not.be.null; });",
+									"",
+									"if (res.transactionStatus === 'A1') {",
+									"    console.log('SETTLED! Amount:', res.amount);",
+									"} else {",
+									"    console.log('Not settled yet:', res.transactionMessage);",
+									"    console.log('TIP: Sign lease via redirectUrl first, then re-run.');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userName\": \"tireAgent\",\n    \"setupPassword\": \"U0wn_tireAgent_G4eDIH\",\n    \"merchantNumber\": \"OW90218-0001\",\n    \"accountNumber\": \"{{accountNumber}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{svc_base}}/uown/los/settleApplication",
+							"host": [
+								"{{svc_base}}"
+							],
+							"path": [
+								"uown",
+								"los",
+								"settleApplication"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "7. getApplicationStatus - Final Check (FUNDING/FUNDED)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var res = pm.response.json();",
+									"",
+									"pm.test('Status code is 200', function() { pm.response.to.have.status(200); });",
+									"pm.test('Application found', function() { pm.expect(res.applicationFound).to.eql(true); });",
+									"pm.test('No faults', function() { pm.expect(res.faults).to.eql(false); });",
+									"pm.test('Status is FUNDING or FUNDED', function() {",
+									"    pm.expect(['FUNDING','FUNDED']).to.include(res.currentStatus);",
+									"});",
+									"",
+									"console.log('=== FINAL ===');",
+									"console.log('Account:', res.accountNumber);",
+									"console.log('Status:', res.currentStatus);",
+									"console.log('Signed:', res.hasSignedLease);",
+									"console.log('Approved:', res.approvedAmount);",
+									"console.log('OTB:', res.openToBuy);",
+									"console.log('FundAmount:', res.amountToBeFunded);",
+									"console.log('============');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userName\": \"tireAgent\",\n    \"setupPassword\": \"U0wn_tireAgent_G4eDIH\",\n    \"merchantNumber\": \"OW90218-0001\",\n    \"localeString\": \"en_US\",\n    \"accountNumber\": \"{{accountNumber}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{svc_base}}/uown/los/getApplicationStatus",
+							"host": [
+								"{{svc_base}}"
+							],
+							"path": [
+								"uown",
+								"los",
+								"getApplicationStatus"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Happy path: Create application with cart -> verify status -> settle -> final check."
+		},
+		{
+			"name": "Smoke Test - Declined (SSN ending in 9)",
+			"item": [
+				{
+					"name": "1. sendApplication (with cart) - Declined",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var firstNames = ['James','Mary','Robert','Patricia','John','Jennifer','Michael','Linda'];",
+									"var lastNames = ['Smith','Johnson','Williams','Brown','Jones','Garcia','Miller','Davis'];",
+									"function randomPick(a){return a[Math.floor(Math.random()*a.length)];}",
+									"function randomBetween(a,b){return Math.floor(Math.random()*(b-a+1))+a;}",
+									"",
+									"pm.collectionVariables.set('decFirst', randomPick(firstNames));",
+									"pm.collectionVariables.set('decLast', randomPick(lastNames));",
+									"pm.collectionVariables.set('decDob', String(randomBetween(1,12)).padStart(2,'0') + String(randomBetween(1,28)).padStart(2,'0') + randomBetween(1970,2000));",
+									"",
+									"// SSN ending in 9 = DECLINED",
+									"var ssn9 = String(randomBetween(100,899)) + String(randomBetween(10,99)) + String(randomBetween(100,999)) + '9';",
+									"pm.collectionVariables.set('decSSN', ssn9);",
+									"",
+									"pm.collectionVariables.set('decEmail', pm.collectionVariables.get('decFirst').toLowerCase() + '.dec.' + Date.now() + '@test.com');",
+									"",
+									"var streets = ['Main St','Oak Ave','Maple Dr','Cedar Ln','Pine Rd'];",
+									"pm.collectionVariables.set('decAddr', randomBetween(100,9999) + ' ' + randomPick(streets));",
+									"var cities = [{c:'Houston',z:'77494'},{c:'Dallas',z:'75201'},{c:'Austin',z:'73301'}];",
+									"var ci = randomPick(cities);",
+									"pm.collectionVariables.set('decCity', ci.c);",
+									"pm.collectionVariables.set('decZip', ci.z);",
+									"pm.collectionVariables.set('decPhone', String(randomBetween(201,989)) + String(randomBetween(200,999)) + String(randomBetween(1000,9999)));",
+									"",
+									"var employers = ['Amazon','Google','Walmart','Target','FedEx'];",
+									"pm.collectionVariables.set('decEmployer', randomPick(employers));",
+									"pm.collectionVariables.set('decIncome', randomBetween(35000, 120000));",
+									"",
+									"var today = new Date();",
+									"var lp = new Date(today.getFullYear(), today.getMonth(), 1);",
+									"pm.collectionVariables.set('lastPayDate', String(lp.getMonth()+1).padStart(2,'0') + String(lp.getDate()).padStart(2,'0') + lp.getFullYear());",
+									"var np = new Date(today.getFullYear(), today.getMonth()+1, 1);",
+									"pm.collectionVariables.set('nextPayDate', String(np.getMonth()+1).padStart(2,'0') + String(np.getDate()).padStart(2,'0') + np.getFullYear());",
+									"",
+									"pm.collectionVariables.set('decOrderAmt', randomBetween(300, 3000));",
+									"",
+									"console.log('DECLINED test - SSN:', ssn9, '(ends in 9)');"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var res = pm.response.json();",
+									"",
+									"pm.test('Status code is 200', function() { pm.response.to.have.status(200); });",
+									"pm.test('Application DECLINED', function() { pm.expect(res.appApprovalStatus).to.eql('DECLINED'); });",
+									"pm.test('Transaction status E4', function() { pm.expect(res.transactionStatus).to.eql('E4'); });",
+									"pm.test('Credit limit is 0 or null', function() { pm.expect(res.creditLimit).to.be.oneOf([0, null]); });",
+									"pm.test('No payment details', function() { pm.expect(res.paymentDetailsList).to.be.an('array').with.length(0); });",
+									"",
+									"console.log('Result:', res.appApprovalStatus, '| Error:', res.fieldInError1);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userName\": \"tireAgent\",\n    \"setupPassword\": \"U0wn_tireAgent_G4eDIH\",\n    \"merchantNumber\": \"OW90218-0001\",\n\n    \"mainFirstName\": \"{{decFirst}}\",\n    \"mainLastName\": \"{{decLast}}\",\n    \"mainDOB\": \"{{decDob}}\",\n    \"mainSSN\": \"{{decSSN}}\",\n    \"emailAddress\": \"{{decEmail}}\",\n    \"mainAddress1\": \"{{decAddr}}\",\n    \"mainCity\": \"{{decCity}}\",\n    \"mainPostalCode\": \"{{decZip}}\",\n    \"mainCellPhone\": \"{{decPhone}}\",\n    \"mainPastBankruptcy\": false,\n    \"mainCurrentOrFutureBankruptcy\": false,\n    \"languagePreference\": \"E\",\n    \"mainEmployerName\": \"{{decEmployer}}\",\n    \"mainNextPayDate\": \"{{nextPayDate}}\",\n    \"mainLastPayDate\": \"{{lastPayDate}}\",\n    \"mainPayFrequency\": \"MONTHLY\",\n    \"seonFingerprintText\": \"fingerPrintText\",\n    \"ipaddress\": \"192.168.0.2\",\n    \"desiredPaymentFrequency\": \"WEEKLY\",\n    \"mainAnnualIncome\": {{decIncome}},\n\n    \"shipToSameAsConsumer\": true,\n    \"merchandiseSubtotal\": {{decOrderAmt}},\n    \"discountAmount\": 0.00,\n    \"deliveryCharge\": 0.00,\n    \"installationCharge\": 0.00,\n    \"salesTax\": 0.00,\n    \"miscellaneousFees\": 0.00,\n    \"depositAmount\": 0.00,\n    \"orderTotal\": {{decOrderAmt}},\n\n    \"lineItem\": [\n        {\n            \"lineItemLineNumber\": \"101\",\n            \"lineItemSerialNumber\": \"SN-DEC-{{$timestamp}}\",\n            \"lineItemProductNumber\": \"SKU-DEC-{{$timestamp}}\",\n            \"lineItemProductDescription\": \"Smoke Test Declined Product\",\n            \"lineItemProductCategory\": \"Electronics\",\n            \"lineItemType\": \"D\",\n            \"lineItemQuantityOrdered\": 1,\n            \"lineItemUnitPrice\": {{decOrderAmt}},\n            \"lineItemBasePrice\": {{decOrderAmt}},\n            \"lineItemTaxAmount\": 0.00,\n            \"lineItemExtendedPrice\": {{decOrderAmt}}\n        }\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{svc_base}}/uown/los/sendApplication",
+							"host": [
+								"{{svc_base}}"
+							],
+							"path": [
+								"uown",
+								"los",
+								"sendApplication"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Negative path: SSN ending in 9 = DECLINED."
+		},
+		{
+			"name": "Smoke Test - Validation Errors",
+			"item": [
+				{
+					"name": "1. sendApplication - Past NextPayDate (400)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"function randomBetween(a,b){return Math.floor(Math.random()*(b-a+1))+a;}",
+									"pm.collectionVariables.set('valSSN', String(randomBetween(100,899)) + String(randomBetween(10,99)) + String(randomBetween(100,999)) + String(randomBetween(0,8)));",
+									"pm.collectionVariables.set('valEmail', 'val.test.' + Date.now() + '@test.com');"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var res = pm.response.json();",
+									"",
+									"pm.test('Status code is 400', function() { pm.response.to.have.status(400); });",
+									"pm.test('Faults is true', function() { pm.expect(res.faults).to.eql(true); });",
+									"pm.test('Error mentions mainNextPayDate', function() { pm.expect(res.fieldInError1).to.include('mainNextPayDate'); });",
+									"pm.test('Error mentions future date', function() { pm.expect(res.sorErrorDescription).to.include('future'); });",
+									"pm.test('Transaction status E3', function() { pm.expect(res.transactionStatus).to.eql('E3'); });",
+									"",
+									"console.log('Validation error:', res.sorErrorDescription);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userName\": \"tireAgent\",\n    \"setupPassword\": \"U0wn_tireAgent_G4eDIH\",\n    \"merchantNumber\": \"OW90218-0001\",\n\n    \"mainFirstName\": \"Validation\",\n    \"mainLastName\": \"Test\",\n    \"mainDOB\": \"01011990\",\n    \"mainSSN\": \"{{valSSN}}\",\n    \"emailAddress\": \"{{valEmail}}\",\n    \"mainAddress1\": \"999 Error Ave\",\n    \"mainCity\": \"Houston\",\n    \"mainPostalCode\": \"77494\",\n    \"mainCellPhone\": \"5038784427\",\n    \"mainPastBankruptcy\": false,\n    \"mainCurrentOrFutureBankruptcy\": false,\n    \"languagePreference\": \"E\",\n    \"mainEmployerName\": \"Test Corp\",\n    \"mainNextPayDate\": \"01012020\",\n    \"mainLastPayDate\": \"12012019\",\n    \"mainPayFrequency\": \"MONTHLY\",\n    \"seonFingerprintText\": \"fingerPrintText\",\n    \"ipaddress\": \"192.168.0.2\",\n    \"desiredPaymentFrequency\": \"WEEKLY\",\n    \"mainAnnualIncome\": 60000,\n\n    \"shipToSameAsConsumer\": true,\n    \"merchandiseSubtotal\": 500.00,\n    \"discountAmount\": 0.00,\n    \"deliveryCharge\": 0.00,\n    \"installationCharge\": 0.00,\n    \"salesTax\": 0.00,\n    \"miscellaneousFees\": 0.00,\n    \"depositAmount\": 0.00,\n    \"orderTotal\": 500.00,\n\n    \"lineItem\": [\n        {\n            \"lineItemLineNumber\": \"101\",\n            \"lineItemSerialNumber\": \"SN-VAL\",\n            \"lineItemProductNumber\": \"SKU-VAL\",\n            \"lineItemProductDescription\": \"Validation Test Product\",\n            \"lineItemProductCategory\": \"Electronics\",\n            \"lineItemType\": \"D\",\n            \"lineItemQuantityOrdered\": 1,\n            \"lineItemUnitPrice\": 500.00,\n            \"lineItemBasePrice\": 500.00,\n            \"lineItemTaxAmount\": 0.00,\n            \"lineItemExtendedPrice\": 500.00\n        }\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{svc_base}}/uown/los/sendApplication",
+							"host": [
+								"{{svc_base}}"
+							],
+							"path": [
+								"uown",
+								"los",
+								"sendApplication"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. getApplicationStatus - Invalid Merchant (400)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 400', function() { pm.response.to.have.status(400); });",
+									"pm.test('Invalid merchant error', function() { pm.expect(pm.response.text().toLowerCase()).to.include('invalid'); });",
+									"console.log('Error:', pm.response.text());"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userName\": \"synchrony\",\n    \"setupPassword\": \"U0wn_synchrony_Sc359I\",\n    \"merchantNumber\": \"INVALID-MERCHANT-000\",\n    \"localeString\": \"en_US\",\n    \"accountNumber\": \"{{accountNumber}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{svc_base}}/uown/los/getApplicationStatus",
+							"host": [
+								"{{svc_base}}"
+							],
+							"path": [
+								"uown",
+								"los",
+								"getApplicationStatus"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. getApplicationStatus - Empty accountNumber (Not Found)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var res = pm.response.json();",
+									"",
+									"pm.test('Status code is 200', function() { pm.response.to.have.status(200); });",
+									"pm.test('No faults', function() { pm.expect(res.faults).to.eql(false); });",
+									"pm.test('Application NOT found', function() { pm.expect(res.applicationFound).to.eql(false); });",
+									"pm.test('Application NOT submitted', function() { pm.expect(res.applicationSubmitted).to.eql(false); });",
+									"pm.test('Transaction status is I1', function() { pm.expect(res.transactionStatus).to.eql('I1'); });",
+									"pm.test('No payment details', function() { pm.expect(res.paymentDetailsList).to.be.an('array').with.length(0); });",
+									"pm.test('No invoice items', function() { pm.expect(res.invoiceItems).to.be.an('array').with.length(0); });",
+									"pm.test('No line items', function() { pm.expect(res.lineItem).to.be.an('array').with.length(0); });",
+									"pm.test('Approved amount is 0', function() { pm.expect(res.approvedAmount).to.eql(null); });",
+									"pm.test('All nullable fields are null', function() {",
+									"    pm.expect(res.accountNumber).to.be.null;",
+									"    pm.expect(res.currentStatus).to.be.null;",
+									"    pm.expect(res.customerFirstName).to.be.null;",
+									"    pm.expect(res.customerLastName).to.be.null;",
+									"    pm.expect(res.leadPk).to.be.null;",
+									"});",
+									"",
+									"console.log('Empty accountNumber → applicationFound:', res.applicationFound, '| transactionStatus:', res.transactionStatus);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userName\": \"tireAgent\",\n    \"setupPassword\": \"U0wn_tireAgent_G4eDIH\",\n    \"merchantNumber\": \"OW90218-0001\",\n    \"localeString\": \"en_US\",\n    \"accountNumber\": \"\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{svc_base}}/uown/los/getApplicationStatus",
+							"host": [
+								"{{svc_base}}"
+							],
+							"path": [
+								"uown",
+								"los",
+								"getApplicationStatus"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Validation: Past dates (400), invalid merchant (400), empty accountNumber (not found)."
+		},
+		{
+			"name": "Smoke Test - Portal Flow (sendApplicationToCustomer → Funding)",
+			"item": [
+				{
+					"name": "1. Login - Get Auth Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function() { pm.response.to.have.status(200); });",
+									"",
+									"var token = pm.response.headers.get('usertoken');",
+									"pm.test('Token received in headers', function() {",
+									"    pm.expect(token).to.be.a('string');",
+									"    pm.expect(token.length).to.be.greaterThan(0);",
+									"});",
+									"",
+									"if (token) {",
+									"    pm.collectionVariables.set('portalToken', token);",
+									"    console.log('Token saved (first 50 chars):', token.substring(0, 50) + '...');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{portalUsername}}\",\n    \"password\": \"{{portalPassword}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://origination-{{env}}.uownleasing.com/login",
+							"protocol": "https",
+							"host": [
+								"origination-{{env}}",
+								"uownleasing",
+								"com"
+							],
+							"path": [
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. sendApplicationToCustomer - Create Lead",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Random email & phone for the customer",
+									"var firstNames = ['James','Mary','Robert','Patricia','John','Jennifer','Michael','Linda','David','Elizabeth'];",
+									"var lastNames = ['Smith','Johnson','Williams','Brown','Jones','Garcia','Miller','Davis','Rodriguez','Martinez'];",
+									"function randomPick(a){return a[Math.floor(Math.random()*a.length)];}",
+									"function randomBetween(a,b){return Math.floor(Math.random()*(b-a+1))+a;}",
+									"",
+									"var fn = randomPick(firstNames);",
+									"var ln = randomPick(lastNames);",
+									"var custEmail = fn.toLowerCase() + '.' + ln.toLowerCase() + '.' + Date.now() + '@test.com';",
+									"var custPhone = String(randomBetween(201,989)) + String(randomBetween(200,999)) + String(randomBetween(1000,9999));",
+									"",
+									"pm.collectionVariables.set('custEmail', custEmail);",
+									"pm.collectionVariables.set('custPhone', custPhone);",
+									"",
+									"console.log('=== PORTAL FLOW ===');",
+									"console.log('Customer:', fn, ln);",
+									"console.log('Email:', custEmail);",
+									"console.log('Phone:', custPhone);",
+									"console.log('==================');"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function() { pm.response.to.have.status(200); });",
+									"",
+									"var body = pm.response.text();",
+									"",
+									"pm.test('Redirect URL returned', function() {",
+									"    pm.expect(body).to.be.a('string');",
+									"    pm.expect(body.length).to.be.greaterThan(0);",
+									"});",
+									"",
+									"pm.collectionVariables.set('portalRedirectUrl', body);",
+									"console.log('Customer Application URL:', body);",
+									"console.log('');",
+									"console.log('>>> NEXT STEPS (MANUAL):');",
+									"console.log('1. Open the URL above in a browser');",
+									"console.log('2. Fill in the application (use SSN NOT ending in 9)');",
+									"console.log('3. Complete payment info and sign the lease');",
+									"console.log('4. Copy the accountNumber from the URL or getApplicationStatus');",
+									"console.log('5. Set the accountNumber variable and run steps 3-5');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "username",
+								"value": "{{portalUsername}}"
+							},
+							{
+								"key": "userToken",
+								"value": "{{portalToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refMerchantCode\": \"OW90218-0001\",\n    \"custEmailAddress\": \"{{custEmail}}\",\n    \"custPhoneNumber\": \"{{custPhone}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://origination-{{env}}.uownleasing.com/uown/sendApplicationToCustomer",
+							"protocol": "https",
+							"host": [
+								"origination-{{env}}",
+								"uownleasing",
+								"com"
+							],
+							"path": [
+								"uown",
+								"sendApplicationToCustomer"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. getApplicationStatus - After Customer Signs (set portalAccountNumber first)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var acct = pm.collectionVariables.get('portalAccountNumber');",
+									"if (!acct || acct.trim() === '') {",
+									"    throw new Error('STOP: portalAccountNumber is empty. Complete these steps first:\\n' +",
+									"        '1. Open the URL from step 2 in a browser\\n' +",
+									"        '2. Fill the application (SSN NOT ending in 9)\\n' +",
+									"        '3. Complete payment info and sign the lease\\n' +",
+									"        '4. Set portalAccountNumber variable with the accountNumber, then re-run this step');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var res = pm.response.json();",
+									"",
+									"pm.test('Status code is 200', function() { pm.response.to.have.status(200); });",
+									"pm.test('No faults', function() { pm.expect(res.faults).to.eql(false); });",
+									"pm.test('Application found', function() { pm.expect(res.applicationFound).to.eql(true); });",
+									"pm.test('Application submitted', function() { pm.expect(res.applicationSubmitted).to.eql(true); });",
+									"pm.test('Has signed lease', function() { pm.expect(res.hasSignedLease).to.eql(true); });",
+									"pm.test('Status is CONTRACT_CREATED or beyond', function() {",
+									"    pm.expect(['CONTRACT_CREATED','SIGNED','FUNDING','FUNDED']).to.include(res.currentStatus);",
+									"});",
+									"pm.test('Approved amount > 0', function() { pm.expect(res.approvedAmount).to.be.greaterThan(0); });",
+									"pm.test('Account number matches', function() { pm.expect(res.accountNumber).to.eql(pm.collectionVariables.get('portalAccountNumber')); });",
+									"",
+									"if (res.leadPk) {",
+									"    pm.collectionVariables.set('leadPk', res.leadPk);",
+									"    console.log('leadPk:', res.leadPk);",
+									"}",
+									"",
+									"console.log('Status:', res.currentStatus);",
+									"console.log('Signed:', res.hasSignedLease);",
+									"console.log('Approved:', res.approvedAmount);",
+									"console.log('OTB:', res.openToBuy);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userName\": \"tireAgent\",\n    \"setupPassword\": \"U0wn_tireAgent_G4eDIH\",\n    \"merchantNumber\": \"OW90218-0001\",\n    \"localeString\": \"en_US\",\n    \"accountNumber\": \"{{portalAccountNumber}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{svc_base}}/uown/los/getApplicationStatus",
+							"host": [
+								"{{svc_base}}"
+							],
+							"path": [
+								"uown",
+								"los",
+								"getApplicationStatus"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4. settleApplication - Request Funding",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var res = pm.response.json();",
+									"",
+									"pm.test('Status code is 200', function() { pm.response.to.have.status(200); });",
+									"pm.test('No faults', function() { pm.expect(res.faults).to.eql(false); });",
+									"pm.test('Transaction settled (A1)', function() { pm.expect(res.transactionStatus).to.eql('A1'); });",
+									"pm.test('Amount > 0', function() { pm.expect(res.amount).to.be.greaterThan(0); });",
+									"",
+									"console.log('Settled! Amount:', res.amount);",
+									"console.log('Status:', res.transactionStatus);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userName\": \"tireAgent\",\n    \"setupPassword\": \"U0wn_tireAgent_G4eDIH\",\n    \"merchantNumber\": \"OW90218-0001\",\n    \"accountNumber\": \"{{portalAccountNumber}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{svc_base}}/uown/los/settleApplication",
+							"host": [
+								"{{svc_base}}"
+							],
+							"path": [
+								"uown",
+								"los",
+								"settleApplication"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "5. getApplicationStatus - Verify Funding",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var res = pm.response.json();",
+									"",
+									"pm.test('Status code is 200', function() { pm.response.to.have.status(200); });",
+									"pm.test('Application found', function() { pm.expect(res.applicationFound).to.eql(true); });",
+									"pm.test('No faults', function() { pm.expect(res.faults).to.eql(false); });",
+									"pm.test('Status is FUNDING or FUNDED', function() {",
+									"    pm.expect(['FUNDING','FUNDED']).to.include(res.currentStatus);",
+									"});",
+									"pm.test('Fund request timestamp exists', function() {",
+									"    pm.expect(res.fundRequestDateTime).to.not.be.null;",
+									"});",
+									"pm.test('Amount to be funded > 0', function() {",
+									"    pm.expect(res.amountToBeFunded).to.be.greaterThan(0);",
+									"});",
+									"",
+									"console.log('=== FINAL STATUS ===');",
+									"console.log('Account:', res.accountNumber);",
+									"console.log('Status:', res.currentStatus);",
+									"console.log('Signed:', res.hasSignedLease);",
+									"console.log('Fund Amount:', res.amountToBeFunded);",
+									"console.log('Fund Request:', res.fundRequestDateTime);",
+									"console.log('Funded At:', res.fundedDateTime);",
+									"console.log('===================');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userName\": \"tireAgent\",\n    \"setupPassword\": \"U0wn_tireAgent_G4eDIH\",\n    \"merchantNumber\": \"OW90218-0001\",\n    \"localeString\": \"en_US\",\n    \"accountNumber\": \"{{portalAccountNumber}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{svc_base}}/uown/los/getApplicationStatus",
+							"host": [
+								"{{svc_base}}"
+							],
+							"path": [
+								"uown",
+								"los",
+								"getApplicationStatus"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Portal Flow: sendApplicationToCustomer → Customer fills & signs (manual) → settleApplication → Funding.\n\n**How to run:**\n1. Set `env`, `portalUsername`, `portalPassword` variables\n2. Run steps 1-2 (automated - creates lead, sends link)\n3. MANUAL: Open the URL from step 2 in browser, fill application (SSN not ending in 9), sign lease\n4. Set `portalAccountNumber` variable with the accountNumber from the signed application\n5. Run steps 3-5 (automated - verify signed → settle → verify funding)"
+		}
+	],
+	"variable": [
+		{
+			"key": "accountNumber",
+			"value": ""
+		},
+		{
+			"key": "redirectUrl",
+			"value": ""
+		},
+		{
+			"key": "firstName",
+			"value": ""
+		},
+		{
+			"key": "lastName",
+			"value": ""
+		},
+		{
+			"key": "dob",
+			"value": ""
+		},
+		{
+			"key": "ssn",
+			"value": ""
+		},
+		{
+			"key": "email",
+			"value": ""
+		},
+		{
+			"key": "address",
+			"value": ""
+		},
+		{
+			"key": "city",
+			"value": ""
+		},
+		{
+			"key": "zip",
+			"value": ""
+		},
+		{
+			"key": "phone",
+			"value": ""
+		},
+		{
+			"key": "employer",
+			"value": ""
+		},
+		{
+			"key": "income",
+			"value": "60000"
+		},
+		{
+			"key": "nextPayDate",
+			"value": ""
+		},
+		{
+			"key": "lastPayDate",
+			"value": ""
+		},
+		{
+			"key": "orderAmt",
+			"value": "1200"
+		},
+		{
+			"key": "prodName",
+			"value": ""
+		},
+		{
+			"key": "prodSku",
+			"value": ""
+		},
+		{
+			"key": "prodCat",
+			"value": ""
+		},
+		{
+			"key": "serial",
+			"value": ""
+		},
+		{
+			"key": "decFirst",
+			"value": ""
+		},
+		{
+			"key": "decLast",
+			"value": ""
+		},
+		{
+			"key": "decDob",
+			"value": ""
+		},
+		{
+			"key": "decSSN",
+			"value": ""
+		},
+		{
+			"key": "decEmail",
+			"value": ""
+		},
+		{
+			"key": "decAddr",
+			"value": ""
+		},
+		{
+			"key": "decCity",
+			"value": ""
+		},
+		{
+			"key": "decZip",
+			"value": ""
+		},
+		{
+			"key": "decPhone",
+			"value": ""
+		},
+		{
+			"key": "decEmployer",
+			"value": ""
+		},
+		{
+			"key": "decIncome",
+			"value": "60000"
+		},
+		{
+			"key": "decOrderAmt",
+			"value": "1200"
+		},
+		{
+			"key": "valSSN",
+			"value": ""
+		},
+		{
+			"key": "valEmail",
+			"value": ""
+		},
+		{
+			"key": "env",
+			"value": "sandbox"
+		},
+		{
+			"key": "portalUsername",
+			"value": "manager"
+		},
+		{
+			"key": "portalPassword",
+			"value": "P@ssw0rdu0wn"
+		},
+		{
+			"key": "portalToken",
+			"value": ""
+		},
+		{
+			"key": "portalAccountNumber",
+			"value": ""
+		},
+		{
+			"key": "portalRedirectUrl",
+			"value": ""
+		},
+		{
+			"key": "custEmail",
+			"value": ""
+		},
+		{
+			"key": "custPhone",
+			"value": ""
+		},
+		{
+			"key": "shortCode",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "planId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "leadPk",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "signwellDocumentId",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

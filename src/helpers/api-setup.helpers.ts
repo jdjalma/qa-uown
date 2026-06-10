@@ -186,6 +186,30 @@ export function extractApprovalStatus(body: { appApprovalStatus?: string; uwStat
 
 // ── Pre-qualification flow ───────────────────────────────────────
 
+/**
+ * Application-shape overrides exposed to callers (SPEC svc#531 §12 G1).
+ * Defaults remain WEEKLY frequency + whatever program the backend resolves
+ * from merchant config; passing `termMonths` does NOT mutate the wire body
+ * by itself — pair it with `programName` so the backend resolves the
+ * matching `uown_merchant_program`. `merchantPk` / `programPk` are accepted
+ * for caller bookkeeping (no silent injection into the body).
+ */
+export interface PreQualifiedApplicationOptions {
+  termMonths?: 13 | 16;
+  state?: string;
+  merchantPk?: number;
+  programPk?: number;
+  programName?: string;
+  desiredPaymentFrequency?: string;
+  /**
+   * Override `mainAnnualIncome` (default 56000). Higher income raises
+   * `BlackBoxApproval`, which in turn drives `EligibleTerms` from the
+   * underwriter. Required when forcing 16m in qa1 (memory
+   * `reference_qa1_16m_eligibility_blocked`).
+   */
+  mainAnnualIncome?: number;
+}
+
 export interface PreQualifiedOptions {
   /** Submit payment info via submitApplication API (moves to CONTRACT_CREATED) */
   submitPaymentInfoViaApi?: boolean;
@@ -202,6 +226,12 @@ export interface PreQualifiedOptions {
    * already validated the merchant or is intentionally testing drift.
    */
   skipMerchantPreflight?: boolean;
+  /**
+   * Explicit overrides for term / state / program. No silent defaults — if
+   * omitted, legacy behavior is preserved (default WEEKLY, backend resolves
+   * program). See `PreQualifiedApplicationOptions`.
+   */
+  application?: PreQualifiedApplicationOptions;
 }
 
 export interface PreQualifiedResult {
@@ -233,11 +263,24 @@ export async function createPreQualifiedApplication(
   // 1. Send application WITHOUT order (pre-qualification)
   // reason: when bankData is provided, build body manually so we can inject
   // mainBankRoutingNumber + mainBankAccountNumber (required for Kornerstone routing).
+  // application overrides (term / state / program) also force the body-overload
+  // path so the overrides actually reach the wire body.
   let appResp;
-  if (options.bankData) {
-    const body = buildSendApplicationBody(merchant, applicant);
-    body.mainBankRoutingNumber = options.bankData.routingNumber;
-    body.mainBankAccountNumber = options.bankData.accountNumber;
+  const appOverrides = options.application;
+  const buildOverrides = appOverrides
+    ? {
+        state: appOverrides.state,
+        programName: appOverrides.programName,
+        desiredPaymentFrequency: appOverrides.desiredPaymentFrequency,
+        mainAnnualIncome: appOverrides.mainAnnualIncome,
+      }
+    : undefined;
+  if (options.bankData || appOverrides) {
+    const body = buildSendApplicationBody(merchant, applicant, undefined, buildOverrides);
+    if (options.bankData) {
+      body.mainBankRoutingNumber = options.bankData.routingNumber;
+      body.mainBankAccountNumber = options.bankData.accountNumber;
+    }
     appResp = await api.application.sendApplication(body);
   } else {
     appResp = await api.application.sendApplication(merchant, applicant);
@@ -288,7 +331,21 @@ export async function createPreQualifiedApplication(
     // reason: submitApplication fails with "Merchant program is required" on brand-new
     // leads without prior merchantProgramPk. getMissingFields MUST be called first —
     // it reads shortCode + planId from the invoice redirectUrl and resolves the program.
-    const redirectUrl = invoiceResp.body?.paymentDetailsList?.[0]?.redirectUrl ?? '';
+    // When `application.termMonths` is set, prefer the matching paymentDetailsList
+    // entry — otherwise `[0]` is the default (auto-resolved by svc, typically 13m
+    // for Daniel's Jewelers + CA). See memory `reference_merchant_program_resolution`.
+    const detailsList = invoiceResp.body?.paymentDetailsList ?? [];
+    const desiredTerm = appOverrides?.termMonths;
+    const matched = desiredTerm
+      ? detailsList.find((d: { termInMonths?: number }) => d.termInMonths === desiredTerm)
+      : undefined;
+    if (desiredTerm && !matched) {
+      const available = detailsList.map((d: { termInMonths?: number }) => d.termInMonths).join(',');
+      throw new Error(
+        `[Setup] application.termMonths=${desiredTerm} requested but paymentDetailsList only has terms [${available}]`,
+      );
+    }
+    const redirectUrl = (matched ?? detailsList[0])?.redirectUrl ?? '';
     if (redirectUrl) {
       const url = new URL(redirectUrl);
       const pathParts = url.pathname.split('/').filter(Boolean);

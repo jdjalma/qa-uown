@@ -1,6 +1,7 @@
 import { OriginationBasePage } from './origination-base.page.js';
 import { SELECTORS } from '../../selectors/common.selectors.js';
 import { sleep } from '../../helpers/common.helpers.js';
+import { getNormalizedHeaders, getColumnIndexByHeaderText } from '../../helpers/table.helpers.js';
 
 export class FundingPage extends OriginationBasePage {
   readonly filtersButton = this.page.locator(SELECTORS.filtersButton);
@@ -161,5 +162,24 @@ export class FundingPage extends OriginationBasePage {
     // Wait for success toast
     const toast = this.page.locator(SELECTORS.toastBody);
     await toast.waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {});
+  }
+
+  // ── Column-order assertions (task #1295) ─────────────────────────────
+
+  /** Returns the table headers in display order, with sort-indicator arrows stripped. */
+  async readHeaderOrder(): Promise<string[]> {
+    return getNormalizedHeaders(this.page);
+  }
+
+  /** Returns the 0-based column index whose header matches `label` (normalized, case-insensitive). */
+  async getColumnIndexByHeaderText(label: string): Promise<number> {
+    const headers = await this.readHeaderOrder();
+    return getColumnIndexByHeaderText(headers, label);
+  }
+
+  /** Returns the cell text of all `<td>` in the given 0-based row index. */
+  async getRowCells(rowIndex: number): Promise<string[]> {
+    const rows = this.page.locator(SELECTORS.tableRow);
+    return rows.nth(rowIndex).locator(SELECTORS.tableCell).allTextContents();
   }
 }

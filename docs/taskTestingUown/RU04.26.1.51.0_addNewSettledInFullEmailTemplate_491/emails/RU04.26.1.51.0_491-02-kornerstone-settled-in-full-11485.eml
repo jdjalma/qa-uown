@@ -1,0 +1,338 @@
+Delivered-To: fintechgroup777@gmail.com
+Received: by 2002:a05:7412:7a93:20b0:1cd:e7c8:4e21 with SMTP id hu19-n2csp3768286rdb;
+        Thu, 23 Apr 2026 11:55:30 -0700 (PDT)
+X-Received: by 2002:a05:620a:4589:b0:8cd:9b31:23b1 with SMTP id af79cd13be357-8e7929648cdmr3907938185a.53.1776970530731;
+        Thu, 23 Apr 2026 11:55:30 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1776970530; cv=none;
+        d=google.com; s=arc-20240605;
+        b=Ge1V7uTHHzCNb7hnLAmiWiYEwZ4qT6yp5WdyZ+nlWrT00+PbNi3Up+g7/Er3en6X68
+         UZ9zFm1RqzYRzb4Hn0AIxiSz6yRvqDJ6/3N0XS9jnr3RCc37DQE7MZrIqDsvNARa+bXl
+         tIKWM5mspUFLTpVqDSrdedUeT1Ej08xvqDfVui1Vd8wjiT0ZAhb93pK6b2P5kpDUt89w
+         DNTytoZuuRou40Ripc3GalbS4qkEp0kT+CvN/kWl+4lJHqrJuVENZk3qJgRNklsF2G7g
+         h97WLHOLU7ziWXnc49ooWmLcnqoAjs3XdwI2QsuSlaWOZxHcDBuybr65w165omr42I1A
+         6W4w==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20240605;
+        h=to:subject:message-id:mime-version:from:date
+         :content-transfer-encoding:dkim-signature:dkim-signature;
+        bh=FQ3x4KP8K4cupBGhdiorT2JsokM0LvsVHEREzybC0Y8=;
+        fh=lKPJbLZlVaD6fyGOC9menm74AWQRjTQA2QO6UsmqfIk=;
+        b=YyFGDxRdibS4xirgnm1xGEmv+FeNZiRorMXZdgAmoS4lqVBNNIY9bzH4eNe82Rt196
+         99plhUCPWUGlmG/5BPa44G83UyxsHv6u756pvuurB17htatFhr1sYLOy6liVnZgNM04R
+         KuijWxXyxoawyc2mTK+3zx9OTqFvA6RZZnWAuJJ+jT8Wd6I9iEiWAV0UPGOJEQYxd9L+
+         +X3RcAqiwTgpAVK6WLpWch6YZ7NTB/FNMNPxJvgopDEbGa/udWslHJWoCWs37AdUGd5t
+         bknvW66RVyOc20eY9yXnn3oEdCyDzFpqQuMtoEoek6mG1/Xkj945nWMrTol/9eBYpdw/
+         Dt6A==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@uownleasing.com header.s=s1 header.b=g+nIWxg1;
+       dkim=pass header.i=@sendgrid.info header.s=smtpapi header.b=ojLJuVAX;
+       spf=pass (google.com: domain of bounces+34082517-6b28-fintechgroup777=gmail.com@em3357.uownleasing.com designates 159.183.125.108 as permitted sender) smtp.mailfrom="bounces+34082517-6b28-fintechgroup777=gmail.com@em3357.uownleasing.com";
+       dmarc=pass (p=QUARANTINE sp=QUARANTINE dis=NONE) header.from=uownleasing.com
+Return-Path: <bounces+34082517-6b28-fintechgroup777=gmail.com@em3357.uownleasing.com>
+Received: from wfbttdsc.outbound-mail.sendgrid.net (wfbttdsc.outbound-mail.sendgrid.net. [159.183.125.108])
+        by mx.google.com with ESMTPS id af79cd13be357-8e7d9abcf79si2182770585a.265.2026.04.23.11.55.30
+        for <fintechgroup777@gmail.com>
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
+        Thu, 23 Apr 2026 11:55:30 -0700 (PDT)
+Received-SPF: pass (google.com: domain of bounces+34082517-6b28-fintechgroup777=gmail.com@em3357.uownleasing.com designates 159.183.125.108 as permitted sender) client-ip=159.183.125.108;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@uownleasing.com header.s=s1 header.b=g+nIWxg1;
+       dkim=pass header.i=@sendgrid.info header.s=smtpapi header.b=ojLJuVAX;
+       spf=pass (google.com: domain of bounces+34082517-6b28-fintechgroup777=gmail.com@em3357.uownleasing.com designates 159.183.125.108 as permitted sender) smtp.mailfrom="bounces+34082517-6b28-fintechgroup777=gmail.com@em3357.uownleasing.com";
+       dmarc=pass (p=QUARANTINE sp=QUARANTINE dis=NONE) header.from=uownleasing.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=uownleasing.com;
+	h=content-transfer-encoding:content-type:date:from:mime-version:subject:
+	to:cc:content-type:date:feedback-id:from:subject:to;
+	s=s1; t=1776970530; bh=FQ3x4KP8K4cupBGhdiorT2JsokM0LvsVHEREzybC0Y8=;
+	b=g+nIWxg1U9L7lgng1SPbtCczlCL5z4js/D01eyCms5UB+Q8hkhdtZBAtOJXcv2WgGWTB
+	KnQX3zUQ05Lla9m/tAdpq7i2NfT+tJ7uOUN4Cbre/SnIDKHxLYlIAA1ZrHXG49KrLWQheb
+	rvHLkOXiZHig+lPAvuf8ldFIKWF5tr99Fn/odS8pzH5JbOLDwITplDhdMkF6pPZ7rRehWj
+	Co5m0q9tgCTNEWgdqV7jTxeCPQ/eb94Zppd/VHtL/JcyE8dw6H23YxRssCHta4+iPDrPsC
+	bpT65ijMBxPSf/Xr8HdgNyn0hfsf5qd3nv/Dn1T0oPpdq0XtxX9rh1SEXHiYSn9g==
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=sendgrid.info;
+	h=content-transfer-encoding:content-type:date:from:mime-version:subject:
+	to:cc:content-type:date:feedback-id:from:subject:to;
+	s=smtpapi; t=1776970530; bh=FQ3x4KP8K4cupBGhdiorT2JsokM0LvsVHEREzybC0Y8=;
+	b=ojLJuVAXXNHaXpFGixQC6Hnc1X4hv6eMwaUdjtg8ynfhKFrzWRAIa4GD7uyJEXfH05bg
+	qnyFLOrvypWgmSqWtU+j8jkrtnbnBue3JqTwnC4FPFheMiPQ34+DQx5zNG3/UKyWPqhqbI
+	JFAKBwXJ6FwIWN/+a1sv7v/N2bzrEBD0s=
+Received: by recvd-78b8c7bc6b-hmskb with SMTP id recvd-78b8c7bc6b-hmskb-1-69EA6B22-1
+	2026-04-23 18:55:30.004695074 +0000 UTC m=+162676.569566852
+Received: from MzQwODI1MTc (unknown)
+	by geopod-ismtpd-2 (SG) with HTTP
+	id bgga7M-bS7WsONEmI1oACQ
+	Thu, 23 Apr 2026 18:55:29.965 +0000 (UTC)
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/html; charset=utf-8
+Date: Thu, 23 Apr 2026 18:55:30 +0000 (UTC)
+From: uown.dev.kornerstone@uownleasing.com
+Mime-Version: 1.0
+Message-ID: <bgga7M-bS7WsONEmI1oACQ@geopod-ismtpd-2>
+Subject: Settled in Full - Account #11485
+X-SG-EID: 
+ =?us-ascii?Q?u001=2EJ5sA5mlXzb+Z7aWwhUoA+VCO52F98BnWX2vFbLigH5WrU1yB1exSO59Ie?=
+ =?us-ascii?Q?neafIDBNmpDrWfV6I92gaMgfBAtg19FNULdAFUU?=
+ =?us-ascii?Q?Wd7qs48MQt1NIbmqKbjK2dq4Y8Gwa6J5A=2F37cH8?=
+ =?us-ascii?Q?33=2F05FDhP6yh1=2FfNC9pKkcLw+CKFoel8V+qMNCE?=
+ =?us-ascii?Q?=2FN7wzhKi24YiMKRQoB2ZCMp7Oc8ppiFKELLZTwT?=
+ =?us-ascii?Q?QMLATWGYu8sXjmmi1i2RNU=3D?=
+To: fintechgroup777@gmail.com
+X-Entity-ID: u001.5cWs5X4nonScT0kz4uMg8w==
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional //EN" "http://www=
+.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- After deploy: reload SettledInFullEmail in DMS for Kornerstone company=
+. Align subject with title. -->
+<html xmlns=3D"http://www.w3.org/1999/xhtml" xmlns:o=3D"urn:schemas-microso=
+ft-com:office:office" xmlns:v=3D"urn:schemas-microsoft-com:vml" lang=3D"en"=
+>
+<head>
+    <title>Your Account Is Paid in Full =E2=80=94 You're All Set!</title>
+    <meta property=3D"og:title" content=3D"Your Account Is Paid in Full =E2=
+=80=94 You're All Set!" />
+    <meta name=3D"twitter:title" content=3D"Your Account Is Paid in Full =
+=E2=80=94 You're All Set!" />
+<meta name=3D"x-apple-disable-message-reformatting" />
+<meta http-equiv=3D"Content-Type" content=3D"text/html; charset=3DUTF-8" />
+<meta http-equiv=3D"X-UA-Compatible" content=3D"IE=3Dedge" />
+<meta name=3D"viewport" content=3D"width=3Ddevice-width, initial-scale=3D1.=
+0" />
+<style type=3D"text/css">
+a.cta_button{-moz-box-sizing:content-box !important;-webkit-box-sizing:cont=
+ent-box !important;box-sizing:content-box !important;vertical-align:middle}
+@media only screen and (max-width:639px){img.stretch-on-mobile{height:auto =
+!important;width:100% !important}
+.hse-body-wrapper-td{text-align:center !important}
+.hse-column-container{width:100% !important;max-width:100% !important;margi=
+n-left:auto !important;margin-right:auto !important}
+.hs_padded{padding-left:20px !important;padding-right:20px !important;text-=
+align:center !important}
+.hse-social-outer{width:100% !important}
+.hse-social-outer td{text-align:center !important}
+.display_block_on_small_screens{display:block}
+.social-network-cell{display:inline-block}
+}
+@media only screen and (min-width:640px){.hse-column-container{max-width:60=
+0px !important;width:600px !important}
+}
+p{margin:0}
+table{border-spacing:0;border-collapse:collapse}
+img{-ms-interpolation-mode:bicubic;border:none}
+</style>
+<!--[if gte mso 9]>
+<xml><o:OfficeDocumentSettings><o:AllowPNG/><o:PixelsPerInch>96</o:PixelsPe=
+rInch></o:OfficeDocumentSettings></xml>
+<![endif]-->
+<!--[if mso]>
+<style type=3D"text/css">body,td{font-family:Arial,Helvetica,sans-serif;}.h=
+se-body-wrapper-table{background-color:#6d6e71;}</style>
+<![endif]-->
+<meta name=3D"robots" content=3D"noindex,follow" />
+</head>
+<body id=3D"hs_body" bgcolor=3D"#6d6e71" style=3D"margin:0 !important;paddi=
+ng:0 !important;font-family:Arial,sans-serif;font-size:15px;color:#333333;w=
+ord-break:break-word">
+    <div id=3D"preview_text" style=3D"display:none;font-size:1px;color:#6d6=
+e71;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;" la=
+ng=3D"en">Congrats on completing your lease with Kornerstone, Testfnv!</div=
+>
+    <div class=3D"hse-body-background" lang=3D"en" style=3D"background-colo=
+r:#6d6e71" bgcolor=3D"#6d6e71">
+      <table role=3D"presentation" class=3D"hse-body-wrapper-table" cellpad=
+ding=3D"0" cellspacing=3D"0" style=3D"margin:0;padding:0;width:100% !import=
+ant;min-width:320px !important" width=3D"100%">
+        <tbody><tr>
+          <td class=3D"hse-body-wrapper-td" valign=3D"top" style=3D"font-fa=
+mily:Arial,sans-serif;font-size:15px;color:#333333;word-break:break-word;pa=
+dding-top:10px;padding-bottom:20px">
+            <div id=3D"hs_cos_wrapper_main" style=3D"color:inherit;font-siz=
+e:inherit;line-height:inherit">
+  <div id=3D"section-0" class=3D"hse-section hse-section-first" style=3D"pa=
+dding-left:0;padding-right:0">
+      <div class=3D"hse-column-container" style=3D"min-width:280px;max-widt=
+h:600px;margin:0 auto;background-color:#ffffff" bgcolor=3D"#ffffff">
+<!--[if (mso)|(IE)]><table align=3D"center" cellpadding=3D"0" cellspacing=
+=3D"0" role=3D"presentation" width=3D"600" bgcolor=3D"#ffffff"><tr><td widt=
+h=3D"600" valign=3D"top"><![endif]-->
+<div class=3D"hse-column hse-size-12">
+<table class=3D"hse-image-wrapper stretch-on-mobile" role=3D"presentation" =
+width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"><tbody><tr>
+      <td class=3D"hs_padded" align=3D"center" valign=3D"top" style=3D"font=
+-family:Arial,sans-serif;color:#333333;word-break:break-word;text-align:cen=
+ter;padding:10px 20px;font-size:0">
+        <a target=3D"_blank" href=3D"https://website-qa2.kornerstoneliving.=
+com" style=3D"color:#8FC31F">
+        <img alt=3D"Kornerstone" src=3D"https://storage.googleapis.com/uown=
+/kornerstone/kc-login-logo.png" class=3D"stretch-on-mobile" style=3D"outlin=
+e:none;text-decoration:none;border:none;max-width:100%;font-size:16px" widt=
+h=3D"280" />
+        </a>
+      </td>
+    </tr></tbody></table>
+</div>
+<!--[if (mso)|(IE)]></td></tr></table><![endif]-->
+    </div>
+  </div>
+  <div id=3D"section-1" class=3D"hse-section" style=3D"padding-left:0;paddi=
+ng-right:0">
+      <div class=3D"hse-column-container" style=3D"min-width:280px;max-widt=
+h:600px;margin:0 auto;background-color:#ffffff" bgcolor=3D"#ffffff">
+<!--[if (mso)|(IE)]><table align=3D"center" cellpadding=3D"0" cellspacing=
+=3D"0" role=3D"presentation" width=3D"600" bgcolor=3D"#ffffff"><tr><td widt=
+h=3D"600" valign=3D"top"><![endif]-->
+<div class=3D"hse-column hse-size-12">
+<table role=3D"presentation" cellpadding=3D"0" cellspacing=3D"0" width=3D"1=
+00%"><tbody><tr><td class=3D"hs_padded" style=3D"font-family:Arial,sans-ser=
+if;font-size:15px;color:#333333;word-break:break-word;padding:10px 20px">
+<p style=3D"font-size:16px;line-height:175%">Great News <span style=3D"font=
+-family:Tahoma,sans-serif;">=E2=80=94 You're All Set!</span></p>
+<p style=3D"font-size:16px;line-height:175%">&#160;</p>
+<p style=3D"font-size:16px;line-height:175%"><span style=3D"font-family:Tah=
+oma,sans-serif;">Hi <span>Testfnv</span>!</span></p>
+<p style=3D"font-size:16px;line-height:175%">&#160;</p>
+<p style=3D"font-size:16px;line-height:175%">We're happy to let you know th=
+at we've successfully processed your recent payment of&#160;<span style=3D"=
+font-weight:bold;">$<span>100.00</span></span><span style=3D"font-weight:no=
+rmal;">.</span></p>
+<p style=3D"font-size:16px;line-height:175%">&#160;</p>
+<p style=3D"font-size:16px;line-height:175%"><span style=3D"font-weight:nor=
+mal;">Your Kornerstone account is now&#160;<span style=3D"font-weight:bold;=
+">settled in full and officially closed</span><span style=3D"font-weight:no=
+rmal;"> <span style=3D"font-family:Tahoma,sans-serif;">=E2=80=94 congratula=
+tions!&#160;</span></span></span></p>
+<p style=3D"font-size:16px;line-height:175%">&#160;</p>
+<p style=3D"font-size:16px;line-height:175%;font-weight:bold"><span style=
+=3D"font-family:Arial,sans-serif;">Account Number: <span>11485</span></span=
+></p>
+<p style=3D"font-size:16px;line-height:175%;font-weight:bold"><span style=
+=3D"font-family:Arial,sans-serif;">Settlement Date: <span>Apr 21, 2026</spa=
+n></span></p>
+<p style=3D"font-size:16px;line-height:175%;font-weight:bold">&#160;</p>
+</td></tr></tbody></table>
+</div>
+<!--[if (mso)|(IE)]></td></tr></table><![endif]-->
+    </div>
+  </div>
+  <div id=3D"section_1770923484235" class=3D"hse-section hse-section-last" =
+style=3D"padding-left:0;padding-right:0">
+      <div class=3D"hse-column-container" style=3D"min-width:280px;max-widt=
+h:600px;margin:0 auto;background-color:#ffffff" bgcolor=3D"#ffffff">
+<!--[if (mso)|(IE)]><table align=3D"center" cellpadding=3D"0" cellspacing=
+=3D"0" role=3D"presentation" width=3D"600" bgcolor=3D"#ffffff"><tr><td widt=
+h=3D"600" valign=3D"top"><![endif]-->
+<div class=3D"hse-column hse-size-12">
+<table role=3D"presentation" cellpadding=3D"0" cellspacing=3D"0" width=3D"1=
+00%"><tbody><tr><td class=3D"hs_padded" style=3D"padding:10px 20px 0">
+<p style=3D"font-size:1px;border-top:1px solid #cfe9b5;width:50%;margin:0 a=
+uto;">&#160;</p>
+</td></tr></tbody></table>
+<table role=3D"presentation" cellpadding=3D"0" cellspacing=3D"0" width=3D"1=
+00%"><tbody><tr><td class=3D"hs_padded" style=3D"font-family:Arial,sans-ser=
+if;font-size:15px;color:#333333;word-break:break-word;padding:10px 20px">
+<h2 style=3D"margin:0;line-height:175%;font-size:22px">What This Means</h2>
+<h3 style=3D"font-size:17px;margin:0;line-height:175%;font-weight:normal"><=
+span style=3D"font-size:16px;">You've completed your lease, and there are n=
+o remaining payments due on this account. Thank you for staying on track an=
+d choosing Kornerstone as your path to ownership.&#160;</span></h3>
+<p style=3D"line-height:175%"><br /><span style=3D"font-size:16px;">We're p=
+roud to have helped you get what you needed <span style=3D"font-weight:norm=
+al;"><span style=3D"font-family:Tahoma,sans-serif;">=E2=80=94 and we hope t=
+o serve you again in the future.&#160;</span></span></span></p>
+</td></tr></tbody></table>
+<table role=3D"presentation" cellpadding=3D"0" cellspacing=3D"0" width=3D"1=
+00%"><tbody><tr><td class=3D"hs_padded" style=3D"padding:10px 20px 0">
+<p style=3D"font-size:1px;border-top:1px solid #cfe9b5;width:50%;margin:0 a=
+uto;">&#160;</p>
+</td></tr></tbody></table>
+<table role=3D"presentation" cellpadding=3D"0" cellspacing=3D"0" width=3D"1=
+00%"><tbody><tr><td class=3D"hs_padded" style=3D"font-family:Arial,sans-ser=
+if;font-size:15px;color:#333333;word-break:break-word;padding:10px 20px">
+<h2 style=3D"margin:0;line-height:175%;font-size:22px"><span style=3D"font-=
+weight:bold;color:#8FC31F;"><span style=3D"font-family:Tahoma,sans-serif;">=
+<span style=3D"font-weight:normal;">&#128161;</span></span><span style=3D"f=
+ont-family:Arial,sans-serif;">Important Reminder</span></span><span style=
+=3D"font-family:Arial,sans-serif;">&#160;</span></h2>
+<p style=3D"font-size:16px;line-height:175%"><span style=3D"font-family:Tah=
+oma,sans-serif;"><span style=3D"font-family:Arial,sans-serif;">If any sched=
+uled lease payment does not successfully clear, the paid-in-full status of =
+the account may be voided according to your lease agreement.</span>&#160;</=
+span></p>
+</td></tr></tbody></table>
+<table role=3D"presentation" cellpadding=3D"0" cellspacing=3D"0" width=3D"1=
+00%"><tbody><tr><td class=3D"hs_padded" style=3D"padding:10px 20px 0">
+<p style=3D"font-size:1px;border-top:1px solid #cfe9b5;width:50%;margin:0 a=
+uto;">&#160;</p>
+</td></tr></tbody></table>
+<table class=3D"hse-image-wrapper stretch-on-mobile" role=3D"presentation" =
+width=3D"100%" cellpadding=3D"0" cellspacing=3D"0"><tbody><tr>
+      <td class=3D"hs_padded" align=3D"center" valign=3D"top" style=3D"font=
+-family:Arial,sans-serif;color:#333333;word-break:break-word;text-align:cen=
+ter;padding:10px 20px;font-size:0">
+        <a href=3D"https://www.kornerstoneliving.com/" target=3D"_blank" st=
+yle=3D"color:#8FC31F">
+        <img alt=3D"Contact Kornerstone" src=3D"https://storage.googleapis.=
+com/uown/kornerstone/UownEmail_Contact%20us_KSversion.png" class=3D"stretch=
+-on-mobile" style=3D"outline:none;text-decoration:none;border:none;max-widt=
+h:100%;font-size:16px" width=3D"560" />
+        </a>
+      </td>
+    </tr></tbody></table>
+<table role=3D"presentation" cellpadding=3D"0" cellspacing=3D"0" width=3D"1=
+00%"><tbody><tr><td class=3D"hs_padded" style=3D"font-family:Arial,sans-ser=
+if;font-size:15px;color:#333333;padding:10px 20px 0">
+<p style=3D"line-height:175%;text-align:center" align=3D"center">Stay conne=
+cted with us on social media for updates and tips.</p>
+</td></tr></tbody></table>
+<table role=3D"presentation" class=3D"hse-social-outer" width=3D"100%" cell=
+padding=3D"0" cellspacing=3D"0" align=3D"center" style=3D"width:100%"><tbod=
+y><tr><td align=3D"center" style=3D"text-align:center;padding:0 20px 10px">
+<table role=3D"presentation" align=3D"center" border=3D"0" cellpadding=3D"0=
+" cellspacing=3D"0" style=3D"margin:0 auto"><tbody><tr>
+      <td class=3D"social-network-cell" align=3D"center" style=3D"padding:8=
+px 5px;text-align:center">
+        <a href=3D"https://www.facebook.com/Kornerstoneliving/" target=3D"_=
+blank" style=3D"text-decoration:none !important"><img src=3D"https://storag=
+e.googleapis.com/uown/facebook_circle_color.png" alt=3D"Facebook" height=3D=
+"25" style=3D"outline:none;border:none;height:25px;vertical-align:middle" w=
+idth=3D"25" /></a>
+      </td>
+      <td class=3D"social-network-cell" align=3D"center" style=3D"padding:8=
+px 5px;text-align:center">
+        <a href=3D"https://www.linkedin.com/company/kornerstoneliving/" tar=
+get=3D"_blank" style=3D"text-decoration:none !important"><img src=3D"https:=
+//storage.googleapis.com/uown/linkedin_circle_color.png" alt=3D"LinkedIn" h=
+eight=3D"25" style=3D"outline:none;border:none;height:25px;vertical-align:m=
+iddle" width=3D"25" /></a>
+      </td>
+      <td class=3D"social-network-cell" align=3D"center" style=3D"padding:8=
+px 5px;text-align:center">
+        <a href=3D"https://www.instagram.com/kornerstoneliving" target=3D"_=
+blank" style=3D"text-decoration:none !important"><img src=3D"https://storag=
+e.googleapis.com/uown/instagram_circle_color.png" alt=3D"Instagram" height=
+=3D"25" style=3D"outline:none;border:none;height:25px;vertical-align:middle=
+" width=3D"25" /></a>
+      </td>
+    </tr></tbody></table>
+</td></tr></tbody></table>
+<table role=3D"presentation" cellpadding=3D"0" cellspacing=3D"0" width=3D"1=
+00%"><tbody><tr><td class=3D"hs_padded" style=3D"padding:10px 20px">
+<p style=3D"font-size:1px;border-top:1px solid #cfe9b5;width:50%;margin:0 a=
+uto;">&#160;</p>
+</td></tr></tbody></table>
+<table role=3D"presentation" cellpadding=3D"0" cellspacing=3D"0" width=3D"1=
+00%"><tbody><tr><td class=3D"hs_padded" align=3D"center" style=3D"font-fami=
+ly:Arial,sans-serif;font-size:12px;line-height:135%;color:#333333;padding:1=
+0px 20px;text-align:center">
+          <p style=3D"margin:0;text-align:center">Kornerstone &#183; CS@kor=
+nerstoneliving.com &#183; (888) 521-5111</p>
+</td></tr></tbody></table>
+</div>
+<!--[if (mso)|(IE)]></td></tr></table><![endif]-->
+    </div>
+  </div>
+            </div>
+          </td>
+        </tr></tbody></table>
+    </div>
+</body>
+</html>

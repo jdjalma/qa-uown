@@ -2,6 +2,29 @@ import { expect } from '@playwright/test';
 import { OriginationBasePage } from './origination-base.page.js';
 import { SELECTORS } from '../../selectors/common.selectors.js';
 import { sleep } from '../../helpers/common.helpers.js';
+import { LoginPage } from '../login.page.js';
+import { ConfigEnvironment } from '../../config/environment.js';
+
+/**
+ * One row of the Documents → Lease panel on the Origination customer page.
+ * Returned by {@link OriginationCustomerPage.getLeasePanelContracts}.
+ *
+ * Sources (per row, in DOM order):
+ *  - `contractNumber` — from the row container's `title=""` attribute
+ *    (fallback: title button text)
+ *  - `contractType`   — first `subtitle1` div (e.g. `LEASE`, `LEASE_MOD`)
+ *  - `status`         — first `subtitle2` div (`SIGNED` | `SENT` | ...)
+ *  - `termMonths`     — parsed from the second `subtitle2` div text
+ *                       (`"Term\nMonths - 13"` → `13`); `null` if not parseable
+ *  - `timestamp`      — raw `timeStamp` div text (e.g. `"-"` or full date string)
+ */
+export interface LeasePanelContract {
+  contractNumber: string;
+  contractType: string;
+  status: string;
+  termMonths: number | null;
+  timestamp: string;
+}
 
 export class OriginationCustomerPage extends OriginationBasePage {
   // Customer header summary section — structure from snapshot:
@@ -21,7 +44,14 @@ export class OriginationCustomerPage extends OriginationBasePage {
   readonly setToExpiredButton = this.page.locator("button:has-text('Set to Expired')");
   readonly settleLeaseForm = this.page.locator('#settleLeaseForm, .settle-lease-form');
   readonly createLeaseButton = this.page.locator("xpath=//div[text()='Lease']/../div[text()='Add New']");
-  readonly signContractButton = this.page.locator("button:has-text('Sign'), button:has-text('E-Sign')");
+  // F-005 fix: previous selector "button:has-text('Sign'), button:has-text('E-Sign')"
+  // had a `:has-text('Sign')` clause that also matched "Change to Signed" (substring
+  // "Sign"), causing strict-mode violations in SIGNED states where both buttons exist.
+  // Cross-state MCP inspection (2026-05-24 — UOWN WK13/SM13/happy SIGNED, KS3015 SIGNED,
+  // FUNDING/FUNDED) confirmed the e-sign trigger is always exact "E-Sign" in the
+  // customer summary actions menu — never "Sign Contract" or "Sign" alone in qa1/stg.
+  // We anchor on getByRole + exact name to avoid partial-text collisions.
+  readonly signContractButton = this.page.getByRole('button', { name: /^E[-\s]?Sign$/i });
   readonly fundButton = this.page.locator("button:has-text('Fund')");
   readonly customerSummary = this.page.locator(SELECTORS.customerSummary);
   readonly confirmSettlement = this.page.locator(SELECTORS.isConfirmedForSettlement);
@@ -34,9 +64,9 @@ export class OriginationCustomerPage extends OriginationBasePage {
   async expandActionsMenu(): Promise<void> {
     const caretIcon = this.page.locator('.fa-caret-left');
     if (await caretIcon.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await caretIcon.click();
-      // Wait for the actions menu to expand (caret changes direction)
-      await this.page.locator('.fa-caret-right').waitFor({ state: 'visible', timeout: 3_000 }).catch(() => {});
+      await caretIcon.click({ force: true });
+      await this.page.locator('.fa-caret-right').waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {});
+      await sleep(500);
     }
   }
 
@@ -47,8 +77,7 @@ export class OriginationCustomerPage extends OriginationBasePage {
   async clickActionButton(buttonText: string): Promise<void> {
     await this.expandActionsMenu();
     const btn = this.page.locator(`button:has-text("${buttonText}")`);
-    await btn.waitFor({ state: 'visible', timeout: 5_000 });
-    await btn.scrollIntoViewIfNeeded();
+    await btn.waitFor({ state: 'visible', timeout: 10_000 });
     await btn.click({ force: true });
     console.log(`[Customer] Clicked "${buttonText}"`);
     await this.waitForSpinner();
@@ -74,6 +103,9 @@ export class OriginationCustomerPage extends OriginationBasePage {
   ): Promise<{ status: string; matched: boolean }> {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       await this.page.reload({ waitUntil: 'domcontentloaded', timeout: 60_000 });
+      // F-005-remanescente (2026-05-24): reload can land on Merchant Login when
+      // the storageState JWT expired mid-suite. Recover before reading status.
+      await this.ensureAuthenticated();
       await this.waitForSpinner();
       await this.page.waitForLoadState('networkidle').catch(() => {});
 
@@ -151,64 +183,281 @@ export class OriginationCustomerPage extends OriginationBasePage {
    * Settles a lease via the Documents card UI modal.
    * Mirrors UownCustomerSteps.settleLeaseDocument() from the Java project.
    *
-   * Flow: Documents card → click lease row → modal opens →
+   * Flow: Documents card → click lease row's title button → modal opens →
    *       check #isConfirmedForSettlement → click primary submit button.
    *
    * Prerequisite: the lead must be in SIGNED status (e-sign completed).
    * For CI/CD tests that skip e-sign, use the settlement API instead.
+   *
+   * DOM contract (verified via LIVE qa1 inspection — lead 11839, 2026-05-24,
+   * headless chromium with fresh login + browser_evaluate):
+   *
+   *   <div class="card-body">                              ← parent (3 children)
+   *     <div class="...documentsItemHeader__VGRcq">Lease</div>  ← header LITERAL TEXT = "Lease"
+   *     <div>...filter/upload row...</div>                 ← (other child)
+   *     <div class="mb-5">                                 ← row body block
+   *       <div title="UOWN_22122_11839" class="...contractItem__5Th8A">
+   *         <button class="...contractItem__titleButton__hTVYk">UOWN_22122_11839</button>
+   *         <div class="...contractItem__subtitle1__F0J2_">LEASE</div>
+   *         <div class="...contractItem__subtitle2__wSL1B">SENT</div>
+   *         ...
+   *       </div>
+   *     </div>
+   *   </div>
+   *
+   * Fix history (pitfall #28):
+   *   - v1 (text-regex `/^UOWN_/`): raced React rendering on MN16/KS3015; reload loop bug
+   *   - v2 (hasText `/^Lease$/` on header): plausible but reported as failing in svc#530
+   *     run; root cause unclear — could have been an unrelated timing/auth issue. Header
+   *     literal IS "Lease" per live DOM.
+   *   - v3 (`/Documents/i`): WRONG. Header text is "Lease", not "Documents". The class
+   *     name contains the substring "documents" (`documentsItemHeader__`) but the text
+   *     content is "Lease". The /Documents/i regex matched 0 headers → 30s timeout on
+   *     ALL 13 CTs of svc#530 final run. (Confirmed via live qa1 evaluate.)
+   *   - v4 (current): match header by /Lease/i text (matches the real header content).
+   *     The xpath `following-sibling::*[1]` correctly walks to `.mb-5` row container
+   *     (the row body is NOT a direct child of card-body's first child — it is a sibling
+   *     of the header). Title-button anchored via stable `contractItem__titleButton__`
+   *     CSS-module class. Live validation: count=1, visible=true, tag=BUTTON,
+   *     text="UOWN_22122_11839".
    */
-  /** Click the lease document row via JS DOM traversal (fallback when locator is not visible) */
-  private async clickLeaseDocumentViaJs(): Promise<boolean> {
-    return this.page.evaluate(() => {
-      const cards = document.getElementsByClassName('card');
-      for (const card of cards) {
-        const header = (card.children[0] as HTMLElement)?.innerText || '';
-        if (!header.includes('Documents')) continue;
-        const cardBody = card.children[1]?.children[0];
-        if (!cardBody) continue;
-        const docsContainer = cardBody.children[2] || cardBody.children[1];
-        if (!docsContainer) continue;
-        for (const row of docsContainer.children) {
-          const type = (row.children[1] as HTMLElement)?.innerText || '';
-          if (type.trim().toUpperCase() === 'LEASE') {
-            (row.children[0] as HTMLElement).click();
-            return true;
-          }
-        }
+  /**
+   * Session recovery (F-005-remanescente v8, 2026-05-24).
+   *
+   * Root cause: Playwright's `auth.setup` writes `.auth/origination.json` ONCE
+   * before the suite starts. The JWT in `accountStore.userToken` has a fixed
+   * TTL of ~15 minutes in qa1 (verified: iat=07:48 → exp=08:03 on the file
+   * shipped with svc#530 v7). Tests that run more than ~15 min after
+   * `auth.setup` load with an EXPIRED JWT; `page.goto(customers/{pk})`
+   * succeeds at first (HTML loads, mobx stores hydrate from storageState)
+   * then the SPA fires its first authenticated XHR, receives 401, and
+   * route-guards push the user to `/` — losing the deep target.
+   *
+   * Why v7 failed in full-suite (probe-isolated passed 3/3 BUT runtime
+   * failed CT-11/12 with `Auth state did not hydrate — retrying login`):
+   *
+   *   1. The `*Store$` localStorage guard was TRIVIALLY TRUE because the
+   *      EXPIRED storageState contains ALL 9 stale stores (`accountStore`,
+   *      `merchantStore`, ..., `leadStore`). The guard never proved that
+   *      mobx had re-hydrated with a FRESH JWT — only that "some Store
+   *      key exists", which was already the case before login.
+   *
+   *   2. `targetUrl = null` (raw url was `/` because the SPA already
+   *      bounced before we read `page.url()`) → v7 relied on "SPA auto-
+   *      return" which works in isolation but not after 10 prior tests
+   *      have warmed up the SPA history and mobx routing state. In full-
+   *      suite the SPA lands on `/overview`, never on the lead.
+   *
+   * Evidence (probes _f-005-probe.mjs, _f-005-real.mjs, _f-005-test-flow.mjs,
+   * qa1 leads 11890/11891, 2026-05-24):
+   *
+   *   - .auth/origination.json JWT iat=09:29:23, exp=09:44:23 (15-min TTL)
+   *   - storageState contains 9 stale `*Store` keys (passes v7 guard
+   *     instantly even with NO auth performed)
+   *   - In test-flow probe, `page.url()` after `goto(customers/11890)`
+   *     showed `customers/11890` for ~800ms BEFORE the 401-bounce
+   *     redirected it to `/` — the bounce is async (post-XHR-401),
+   *     creating a race where `isLoginPage()` flips from false → true
+   *
+   * Precedent: `payment-arrangement.page.ts:84-110` already implements the
+   * working pattern for Servicing (stg JWT TTL ~9min): `goto(base)` →
+   * `loginPage.login` → `waitForLoadState('networkidle')` → `goto(deepUrl)`.
+   *
+   * v8 fix:
+   *
+   *   A. Pre-emptive JWT check: decode `accountStore.userToken` BEFORE doing
+   *      anything; if exp ≤ now + 60s, force re-auth without waiting for
+   *      the lazy SPA bounce.
+   *
+   *   B. Caller-supplied intended path: tests that call
+   *      `settleLeaseViaDocuments()` already navigated to
+   *      `/customers/{leadPk}`. We capture that path from `page.url()`
+   *      BEFORE any potential bounce and pass it to ensureAuthenticated.
+   *      No more `targetUrl = null` → no more reliance on SPA auto-return.
+   *
+   *   C. Re-auth flow aligned with Servicing: `goto(base)` → login →
+   *      `networkidle` → `goto(intendedPath)`. This is the SAME pattern
+   *      that `payment-arrangement.page.ts` ships with and that has been
+   *      stable across stg full-suite runs.
+   *
+   *   D. Real hydration guard: poll until JWT in `accountStore.userToken`
+   *      decodes with `exp > now + 60s` (proves a FRESH token, not stale).
+   *
+   * @param intendedPath  Path the caller wants to land on after auth
+   *                      (e.g. `/customers/11890`). If omitted, defaults to
+   *                      the current `page.url()` IF that URL is a deep
+   *                      target; otherwise no post-auth goto is issued.
+   */
+  async ensureAuthenticated(intendedPath?: string): Promise<void> {
+    const envName = process.env.ENV || 'sandbox';
+    const env = new ConfigEnvironment(envName);
+    const base = env.originationUrl.replace(/\/$/, '');
+    const creds = env.getCredentials('manager');
+    const loginPage = new LoginPage(this.page);
+
+    // Resolve the intended target ONCE, eagerly. If the caller did not pass
+    // one, snapshot the current URL — but only treat it as a target if it
+    // is a deep link (not `/` or `/login` or merchant-login bounce).
+    const rawUrl = this.page.url();
+    let candidateTarget = intendedPath ?? rawUrl;
+    try {
+      const u = new URL(candidateTarget, base);
+      const isBounce = /^\/(login)?$|merchant.?login/i.test(u.pathname);
+      candidateTarget = isBounce ? '' : `${base}${u.pathname}${u.search}`;
+    } catch { candidateTarget = ''; }
+
+    // ── A. Pre-emptive JWT check ────────────────────────────────────────
+    // Decode accountStore.userToken; if missing or exp ≤ now + 60s, force
+    // re-auth. This catches the case where the storageState shipped from
+    // auth.setup is already past its TTL by the time the Nth test runs.
+    const jwtState = await this.page.evaluate(() => {
+      try {
+        const raw = localStorage.getItem('accountStore');
+        if (!raw) return { present: false, expSec: 0 };
+        const tok = JSON.parse(raw).userToken;
+        if (!tok || typeof tok !== 'string') return { present: false, expSec: 0 };
+        const parts = tok.split('.');
+        if (parts.length < 2) return { present: false, expSec: 0 };
+        const pad = parts[1] + '='.repeat((4 - parts[1].length % 4) % 4);
+        const payload = JSON.parse(atob(pad.replace(/-/g, '+').replace(/_/g, '/')));
+        return { present: true, expSec: Number(payload?.exp ?? 0) };
+      } catch { return { present: false, expSec: 0 }; }
+    }).catch(() => ({ present: false, expSec: 0 }));
+
+    const nowSec = Math.floor(Date.now() / 1000);
+    const jwtFresh = jwtState.present && jwtState.expSec > nowSec + 60;
+    const onLoginNow = await loginPage.isLoginPage();
+
+    if (jwtFresh && !onLoginNow) {
+      // Auth is current AND we are not staring at a login form — nothing to do.
+      return;
+    }
+
+    if (!jwtFresh) {
+      console.log(
+        `[Origination.ensureAuthenticated] JWT pre-check failed in ${envName} ` +
+        `(present=${jwtState.present} expSec=${jwtState.expSec} nowSec=${nowSec}) — re-authenticating`,
+      );
+    } else {
+      console.log(`[Origination.ensureAuthenticated] Login page detected in ${envName} — re-authenticating`);
+    }
+
+    // ── C. Re-auth: settle the page first, THEN drive the login form ──
+    //
+    // Headless race avoidance: if the prior goto(leadUrl) is still in-flight
+    // (pending 401 bounce from the SPA's first authenticated XHR), an
+    // explicit goto(base) here races with the SPA's own router.push and
+    // gets ERR_ABORTED by Chromium. Instead, we wait for the page to
+    // settle (either networkidle OR the login form appears), then submit
+    // the login form wherever it lands.
+    //
+    // Mirrors the spirit of `payment-arrangement.page.ts:84-110` (Servicing)
+    // without the brittle "always goto(base)" assumption that breaks under
+    // concurrent SPA redirects.
+    await this.page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
+
+    // After settling, if we are still NOT on a login form, the SPA never
+    // bounced — but our JWT pre-check said the token is stale. Force the
+    // bounce by reloading; the SPA will detect the 401 on its next XHR
+    // and route us to the login form WITHOUT racing with an external goto.
+    if (!(await loginPage.isLoginPage())) {
+      console.log('[Origination.ensureAuthenticated] No login form after settle — reloading to trigger SPA bounce');
+      await this.page.reload({ waitUntil: 'domcontentloaded', timeout: 60_000 }).catch(() => {});
+      await this.page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
+      // Last-chance wait for the login form to render.
+      await this.page.locator('input[type="password"]').first()
+        .waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {});
+    }
+
+    await loginPage.login(creds.username, creds.password);
+    await this.page.waitForLoadState('networkidle').catch(() => {});
+
+    // ── D. Real hydration guard ─────────────────────────────────────────
+    // Poll until accountStore.userToken decodes to a JWT whose exp is
+    // strictly in the future (> now + 60s). This proves mobx wrote a
+    // FRESH token, not just that some `*Store` key exists in localStorage
+    // (the v7 guard was trivially satisfied by stale stores).
+    const hydrated = await this.page.waitForFunction(
+      (minExp) => {
+        if (document.querySelector('input[type="password"]')) return false;
+        try {
+          const raw = localStorage.getItem('accountStore');
+          if (!raw) return false;
+          const tok = JSON.parse(raw).userToken;
+          if (!tok || typeof tok !== 'string') return false;
+          const parts = tok.split('.');
+          if (parts.length < 2) return false;
+          const pad = parts[1] + '='.repeat((4 - parts[1].length % 4) % 4);
+          const payload = JSON.parse(atob(pad.replace(/-/g, '+').replace(/_/g, '/')));
+          return Number(payload?.exp ?? 0) > minExp;
+        } catch { return false; }
+      },
+      nowSec + 60,
+      { timeout: 30_000 },
+    ).then(() => true).catch(() => false);
+
+    if (!hydrated) {
+      // One retry on submit-flake. Re-fill credentials and re-poll.
+      console.log('[Origination.ensureAuthenticated] Fresh JWT not visible after login — retrying once');
+      if (await loginPage.isLoginPage()) {
+        await loginPage.login(creds.username, creds.password);
+        await this.page.waitForLoadState('networkidle').catch(() => {});
       }
-      return false;
-    });
+    }
+
+    // ── B. Navigate to the captured intended target ─────────────────────
+    if (candidateTarget) {
+      const currentPath = new URL(this.page.url()).pathname.replace(/\/$/, '');
+      const targetPath = new URL(candidateTarget).pathname.replace(/\/$/, '');
+      if (currentPath !== targetPath) {
+        console.log(`[Origination.ensureAuthenticated] Navigating to intended target ${targetPath}`);
+        await this.page.goto(candidateTarget, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+      }
+    } else {
+      console.log(`[Origination.ensureAuthenticated] No intended target captured; staying on ${new URL(this.page.url()).pathname}`);
+    }
+
+    await this.waitForSpinner();
   }
 
   async settleLeaseViaDocuments(): Promise<void> {
+    // Capture the intended deep-link BEFORE invoking ensureAuthenticated.
+    // If the SPA has already bounced us to '/' (async 401 redirect from a
+    // stale storageState), `page.url()` at the top of ensureAuthenticated
+    // would be `/` and we'd lose the lead target. The test ALREADY did a
+    // `page.goto(.../customers/{leadPk})` before calling this method, so
+    // the current pathname here is the intended target — even if the form
+    // is about to render on top of it.
+    const intendedPath = this.page.url();
+
+    // Guard against expired storageState (see ensureAuthenticated docstring).
+    await this.ensureAuthenticated(intendedPath);
+
     await this.waitForSpinner();
 
-    const leaseBtn = this.page.locator('button').filter({ hasText: /^UOWN_/ }).first();
-    let clicked = false;
+    // Scope to the Lease panel header. Live DOM (qa1 lead 11839) confirms the
+    // header literal text is "Lease" — NOT "Documents". The CSS-module class
+    // contains the substring "documents" (`documentsItemHeader__`) but the
+    // rendered text content is the single word "Lease".
+    const leaseHeader = this.page
+      .locator(SELECTORS.leasePanelHeader)
+      .filter({ hasText: /Lease/i })
+      .first();
 
-    for (let attempt = 1; attempt <= 10; attempt++) {
-      if (await leaseBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-        await leaseBtn.click();
-        clicked = true;
-        console.log(`[Settle] Clicked lease document button on attempt ${attempt}`);
-        break;
-      }
+    // The contract rows live in the next sibling block (.mb-5) of the Lease header.
+    // We click the title button of the first contract row (LEASE / LEASE_MOD).
+    const leaseTitleButton = leaseHeader
+      .locator('xpath=following-sibling::*[1]')
+      .locator(SELECTORS.leasePanelContractTitleButton)
+      .first();
 
-      clicked = await this.clickLeaseDocumentViaJs();
-      if (clicked) {
-        console.log(`[Settle] Clicked lease document via JS on attempt ${attempt}`);
-        break;
-      }
-
-      console.log(`[Settle] Documents not loaded yet, attempt ${attempt}/10`);
-      await sleep(3_000);
-      await this.page.reload();
-      await this.waitForSpinner();
-    }
-
-    if (!clicked) {
-      throw new Error('Unable to locate a lease document in the Documents card after retries');
-    }
+    // Single wait with a generous budget — MN16/KS3015 contracts can take
+    // longer to render. No reload loop: reloading mid-render restarts the
+    // race instead of resolving it.
+    await leaseTitleButton.waitFor({ state: 'visible', timeout: 30_000 });
+    await leaseTitleButton.scrollIntoViewIfNeeded();
+    await leaseTitleButton.click();
+    console.log('[Settle] Clicked lease document title button');
 
     // 2. Wait for the settlement modal
     const modal = this.page.locator('#customer-lease-modal, #customer-overview-modal');
@@ -747,6 +996,139 @@ export class OriginationCustomerPage extends OriginationBasePage {
       if (text) entries.push(text);
     }
     return entries;
+  }
+
+  /**
+   * Reads the Documents → Lease panel and returns every contract row (LEASE,
+   * LEASE_MOD, etc.) with its metadata. Used to assert the contract list after
+   * a lease modification (Task #521 LEASEMOD GowSign).
+   *
+   * DOM contract (CSS-module classes are prefix-matched — pitfall #26):
+   *   <div class="...documentsItemHeader__..."><div>Lease</div></div>
+   *   <div class="mb-5">
+   *     <div title="UOWN_69109_11276" class="...contractItem__...">
+   *       <button class="...contractItem__titleButton__...">UOWN_69109_11276</button>
+   *       <div class="...contractItem__subtitle1__...">LEASE_MOD</div>
+   *       <div class="...contractItem__subtitle2__...">SENT</div>
+   *       <div class="...contractItem__subtitle2__...">Term<br>Months - 13</div>
+   *       <div class="...contractItem__timeStamp__...">-</div>
+   *     </div>
+   *     ...
+   *   </div>
+   *
+   * The row container exposes the contract number via `title=""`, which we
+   * prefer over the button text because it is the data-bound source. Rows are
+   * returned in DOM order (LEASE_MOD typically precedes the original LEASE).
+   */
+  async getLeasePanelContracts(): Promise<LeasePanelContract[]> {
+    // Lease panel header — literal text is "Lease" (verified via LIVE qa1
+    // inspection 2026-05-24 lead 11839). The `documentsItemHeader__` class is a
+    // CSS-module name that contains the substring "documents", but the rendered
+    // text is "Lease". CSS-module prefix is stable across builds.
+    const leaseHeader = this.page
+      .locator(SELECTORS.leasePanelHeader)
+      .filter({ hasText: /Lease/i })
+      .first();
+
+    if (!await leaseHeader.isVisible({ timeout: 5_000 }).catch(() => false)) {
+      console.log('[LeasePanel] Lease header not visible — returning []');
+      return [];
+    }
+
+    // Contract rows live in the next sibling block (the .mb-5 container that
+    // immediately follows the header). Use the row container selector directly
+    // and pick those whose closest preceding documents-header is the Lease one.
+    // Simpler: rows that share the same .mb-5 ancestor as the next sibling of
+    // the Lease header.
+    const rows = leaseHeader
+      .locator('xpath=following-sibling::*[1]')
+      .locator(SELECTORS.leasePanelContractItem);
+
+    const count = await rows.count().catch(() => 0);
+    if (count === 0) {
+      console.log('[LeasePanel] No contract rows found under Lease header');
+      return [];
+    }
+
+    const contracts: LeasePanelContract[] = [];
+    for (let i = 0; i < count; i++) {
+      const row = rows.nth(i);
+
+      // Contract number — prefer the row's `title` attribute (data-bound).
+      // Fallback to the title button text content.
+      let contractNumber = (await row.getAttribute('title').catch(() => null)) ?? '';
+      if (!contractNumber) {
+        contractNumber = (
+          await row.locator(SELECTORS.leasePanelContractTitleButton).first().textContent().catch(() => '')
+        )?.trim() ?? '';
+      }
+
+      const contractType = ((
+        await row.locator(SELECTORS.leasePanelContractSubtitle1).first().textContent().catch(() => '')
+      ) ?? '').trim();
+
+      const subtitle2 = row.locator(SELECTORS.leasePanelContractSubtitle2);
+      const subtitle2Count = await subtitle2.count().catch(() => 0);
+
+      const status = subtitle2Count > 0
+        ? ((await subtitle2.nth(0).textContent().catch(() => '')) ?? '').trim()
+        : '';
+
+      let termMonths: number | null = null;
+      if (subtitle2Count > 1) {
+        // textContent collapses the <br> to whitespace — e.g. "Term Months - 13".
+        const termText = ((await subtitle2.nth(1).textContent().catch(() => '')) ?? '').trim();
+        const match = termText.match(/Term[\s\n]*Months\s*-\s*(\d+)/i);
+        if (match) {
+          termMonths = Number.parseInt(match[1], 10);
+        }
+      }
+
+      const timestamp = ((
+        await row.locator(SELECTORS.leasePanelContractTimestamp).first().textContent().catch(() => '')
+      ) ?? '').trim();
+
+      contracts.push({ contractNumber, contractType, status, termMonths, timestamp });
+    }
+
+    console.log(`[LeasePanel] Parsed ${contracts.length} contract(s): ${contracts.map(c => `${c.contractType}/${c.status}`).join(', ')}`);
+    return contracts;
+  }
+
+  /**
+   * F-005 cross-state helper. Returns the most recent SIGNED LEASE/LEASE_MOD row
+   * from the Documents → Lease panel, or `null` when no signed contract exists
+   * yet (lead pre-sign, env without GowSign doc generated, etc).
+   *
+   * Cross-state DOM contract verified via MCP (2026-05-24):
+   *
+   * | Estado                       | Header text | Row count | Has SIGNED row |
+   * |------------------------------|-------------|-----------|----------------|
+   * | UOWN WK13 SIGNED (NPD null)  | "Lease"     |    1      | yes            |
+   * | UOWN happy SIGNED (NPD pop)  | "Lease"     |    1      | yes            |
+   * | UOWN SM13 SIGNED             | "Lease"     |    1      | yes            |
+   * | KS3015 SIGNED                | "Lease"     |    1      | yes            |
+   * | FUNDING / FUNDED             | "Lease"     |   1-2     | yes (LEASE)    |
+   * | Lead pre-sign / no doc gen   | "Lease"     |    0      | no -> null     |
+   *
+   * Header text is invariant ("Lease") across UOWN and Kornerstone brands and
+   * across all states. Row count varies (0 when no doc generated yet, 1 for
+   * single-contract leads, 2+ when LEASE_MOD coexists with original LEASE).
+   * `[ENV-GAP]` cases (lead without doc generated) return `null` rather than
+   * throwing, so the calling test can skip or assert intentionally.
+   */
+  async getSignedLeaseContract(): Promise<LeasePanelContract | null> {
+    const contracts = await this.getLeasePanelContracts();
+    if (contracts.length === 0) {
+      console.log('[LeasePanel] No contract rows — lead has no doc generated yet');
+      return null;
+    }
+    const signed = contracts.find(c => c.status.toUpperCase() === 'SIGNED');
+    if (!signed) {
+      console.log(`[LeasePanel] No SIGNED row among ${contracts.length} contract(s)`);
+      return null;
+    }
+    return signed;
   }
 
   // ── Sales Rep / Merchant Info Panel ──────────────────────────────

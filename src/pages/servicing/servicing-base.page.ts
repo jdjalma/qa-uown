@@ -23,7 +23,7 @@ export class ServicingBasePage extends BasePage {
   // ACH fields
   readonly bankInstitute = this.page.locator('#bankingInstitute, [name="bankingInstitute"]');
   readonly bankAccountNumber = this.page.locator(SELECTORS.bankAccountNumber);
-  readonly routingNumber = this.page.locator(SELECTORS.bankRoutingNumber);
+  readonly routingNumber = this.page.getByRole('textbox', { name: /routing number/i });
 
   // CC fields
   readonly ccNumber = this.page.locator(SELECTORS.ccNumber);
@@ -115,28 +115,31 @@ export class ServicingBasePage extends BasePage {
 
     // If existing bank info is on file, the modal shows a radio + <select> dropdown
     // instead of manual bank fields. Use existing info when available.
-    const useExistingRadio = this.page.locator("input[type='radio'][value='existing']").first();
+    const useExistingRadio = this.page.getByRole('radio', { name: /existing bank/i });
     const bankOnFile = this.page.locator("text=Use existing bank information");
+    let usedExisting = false;
     if (await bankOnFile.isVisible({ timeout: 3_000 }).catch(() => false)) {
       if (await useExistingRadio.isVisible({ timeout: 1_000 }).catch(() => false)) {
-        await useExistingRadio.check().catch(() => {});
+        await useExistingRadio.check();
       }
-      // Submit stays disabled until a bank account is picked from the <select>.
-      // The dropdown defaults to "" (placeholder) even when a single account exists.
       const accountSelect = this.page.locator(SELECTORS.existingBankAccountSelect).first();
-      await accountSelect.waitFor({ state: 'visible', timeout: 5_000 });
-      const optionValues = await accountSelect.locator('option').evaluateAll(opts =>
-        opts.map(o => (o as HTMLOptionElement).value).filter(v => v !== ''),
-      );
-      if (optionValues.length === 0) {
-        throw new Error('[makeAchPayment] existing-bank-account dropdown has no real options');
+      const selectVisible = await accountSelect.waitFor({ state: 'visible', timeout: 5_000 }).then(() => true).catch(() => false);
+      if (selectVisible) {
+        const optionValues = await accountSelect.locator('option').evaluateAll(opts =>
+          opts.map(o => (o as HTMLOptionElement).value).filter(v => v !== ''),
+        );
+        if (optionValues.length > 0) {
+          await accountSelect.selectOption(optionValues[0]);
+          usedExisting = true;
+        }
       }
-      await accountSelect.selectOption(optionValues[0]);
-    } else {
-      // No existing bank info — fill manually
-      if (bankDetails.institute) {
-        await this.bankInstitute.fill(bankDetails.institute);
+    }
+    if (!usedExisting) {
+      const useOneTimeRadio = this.page.getByRole('radio', { name: /one-time/i });
+      if (await useOneTimeRadio.isVisible({ timeout: 1_000 }).catch(() => false)) {
+        await useOneTimeRadio.check();
       }
+      await this.bankInstitute.fill(bankDetails.institute || 'Test Bank');
       await this.bankAccountNumber.fill(bankDetails.accountNumber);
       await this.routingNumber.fill(bankDetails.routingNumber);
     }
@@ -155,6 +158,8 @@ export class ServicingBasePage extends BasePage {
     state: string;
     zip: string;
     allocationStrategy?: string;
+    firstName?: string;
+    lastName?: string;
   }): Promise<void> {
     await this.clickMakePayment();
     await this.selectPaymentType('Credit Card Payment');
@@ -165,7 +170,6 @@ export class ServicingBasePage extends BasePage {
     }
     await this.paymentAmountInput.fill(amount);
 
-    // Select allocation strategy if specified (Java: selectOptionByVisibleText on allocationStrategy dropdown)
     if (ccDetails.allocationStrategy) {
       const allocDropdown = this.page.locator(SELECTORS.allocationStrategyDropdown);
       if (await allocDropdown.isVisible({ timeout: 3_000 }).catch(() => false)) {
@@ -175,22 +179,52 @@ export class ServicingBasePage extends BasePage {
       }
     }
 
-    // If existing CC info is on file, the modal shows a radio + dropdown
-    // instead of manual CC fields. Use existing info when available.
-    const ccOnFile = this.page.locator("text=Use existing card information");
-    if (await ccOnFile.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      // Existing card info is pre-selected — proceed to submit
-    } else {
-      // No existing card info — fill manually
-      await this.ccNumber.fill(ccDetails.cardNumber);
+    const useOneTimeRadio = this.page.getByRole('radio', { name: /one-time/i });
+    if (await useOneTimeRadio.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await useOneTimeRadio.check();
+      await this.ccNumber.waitFor({ state: 'visible', timeout: 5_000 });
+    }
 
-      // React Select dropdowns — type + Enter to commit selection
+    // One-time form may require cardholder name (stg+ portals)
+    if (ccDetails.firstName) {
+      const firstNameInput = this.page.getByPlaceholder('First Name');
+      if (await firstNameInput.isVisible({ timeout: 2_000 }).catch(() => false)) {
+        await firstNameInput.fill(ccDetails.firstName);
+      }
+    }
+    if (ccDetails.lastName) {
+      const lastNameInput = this.page.getByPlaceholder('Last Name');
+      if (await lastNameInput.isVisible({ timeout: 1_000 }).catch(() => false)) {
+        await lastNameInput.fill(ccDetails.lastName);
+      }
+    }
+
+    await this.ccNumber.fill(ccDetails.cardNumber);
+
+    // Newer portals use a single "Expires On" field; older have separate month/year
+    const expiresOn = this.page.getByPlaceholder('Expires On');
+    if (await expiresOn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      const year = ccDetails.expYear.length === 2 ? `20${ccDetails.expYear}` : ccDetails.expYear;
+      await expiresOn.fill(`${year}-${ccDetails.expMonth}`);
+    } else {
       await this.ccExpMonth.fill(ccDetails.expMonth);
       await this.ccExpMonth.press('Enter');
       await this.ccExpYear.fill(ccDetails.expYear);
       await this.ccExpYear.press('Enter');
+    }
 
+    const securityCode = this.page.getByPlaceholder('Card Security Code');
+    if (await securityCode.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      await securityCode.fill(ccDetails.csc);
+    } else {
       await this.ccCsc.fill(ccDetails.csc);
+    }
+
+    // Check "Use current address" if available; otherwise fill manually
+    const useCurrentAddr = this.page.getByRole('checkbox', { name: /use current address/i });
+    if (await useCurrentAddr.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      await useCurrentAddr.check();
+    } else {
       await this.billingAddress.fill(ccDetails.address);
       await this.billingCity.fill(ccDetails.city);
       await this.billingState.fill(ccDetails.state);
@@ -201,28 +235,113 @@ export class ServicingBasePage extends BasePage {
   }
 
   /**
+   * Fills the Payment Arrangement section of the Make Payment modal: opens the
+   * modal, checks #paymentArrangement, fills Start/End dates, selects Frequency,
+   * optionally selects the Arrangement Type, and waits for the installment
+   * schedule to auto-populate. Leaves the modal open WITHOUT selecting a payment
+   * type or submitting — callers (makeCcPaymentArrangement / makeAchPaymentArrangement)
+   * finish the type-specific fields and submit.
+   *
+   * DOM-confirmed (dev3 acct 138, 2026-06-01):
+   *   - #totalPaymentAmount is editable and auto-populates from the schedule.
+   *   - Frequency dropdown options: Weekly | BiWeekly | Monthly | SemiMonthly,
+   *     so "Weekly" matched as a substring also matches "BiWeekly" — use exact regex.
+   *   - "Payment Arrangement Type" IS an explicit React Select (label[for=paymentArrangementType])
+   *     with options NORMAL | SETTLEMENT. It is NOT purely backend-derived.
+   */
+  private async fillArrangementSchedule(options: {
+    startDate: string;  // MM/DD/YYYY
+    endDate: string;    // MM/DD/YYYY
+    frequency: 'Weekly' | 'BiWeekly' | 'Monthly' | 'SemiMonthly';
+    /** Optional explicit Arrangement Type ('NORMAL' | 'SETTLEMENT'). When omitted, the UI default is kept. */
+    arrangementType?: 'NORMAL' | 'SETTLEMENT';
+    /** Optional fixed total that overrides the auto-populated #totalPaymentAmount. */
+    totalPaymentAmount?: string;
+  }): Promise<void> {
+    await this.clickMakePayment();
+
+    // Enable Payment Arrangement mode (click if not already checked)
+    const arrangementCheckbox = this.page.locator(SELECTORS.paymentArrangementCheckbox);
+    if (!await arrangementCheckbox.isChecked({ timeout: 3_000 }).catch(() => false)) {
+      await arrangementCheckbox.click();
+    }
+
+    // Fill Start / End dates using the native HTMLInputElement value setter.
+    // These are date-picker inputs (type=search) that ignore pressSequentially —
+    // React's synthetic onChange only fires when the native setter dispatches the event.
+    // Pattern from application-wizard.page.ts (same DatePicker component).
+    const startDateLocator = this.page.locator(SELECTORS.arrangementStartDateInput);
+    await startDateLocator.waitFor({ state: 'visible', timeout: 5_000 });
+    await this.page.evaluate(({ sel, val }) => {
+      const el = document.querySelector(sel) as HTMLInputElement | null;
+      if (!el) return;
+      const nativeSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+      if (nativeSetter) nativeSetter.call(el, val);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      el.blur();
+    }, { sel: SELECTORS.arrangementStartDateInput, val: options.startDate });
+
+    const endDateLocator = this.page.locator(SELECTORS.arrangementEndDateInput);
+    await endDateLocator.waitFor({ state: 'visible', timeout: 3_000 });
+    await this.page.evaluate(({ sel, val }) => {
+      const el = document.querySelector(sel) as HTMLInputElement | null;
+      if (!el) return;
+      const nativeSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+      if (nativeSetter) nativeSetter.call(el, val);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      el.blur();
+    }, { sel: SELECTORS.arrangementEndDateInput, val: options.endDate });
+
+    // Select Payment Frequency via React Select (click the container div, same pattern as selectPaymentType).
+    // EXACT regex match — "Weekly" as substring also matches "BiWeekly" (DOM-confirmed).
+    await this.page.locator(SELECTORS.arrangementPaymentFrequencyDropdown).click();
+    await this.page.locator(SELECTORS.filterOptionWithRole)
+      .filter({ hasText: new RegExp(`^${options.frequency}$`) })
+      .first()
+      .click();
+
+    // Optionally select the explicit Arrangement Type (NORMAL/SETTLEMENT) React Select.
+    if (options.arrangementType) {
+      await this.page.locator(SELECTORS.arrangementTypeDropdown).click();
+      await this.page.locator(SELECTORS.filterOptionWithRole)
+        .filter({ hasText: new RegExp(`^${options.arrangementType}$`) })
+        .first()
+        .click();
+    }
+
+    // Wait for installment table to auto-populate (at least 1 row)
+    await this.page.locator(SELECTORS.arrangementInstallmentAmountInput(0))
+      .waitFor({ state: 'visible', timeout: 10_000 });
+
+    // Optionally override the auto-populated total.
+    if (options.totalPaymentAmount) {
+      const totalInput = this.page.locator(SELECTORS.totalPaymentAmountInput);
+      await totalInput.fill(options.totalPaymentAmount);
+      await totalInput.press('Tab');
+    }
+  }
+
+  /**
    * Creates a Credit Card Payment Arrangement via the UI modal.
    *
-   * The Servicing Portal UI does NOT expose an explicit arrangementType (SETTLEMENT/NORMAL) field.
-   * The backend determines arrangement_type automatically based on the payment covering the account balance:
-   *   - Payment arrangement amount >= account balance → SETTLEMENT
-   *   - Payment arrangement amount < account balance  → NORMAL
-   *
-   * Confirmed via manual testing 2026-03-17:
-   *   - Account 4453 (small balance ~$100): arrangement → SETTLEMENT
-   *   - Account 4438 (balance ~$2,566): partial payment → NORMAL
-   *
    * The installment schedule auto-populates from Start Date + End Date + Frequency.
-   * CC arrangements are synchronous — they complete (SUCCESS) within the same request.
-   * Requires a card on file (uses existing card automatically).
-   * By default the modal opens with Payment Type = "ACH Payment"; this method doesn't change it.
-   * To test CC, call selectPaymentType('Credit Card Payment') before submitting,
-   * or pass a `paymentType` option.
+   * CC arrangements are synchronous — they complete (status=SUCCESS) within the same request,
+   * and the linked CC SALE transactions are created with payment_arrangement_pk set
+   * (DOM/DB-confirmed dev3: arrangement pk72 acct141 → SALE APPROVED, payment_arrangement_pk=72).
+   * Requires a card on file (uses existing card automatically) unless ccDetails is provided.
+   * The modal opens with Payment Type = "ACH Payment"; this method switches it to the
+   * target payment type (default 'Credit Card Payment') after the schedule is built.
    */
   async makeCcPaymentArrangement(options: {
     startDate: string;  // MM/DD/YYYY
     endDate: string;    // MM/DD/YYYY
     frequency: 'Weekly' | 'BiWeekly' | 'Monthly' | 'SemiMonthly';
+    /** Optional explicit Arrangement Type ('NORMAL' | 'SETTLEMENT'). When omitted, the UI default is kept. */
+    arrangementType?: 'NORMAL' | 'SETTLEMENT';
+    /** Optional fixed total that overrides the auto-populated #totalPaymentAmount. */
+    totalPaymentAmount?: string;
     /** Payment type to select. Default: 'Credit Card Payment'. The modal default is 'ACH Payment'. */
     paymentType?: string;
     /** Optional CC details for manual card entry instead of card on file. */
@@ -237,36 +356,13 @@ export class ServicingBasePage extends BasePage {
       lastName: string;
     };
   }): Promise<void> {
-    await this.clickMakePayment();
-
-    // Enable Payment Arrangement mode (click if not already checked)
-    const arrangementCheckbox = this.page.locator(SELECTORS.paymentArrangementCheckbox);
-    if (!await arrangementCheckbox.isChecked({ timeout: 3_000 }).catch(() => false)) {
-      await arrangementCheckbox.click();
-    }
-
-    // Fill Start / End dates — wait for startDate to be visible after checkbox enables the section.
-    // Use pressSequentially + Tab to trigger React's onChange/onBlur events reliably.
-    const startDateLocator = this.page.locator(SELECTORS.arrangementStartDateInput);
-    await startDateLocator.waitFor({ state: 'visible', timeout: 5_000 });
-    await startDateLocator.click();
-    await startDateLocator.pressSequentially(options.startDate, { delay: 50 });
-    await startDateLocator.press('Tab');
-    const endDateLocator = this.page.locator(SELECTORS.arrangementEndDateInput);
-    await endDateLocator.click();
-    await endDateLocator.pressSequentially(options.endDate, { delay: 50 });
-    await endDateLocator.press('Tab');
-
-    // Select Payment Frequency via React Select (click the container div, same pattern as selectPaymentType)
-    await this.page.locator(SELECTORS.arrangementPaymentFrequencyDropdown).click();
-    await this.page.locator(SELECTORS.filterOptionWithRole)
-      .filter({ hasText: options.frequency })
-      .first()
-      .click();
-
-    // Wait for installment table to auto-populate (at least 1 row)
-    await this.page.locator(SELECTORS.arrangementInstallmentAmountInput(0))
-      .waitFor({ state: 'visible', timeout: 10_000 });
+    await this.fillArrangementSchedule({
+      startDate: options.startDate,
+      endDate: options.endDate,
+      frequency: options.frequency,
+      arrangementType: options.arrangementType,
+      totalPaymentAmount: options.totalPaymentAmount,
+    });
 
     // Select payment type (default: Credit Card Payment; modal default is ACH Payment)
     const targetPaymentType = options.paymentType ?? 'Credit Card Payment';
@@ -297,6 +393,84 @@ export class ServicingBasePage extends BasePage {
       const useCurrentAddr = this.page.getByRole('checkbox', { name: 'Use current address' });
       if (await useCurrentAddr.isVisible({ timeout: 3_000 }).catch(() => false)) {
         await useCurrentAddr.check();
+      }
+    }
+
+    // Submit and wait for spinner to clear
+    await this.clickAndWaitForSpinner(this.submitPaymentButton);
+  }
+
+  /**
+   * Creates an ACH Payment Arrangement via the UI modal.
+   *
+   * The installment schedule auto-populates from Start Date + End Date + Frequency.
+   * ACH arrangements are inserted synchronously with arrangement status=NOT_STARTED
+   * (DB-confirmed dev3: arrangement pk77 acct138 → status=NOT_STARTED, payment_type=ACH).
+   * The linked uown_sv_achpayment row(s) are created with payment_arrangement_pk set;
+   * the row starts PENDING and the daily ACH sweep later promotes it to PICKED_TO_SEND
+   * (same sweep timing as one-time ACH payments).
+   *
+   * When the account has a bank on file (funded accounts do), the modal defaults to
+   * "Use existing bank information" with a select[name="bankAccountPk"] — this method
+   * keeps that default. Pass `bankDetails` to use one-time bank info instead.
+   * The modal opens with Payment Type already = "ACH Payment", so no type switch is needed.
+   */
+  async makeAchPaymentArrangement(options: {
+    startDate: string;  // MM/DD/YYYY
+    endDate: string;    // MM/DD/YYYY
+    frequency: 'Weekly' | 'BiWeekly' | 'Monthly' | 'SemiMonthly';
+    /** Optional explicit Arrangement Type ('NORMAL' | 'SETTLEMENT'). When omitted, the UI default is kept. */
+    arrangementType?: 'NORMAL' | 'SETTLEMENT';
+    /** Optional fixed total that overrides the auto-populated #totalPaymentAmount. */
+    totalPaymentAmount?: string;
+    /** Optional one-time bank details. When omitted, uses the bank on file (existing). */
+    bankDetails?: {
+      institute?: string;
+      accountNumber: string;
+      routingNumber: string;
+    };
+  }): Promise<void> {
+    await this.fillArrangementSchedule({
+      startDate: options.startDate,
+      endDate: options.endDate,
+      frequency: options.frequency,
+      arrangementType: options.arrangementType,
+      totalPaymentAmount: options.totalPaymentAmount,
+    });
+
+    // Modal default payment type is "ACH Payment" — ensure it is selected (idempotent).
+    await this.selectPaymentType('ACH Payment');
+
+    // Bank selection: prefer existing bank on file (funded accounts have one).
+    const useExistingRadio = this.page.getByRole('radio', { name: /use existing bank/i });
+    let usedExisting = false;
+    if (!options.bankDetails && await useExistingRadio.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      if (!await useExistingRadio.isChecked().catch(() => false)) {
+        await useExistingRadio.check();
+      }
+      const accountSelect = this.page.locator(SELECTORS.existingBankAccountSelect).first();
+      if (await accountSelect.isVisible({ timeout: 5_000 }).catch(() => false)) {
+        const optionValues = await accountSelect.locator('option').evaluateAll(opts =>
+          opts.map(o => (o as HTMLOptionElement).value).filter(v => v !== ''),
+        );
+        if (optionValues.length > 0) {
+          await accountSelect.selectOption(optionValues[0]);
+          usedExisting = true;
+        }
+      }
+    }
+
+    // Fall back to one-time bank details when no bank on file or bankDetails provided.
+    if (!usedExisting) {
+      const oneTimeRadio = this.page.getByRole('radio', { name: /one-time bank/i });
+      if (await oneTimeRadio.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        await oneTimeRadio.click();
+      }
+      const details = options.bankDetails;
+      if (details) {
+        await this.bankInstitute.fill(details.institute || 'Test Bank');
+        await this.bankAccountNumber.fill(details.accountNumber);
+        await this.routingNumber.fill(details.routingNumber);
       }
     }
 

@@ -1,0 +1,677 @@
+- generic [ref=e1]:
+  - generic [ref=e640]:
+    - navigation [ref=e642]:
+      - generic [ref=e644]:
+        - img [ref=e646]
+        - img "company-logo" [ref=e647]
+      - list [ref=e649]:
+        - listitem [ref=e650]:
+          - link "Servicing" [ref=e651] [cursor=pointer]:
+            - /url: "#"
+        - listitem [ref=e652]:
+          - link "History" [ref=e653] [cursor=pointer]:
+            - /url: "#"
+      - generic [ref=e656]:
+        - 'link "Servicing Account #" [ref=e659] [cursor=pointer]':
+          - /url: "#"
+          - generic [ref=e660]:
+            - generic [ref=e661]: "Servicing Account #"
+            - img [ref=e662]
+        - 'searchbox "Quick search by Servicing Account #" [ref=e665]'
+        - img [ref=e667]
+      - link "manager" [ref=e671] [cursor=pointer]:
+        - /url: "#"
+        - img [ref=e672]
+        - generic [ref=e674]: manager
+        - img [ref=e675]
+    - generic [ref=e677]:
+      - generic [ref=e678]:
+        - img [ref=e680] [cursor=pointer]
+        - generic [ref=e683] [cursor=pointer]:
+          - img [ref=e684]
+          - generic [ref=e686]: Servicing
+        - generic [ref=e688] [cursor=pointer]:
+          - img [ref=e689]
+          - generic [ref=e691]: Transaction
+        - generic [ref=e693] [cursor=pointer]:
+          - img [ref=e694]
+          - generic [ref=e696]: Documents
+        - generic [ref=e698] [cursor=pointer]:
+          - img [ref=e699]
+          - generic [ref=e701]: Print
+      - generic [ref=e702]:
+        - generic [ref=e703]:
+          - generic [ref=e705]:
+            - generic [ref=e706]:
+              - generic [ref=e708]:
+                - generic [ref=e709]: "Account #"
+                - generic [ref=e710]: "4452"
+              - generic [ref=e713]:
+                - generic [ref=e714]: Ref Account
+                - link "L10907" [ref=e715] [cursor=pointer]:
+                  - /url: https://origination-qa1.uownleasing.com/customers/10907
+              - generic [ref=e718]:
+                - generic [ref=e719]: Borrower
+                - generic [ref=e720]: Test Do
+              - generic [ref=e723]:
+                - generic [ref=e724]: Status
+                - generic [ref=e725]: ACTIVE
+              - generic [ref=e728]:
+                - generic [ref=e729]: New Status
+                - combobox [ref=e730]:
+                  - option "ACTIVE" [selected]
+                  - option "PAID_OUT"
+                  - option "PAID_OUT_EARLY"
+                  - option "PAID_OUT_EARLY_EPO"
+                  - option "CHARGED_OFF"
+                  - option "CLOSED"
+                  - option "CANCELLED"
+                  - option "SOLD"
+                  - option "SETTLED_IN_FULL"
+              - generic [ref=e733]:
+                - generic [ref=e734]: Past Due
+                - generic [ref=e735]: $409.24
+              - generic [ref=e738]:
+                - generic [ref=e739]: Past Due Date
+                - generic [ref=e740]: 2026-04-13
+              - generic [ref=e742]:
+                - generic [ref=e743]: Days Past Due
+                - generic [ref=e744]: "58"
+              - generic [ref=e747]:
+                - generic [ref=e748]: Merchant
+                - generic [ref=e749]: terraceFinance
+              - generic [ref=e751]:
+                - generic [ref=e752]: Location
+                - generic [ref=e753]: terraceFinance
+              - generic [ref=e756]:
+                - generic [ref=e757]: Items Purchased
+                - generic [ref=e758] [cursor=pointer]: 2 Items
+              - generic [ref=e761]:
+                - generic [ref=e762]: Program Type
+                - generic [ref=e763]: 13 months
+            - img [ref=e765] [cursor=pointer]
+            - img [ref=e768] [cursor=pointer]
+            - img [ref=e771] [cursor=pointer]
+          - generic [ref=e773]:
+            - generic [ref=e779]: "Alert: Credit Card Auto-pay status changed to false because Rating Letter changed to PSee all alerts"
+            - generic [ref=e781]:
+              - img [ref=e782]
+              - generic [ref=e784]: Hide Alert
+        - generic [ref=e785]:
+          - generic [ref=e786]:
+            - generic [ref=e787]:
+              - generic [ref=e790]:
+                - generic [ref=e792]:
+                  - generic [ref=e793]:
+                    - generic [ref=e794]: Primary Applicant
+                    - img [ref=e797] [cursor=pointer]
+                  - img [ref=e801] [cursor=pointer]
+                - generic [ref=e805]:
+                  - generic [ref=e806]:
+                    - generic [ref=e808]:
+                      - generic [ref=e810]: First Name
+                      - generic [ref=e812]: Test
+                    - generic [ref=e814]:
+                      - generic [ref=e816]: Last Name
+                      - generic [ref=e818]: Do
+                  - generic [ref=e819]:
+                    - generic [ref=e821]:
+                      - generic [ref=e823]: Date of Birth
+                      - generic [ref=e825]: 01/01/1984
+                    - generic [ref=e827]:
+                      - generic [ref=e829]: SSN
+                      - generic [ref=e831]: 109-28-6127
+                  - generic [ref=e832]:
+                    - generic [ref=e834]:
+                      - generic [ref=e836]: "License #"
+                      - generic [ref=e838]: "-"
+                    - generic [ref=e840]:
+                      - generic [ref=e842]: License State
+                      - generic [ref=e844]: "-"
+                  - generic [ref=e847]:
+                    - generic [ref=e849]: License Exp.
+                    - generic [ref=e851]: "-"
+              - generic [ref=e854]:
+                - generic [ref=e856]:
+                  - generic [ref=e857]:
+                    - generic [ref=e858]: Primary Contact
+                    - img [ref=e861] [cursor=pointer]
+                  - img [ref=e865] [cursor=pointer]
+                - generic [ref=e869]:
+                  - generic [ref=e872]:
+                    - generic [ref=e874]: Address Line 1
+                    - generic [ref=e876]: 123 Main St
+                  - generic [ref=e879]:
+                    - generic [ref=e881]: Address Line 2
+                    - generic [ref=e883]: "-"
+                  - generic [ref=e884]:
+                    - generic [ref=e886]:
+                      - generic [ref=e888]: City
+                      - generic [ref=e890]: New York
+                    - generic [ref=e892]:
+                      - generic [ref=e894]: State
+                      - generic [ref=e896]: NY
+                    - generic [ref=e898]:
+                      - generic [ref=e900]: ZIP
+                      - generic [ref=e902]: "10001"
+                  - generic [ref=e903]:
+                    - generic [ref=e905]:
+                      - generic [ref=e907]: Primary Email
+                      - generic [ref=e909]: fintechgroup777+1077600_159410@gmail.com
+                    - generic [ref=e912]:
+                      - checkbox "do not email" [disabled] [ref=e913]
+                      - text: do not email
+                  - separator [ref=e914]
+                  - generic [ref=e915]:
+                    - generic [ref=e917]:
+                      - generic [ref=e919]: Mobile Phone
+                      - generic [ref=e921]: (980) 308-3053
+                    - generic [ref=e922]:
+                      - generic [ref=e923]:
+                        - generic [ref=e926]:
+                          - checkbox "do not call" [disabled] [ref=e927]
+                          - text: do not call
+                        - generic [ref=e930]:
+                          - checkbox "do not text" [disabled] [ref=e931]
+                          - text: do not text
+                      - generic [ref=e935]:
+                        - checkbox "opt out AI" [disabled] [ref=e936]
+                        - text: opt out AI
+                  - separator [ref=e937]
+                  - generic [ref=e939]:
+                    - generic [ref=e942]:
+                      - generic [ref=e944]: Preferred communication channel
+                      - generic [ref=e946]:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: "-- Select --"
+                            - generic:
+                              - generic:
+                                - img
+                    - generic [ref=e949]:
+                      - generic [ref=e951]: Preferred language
+                      - generic [ref=e953]:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: ENGLISH
+                            - generic:
+                              - generic:
+                                - img
+              - generic [ref=e958]:
+                - generic [ref=e959]:
+                  - generic [ref=e960]: Employment
+                  - img [ref=e963] [cursor=pointer]
+                - img [ref=e967] [cursor=pointer]
+              - generic [ref=e973]:
+                - generic [ref=e974]:
+                  - generic [ref=e975]: Third Party Information
+                  - img [ref=e978] [cursor=pointer]
+                - img [ref=e981] [cursor=pointer]
+            - generic [ref=e983]:
+              - generic [ref=e987]:
+                - generic [ref=e989]:
+                  - generic [ref=e991]:
+                    - generic [ref=e992]: Bank Account
+                    - generic [ref=e994]:
+                      - button "Add Account" [ref=e995] [cursor=pointer]:
+                        - img [ref=e996]
+                        - text: Add Account
+                      - button "View All" [ref=e998] [cursor=pointer]
+                  - img [ref=e1000] [cursor=pointer]
+                - generic [ref=e1004]:
+                  - generic [ref=e1008]:
+                    - generic [ref=e1010]: Type
+                    - generic [ref=e1012]: CHECKING
+                  - generic [ref=e1016]:
+                    - generic [ref=e1018]: Routing Number
+                    - generic [ref=e1020]: "-"
+                  - generic [ref=e1024]:
+                    - generic [ref=e1026]: Account Number
+                    - generic [ref=e1028]: "-"
+                  - generic [ref=e1032]:
+                    - generic [ref=e1034]: Set as default payment?
+                    - generic [ref=e1036]: "No"
+              - generic [ref=e1040]:
+                - generic [ref=e1042]:
+                  - generic [ref=e1044]:
+                    - generic [ref=e1045]: Credit Card
+                    - generic [ref=e1048]:
+                      - button "Add Card" [ref=e1049] [cursor=pointer]:
+                        - img [ref=e1050]
+                        - text: Add Card
+                      - button "View All" [ref=e1052] [cursor=pointer]
+                  - img [ref=e1054] [cursor=pointer]
+                - generic [ref=e1058]:
+                  - generic [ref=e1060]:
+                    - generic [ref=e1062]:
+                      - generic [ref=e1064]: Cardholder's First Name
+                      - generic [ref=e1066]: Test
+                    - generic [ref=e1068]:
+                      - generic [ref=e1070]: Cardholder's Last Name
+                      - generic [ref=e1072]: Do
+                  - generic [ref=e1074]:
+                    - generic [ref=e1076]:
+                      - generic [ref=e1078]: Card Number
+                      - generic [ref=e1080]: "************2229"
+                    - generic [ref=e1082]:
+                      - generic [ref=e1084]: CVC
+                      - generic [ref=e1086]: "-"
+                  - generic [ref=e1090]:
+                    - generic [ref=e1092]: Expiration Date
+                    - generic [ref=e1094]: 09/2028
+                  - generic [ref=e1098]:
+                    - generic [ref=e1100]: Set as default payment?
+                    - generic [ref=e1102]: "Yes"
+                  - generic [ref=e1108]:
+                    - generic [ref=e1110]: Is Valid Card?
+                    - generic [ref=e1112]: "Yes"
+              - generic [ref=e1115]:
+                - generic [ref=e1117]:
+                  - generic [ref=e1118]:
+                    - generic [ref=e1119]: Credit Card Peek Consent
+                    - img [ref=e1122] [cursor=pointer]
+                  - img [ref=e1125] [cursor=pointer]
+                - generic [ref=e1128]:
+                  - generic [ref=e1131]:
+                    - generic [ref=e1132]: CC Peek Consent
+                    - generic [ref=e1133]:
+                      - switch [checked] [disabled] [ref=e1137]
+                      - generic [ref=e1138]: "Yes"
+                  - generic [ref=e1141]:
+                    - generic [ref=e1142]: Consent Date
+                    - generic [ref=e1144]: 03/16/2026
+            - generic [ref=e1145]:
+              - generic [ref=e1148]:
+                - generic [ref=e1150]:
+                  - generic [ref=e1151]:
+                    - generic [ref=e1152]: Servicing Information
+                    - img [ref=e1155] [cursor=pointer]
+                  - img [ref=e1159] [cursor=pointer]
+                - generic [ref=e1163]:
+                  - generic [ref=e1164]:
+                    - generic [ref=e1165]:
+                      - heading "Account & Contract Overview" [level=3] [ref=e1166]
+                      - generic [ref=e1167]:
+                        - generic [ref=e1168]:
+                          - generic [ref=e1169]: Activation Date
+                          - generic [ref=e1170]: 03/16/2026
+                        - generic [ref=e1171]:
+                          - generic [ref=e1173] [cursor=pointer]:
+                            - text: Total Contract Amount
+                            - img [ref=e1174]
+                          - generic [ref=e1176]: $2,701.15
+                        - generic [ref=e1177]:
+                          - generic [ref=e1179] [cursor=pointer]:
+                            - text: Contract Balance
+                            - img [ref=e1180]
+                          - generic [ref=e1182]: $2,500.15
+                        - generic [ref=e1183]:
+                          - generic [ref=e1185] [cursor=pointer]:
+                            - text: Settlement Amount
+                            - img [ref=e1186]
+                          - generic [ref=e1188]: $2,500.15
+                        - generic [ref=e1189]:
+                          - generic [ref=e1190]: Lending Category Type
+                          - generic [ref=e1191]: LTO
+                        - generic [ref=e1192]:
+                          - generic [ref=e1193]: Frequency
+                          - generic [ref=e1197]: Weekly
+                        - generic [ref=e1198]:
+                          - generic [ref=e1199]: Payment
+                          - generic [ref=e1200]: $47.52
+                        - generic [ref=e1201]:
+                          - generic [ref=e1202]: Cost/Cash Price
+                          - generic [ref=e1203]: $1,145.99
+                        - generic [ref=e1204]:
+                          - generic [ref=e1205]: Tax Rate (%)
+                          - generic [ref=e1206]: "8.88"
+                        - generic [ref=e1207]:
+                          - generic [ref=e1208]: Processing Fee
+                          - generic [ref=e1209]: $40.00
+                        - generic [ref=e1210]:
+                          - generic [ref=e1211]: Buyout Fee
+                          - generic [ref=e1212]: $0.00
+                        - generic [ref=e1213]:
+                          - generic [ref=e1214]: Rating Letter
+                          - generic [ref=e1218]: P - Payment Arrangement
+                    - generic [ref=e1219]:
+                      - heading "Payment Status & History" [level=3] [ref=e1220]
+                      - generic [ref=e1221]:
+                        - generic [ref=e1222]:
+                          - generic [ref=e1223]: Last Pay Date
+                          - generic [ref=e1224]: 04/22/2026
+                        - generic [ref=e1225]:
+                          - generic [ref=e1226]: Last Pay Amount
+                          - generic [ref=e1227]: $47.52
+                        - generic [ref=e1228]:
+                          - generic [ref=e1229]: Payment Count Up to Date
+                          - generic [ref=e1230]: "3"
+                        - generic [ref=e1231]:
+                          - generic [ref=e1232]: Payments Remaining
+                          - generic [ref=e1233]: "53"
+                        - generic [ref=e1234]:
+                          - generic [ref=e1235]: Payment Dollars Up to Date
+                          - generic [ref=e1236]: $201.00
+                        - generic [ref=e1237]:
+                          - generic [ref=e1238]: Total Payment without Fees
+                          - generic [ref=e1239]: $201.00
+                        - generic [ref=e1240]:
+                          - generic [ref=e1241]: Overpayment Amount
+                          - generic [ref=e1242]: $0.00
+                        - generic [ref=e1243]:
+                          - generic [ref=e1244]: Remaining Approval Amount
+                          - generic [ref=e1248]: "-"
+                  - generic [ref=e1249]:
+                    - generic [ref=e1250]:
+                      - heading "Delinquency & Servicing Actions" [level=3] [ref=e1251]
+                      - generic [ref=e1252]:
+                        - generic [ref=e1253]:
+                          - generic [ref=e1254]: Amount Past Due
+                          - generic [ref=e1255]: $409.24
+                        - generic [ref=e1256]:
+                          - generic [ref=e1257]: "# of Due Date Moved"
+                          - generic [ref=e1258]: "0"
+                        - generic [ref=e1259]:
+                          - generic [ref=e1260]: Autopay
+                          - generic [ref=e1263]: NONE
+                        - generic [ref=e1264]:
+                          - generic [ref=e1265]: Date of Next Call
+                          - generic [ref=e1269]: "-"
+                        - generic [ref=e1270]:
+                          - generic [ref=e1271]: Is Eligible for Reapproval
+                          - generic [ref=e1275] [cursor=pointer]: Check Eligibility
+                    - generic [ref=e1276]:
+                      - heading "Early Payoff / 90-Day Pay Off" [level=3] [ref=e1277]
+                      - generic [ref=e1278]:
+                        - generic [ref=e1279]:
+                          - generic [ref=e1281] [cursor=pointer]:
+                            - text: EPO Balance
+                            - img [ref=e1282]
+                          - generic [ref=e1284]: $1,386.79
+                        - generic [ref=e1285]:
+                          - generic [ref=e1286]: EPO Fee %
+                          - generic [ref=e1287]: "0"
+                        - generic [ref=e1288]:
+                          - generic [ref=e1289]: Eligible for 90-day Pay Off
+                          - generic [ref=e1293]: "No"
+                        - generic [ref=e1294]:
+                          - generic [ref=e1295]: Eligible for 90-day Pay Off Override
+                          - generic [ref=e1299]: "-"
+                        - generic [ref=e1300]:
+                          - generic [ref=e1302] [cursor=pointer]:
+                            - text: 90-day Total
+                            - img [ref=e1303]
+                          - generic [ref=e1305]: $1,244.15
+                        - generic [ref=e1306]:
+                          - generic [ref=e1307]: 90-day Expiration Date
+                          - generic [ref=e1311]: 06/21/2026
+                  - generic [ref=e1312]:
+                    - generic [ref=e1313]:
+                      - heading "Protection Plan" [level=3] [ref=e1314]
+                      - generic [ref=e1315]:
+                        - generic [ref=e1316]:
+                          - generic [ref=e1317]: Protection Plan Fees To Date
+                          - generic [ref=e1318]: $0.00
+                        - generic [ref=e1319]:
+                          - generic [ref=e1320]: Protection Plan Fees Paid
+                          - generic [ref=e1321]: $0.00
+                    - generic [ref=e1322]:
+                      - heading [level=3]
+              - generic [ref=e1325]:
+                - generic [ref=e1327]:
+                  - generic [ref=e1328]:
+                    - generic [ref=e1329]: Payment Transactions
+                    - img [ref=e1333] [cursor=pointer]
+                  - img [ref=e1336] [cursor=pointer]
+                - generic [ref=e1339]:
+                  - generic [ref=e1340]:
+                    - generic [ref=e1341]: "Returned Payments: 0"
+                    - generic [ref=e1342]: "# Payments Scheduled: 56"
+                  - generic [ref=e1343]: Last 3 Payments
+                  - generic [ref=e1344]:
+                    - generic [ref=e1345]:
+                      - generic [ref=e1346]: Date
+                      - generic [ref=e1347]: Total Amount
+                      - generic [ref=e1348]: Type
+                    - generic [ref=e1349]:
+                      - generic [ref=e1350]:
+                        - generic [ref=e1351]: 04/22/2026
+                        - generic [ref=e1352]: $1.00
+                        - generic [ref=e1353]: CC
+                      - separator [ref=e1354]
+                    - generic [ref=e1355]:
+                      - generic [ref=e1356]:
+                        - generic [ref=e1357]: 03/17/2026
+                        - generic [ref=e1358]: $100.00
+                        - generic [ref=e1359]: CC
+                      - separator [ref=e1360]
+                    - generic [ref=e1361]:
+                      - generic [ref=e1362]:
+                        - generic [ref=e1363]: 03/17/2026
+                        - generic [ref=e1364]: $100.00
+                        - generic [ref=e1365]: CC
+                      - separator [ref=e1366]
+                  - generic [ref=e1367]:
+                    - generic [ref=e1368]:
+                      - generic [ref=e1369]:
+                        - text: Pending ACH Payment
+                        - img [ref=e1370] [cursor=pointer]
+                      - generic [ref=e1373]:
+                        - generic [ref=e1374]: Date
+                        - generic [ref=e1375]: Amount
+                        - generic [ref=e1376]: Type
+                        - generic [ref=e1377]: Status
+                    - generic [ref=e1378]:
+                      - generic [ref=e1379]:
+                        - text: Pending Credit Card Payment
+                        - img [ref=e1380] [cursor=pointer]
+                      - generic [ref=e1383]:
+                        - generic [ref=e1384]: Date
+                        - generic [ref=e1385]: Amount
+                        - generic [ref=e1386]: Type
+          - generic [ref=e1388]:
+            - generic [ref=e1390]:
+              - generic [ref=e1391]:
+                - generic [ref=e1392]: Notes
+                - img [ref=e1396] [cursor=pointer]
+              - img [ref=e1399] [cursor=pointer]
+            - generic [ref=e1403]:
+              - button "Filters" [ref=e1406] [cursor=pointer]:
+                - img [ref=e1407]
+                - text: Filters
+                - img [ref=e1409]
+              - table [ref=e1413]:
+                - rowgroup [ref=e1414]:
+                  - row "Date ▲ Type ▲ User ID ▲ Notes ▲" [ref=e1415]:
+                    - columnheader [ref=e1417]
+                    - columnheader "Date ▲" [ref=e1419] [cursor=pointer]:
+                      - generic [ref=e1420]: Date
+                      - generic [ref=e1421]: ▲
+                    - columnheader "Type ▲" [ref=e1423] [cursor=pointer]:
+                      - generic [ref=e1424]: Type
+                      - generic [ref=e1425]: ▲
+                    - columnheader "User ID ▲" [ref=e1427] [cursor=pointer]:
+                      - generic [ref=e1428]: User ID
+                      - generic [ref=e1429]: ▲
+                    - columnheader "Notes ▲" [ref=e1431] [cursor=pointer]:
+                      - generic [ref=e1432]: Notes
+                      - generic [ref=e1433]: ▲
+                    - columnheader [ref=e1435]:
+                      - img [ref=e1437] [cursor=pointer]
+                - rowgroup [ref=e1439]:
+                  - row "06/10/2026 7:24:58 a.m. EST REVIEW manager Lead has been reviewed" [ref=e1440]:
+                    - cell [ref=e1441]:
+                      - img [ref=e1444] [cursor=pointer]
+                    - cell "06/10/2026 7:24:58 a.m. EST" [ref=e1446]:
+                      - generic [ref=e1447]: 06/10/2026 7:24:58 a.m. EST
+                    - cell "REVIEW" [ref=e1448]:
+                      - generic [ref=e1449]: REVIEW
+                    - cell "manager" [ref=e1450]:
+                      - generic [ref=e1451]: manager
+                    - cell "Lead has been reviewed" [ref=e1452]:
+                      - paragraph [ref=e1453]: Lead has been reviewed
+                    - cell [ref=e1454]
+                  - row "05/21/2026 2:19:18 p.m. EST INTERNAL davi.artur.gow@uownleasing.com PaymentArrangementService - runTransactions executed. paymentArrangement=true" [ref=e1455]:
+                    - cell [ref=e1456]:
+                      - img [ref=e1459] [cursor=pointer]
+                    - cell "05/21/2026 2:19:18 p.m. EST" [ref=e1461]:
+                      - generic [ref=e1462]: 05/21/2026 2:19:18 p.m. EST
+                    - cell "INTERNAL" [ref=e1463]:
+                      - generic [ref=e1464]: INTERNAL
+                    - cell "davi.artur.gow@uownleasing.com" [ref=e1465]:
+                      - generic [ref=e1466]: davi.artur.gow@uownleasing.com
+                    - cell "PaymentArrangementService - runTransactions executed. paymentArrangement=true" [ref=e1467]:
+                      - paragraph [ref=e1468]: PaymentArrangementService - runTransactions executed. paymentArrangement=true
+                    - cell [ref=e1469]:
+                      - img [ref=e1471] [cursor=pointer]
+                  - row "05/21/2026 2:15:10 p.m. EST INTERNAL davi.artur.gow@uownleasing.com PaymentArrangementService - runTransactions executed. paymentArrangement=true" [ref=e1473]:
+                    - cell [ref=e1474]:
+                      - img [ref=e1477] [cursor=pointer]
+                    - cell "05/21/2026 2:15:10 p.m. EST" [ref=e1479]:
+                      - generic [ref=e1480]: 05/21/2026 2:15:10 p.m. EST
+                    - cell "INTERNAL" [ref=e1481]:
+                      - generic [ref=e1482]: INTERNAL
+                    - cell "davi.artur.gow@uownleasing.com" [ref=e1483]:
+                      - generic [ref=e1484]: davi.artur.gow@uownleasing.com
+                    - cell "PaymentArrangementService - runTransactions executed. paymentArrangement=true" [ref=e1485]:
+                      - paragraph [ref=e1486]: PaymentArrangementService - runTransactions executed. paymentArrangement=true
+                    - cell [ref=e1487]:
+                      - img [ref=e1489] [cursor=pointer]
+                  - row "05/21/2026 2:08:46 p.m. EST INTERNAL davi.artur.gow@uownleasing.com PaymentArrangementService - runTransactions executed. paymentArrangement=true" [ref=e1491]:
+                    - cell [ref=e1492]:
+                      - img [ref=e1495] [cursor=pointer]
+                    - cell "05/21/2026 2:08:46 p.m. EST" [ref=e1497]:
+                      - generic [ref=e1498]: 05/21/2026 2:08:46 p.m. EST
+                    - cell "INTERNAL" [ref=e1499]:
+                      - generic [ref=e1500]: INTERNAL
+                    - cell "davi.artur.gow@uownleasing.com" [ref=e1501]:
+                      - generic [ref=e1502]: davi.artur.gow@uownleasing.com
+                    - cell "PaymentArrangementService - runTransactions executed. paymentArrangement=true" [ref=e1503]:
+                      - paragraph [ref=e1504]: PaymentArrangementService - runTransactions executed. paymentArrangement=true
+                    - cell [ref=e1505]:
+                      - img [ref=e1507] [cursor=pointer]
+                  - row "05/21/2026 2:08:05 p.m. EST REVIEW davi.artur.gow@uownleasing.com Lead has been reviewed" [ref=e1509]:
+                    - cell [ref=e1510]:
+                      - img [ref=e1513] [cursor=pointer]
+                    - cell "05/21/2026 2:08:05 p.m. EST" [ref=e1515]:
+                      - generic [ref=e1516]: 05/21/2026 2:08:05 p.m. EST
+                    - cell "REVIEW" [ref=e1517]:
+                      - generic [ref=e1518]: REVIEW
+                    - cell "davi.artur.gow@uownleasing.com" [ref=e1519]:
+                      - generic [ref=e1520]: davi.artur.gow@uownleasing.com
+                    - cell "Lead has been reviewed" [ref=e1521]:
+                      - paragraph [ref=e1522]: Lead has been reviewed
+                    - cell [ref=e1523]
+                  - 'row "04/22/2026 1:35:10 p.m. EST CORRESPONDENCE SYSTEM Sent PaymentReceiptEmail. Subject : Payment Receipt - Account #4452. To : fintechgroup777+1077600_159410@gmail.com" [ref=e1524]':
+                    - cell [ref=e1525]:
+                      - img [ref=e1528] [cursor=pointer]
+                    - cell "04/22/2026 1:35:10 p.m. EST" [ref=e1530]:
+                      - generic [ref=e1531]: 04/22/2026 1:35:10 p.m. EST
+                    - cell "CORRESPONDENCE" [ref=e1532]:
+                      - generic [ref=e1533]: CORRESPONDENCE
+                    - cell "SYSTEM" [ref=e1534]:
+                      - generic [ref=e1535]: SYSTEM
+                    - 'cell "Sent PaymentReceiptEmail. Subject : Payment Receipt - Account #4452. To : fintechgroup777+1077600_159410@gmail.com" [ref=e1536]':
+                      - paragraph [ref=e1537]: "Sent PaymentReceiptEmail. Subject : Payment Receipt - Account #4452. To : fintechgroup777+1077600_159410@gmail.com"
+                    - cell [ref=e1538]:
+                      - img [ref=e1540] [cursor=pointer]
+                  - row "04/22/2026 1:34:53 p.m. EST CORRESPONDENCE SYSTEM Created PaymentReceiptEmail to be sent as EMAIL" [ref=e1542]:
+                    - cell [ref=e1543]:
+                      - img [ref=e1546] [cursor=pointer]
+                    - cell "04/22/2026 1:34:53 p.m. EST" [ref=e1548]:
+                      - generic [ref=e1549]: 04/22/2026 1:34:53 p.m. EST
+                    - cell "CORRESPONDENCE" [ref=e1550]:
+                      - generic [ref=e1551]: CORRESPONDENCE
+                    - cell "SYSTEM" [ref=e1552]:
+                      - generic [ref=e1553]: SYSTEM
+                    - cell "Created PaymentReceiptEmail to be sent as EMAIL" [ref=e1554]:
+                      - paragraph [ref=e1555]: Created PaymentReceiptEmail to be sent as EMAIL
+                    - cell [ref=e1556]:
+                      - img [ref=e1558] [cursor=pointer]
+                  - 'row "04/22/2026 1:34:53 p.m. EST CREDIT_CARD davi.artur.gow@uownleasing.com Updated Credit Card Transaction Type : SALE, postingDate : 2026-04-22, Amount : $1.0, Status : APPROVED, On Card 2229, Charge Fee : true" [ref=e1560]':
+                    - cell [ref=e1561]:
+                      - img [ref=e1564] [cursor=pointer]
+                    - cell "04/22/2026 1:34:53 p.m. EST" [ref=e1566]:
+                      - generic [ref=e1567]: 04/22/2026 1:34:53 p.m. EST
+                    - cell "CREDIT_CARD" [ref=e1568]:
+                      - generic [ref=e1569]: CREDIT_CARD
+                    - cell "davi.artur.gow@uownleasing.com" [ref=e1570]:
+                      - generic [ref=e1571]: davi.artur.gow@uownleasing.com
+                    - 'cell "Updated Credit Card Transaction Type : SALE, postingDate : 2026-04-22, Amount : $1.0, Status : APPROVED, On Card 2229, Charge Fee : true" [ref=e1572]':
+                      - paragraph [ref=e1573]: "Updated Credit Card Transaction Type : SALE, postingDate : 2026-04-22, Amount : $1.0, Status : APPROVED, On Card 2229, Charge Fee : true"
+                    - cell [ref=e1574]:
+                      - img [ref=e1576] [cursor=pointer]
+                  - 'row "04/22/2026 1:34:52 p.m. EST DATA_CHANGE davi.artur.gow@uownleasing.com ADDED : Payment[ paymentType = CC paymentAmount = 1.0 paymentDate = 2026-04-22]" [ref=e1578]':
+                    - cell [ref=e1579]:
+                      - img [ref=e1582] [cursor=pointer]
+                    - cell "04/22/2026 1:34:52 p.m. EST" [ref=e1584]:
+                      - generic [ref=e1585]: 04/22/2026 1:34:52 p.m. EST
+                    - cell "DATA_CHANGE" [ref=e1586]:
+                      - generic [ref=e1587]: DATA_CHANGE
+                    - cell "davi.artur.gow@uownleasing.com" [ref=e1588]:
+                      - generic [ref=e1589]: davi.artur.gow@uownleasing.com
+                    - 'cell "ADDED : Payment[ paymentType = CC paymentAmount = 1.0 paymentDate = 2026-04-22]" [ref=e1590]':
+                      - paragraph [ref=e1591]: "ADDED : Payment[ paymentType = CC paymentAmount = 1.0 paymentDate = 2026-04-22]"
+                    - cell [ref=e1592]:
+                      - img [ref=e1594] [cursor=pointer]
+                  - 'row "04/22/2026 1:34:49 p.m. EST CREDIT_CARD davi.artur.gow@uownleasing.com Updated Credit Card Transaction Type : TOKENIZATION, postingDate : 2026-04-22, Amount : $0.0, Status : APPROVED, On Card 2229, Charge Fee : false" [ref=e1596]':
+                    - cell [ref=e1597]:
+                      - img [ref=e1600] [cursor=pointer]
+                    - cell "04/22/2026 1:34:49 p.m. EST" [ref=e1602]:
+                      - generic [ref=e1603]: 04/22/2026 1:34:49 p.m. EST
+                    - cell "CREDIT_CARD" [ref=e1604]:
+                      - generic [ref=e1605]: CREDIT_CARD
+                    - cell "davi.artur.gow@uownleasing.com" [ref=e1606]:
+                      - generic [ref=e1607]: davi.artur.gow@uownleasing.com
+                    - 'cell "Updated Credit Card Transaction Type : TOKENIZATION, postingDate : 2026-04-22, Amount : $0.0, Status : APPROVED, On Card 2229, Charge Fee : false" [ref=e1608]':
+                      - paragraph [ref=e1609]: "Updated Credit Card Transaction Type : TOKENIZATION, postingDate : 2026-04-22, Amount : $0.0, Status : APPROVED, On Card 2229, Charge Fee : false"
+                    - cell [ref=e1610]:
+                      - img [ref=e1612] [cursor=pointer]
+              - navigation [ref=e1615]:
+                - generic [ref=e1616]: "Rows per page:"
+                - generic [ref=e1617]:
+                  - combobox "Rows per page:" [ref=e1618] [cursor=pointer]:
+                    - option "10" [selected]
+                    - option "25"
+                    - option "50"
+                    - option "100"
+                  - img
+                - generic [ref=e1619]: 1-10 of 77
+                - generic [ref=e1620]:
+                  - button "First Page" [disabled] [ref=e1621]:
+                    - img [ref=e1622]
+                  - button "Previous Page" [disabled] [ref=e1625]:
+                    - img [ref=e1626]
+                  - button "Next Page" [ref=e1629] [cursor=pointer]:
+                    - img [ref=e1630]
+                  - button "Last Page" [ref=e1633] [cursor=pointer]:
+                    - img [ref=e1634]
+  - alert [ref=e47]: Uown | Servicing
+  - iframe [ref=e1637]:
+    
+  - dialog [active] [ref=e1638]:
+    - document:
+      - generic [ref=e1639]:
+        - generic [ref=e1640]:
+          - generic [ref=e1641]: Customer Information Confirmation
+          - img [ref=e1643] [cursor=pointer]
+        - generic [ref=e1646]:
+          - generic [ref=e1647]:
+            - generic [ref=e1649]:
+              - generic [ref=e1651]: First Name
+              - generic [ref=e1653]: Test
+            - generic [ref=e1655]:
+              - generic [ref=e1657]: Last Name
+              - generic [ref=e1659]: Do
+          - generic [ref=e1660]:
+            - generic [ref=e1662]:
+              - generic [ref=e1664]: Date of Birth
+              - generic [ref=e1666]: 01/01/1984
+            - generic [ref=e1668]:
+              - generic [ref=e1670]: Last 4 SSN
+              - generic [ref=e1672]: "6127"
+        - generic [ref=e1674]:
+          - button "CANCEL" [ref=e1675] [cursor=pointer]
+          - button "Confirm" [ref=e1676] [cursor=pointer]

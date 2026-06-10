@@ -19,7 +19,7 @@ import { FundingQueueStatus, AllocationStrategy, TestTag, buildTags } from '@pty
 import { TEST_CARDS, TEST_BANK } from '@config/index.js';
 import { extractAccountPkFromUrl, buildCcPaymentDetails, buildTestData,
   loginToPortalWithOptions, loginToPortalIfNeeded,
-  navigateToServicingCustomer, sleep } from '@helpers/index.js';
+  navigateToOriginationCustomer, navigateToServicingCustomer, sleep } from '@helpers/index.js';
 
 // Parameterized test data (replaces Cucumber Examples table)
 const testData = {
@@ -93,14 +93,11 @@ test.describe(`Unified Flow - ${testData.state}/${testData.merchant}`, { tag: te
     await test.step('Login to origination portal and verify status', async () => {
       await loginToPortalWithOptions(page, env.originationUrl, env);
 
-      // Navigate directly to the customer page by leadPk (more reliable than search)
-      const customerUrl = `${env.originationUrl}customers/${ctx.leadPk}`;
-      console.log(`[Phase 2] Navigating to customer page: ${customerUrl}`);
-      await page.goto(customerUrl, { waitUntil: 'domcontentloaded' });
-      await page.waitForLoadState('networkidle').catch(() => {});
-
-      const customerPage = new OriginationCustomerPage(page);
-      await customerPage.waitForSpinner();
+      // UI-driven navigation via quick-search keeps the SPA's in-memory auth state alive.
+      // Direct page.goto would full-reload and wipe the JWT held in memory; the CI runner's
+      // internal HTTP URL drops the Secure session cookie, so reload = auth loss → empty shell.
+      console.log(`[Phase 2] Navigating to customer page via UI search: leadPk=${ctx.leadPk}`);
+      const customerPage = await navigateToOriginationCustomer(page, ctx.leadPk);
 
       const status = await customerPage.getLeadStatus();
       console.log(`[Phase 2] Lead status after creation: "${status}"`);
@@ -195,10 +192,8 @@ test.describe(`Unified Flow - ${testData.state}/${testData.merchant}`, { tag: te
         return;
       }
 
-      // Navigate back to origination portal customer page
-      await page.goto(`${env.originationUrl}customers/${ctx.leadPk}`, { waitUntil: 'domcontentloaded' });
-      const customerPage = new OriginationCustomerPage(page);
-      await customerPage.waitForSpinner();
+      // Navigate back to origination portal customer page (UI-driven, preserves auth)
+      const customerPage = await navigateToOriginationCustomer(page, ctx.leadPk);
 
       // Click "Get Document Status" to trigger backend sync (Java: shortcut action)
       const getDocStatusBtn = page.locator("xpath=//*[text()='Get Document Status']");
@@ -306,9 +301,7 @@ test.describe(`Unified Flow - ${testData.state}/${testData.merchant}`, { tag: te
     });
 
     await test.step('Navigate back to customer and validate funded status', async () => {
-      await page.goto(`${env.originationUrl}customers/${ctx.leadPk}`, { waitUntil: 'domcontentloaded' });
-      const customerPage = new OriginationCustomerPage(page);
-      await customerPage.waitForSpinner();
+      const customerPage = await navigateToOriginationCustomer(page, ctx.leadPk);
 
       // Extract accountPk from page header or URL
       const summaryAccountNumber = await customerPage.getAccountNumberFromSummary();
@@ -335,9 +328,7 @@ test.describe(`Unified Flow - ${testData.state}/${testData.merchant}`, { tag: te
     // ═══════════════════════════════════════════════════════════════
 
     await test.step('Navigate to individual customer page and get accountPk', async () => {
-      await page.goto(`${env.originationUrl}customers/${ctx.leadPk}`, { waitUntil: 'domcontentloaded' });
-      const customerPage = new OriginationCustomerPage(page);
-      await customerPage.waitForSpinner();
+      const customerPage = await navigateToOriginationCustomer(page, ctx.leadPk);
 
       // Try to get accountPk from customer page if not already captured
       if (!ctx.accountPk) {

@@ -426,15 +426,32 @@ Seleciona pagamentos ACH pendentes para envio ao Profituity:
 
 **Nota:** Pagamentos de arranjo ACH criados via API devem incluir `ach_process_type = 'REQUEST'`. Sem esse campo, o sweep so os processa se um recebivel esta vencendo em D+1 — em contas sem recebivel proximo, o pagamento ficaria preso em PENDING.
 
+#### Cron chain completa (ACH arrangement → terminal) — confirmado dev3 2026-06-01
+
+| Sweep / Listener | Schedule | Efeito |
+|------------------|----------|--------|
+| `SendACHPaymentsSweep` | a cada 5 min | `PENDING → PICKED_TO_SEND` |
+| `getSendACHPaymentsStatusSweep` | a cada 6 min | polling do Profituity (status do envio) |
+| `getStatusDatePaymentsListSweep` | diario 20:30 | status final do dia |
+| `PaymentArrangementACHListener` | callback do processor | so em `SETTLED` / `RETURNED` / `ACK_ERROR` → atualiza o arranjo |
+
+**O arranjo so muda de `NOT_STARTED` em estado terminal do payment.** Estados intermediarios (`PENDING → PICKED_TO_SEND → SENT`) NAO promovem o arranjo — so um terminal (`SETTLED`/`RETURNED`/`ACK_ERROR`) dispara o listener.
+
+**Implicacao para env sem processor real (dev3):** sem Profituity, o ACH para em `PICKED_TO_SEND` e nunca atinge terminal; `recalculateAchArrangementStatus` retorna `IN_PROGRESS` (`PICKED_TO_SEND` e status pendente). Para sintetizar o terminal em teste: UPDATE dos payments para `SETTLED` (Exception 3 — autorizacao explicita do user) ANTES do recalc. Os logs de finalizacao (`Arrangement finalized as SUCCESS/FAILED`) so sao emitidos pelo listener em callback REAL — nunca pelos paths sinteticos. Ver skill [[application-lifecycle]] pitfalls #83/#84 e [[payment-flows]] secao sweep chain.
+
 ### Impacto no Rating
 
 Se a flag `paymentArrangement = true`:
-- **Rating letter da conta** atualizado para `P` (Promise to Pay)
+- **Rating letter da conta** atualizado para `P` (Promise to Pay) — **persistido** em `uown_sv_account.rating`
 - **previous_rating** salvo no arranjo para auditoria
 - **Auto-pay existente** e preservado e mantido
 - Se o arranjo falhar: `current_rating` volta para `null` (rating resetado)
 
-**BUG CONHECIDO (Task #446):** `AccountFinancialInfoService.updateRatingLetterAndAutoPay` registra no activity log "Rating letter changed from null to P", porem NAO persiste a entidade no branch nao-nulo. A coluna `rating` em `uown_sv_account` permanece `null` mesmo apos a criacao do arranjo. O activity log confirma que o codigo executou — o problema e a ausencia do `save()` na entidade.
+**COMPORTAMENTO CONFIRMADO (dev3, 2026-06-01) — corrige a antiga nota de "bug conhecido":** a coluna `rating` em `uown_sv_account` **E PERSISTIDA** como `'P'` na criacao do arranjo, tanto para ACH quanto para CC. A nota anterior (Task #446) afirmava que `AccountFinancialInfoService.updateRatingLetterAndAutoPay` registrava o activity log "Rating letter changed from null to P" mas NAO persistia a entidade — isso esta **incorreto/desatualizado**. DB-confirmado: o campo persiste corretamente.
+
+**Reset do rating no CC SUCCESS (comportamento correto de negocio):** quando um arranjo CC e concluido com sucesso (`SUCCESS`), o `rating` e resetado para `null` e o auto-pay e re-ligado — a conta voltou ao estado normal apos quitar. Isto NAO e bug; e o comportamento esperado. (Arranjo `FAILED` tambem reseta `current_rating` para `null`, conforme tabela de transicoes.)
+
+> Catalogado em skill [[payment-flows]] (secao "Rating letter em Payment Arrangement", pitfall #18) e [[application-lifecycle]].
 
 ### Como Disparar
 

@@ -1132,16 +1132,30 @@ O rating letter e uma classificacao de uma unica letra que indica o **status de 
 
 ### Significado de Cada Rating
 
-| Rating | Significado | Impacto no Sistema |
-|--------|-----------|-------------------|
-| **S** | Standard/Satisfactory (normal) | Auto-pay funciona normalmente. Processamento padrao |
-| **P** | Promise to Pay (acordo de pagamento) | **Desliga auto-pay ACH e CC**. Atribuido quando cliente faz payment arrangement via portal ou agente. Excluido de sweeps de pagamento |
-| **C** | Collections (cobranca) | **Desliga auto-pay ACH e CC**. Conta em status de cobranca ativa. Excluido de sweeps |
-| **M** | Military (SCRA/protecao militar) | **Desliga auto-pay ACH e CC**. Protecao sob Servicemembers Civil Relief Act |
-| **D** | Delinquent/Do Not Process | Retentativas diarias de CC negado sao puladas |
-| **B** | Bloqueado | Excluido de lembretes de primeiro pagamento e criacao de pagamentos recorrentes |
-| **E, F, U** | Diversos | Excluidos de email "Settled in Full" |
-| **S** | Sold (vendido) | Aplicado quando conta e vendida a comprador de divida |
+> **Fonte de verdade:** `common/src/main/java/com/uownleasing/common/enumeration/RatingLetter.java`. Esta tabela espelha o enum e os filtros SQL reais nos sweeps do svc; em caso de divergencia, o enum prevalece.
+
+| Rating | Significado (enum) | Impacto sistemico (filtros SQL reais) |
+|--------|--------------------|--------------------------------------|
+| `NULL` | Conta sem rating — saudavel | Sem exclusao. Processamento padrao. |
+| **P** | Payment Arrangement | Excluido de `ScheduledACHPayments`, `ScheduledCreditCardPayments`, `RerunACH/CC`, `CCDailyScheduledDeniedRerun`, `StickyRecoverSweep`, `CCVintageRun`, `DelinquencyRerunCC`. Removido automaticamente apos 60 dias. |
+| **C** | Confirmed Bankruptcy | Maior exclusao do sistema (Scheduled, Rerun, Reminder, Sticky, CCVintage, DelinquencyRerun, CustomerPortalReminder). |
+| **D** | Pending Bankruptcy | Excluido de `RerunACH/CC`, `CCDailyScheduledDeniedRerun`, `CustomerPortalReminder`, `StickyRecoverSweep`, `CCVintageRun`, `DelinquencyRerunCC`. NAO excluido do scheduled inicial. |
+| **B** | Discharged Bankruptcy | Excluido de `FirstPaymentReminder`, `ScheduledACH/CC`, `CustomerPortalReminder`, `StickyRecoverSweep`, `CCVintageRun`, `DelinquencyRerunCC`. NAO excluido de `RerunACH/CC`. |
+| **M** | MR Money Owed | **Nao consta em nenhum filtro SQL conhecido.** Doc historica afirmava que desliga auto-pay; codigo nao evidencia via SQL — TBD investigacao confirmatoria. |
+| **F** | Fraud | Excluido de email "Settled in Full" + `CustomerPortalReminder` + `CCVintageRun` + `DelinquencyRerunCC`. NAO excluido de Scheduled/Rerun/Sticky. |
+| **E** | Pickup Requested | Excluido de email "Settled in Full" + `CCVintageRun` + `DelinquencyRerunCC`. |
+| **U** | Pickup Completed Product | Excluido de email "Settled in Full" + `CustomerPortalReminder` + `CCVintageRun` + `DelinquencyRerunCC`. |
+| **G** | Pickup Completed Settlement | Excluido de `CustomerPortalReminder` + `CCVintageRun` + `DelinquencyRerunCC`. |
+| **S** | Sold Accounts (vendida a debt buyer) | Excluido de `CustomerPortalReminder` + `CCVintageRun` + `DelinquencyRerunCC`. NAO excluido de Scheduled/Rerun/Sticky. |
+| **R** | DNC Dialer/Revoke | Sem exclusao SQL conhecida — bloqueia discador/SMS via flag separada nao-SQL. |
+| **J** | Opt Out Payment Reminders | Usado em `= 'J'` no `CreateSkitDelinquentSweep` (bypassa Skit/dialer/SMS). |
+| **L** | Legal | Excluido de `CCVintageRun` + `DelinquencyRerunCC`. |
+
+> **Observacoes importantes:**
+>
+> 1. **Nao existe letra "Standard"** — conta normal tem `rating IS NULL`. A letra **S** indica `Sold Accounts`.
+> 2. **Nenhum filtro SQL exclui `M`** — comportamento de "M desliga auto-pay" precisa investigacao adicional para confirmar via que mecanismo (possivel toggle separado em `cc.auto_pay`).
+> 3. **Sweeps de rerun/recovery tem listas de exclusao diferentes** — `StickyRecoverSweep` exclui apenas `B,C,D,P`; `DelinquencyRerunCC` exclui `B,C,P,S,D,E,F,G,L,U`. Inconsistencia candidata a revisao de produto.
 
 ### Como o Rating Muda
 
@@ -4079,13 +4093,12 @@ Garante que o AutoPay reflita corretamente os metodos de pagamento disponiveis. 
 
 ### Impacto do Rating Letter
 
-O rating letter tem **precedencia** sobre flags explicitas de AutoPay:
-
 | Evento | Acao |
 |--------|------|
-| Rating alterado para C, P ou M | **Desliga AutoPay** (ACH e CC) |
-| Rating removido (setado para null) | AutoPay recalculado com base nos instrumentos disponiveis |
-| Rating alterado para outro valor | AutoPay mantido, horario do rating registrado |
+| Rating alterado para `C` (Confirmed Bankruptcy) ou `P` (Payment Arrangement) | **Excluido de todos os sweeps de pagamento** via filtros SQL (`ScheduledACH/CC`, `RerunACH/CC`, `StickyRecoverSweep`) — equivalente a "AutoPay desligado" |
+| Rating alterado para `M` (MR Money Owed) | **Comportamento sistemico nao confirmado** — doc historica afirmava que desliga AutoPay; nenhum filtro SQL atual exclui `M`. Investigar toggle separado em `cc.auto_pay` |
+| Rating removido (setado para `NULL`) | Conta volta ao processamento padrao; AutoPay recalculado |
+| Rating alterado para outro valor | Impacto varia por filtro SQL — ver tabela §19 |
 
 ### Auditoria
 

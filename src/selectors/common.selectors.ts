@@ -29,17 +29,37 @@ export const SELECTORS: AppSelectors = {
   sidebarItem: "div[class*='sidebar__menu-item']",
 
   // ── Filters ────────────────────────────────────────────────────────
-  filterOption: "div[class*='filter__option']",
-  filterOptionWithRole: '.filter__option, [role="option"]',
+  // Option row inside a react-select menu. The legacy single-select uses
+  // `.filter__option` (or `[role="option"]`). The new multi-select (Origination
+  // R1.52.0 task #1292) wraps each option in `index-module_customOptionStyles__<hash>`
+  // — match the prefix so we cover BOTH variants and don't need a separate selector.
+  filterOption: "div[class*='filter__option'], div[class*='index-module_customOptionStyles__']",
+  filterOptionWithRole: '.filter__option, [role="option"], div[class*="index-module_customOptionStyles__"]',
   filterControl: '.filter__control',
   /** Resilient combobox locator — works whether the widget exposes `.filter__control` (qa2 react-select) or only the ARIA `combobox` role (stg / alternate themes). */
   filterControlResilient: '.filter__control, [role="combobox"]',
   filtersButton: "button[class*='filterButton'], button:has-text('Filters')",
-  filterMenuPortal: '.filter__menu-portal',
+  // Overview dashboard metric cards. CSS module uses `summaryBox` as logical name;
+  // anchor on the prefix since the hash suffix changes per build.
+  dashboardCard: "[class*='summaryBox__']",
+  // React-select renders the option menu either into a portal element
+  // (`.filter__menu-portal` wraps a `.filter__menu`, used by legacy single-select
+  // filters) OR inline as a bare `.filter__menu` (multi-select mode, Origination
+  // R1.52.0 task #1292). Match BOTH so PO callers work across variants. The
+  // `:visible` pseudo (Playwright) filters out the hidden portal sibling that
+  // co-exists in DOM even when the inline `.filter__menu` is showing.
+  filterMenuPortal: ':is(.filter__menu-portal, .filter__menu):visible',
   filterPlaceholder: "div[class*='filter__placeholder']",
   filterSingleValue: "div[class*='filter__single-value']",
   filterClearIndicator: '.filter__clear-indicator',
   filterMultiValueLabel: "div[class*='filter__multi-value__label']",
+  // Task #1292 — multi-select Merchant/Location filter (Origination R1.52.0)
+  // Bottom-of-page leads-style filter block (Filters toggle + Search button).
+  // CSS-module hash suffix is unstable; anchor via the prefix attribute selector.
+  // DO NOT use `overview_filterButton__` — that's the legacy KPI single-select on Overview top.
+  multiSelectFilterButton: "button[class*='index-module_filterButton__']",
+  // Multi-select react-select container — shows "N items selected" text in multi mode.
+  multiSelectValueContainer: "[class*='filter__value-container--is-multi']",
 
   // ── Modal ──────────────────────────────────────────────────────────
   modalContent: '.modal-content',
@@ -74,6 +94,20 @@ export const SELECTORS: AppSelectors = {
   searchInputLegacy: "input[name='search']",
   searchTypeDropdown: '#search-type-dropdown',
   searchButton: "button[name='searchButton']",
+  // ── Quick Search bar (svc#454 — Origination + Servicing) ──────────
+  // DOM live-validated for SPEC RU05.26.1.52.0 (qa1, 1440×900, post-login).
+  // The desktop quick search form is wrapped in `<form class="d-none d-lg-block">`
+  // so it only renders at ≥992px (Bootstrap `lg`). Tests fix viewport to 1440×900.
+  // The search-type toggle uses CSS-module class `index-module_searchType__toggle__<hash>` —
+  // hash suffix flips on every webpack rebuild, so we anchor on the prefix via [class*=].
+  // The dropdown menu/items are standard Bootstrap `Dropdown.Menu` (role=menu/menuitem).
+  // Autocomplete renders <a href="/customer-information/{leadPk}"> nodes after the BFF resolves.
+  quickSearchForm: 'form.d-none.d-lg-block, form[class*="d-lg-block"]',
+  quickSearchTypeToggle: 'a[class*="index-module_searchType__toggle"], a[class*="searchType__toggle"]',
+  quickSearchTypeMenu: '[role="menu"].dropdown-menu, .dropdown-menu[role="menu"]',
+  quickSearchTypeMenuItem: '[role="menu"] [role="menuitem"]',
+  quickSearchAutocompleteList: '[class*="searchResults"], [class*="search-results"], .dropdown-menu.show:not([role="menu"])',
+  quickSearchAutocompleteResult: 'a[href*="/customer-information/"], a[href*="/customers/"]',
 
   // ── Customer Summary ───────────────────────────────────────────────
   customerSummary: '#customer-summary',
@@ -174,6 +208,35 @@ export const SELECTORS: AppSelectors = {
   paymentTableRows: "xpath=//div[@role='rowgroup']//div[@role='row'][position() > 1]",
   svgReverseIcon: '.fa-undo',
   pencilIcon: "xpath=//*[@data-icon='pen-to-square']",
+
+  // ── Servicing - Payment History → Reverse / Reallocate Payment ─────
+  // Page: /payment-history/{accountPk} (History menu → "Payments").
+  // DOM-first verified on svc-website-dev3 account 94 (2026-06-01): the reverse/refund
+  // affordance lives HERE (NOT on /payment-transaction, which has no per-row action icon).
+  // Each rdt row (id="row-{n}", 8 cells) carries two action svgs in the last two columns:
+  //   • "Reverse Payment"  → svg[data-icon="arrow-rotate-left"] (class fa-arrow-rotate-left cursor-pointer)
+  //   • "Update Payment"   → svg[data-icon="pen-to-square"]
+  paymentHistoryRows: ".rdt_TableRow",
+  // Body-scoped data rows only — excludes the column-header row (which renders as
+  // .rdt_TableHeadRow in a separate rowgroup). DOM-first verified via failure snapshot
+  // on svc-website-dev3 account 141 (2026-06-01): the grid hydrates the body row
+  // (06/01/2026 $100.00 CC PAID) asynchronously AFTER the head row, so the previous
+  // `.rdt_TableRow` first()/count() iteration raced the fetch and saw 0 data rows.
+  paymentHistoryBodyRows: ".rdt_TableBody .rdt_TableRow",
+  paymentHistoryReverseIcon: 'svg[data-icon="arrow-rotate-left"]',
+  paymentHistoryEditIcon: 'svg[data-icon="pen-to-square"]',
+  // Reverse / Reallocate modal — "Reverse Reason" is a React Select (#reverseReason is a
+  // DIV container, NOT a native <select>), so options are picked via the open menu, not selectOption().
+  // Options observed: "Reverse", "Fully Refund", "Partially Refund".
+  reverseReasonControl: '.modal-content #reverseReason [class*="control"]',
+  reverseReasonOption: '.filter__option, [role="option"], div[class*="select__option"]',
+  // "Partially Refund" reveals #paymentAmount (pre-filled with full amount); "Fully Refund"
+  // reveals #refundFee checkbox (no editable amount). Both keep #comment textarea.
+  reversePaymentAmountInput: '.modal-content #paymentAmount, [role="dialog"] #paymentAmount',
+  reverseRefundFeeCheckbox: '.modal-content #refundFee, [role="dialog"] #refundFee',
+  reverseCommentTextarea: '.modal-content #comment, [role="dialog"] #comment',
+  reverseModalSaveButton: ".modal-content button:has-text('SAVE'), [role='dialog'] button:has-text('SAVE')",
+  reverseModalCancelButton: ".modal-content button:has-text('CANCEL'), [role='dialog'] button:has-text('CANCEL')",
 
   // ── Add Card ───────────────────────────────────────────────────────
   addCardButton: "button:has-text('Add Card')",
@@ -388,29 +451,53 @@ export const SELECTORS: AppSelectors = {
   naMerchantDropdown: '.form-control',
   naLocationDropdown: '.form-control',
 
-  // Consumer-facing application wizard — Page 1 (Personal Info)
+  // Consumer-facing application wizard - Page 1 (Personal Info)
+  // Note: DOM uses uppercase SSN/DOB; do not lowercase
   naMainFirstName: '#mainFirstName',
   naMainLastName: '#mainLastName',
-  naMainSsn: '#mainSsn',
-  naMainDob: '#mainDob',
+  naMainSsn: '#mainSSN',
+  naMainDob: '#mainDOB',
   naMainCellPhone: '#mainCellPhone',
   naMainEmailAddress: '#emailAddress',
   naMainAddress1: '#mainAddress1',
   naMainPostalCode: '#mainPostalCode',
   naMainCity: '#mainCity',
 
-  // Consumer-facing application wizard — Page 2 (Employment)
-  naMainEmployerName: '#mainEmployerName',
-  naMainPayFrequencyDropdown: "xpath=//label[contains(text(),'Pay Frequency')]/..//div[contains(@class,'react-select') or contains(@class,'dropdown')]",
+  // Consumer-facing application wizard - Page 2 (Employment)
+  // EmployerName + EmploymentDuration removed in 2026-05 wizard refresh; left here only for legacy reference
+  naMainPayScheduleDropdown: "xpath=//*[contains(text(),'Your Pay Schedule')]/..//div[contains(@class,'react-select') or contains(@class,'dropdown')]",
   naMainLastPayDate: '#mainLastPayDate',
   naMainNextPayDate: '#mainNextPayDate',
   naMainMonthlyIncome: '#mainMonthlyIncome',
-  naEmploymentDurationDropdown: "xpath=//label[contains(text(),'Employment Duration') or contains(text(),'How long')]/..//div[contains(@class,'react-select') or contains(@class,'dropdown')]",
 
-  // Consumer-facing application wizard — Page 3 (Consent)
+  // Consumer-facing application wizard - Page 2 bank fields + RightFoot consent (Task #1310, MR !1473)
+  // DOM-confirmed in qa1 2026-06-01 (Origination wizard Step 2 / EMPLOYMENT).
+  naMainBankRoutingNumber: '#mainBankRoutingNumber',
+  naMainBankAccountNumber: '#mainBankAccountNumber',
+  naMainCreditCardBin: '#mainCreditCardBin',
+  // RightFoot consent block — renders only when routing OR account number has a value.
+  naRightFootConsentSection: '[data-testid="rightFootConsentSection"]',
+  naRightFootConsentChecked: '#rightFootConsentChecked',
+  // Title div (no h* tag): "Uown Leasing uses Rightfoot..." / "Kornerstone living uses Rightfoot..."
+  naRightFootConsentTitle: '[data-testid="rightFootConsentSection"] [class*="rightFootConsent__title"]',
+  // Checkbox label body text ("By checking this box...").
+  naRightFootConsentText: '[data-testid="rightFootConsentSection"] [class*="rightFootConsent__text"]',
+  // Inline validation error (role=alert, id rightFootConsentChecked-error) — shown when unchecked.
+  naRightFootConsentError: '#rightFootConsentChecked-error',
+  // Yup inline errors for bank routing and account fields. These elements have no stable id
+  // — they are the immediate next sibling of the input (confirmed via DOM snapshot 2026-06-01).
+  naMainBankRoutingNumberError: '#mainBankRoutingNumber + *',
+  naMainBankAccountNumberError: '#mainBankAccountNumber + *',
+
+  // Consumer-facing application wizard - Page 3 (Consent)
   naIsAgreedToStatements: '#isAgreedToStatements',
-  naIsAgreedToPrivacy: '#isAgreedToPrivacy',
-  naBankruptcyDropdown: "xpath=//label[contains(text(),'Bankruptcy') or contains(text(),'bankruptcy')]/..//div[contains(@class,'react-select') or contains(@class,'dropdown')]",
+  naIsAgreedToPrivacyPolicy: '#isAgreedToPrivacyPolicy',
+  naBankruptcyDropdown: "xpath=//*[contains(text(),'bankruptcy')]/..//div[contains(@class,'react-select') or contains(@class,'dropdown')]",
+
+  // Wizard footer buttons (data-nid-target is the only stable hook; .btn-primary is shared by Prev)
+  naSendApplicationNextBtn: '[data-nid-target="sendApplication-nextBtn"]',
+  naSendApplicationPrevBtn: '[data-nid-target="sendApplication-PrevBtn"]',
+  naSendApplicationSubmitBtn: '[data-nid-target="sendApplication-submitBtn"]',
 
   // Invoice / Lease creation on customer page
   naLeaseAddNew: "xpath=//div[text()='Lease']/../div[text()='Add New'] | button:has-text('Add New')",
@@ -430,6 +517,9 @@ export const SELECTORS: AppSelectors = {
   arrangementStartDateInput: '#startDate',
   arrangementEndDateInput: '#endDate',
   arrangementPaymentFrequencyDropdown: "xpath=//label[@for='paymentFrequency']/../div",
+  // Payment Arrangement Type React Select (label[for=paymentArrangementType]) — options NORMAL | SETTLEMENT.
+  // DOM-confirmed dev3 acct 138 (2026-06-01): explicit UI select, not backend-derived.
+  arrangementTypeDropdown: "xpath=//label[@for='paymentArrangementType']/../div",
   arrangementInstallmentAmountInput: (index: number) => `[id="paymentInfo[${index}].paymentAmount"]`,
   arrangementInstallmentDateInput: (index: number) => `[id="paymentInfo[${index}].paymentDate"]`,
 
@@ -439,6 +529,28 @@ export const SELECTORS: AppSelectors = {
   svInfoSaveButton: "button[class*='collapsableEdit__button__primary']",
   svInfoFirstDueDateInput: '#firstDueDate, input[name="firstDueDate"]',
   svInfoSecondDueDateInput: '#secondDueDate, input[name="secondDueDate"]',
+
+  // ── Settlement Amount panel + modal (svc#512 — R1.52.0) ────────────
+  // The "Settlement Amount" label is a non-semantic <div> with
+  // cursor:pointer inside the "Account & Contract Overview" column of
+  // "Servicing Information". Validated via MCP Playwright in qa1
+  // (SPEC §7 + diretrizes 2026-05-22). No <button>/<a> wrapper exists,
+  // so getByRole does not match — anchor on the exact label text. The
+  // page object scopes via `getByText('Settlement Amount', { exact: true })`
+  // and filters by clickable ancestor for robustness; this string is the
+  // CSS fallback when scoping by parent locator is not available.
+  settlementAmountLabel: "div:has-text('Settlement Amount')",
+  // Bootstrap modal anchored on its visible title.
+  settlementBreakdownModal: ".modal.show:has-text('Settlement Breakdown')",
+  settlementBreakdownModalTitle: ".modal.show .modal-title, .modal.show h5",
+  // Each line item — implementer iterates to extract { label, value }.
+  // DOM real (validated via MCP qa1, 2026-05-22): modal does NOT use a
+  // Bootstrap `.modal-body` wrapper — uses a custom `<div class="overflow-auto p-3">`
+  // containing `<table.w-100><tbody><tr><th>label</th><td>value</td></tr></tbody></table>`.
+  // Scoping is done by the page object via `this.modal.locator(...)`.
+  settlementBreakdownRow: "tr",
+  // Modal close (X) — FontAwesome svg.fa-xmark-large inside .modal-content (no .modal-header wrapper).
+  settlementBreakdownClose: ".modal.show .svg-inline--fa.fa-xmark-large, .modal.show [aria-label='Close']",
 
   // ── Search Results ──────────────────────────────────────────────────
   searchResultAccountLink: "a[href*='/customer-information/']",
@@ -502,9 +614,39 @@ export const SELECTORS: AppSelectors = {
   salesRepEditButton: '#MerchantInfo-edit',
   salesRepSaveButton: ".collapsableEdit__button__primary, button[class*='collapsableEdit__button__primary']",
 
+  // ── Lease Documents Panel (Origination Customer page — Documents/Lease) ───
+  // Task #521 (LEASEMOD GowSign). CSS-module hash classes are fragile (pitfall #26),
+  // so we anchor on the prefix portion via [class*=] attribute selectors. The
+  // hash suffix (e.g. __5Th8A) changes on every webpack rebuild — the prefix stays.
+  leasePanelHeader: '[class*="customer-info-panels_documentsItemHeader__"]',
+  leasePanelHeaderTitle: '[class*="customer-info-panels_documentsItemHeader__"] > div',
+  // Row container: the `contractItem__` base class (without the inner element
+  // variants `titleButton`, `subtitle1`, `subtitle2`, `timeStamp`). The :not()
+  // chain rejects those nested elements while keeping the outer row.
+  leasePanelContractItem: '[class*="customer-info-panels_contractItem__"]:not([class*="titleButton"]):not([class*="subtitle"]):not([class*="timeStamp"])',
+  leasePanelContractTitleButton: '[class*="customer-info-panels_contractItem__titleButton__"]',
+  leasePanelContractSubtitle1: '[class*="customer-info-panels_contractItem__subtitle1__"]',
+  leasePanelContractSubtitle2: '[class*="customer-info-panels_contractItem__subtitle2__"]',
+  leasePanelContractTimestamp: '[class*="customer-info-panels_contractItem__timeStamp__"]',
+
   // ── Open to Buy (Origination) ──────────────────────────────────────────────
   openToBuyNavLink: "a[href*='openToBuy'], a:has-text('Open to Buy'), #openToBuy",
   openToBuyExportCsvButton: "button:has-text('Export'), button:has-text('CSV'), a:has-text('Export CSV')",
+
+  // ── Origination — Column-Order tests (task #1295) ─────────────────────────
+  // SPEC § 0.5: Origination tables sit inside Bootstrap `<div class="table-responsive">`.
+  // No data-testid available — anchor on the stable Bootstrap class.
+  tableResponsiveContainer: '.table-responsive',
+  scrollableAncestor: '.table-responsive, [style*="overflow"], [class*="overflow-auto"], [class*="overflow-x"]',
+  // Overview-only — Config Columns gear-icon trigger. Visible text "Config Columns" per SPEC § 0.5.
+  configColumnsTrigger: "button:has-text('Config Columns'), a:has-text('Config Columns'), [aria-label='Config Columns']",
+  // Side panel opened by the trigger ("Configure the view" heading per SPEC § 0.5).
+  configColumnsPanel: "[role='dialog']:has-text('Configure the view'), .modal:has-text('Configure the view'), [class*='configColumns'], aside:has-text('Configure the view')",
+  // Each column checkbox is matched by the option name (e.g. "Sales Rep Code").
+  configColumnsCheckbox: (name: string) => `label:has-text(${JSON.stringify(name)}) input[type='checkbox'], input[type='checkbox'][name=${JSON.stringify(name)}]`,
+  // CSV export probes (SPEC § 0.5 + multi-select-filters.spec.ts CT-09 pattern).
+  csvDownloadTrigger: "button:has-text('Download CSV'), a:has-text('Download CSV'), button:has-text('Export CSV'), a:has-text('Export CSV'), button:has-text('Export')",
+  csvEmailTrigger: "button:has-text('Email CSV'), a:has-text('Email CSV')",
 
   // ── Task #505 — Opt Out AI (Servicing — Primary Contact / Mobile Phone) ──
   primaryContactEditButton: '#PrimaryContact-edit',
@@ -517,6 +659,54 @@ export const SELECTORS: AppSelectors = {
   optOutAiReasonModal: 'dialog, [role="dialog"]',
   optOutAiReasonTextbox: 'dialog textarea, [role="dialog"] textarea',
   optOutAiReasonSaveButton: 'dialog button:has-text("Save"), [role="dialog"] button:has-text("Save")',
+
+  // ── AMS — Merchants list (/merchants) + Users page Add User — svc#504 (R1.52.0) ──
+  // Backed by GET /uown/merchants (MR!1430). Lazy load of /uown/getAllAvailableMerchants
+  // on /users page only fires when "Add User" is clicked (MR!170). Selectors validated
+  // via MCP Playwright in qa1 on 2026-05-22.
+  //
+  // Sidebar links sit under Bootstrap `d-lg-block` — viewport ≥1440×900 required (rule #16).
+  amsMerchantsNavLink: 'a:has-text("Merchants"), [href*="/merchants"]:has-text("Merchants")',
+  // Filters toggle is a real <button> with literal "Filters" text (no aria-label).
+  amsMerchantsFiltersButton: 'button:has-text("Filters")',
+  // Search input inside the opened Filters panel.
+  // The DOM exposes both `<input type="search">` and `role=searchbox` with accessible name "Search".
+  amsMerchantsSearchInput: 'input[type="search"], input[role="searchbox"][name="Search" i], input[placeholder*="Search" i]',
+  // Search submit button — Filters panel renders a literal "Search" button.
+  amsMerchantsSearchSubmitButton: 'button:has-text("Search"):not(:has-text("Searchbox"))',
+  // Active-status combobox — INLINE multi-select with checkboxes (NOT react-select).
+  // DOM validated via MCP Playwright in qa1 on 2026-05-22 (S3 trace snapshot, ref=e86):
+  //   - `[role="combobox"]` exposing the placeholder "Please select" when closed.
+  //   - When opened (`aria-expanded="true"`), it inflates INLINE (no portal) to show
+  //     two options "Active" / "Inactive". Each option is an anonymous `<div>` whose
+  //     children are an `<input type="checkbox">` plus a `<div>` with the label text.
+  //   - Options are NOT `[role="option"]` and have no `filter__option` class —
+  //     the ARIA live region announces them as options for AT but the DOM nodes are
+  //     unsemantic divs. Option lookup MUST be scoped to the OPEN combobox to avoid
+  //     colliding with the table column header "Active" or the sidebar "Active" text.
+  amsMerchantsActiveCombobox: 'div:has(> div > div.filter__placeholder:has-text("Please select")) [role="combobox"], div:has(div.filter__placeholder:has-text("Please select")) .filter__control',
+  // Scope token for the OPEN state of the combobox. Page object uses this with
+  // `.getByText(label, { exact: true })` to target the option label `<div>`.
+  amsMerchantsActiveComboboxOpen: '[role="combobox"][aria-expanded="true"]',
+  // OPTION ROW container in the open Active combobox. 6ª passada (F-003 — fix definitivo):
+  // the option row is rendered by a CSS-Module class `index-module_customOptionStyles__<hash>`.
+  // The hash suffix changes between webpack builds; the prefix `customOptionStyles` is stable.
+  // DOM validated LIVE in qa1 (2026-05-22 13:13 UTC via mcp__playwright__browser_evaluate):
+  //   <div class="index-module_customOptionStyles__CSG9m" id="react-select-2-option-1">
+  //     <div class="d-flex align-items-center">
+  //       <input type="checkbox">    ← NATIVE input, NO aria-label, NO <label> wrapping
+  //       Inactive                   ← text node SIBLING of input (NOT inside <label for>)
+  //     </div>
+  //   </div>
+  // Page object filters by exact label via `filter({ hasText: /^state$/ })` to
+  // disambiguate Active vs Inactive (substring "Active" would otherwise match "Inactive").
+  // Previous attempts (`getByRole('checkbox', { name })`, `:has(> [role="checkbox"])`) failed
+  // because the native input has NO ARIA accessible name and NO `role="checkbox"` attribute.
+  amsMerchantsActiveOptionRow: '[class*="customOptionStyles"]',
+  // "Last Login" column header rendered in the merchants react-data-table-component table.
+  amsMerchantsLastLoginHeader: 'div[role="columnheader"]:has-text("Last Login")',
+  // Add User button on /users page (literal "Add User" text). Triggers lazy load of getAllAvailableMerchants.
+  amsAddUserButton: 'button:has-text("Add User")',
 
   // ── AMS — Users list (/users) ─────────────────────────────────────
   // Table uses react-data-table-component (divs, NOT <table>)
@@ -595,6 +785,17 @@ export const SELECTORS: AppSelectors = {
   ccEditCancelButton: '.modal:has(#editPendingCCForm) button:has-text("Close"), .modal:has(#editPendingCCForm) button:has-text("Cancel"):not(:has-text("CANCEL"))',
   ccEditRemoveButton: '.modal:has(#editPendingCCForm) .btn-danger, .modal:has(#editPendingCCForm) button:has-text("Cancel"):last-of-type',
 
+  // ── Sticky Recover columns (svc#485 — CC History grid) ───────────
+  // Accessible names of the 4 Servicing columns added for the Sticky recovery
+  // domain. Used by `CreditCardHistoryPage` via role=columnheader / role=cell
+  // matching (see DOM-first rule, CLAUDE.md #16). The role-based query is
+  // built in the page object — these constants are the source of truth for
+  // the header text rendered in the grid.
+  stickyStatusColumnName: 'Sticky Recovery Status',
+  stickyTxnIdColumnName: 'Sticky Txn ID',
+  stickyAttemptsColumnName: 'Sticky Attempts',
+  stickyLastRetryColumnName: 'Last Sticky Retry',
+
   // ── CCBIN (Send Application) ─────────────────────────────────
   naCcBinField: '#mainCreditCardBin',
   naCcBinImage: 'img[src*="ccbin"]',
@@ -623,6 +824,8 @@ export const SELECTORS: AppSelectors = {
   merchantNameInput: "input[name='merchantName']",
   merchantLegalNameInput: "input[name='legalName']",
   merchantLocationNameInput: "input[name='locationName']",
+  // Funding on Hold checkbox (Settings > Others section) — DOM confirmed qa1 2026-06-02
+  merchantHoldFundingCheckbox: "input[name='holdFunding']",
 
   // ── Program Groups (Origination — /programGroups — Task #1260) ────────────
   pgGroupCountCell: "div[role='cell']:nth-child(2) span",
@@ -782,6 +985,41 @@ export const SELECTORS: AppSelectors = {
   // ACH grid
   gsAchGridTable: 'table:has(th:has-text("Number of payments")):has(th:has-text("Total Cost"))',
   gsAchGridRows: 'table:has(th:has-text("Number of payments")):has(th:has-text("Total Cost")) tr:has(td)',
+
+  // ── Servicing — EPO panel (svc#531 R1.52.0 — 16m EPO for CA) ───────
+  // Account & Contract Overview + Early Payoff / 90-Day Pay Off sections of
+  // /customer-information/{accountPk}. DOM is a flat label-then-value pair:
+  // each label `<div>` is followed by a sibling `<div>` containing the value.
+  // Selectors anchor on the EXACT visible label text; page object resolves the
+  // value via `locator(label).locator('xpath=following-sibling::div[1]')`.
+  // DOM live-validated via MCP Playwright on qa1 account 4745 (2026-05-24).
+  svcEpoBalanceLabel: 'text="EPO Balance"',
+  svcNinetyDayTotalLabel: 'text="90-day Total"',
+  svcNinetyDayExpiryLabel: 'text="90-day Expiration Date"',
+  svcNinetyDayEligibleLabel: 'text="Eligible for 90-day Pay Off"',
+  svcEpoFeePctLabel: 'text="EPO Fee %"',
+  svcCostCashPriceLabel: 'text="Cost/Cash Price"',
+  svcProcessingFeeLabel: 'text="Processing Fee"',
+  svcBuyoutFeeLabel: 'text="Buyout Fee"',
+  svcTaxRateLabel: 'text="Tax Rate (%)"',
+  svcTotalContractAmountLabel: 'text="Total Contract Amount"',
+  svcContractBalanceLabel: 'text="Contract Balance"',
+  svcSettlementAmountFieldLabel: 'text="Settlement Amount"',
+
+  // ── Customer Portal — Overview + Payment (svc#531 R1.52.0) ─────────
+  // Customer-facing portal (Website portal in repo naming). Mobile-first
+  // viewport 375x667 per CLAUDE.md regra #15. Cards on /overview expose
+  // amounts via a label `<div>` followed by a value `<div>`; the Pay Off
+  // button is a `<button>` sibling of the value on the "Balance if Paid Off
+  // Today" card. /payment shows the same balance inside a radio option
+  // labelled "Balance if Paid Off Today:" (trailing colon).
+  wsBalanceIfPaidOffLabel: 'text="Balance if Paid Off Today"',
+  wsPayOffButton: 'button:has-text("Pay Off")',
+  wsContractBalanceLabel: 'text="Contract Balance"',
+  wsPaymentDueLabel: 'text="Payment Due"',
+  wsNextPaymentDueDateLabel: 'text="Next Payment Due Date"',
+  wsPaymentPageBalancePaidOffRadioLabel: 'text="Balance if Paid Off Today:"',
+  wsMakeAPaymentButton: 'button:has-text("MAKE A PAYMENT")',
 
   // ── Servicing — Documents tab (/documents/{accountPk}) ─────────────
   // Source: servicing repo `components/document-information/index.tsx` and `pages/documents/[account].tsx`.

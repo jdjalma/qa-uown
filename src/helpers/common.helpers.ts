@@ -65,6 +65,27 @@ export function sleep(ms: number): Promise<void> {
 }
 
 /**
+ * Parses a money string (e.g. "$3,813.43", "  $1234", "0.00") into a number.
+ * Strips currency symbol, thousands separators, and surrounding whitespace.
+ * Returns NaN when the input cannot be parsed (caller decides how to react).
+ *
+ * Examples:
+ *   parseMoney("$3,813.43") === 3813.43
+ *   parseMoney("0.00")      === 0
+ *   parseMoney("$ -12.50")  === -12.5
+ *   parseMoney("--")        === NaN
+ *   parseMoney(null)        === NaN
+ */
+export function parseMoney(input: string | number | null | undefined): number {
+  if (input === null || input === undefined) return NaN;
+  if (typeof input === 'number') return input;
+  const cleaned = input.replace(/[\s,$]/g, '').trim();
+  if (!cleaned) return NaN;
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : NaN;
+}
+
+/**
  * Extract accountPk from a page URL.
  * Matches patterns: `accountPk=12345`, `/account/12345`, `/accounts/12345`.
  *

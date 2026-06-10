@@ -1,6 +1,6 @@
 import { OriginationBasePage } from './origination-base.page.js';
 import { SELECTORS } from '../../selectors/common.selectors.js';
-import { getTableHeaders } from '../../helpers/table.helpers.js';
+import { getTableHeaders, getColumnIndexByHeaderText } from '../../helpers/table.helpers.js';
 
 /**
  * Page object for the Origination portal Leads table (Search Result page).
@@ -20,8 +20,27 @@ export class LeadsPage extends OriginationBasePage {
 
   // ── Navigation ───────────────────────────────────────────────────────
 
-  async navigateAndWaitForTable(): Promise<void> {
-    await this.navigateToLeads();
+  /**
+   * Navigates to the Leads page and waits for the Search Result table to load.
+   *
+   * @param originationUrl - Optional base URL. When provided, uses a direct
+   *                         `page.goto(`${originationUrl}leads`)` (the same
+   *                         pattern OTB / Rebate / Merchant list use). This is
+   *                         the REQUIRED path when the test starts from a
+   *                         blank page after auth state load — the sidebar is
+   *                         not mounted yet so `sideMenuNavigateTo('Leads')`
+   *                         times out at 15s on the `getByText('Leads')`
+   *                         fallback (root cause of run #2 F-002 recidiva).
+   *                         Omit only when navigating from another
+   *                         already-loaded Origination page where the sidebar
+   *                         is guaranteed to be visible.
+   */
+  async navigateAndWaitForTable(originationUrl?: string): Promise<void> {
+    if (originationUrl) {
+      await this.page.goto(`${originationUrl}leads`, { waitUntil: 'domcontentloaded' });
+    } else {
+      await this.navigateToLeads();
+    }
     await this.page.locator('text=Search Result').first()
       .waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {});
     await this.waitForSpinner();
@@ -267,6 +286,25 @@ export class LeadsPage extends OriginationBasePage {
       result.push(this.buildRowData(headers, cells));
     }
     return result;
+  }
+
+  // ── Column-order assertions (task #1295) ─────────────────────────────
+
+  /** Alias for `getCleanHeaders` — consistent name across OverviewPage/FundingPage. */
+  async readHeaderOrder(): Promise<string[]> {
+    return this.getCleanHeaders();
+  }
+
+  /** Returns the 0-based column index whose header matches `label` (normalized, case-insensitive). */
+  async getColumnIndexByHeaderText(label: string): Promise<number> {
+    const headers = await this.readHeaderOrder();
+    return getColumnIndexByHeaderText(headers, label);
+  }
+
+  /** Returns the cell text of all `<td>` in the given 0-based row index. */
+  async getRowCells(rowIndex: number): Promise<string[]> {
+    const rows = this.page.locator(SELECTORS.tableRow);
+    return rows.nth(rowIndex).locator(SELECTORS.tableCell).allTextContents();
   }
 
   // ── Private ──────────────────────────────────────────────────────────

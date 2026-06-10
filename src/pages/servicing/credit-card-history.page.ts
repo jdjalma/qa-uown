@@ -23,19 +23,19 @@ export class CreditCardHistoryPage extends ServicingBasePage {
 
   /** Navigate to CC History page by direct URL */
   async navigateToCcHistoryByUrl(baseUrl: string, accountPk: string | number): Promise<void> {
-    // Direct URL navigation — the SPA route /credit-card-history/[account] loads CC transactions
-    await this.page.goto(`${baseUrl}/credit-card-history/${accountPk}`, { waitUntil: 'domcontentloaded' });
+    // Sequential navigation (mimics real agent flow): customer-information first
+    // → SPA hydrates `customerStore.accountPk` → then CC Transactions tab.
+    //
+    // Direct navigation to /credit-card-history/{pk} produces a race where the
+    // CC History page's useEffect fires before `customerStore.accountPk` is
+    // populated; the resulting render skips MobX subscription on the sticky
+    // recoveries store and cells stay frozen at "—" even after the API
+    // response lands. Going through customer-information first hydrates the
+    // store so the subsequent CC History page mount has the correct deps.
+    await this.page.goto(`${baseUrl}/customer-information/${accountPk}`, { waitUntil: 'domcontentloaded' });
     await this.waitForSpinner();
-
-    // Verify we landed on the CC History page (not redirected to customer-information)
-    const ccTitle = this.page.locator('text=Credit Card Transactions').first();
-    if (!await ccTitle.isVisible({ timeout: 8_000 }).catch(() => false)) {
-      // Fallback: go to customer-information then use History menu
-      await this.page.goto(`${baseUrl}/customer-information/${accountPk}`, { waitUntil: 'domcontentloaded' });
-      await this.waitForSpinner();
-      await this.topMenuNavigateTo('cc transactions');
-      await this.waitForSpinner();
-    }
+    await this.topMenuNavigateTo('cc transactions');
+    await this.waitForSpinner();
 
     await this.waitForCcTable();
     // Expand to show all rows (default is 10 per page)
@@ -68,11 +68,39 @@ export class CreditCardHistoryPage extends ServicingBasePage {
   }
 
   /**
-   * Find a table row by CC Transaction PK (shown in "Confirmation #" and "Transaction ID" columns).
-   * Returns the first row whose text contains the PK string.
+   * Find a table row by CC Transaction PK.
+   *
+   * DOM-first investigation (2026-05-20, sticky CT-11 failure on account 17176):
+   *   - react-data-table-component renders each row with `id="row-{keyField}"`,
+   *     where the grid uses the CC transaction PK as the row key. Two rows for
+   *     the same account exist (one PENDING without sticky session, one with
+   *     `sticky_pk=7`). The old implementation used
+   *     `getRows().filter({ hasText: String(txPk) }).first()`, which matches
+   *     the PK as a substring anywhere in the row's accessible text. With a
+   *     PENDING row sitting first in the DOM (sorted by Created Date DESC),
+   *     `.first()` can resolve to the wrong row whenever the PK shares a
+   *     substring with another cell (Confirmation #, processor txn id,
+   *     amounts, sticky txn id, etc.). The wrong row has empty Sticky cells
+   *     (— em-dash), so all four `getSticky*` helpers return "—".
+   *
+   * Fix: match the row by its DOM id (`#row-{pk}`) — exact, deterministic.
+   * Fallback to a cell-exact match (cell whose accessible name is the PK
+   * with `exact: true`) when the grid renders without the row id (defensive).
+   *
+   * Selectors involved live in `SELECTORS.tableRowById` /
+   * `SELECTORS.tableCell`.
    */
   getRowByTxPk(txPk: string | number): Locator {
-    return this.getRows().filter({ hasText: String(txPk) }).first();
+    const idLocator = this.page.locator(SELECTORS.tableRowById(Number(txPk)));
+    // The id-based selector is the source of truth; the cell-exact filter is
+    // a defensive fallback for grids that lose the keyField id (none observed
+    // in production today). Both narrow to a single row deterministically and
+    // never substring-collide with other cells.
+    return idLocator.or(
+      this.getRows().filter({
+        has: this.page.getByRole('cell', { name: String(txPk), exact: true }),
+      }),
+    ).first();
   }
 
   /** Get the status text displayed in a row for a given CC TX PK */
@@ -334,5 +362,136 @@ export class CreditCardHistoryPage extends ServicingBasePage {
       return (await error.textContent())?.trim() || '';
     }
     return '';
+  }
+
+  // ── Sticky Recover columns (svc#485, CT-11) ─────────────────────────
+  //
+  // The 4 columns dedicated to Sticky recovery (`Sticky Recovery Status`,
+  // `Sticky Txn ID`, `Sticky Attempts`, `Last Sticky Retry`) are appended
+  // to the grid header. Column indices are NOT hardcoded — instead we
+  // resolve the column index dynamically from the header text (resilient
+  // to columns being reordered or new columns being inserted ahead).
+  //
+  // DOM-first reminder (CLAUDE.md #16): if `getStickyColumnIndex` returns
+  // -1, do NOT raise the timeout — open the portal with MCP Playwright,
+  // capture the real `role=columnheader` accessible names and update the
+  // constants in `SELECTORS.sticky*ColumnName` accordingly.
+
+  /**
+   * Returns the 0-based column index of a Sticky column by its header name.
+   * Used by `getStickyRecoveryStatus`/`getStickyTransactionId`/etc.
+   */
+  private async getStickyColumnIndex(columnName: string): Promise<number> {
+    const headers = this.page.locator('div[role="columnheader"]');
+    const count = await headers.count();
+    for (let i = 0; i < count; i++) {
+      const text = ((await headers.nth(i).textContent()) || '').trim();
+      if (text === columnName) return i;
+    }
+    return -1;
+  }
+
+  private async getStickyCellText(txPk: string | number, columnName: string): Promise<string> {
+    const idx = await this.getStickyColumnIndex(columnName);
+    if (idx < 0) {
+      throw new Error(
+        `[CreditCardHistoryPage] Sticky column "${columnName}" not found in DOM. ` +
+        `If this is a real change in the grid, run the DOM-first protocol (CLAUDE.md #16) ` +
+        `and update SELECTORS.sticky*ColumnName.`,
+      );
+    }
+    const row = this.getRowByTxPk(txPk);
+    const cells = row.locator(SELECTORS.tableCell);
+    return ((await cells.nth(idx).textContent()) || '').trim();
+  }
+
+  /** Get the rendered text of the "Sticky Recovery Status" column for a row */
+  async getStickyRecoveryStatus(txPk: string | number): Promise<string> {
+    return this.getStickyCellText(txPk, SELECTORS.stickyStatusColumnName);
+  }
+
+  /** Get the rendered text of the "Sticky Txn ID" column for a row (may be truncated) */
+  async getStickyTransactionId(txPk: string | number): Promise<string> {
+    return this.getStickyCellText(txPk, SELECTORS.stickyTxnIdColumnName);
+  }
+
+  /** Get the rendered text of the "Sticky Attempts" column for a row */
+  async getStickyAttempts(txPk: string | number): Promise<string> {
+    return this.getStickyCellText(txPk, SELECTORS.stickyAttemptsColumnName);
+  }
+
+  /** Get the rendered text of the "Last Sticky Retry" column for a row */
+  async getLastStickyRetry(txPk: string | number): Promise<string> {
+    return this.getStickyCellText(txPk, SELECTORS.stickyLastRetryColumnName);
+  }
+
+  /** Returns true if all 4 Sticky columns are present in the grid header */
+  async hasStickyColumns(): Promise<boolean> {
+    const wanted = [
+      SELECTORS.stickyStatusColumnName,
+      SELECTORS.stickyTxnIdColumnName,
+      SELECTORS.stickyAttemptsColumnName,
+      SELECTORS.stickyLastRetryColumnName,
+    ];
+    for (const name of wanted) {
+      if ((await this.getStickyColumnIndex(name)) < 0) return false;
+    }
+    return true;
+  }
+
+  /**
+   * Wait until the GET /sticky-recoveries response settles on the SPA.
+   * The FE calls this endpoint in parallel with `/getCCTransactions` via
+   * `Promise.all` (see `domain/stores/payment.tsx::loadCreditCardHistory`).
+   * The cct grid renders as soon as the transactions resolve, but the four
+   * Sticky cells remain "—" (em-dash fallback) until the sticky response
+   * lands and MobX triggers re-render. Callers MUST invoke this before
+   * asserting Sticky cell contents.
+   */
+  async waitForStickyRecoveriesResponse(timeoutMs = 30_000): Promise<void> {
+    await this.page.waitForResponse(
+      (res) => /\/uown\/svc\/accounts\/\d+\/sticky-recoveries/.test(res.url()) && res.status() === 200,
+      { timeout: timeoutMs },
+    ).catch(() => {
+      // If the response already happened before this listener attached, fall
+      // back to polling for any non-em-dash sticky cell on the visible rows.
+    });
+  }
+
+  /**
+   * Workaround for FE bug: the Sticky cells in the CC Transactions grid are
+   * populated by MobX-backed store state (`paymentStore.stickyRecoveriesByCcPk`)
+   * but the `CreditCardHistoryTable` component in `frontend/servicing` is NOT
+   * wrapped in `observer()` (commit `9c2e651`). When the `/sticky-recoveries`
+   * response lands AFTER the initial render, the cells stay frozen at "—"
+   * because no re-render is triggered.
+   *
+   * A page reload re-mounts the component, which reads the (now-populated)
+   * store on first render and renders the Sticky cells correctly. This is a
+   * **workaround**, not a fix — the FE component should be wrapped in
+   * `observer()` so MobX subscribes the relevant fields.
+   */
+  async reloadAfterStickyDataReady(timeoutMs = 30_000): Promise<void> {
+    await this.waitForStickyRecoveriesResponse(timeoutMs);
+    // Small grace period to let MobX persist the store before reload
+    await this.page.waitForTimeout(500);
+    await this.page.reload({ waitUntil: 'domcontentloaded' });
+    await this.waitForSpinner();
+    await this.page.locator(SELECTORS.tableRow).first().waitFor({ state: 'visible', timeout: 30_000 });
+    await this.selectMaxRowsPerPage().catch(() => {});
+  }
+
+  /**
+   * Wait until the row identified by `txPk` shows a non-em-dash value in the
+   * Sticky Recovery Status cell. Use after `waitForStickyRecoveriesResponse`
+   * when the test expects a session to exist (CT-11 happy path).
+   */
+  async waitForStickyCellPopulated(txPk: string | number, timeoutMs = 15_000): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const value = await this.getStickyRecoveryStatus(txPk).catch(() => '');
+      if (value && value.trim() !== '—' && value.trim() !== '') return;
+      await this.page.waitForTimeout(500);
+    }
   }
 }

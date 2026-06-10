@@ -1,0 +1,136 @@
+{
+  "capturedAt": "2026-04-23T18:58:41.484Z",
+  "accounts": [
+    {
+      "pk": "11484",
+      "account_status": "SETTLED_IN_FULL",
+      "company": "UOWN",
+      "rating": null,
+      "settled_in_full_date_time": "2026-04-21T13:00:00.000Z"
+    },
+    {
+      "pk": "11485",
+      "account_status": "SETTLED_IN_FULL",
+      "company": "KORNERSTONE",
+      "rating": null,
+      "settled_in_full_date_time": "2026-04-21T13:00:00.000Z"
+    }
+  ],
+  "emailQueue": [
+    {
+      "pk": "637663",
+      "account_pk": "11485",
+      "template_name": "KORNERSTONE_SettledInFullEmail",
+      "to_email_addresses": "fintechgroup777@gmail.com",
+      "status": "PENDING",
+      "sent_time": null,
+      "row_created_timestamp": "2026-04-23T17:56:20.024Z"
+    },
+    {
+      "pk": "637662",
+      "account_pk": "11484",
+      "template_name": "SettledInFullEmail",
+      "to_email_addresses": "fintechgroup777@gmail.com",
+      "status": "PENDING",
+      "sent_time": null,
+      "row_created_timestamp": "2026-04-23T17:56:19.972Z"
+    },
+    {
+      "pk": "637656",
+      "account_pk": "11485",
+      "template_name": "KORNERSTONE_SettledInFullEmail",
+      "to_email_addresses": "fintechgroup777@gmail.com",
+      "status": "PENDING",
+      "sent_time": null,
+      "row_created_timestamp": "2026-04-23T17:55:56.702Z"
+    },
+    {
+      "pk": "637655",
+      "account_pk": "11484",
+      "template_name": "SettledInFullEmail",
+      "to_email_addresses": "fintechgroup777@gmail.com",
+      "status": "PENDING",
+      "sent_time": null,
+      "row_created_timestamp": "2026-04-23T17:55:56.646Z"
+    },
+    {
+      "pk": "637650",
+      "account_pk": "11485",
+      "template_name": "KORNERSTONE_SettledInFullEmail",
+      "to_email_addresses": "fintechgroup777@gmail.com",
+      "status": "SENT",
+      "sent_time": "2026-04-23T17:55:29.994Z",
+      "row_created_timestamp": "2026-04-23T17:55:11.499Z"
+    },
+    {
+      "pk": "637649",
+      "account_pk": "11484",
+      "template_name": "SettledInFullEmail",
+      "to_email_addresses": "fintechgroup777@gmail.com",
+      "status": "SENT",
+      "sent_time": "2026-04-23T17:55:29.992Z",
+      "row_created_timestamp": "2026-04-23T17:55:11.454Z"
+    },
+    {
+      "pk": "637639",
+      "account_pk": "11484",
+      "template_name": "SettledInFullEmail",
+      "to_email_addresses": "fintechgroup777@gmail.com",
+      "status": "SENT",
+      "sent_time": "2026-04-23T17:53:41.338Z",
+      "row_created_timestamp": "2026-04-23T17:53:21.743Z"
+    }
+  ],
+  "correspondenceLogs": [
+    {
+      "pk": "634532",
+      "account_pk": "11485",
+      "template_name": "KORNERSTONE_SettledInFullEmail",
+      "row_created_timestamp": "2026-04-23T17:56:20.034Z"
+    },
+    {
+      "pk": "634531",
+      "account_pk": "11484",
+      "template_name": "SettledInFullEmail",
+      "row_created_timestamp": "2026-04-23T17:56:19.980Z"
+    },
+    {
+      "pk": "634525",
+      "account_pk": "11485",
+      "template_name": "KORNERSTONE_SettledInFullEmail",
+      "row_created_timestamp": "2026-04-23T17:55:56.711Z"
+    },
+    {
+      "pk": "634524",
+      "account_pk": "11484",
+      "template_name": "SettledInFullEmail",
+      "row_created_timestamp": "2026-04-23T17:55:56.656Z"
+    },
+    {
+      "pk": "634518",
+      "account_pk": "11485",
+      "template_name": "KORNERSTONE_SettledInFullEmail",
+      "row_created_timestamp": "2026-04-23T17:55:11.506Z"
+    },
+    {
+      "pk": "634517",
+      "account_pk": "11484",
+      "template_name": "SettledInFullEmail",
+      "row_created_timestamp": "2026-04-23T17:55:11.460Z"
+    },
+    {
+      "pk": "634507",
+      "account_pk": "11484",
+      "template_name": "SettledInFullEmail",
+      "row_created_timestamp": "2026-04-23T17:53:21.751Z"
+    }
+  ],
+  "scheduledTask": [
+    {
+      "scheduled_task_name": "settledInFullAccountEmailSweep",
+      "is_active": true,
+      "cron_trigger": "0 0 2 ? * MON-FRI",
+      "last_trigger_time": "2026-04-23T17:56:18.259Z"
+    }
+  ]
+}

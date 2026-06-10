@@ -1,5 +1,6 @@
 export { OriginationBasePage } from './origination-base.page.js';
 export { OriginationCustomerPage } from './customer.page.js';
+export type { LeasePanelContract } from './customer.page.js';
 export { ContractPage } from './contract.page.js';
 export { FundingPage } from './funding.page.js';
 export { LeaseAgreementPage } from './lease-agreement.page.js';
@@ -28,3 +29,6 @@ export { ProgramDetailsPage } from './program-details.page.js';
 export type { ProgramNoteEntry } from './program-details.page.js';
 export { MerchantProgramsSectionPage } from './merchant-programs-section.page.js';
 export type { MerchantProgramSectionRow } from './merchant-programs-section.page.js';
+export { MerchantLocationFilterPO } from './merchant-location-filter.po.js';
+export { RebatePage } from './rebate.page.js';
+export { MerchantListPage } from './merchant-list.page.js';

@@ -19,3 +19,8 @@ export { SeonClient } from './seon.client.js';
 export { BankAccountClient } from './bank-account.client.js';
 export { CustomersClient } from './customers.client.js';
 export { GowSignTemplateClient } from './gowsign-template.client.js';
+export { CorrespondenceClient } from './correspondence.client.js';
+export { TmsAuditClient } from './tms-audit.client.js';
+export { TmsPaymentClient } from './tms-payment.client.js';
+export { StickyRecoverClient, unwrapStickyRecoveries } from './sticky-recover.client.js';
+export { SimpleSearchClient } from './simple-search.client.js';

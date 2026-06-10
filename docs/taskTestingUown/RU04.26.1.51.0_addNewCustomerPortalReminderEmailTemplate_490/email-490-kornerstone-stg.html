@@ -1,0 +1,183 @@
+Delivered-To: fintechgroup777+490_kornerstone_5601601_929107@gmail.com
+Received: by 2002:a05:7412:7a93:20b0:1cd:e7c8:4e21 with SMTP id hu19-n2csp5848901rdb;
+        Mon, 27 Apr 2026 06:52:14 -0700 (PDT)
+X-Received: by 2002:a05:620a:17a0:b0:8ea:bddc:690b with SMTP id af79cd13be357-8eabddc6b71mr4648064385a.51.1777297933905;
+        Mon, 27 Apr 2026 06:52:13 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t77297933; cv=none;
+        d=google.com; s=arc-20240605;
+        b=X7P7j323vVoh9FXHSeI+LFH3ho6dT7CKWMYRGF7lYF24/okJqgu3KZ2jzdr6FGb/wV
+         HYN/a7GKfmAGzisNHmx/QZ2YGv2Fwozo6DUJWPpuZFuCSGkSCeBq4QKOqKj1T+OwdnX4
+         1mPpL6CyZibjqXLF3zqBUIahgyLXMnIGa5zHbSHz3gdbYaNDm9u8hzlQBCo6zB6CXpvU
+         WiAuWQjhuYLQ4wWHZa+49/z40AHCb6aJudWWJcCRWXKyK2T/wTW5PteBAIkoDudbbi3m
+         k9qBT/DT89/JgvwkBQXfRoyX3EsWZfAt+4GF3tHCwHMIoTMh1B9+5fzMLh8sKMXeep0A
+         0YrQ=ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20240605;
+        h=to:subject:message-id:mime-version:from:date
+         :content-transfer-encoding:dkim-signature:dkim-signature;
+        bh=fHi/pZG3hg+JJc2pXPARjbQjGNTyDhcoZ2AAxuiI05Q=;
+        fh=hxYrtbpcRXU3mM1Y2fo2m5gUhIYtlEAE4UuAXYE79O8=;
+        bÐMzgJjquhHUsNCDsWW73UOp5wjuIlT/siT3N3NhUQpeZJXrkPbXvlVTGXcpgXfXAQ
+         ExA+tTsi3eYqAKDzw7lo146lLMTYs/P1nkcXlo4+fxs7hPvJ7/8bREWJr75uAoZWAGJN
+         +gn8QErRpnXZmxgtVFj0dqtjXiTAPU32xfdC0zNREbA3aqSaS+yUrT7Y7dr1FKoGhObw
+         J1sjxZw2gnTEQ7jtqIBizC/aJkJ3Up0NAHHYIAej+qNzn+yTe4AM3Vg9C148dIBnsSLl
+         QhJxCkdVyztRwaR8xTroZe9Dt3lsagrPsjbzQ4HlCpYCzfb7BYqizH81tcfsX86AAGhb
+         +/yA==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@uownleasing.com header.s=s1 header.b=lUDTVrOJ;
+       dkim=pass header.i=@sendgrid.info header.s=smtpapi header.b=uJXsn4Cp;
+       spf=pass (google.com: domain of bounces+34082517-70a8-fintechgroup777+490_kornerstone_5601601_929107=gmail.com@em3357.uownleasing.com designates 159.183.125.108 as permitted sender) smtp.mailfrom="bounces+34082517-70a8-fintechgroup777+490_kornerstone_5601601_929107=gmail.com@em3357.uownleasing.com";
+       dmarc=pass (p=QUARANTINE sp=QUARANTINE dis=NONE) header.from=uownleasing.com
+Return-Path: <bounces+34082517-70a8-fintechgroup777+490_kornerstone_5601601_929107=gmail.com@em3357.uownleasing.com>
+Received: from wfbttdsc.outbound-mail.sendgrid.net (wfbttdsc.outbound-mail.sendgrid.net. [159.183.125.108])
+        by mx.google.com with ESMTPS id af79cd13be357-8eab34cfe9csi3180619485a.1.2026.04.27.06.52.13
+        for <fintechgroup777+490_kornerstone_5601601_929107@gmail.com>
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits8/128);
+        Mon, 27 Apr 2026 06:52:13 -0700 (PDT)
+Received-SPF: pass (google.com: domain of bounces+34082517-70a8-fintechgroup777+490_kornerstone_5601601_929107=gmail.com@em3357.uownleasing.com designates 159.183.125.108 as permitted sender) client-ip9.183.125.108;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@uownleasing.com header.s=s1 header.b=lUDTVrOJ;
+       dkim=pass header.i=@sendgrid.info header.s=smtpapi header.b=uJXsn4Cp;
+       spf=pass (google.com: domain of bounces+34082517-70a8-fintechgroup777+490_kornerstone_5601601_929107=gmail.com@em3357.uownleasing.com designates 159.183.125.108 as permitted sender) smtp.mailfrom="bounces+34082517-70a8-fintechgroup777+490_kornerstone_5601601_929107=gmail.com@em3357.uownleasing.com";
+       dmarc=pass (p=QUARANTINE sp=QUARANTINE dis=NONE) header.from=uownleasing.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=uownleasing.com;
+	h=content-transfer-encoding:content-type:date:from:mime-version:subject:
+	to:cc:content-type:date:feedback-id:from:subject:to;
+	s=s1; t77297933; bh=fHi/pZG3hg+JJc2pXPARjbQjGNTyDhcoZ2AAxuiI05Q=;
+	b=lUDTVrOJq+3fO8Z10kmEgs4Uoz4uzgP2nRkUY08Us6irm2UijZqo8UCxfTuGZHAUz0Jc
+	sNxX7FuPPDVuJ1vO1KVvCQ7bf07ibLfyg7k4Zi1ylZfBPbJC1NTlu2ML1fd5YiyRqn+0FN
+	Ey9957senvM0Xfc2X+MMs/vQNTY6d1cmH7tfVRJUh6HSiNcs+0K3sO7pOHuw7m7EkfU3OA
+	Craffd63bjDR0a6RGuxpOr3DJnWhkizWyyBRSQc13VgJAMn5yJd6iKKCMMtI8GQaLRY6Hw
+	LLO39R0z8AdohrMvUsFw+zq7+16cO44cKE/cvU7MBLW+nHJYzI6QfogKg0alygBQ=DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=sendgrid.info;
+	h=content-transfer-encoding:content-type:date:from:mime-version:subject:
+	to:cc:content-type:date:feedback-id:from:subject:to;
+	s=smtpapi; t77297933; bh=fHi/pZG3hg+JJc2pXPARjbQjGNTyDhcoZ2AAxuiI05Q=;
+	b=uJXsn4Cpy56D9ZGOQNOUpFt4SPaInIS36Mh/bi/lLe1IfHm6kRsEsApk4uHM7yXU7809
+	yP5wkC2SYmFd/7swqyXfthYoasF1gpAxfhDmr7+R88YMmXBvmerGssVH+LGq4dqRXar/QT
+	qGJzHnkGba7hDWz3tN1TOYeOAPq4bQeAAReceived: by recvd-7df5675c9c-qzkjw with SMTP id recvd-7df5675c9c-qzkjw-1-69EF6A0D-25
+	2026-04-27 13:52:13.332696724 +0000 UTC m=+490078.882349908
+Received: from MzQwODI1MTc (unknown)
+	by geopod-ismtpd-10 (SG) with HTTP
+	id bCwMf9D0RyijrCfevVuhoQ
+	Mon, 27 Apr 2026 13:52:13.299 +0000 (UTC)
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/html; charset=utf-8
+Date: Mon, 27 Apr 2026 13:52:13 +0000 (UTC)
+From: uown.dev.kornerstone@uownleasing.com
+Mime-Version: 1.0
+Message-ID: <bCwMf9D0RyijrCfevVuhoQ@geopod-ismtpd-10>
+Subject: Customer Portal Reminder Email
+X-SG-EID: 
+ =?us-ascii?Q?u001.J5sA5mlXzb+Z7aWwhUoA+VCO52F98BnWX2vFbLigH5WrU1yB1exSO59Ie? =?us-ascii?Q?neafIDB5M3VT1hRz3Un2ayhMXFQvEHiyABB6kWc? =?us-ascii?Q?rKEg4t4W0ybe2navFvGwWhZsHtGYkvHYqswQ+8y? =?us-ascii?Q?D3zgVmvX2yXBnHF77oHj+OsEJHpCAQI0HqZi3by? =?us-ascii?Q?2O8bGWgl3RDDaqtHaTk86I1hOayxnqywEaUDKNz? =?us-ascii?Q?3Oz+/VrnCntbJCOrJTa2/IIx2fU19yrwnAJ/lNG? =?us-ascii?Q?xXPEQLZih3eSLyWFpH/4PJSYEA==?To: fintechgroup777+490_kornerstone_5601601_929107@gmail.com
+X-Entity-ID: u001.5cWs5X4nonScT0kz4uMg8w=
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Manage Your Kornerstone Account Anytime</title>
+</head>
+
+<body style="margin:0; padding:0; font-family: Arial, sans-serif; background-color:#6d6e71;">
+
+  <div style="max-width:600px; margin:0 auto; background:#ffffff;">
+
+    <!-- LOGO -->
+    <div style="text-align:center; padding: 20px 20px 0 20px;">
+      <a href="https://portal.uownleasing.com">
+        <img src="https://storage.googleapis.com/uown/kornerstone/kc-login-logo.png"
+          style="max-width:100%; height:auto;" />
+      </a>
+    </div>
+
+    <!-- CONTENT -->
+    <div style="padding:20px; color:#10526a; font-size:16px; line-height:1.6;">
+
+      <p>
+        <strong>Eric</strong>, manage your account any time!
+      </p>
+
+      <p style="margin-top:15px;">
+        Your <strong>Kornerstone Customer Portal</strong> makes it easy to stay on top of your lease anytime, anywhere.
+      </p>
+
+      <p style="margin-top:15px;">
+        <strong>In the portal you can quickly:</strong>
+      </p>
+
+      <ul style="padding-left:10px; list-style-type: none;">
+        <li><span style="font-family: Arial, sans-serif;">â </span>View your account and lease details</li>
+        <li><span style="font-family: Arial, sans-serif;">â </span>Make or schedule payments</li>
+        <li><span style="font-family: Arial, sans-serif;">â </span>Update your contact information</li>
+        <li><span style="font-family: Arial, sans-serif;">â </span>Review important account updates</li>
+      </ul>
+
+      <p style="margin-top:15px; margin-bottom:0px;">
+        All you need to get started is your <strong>email address or mobile number</strong> to receive your secure
+        verification code.
+      </p>
+
+    </div>
+
+    <!-- BUTTON -->
+    <div style="text-align:center; padding:20px;">
+      <a href="https://website-stg.kornerstoneliving.com"
+        style="background-color:#8FC31F; color:#ffffff; text-decoration:none; padding:12px 20px; border-radius:6px; display:inline-block; font-size:16px;">
+        Start your Customer Portal
+      </a>
+    </div>
+
+    <!-- DIVIDER -->
+    <div style="text-align:center;">
+      <div style="border-top:1px solid #ae9566; width:50%; margin:20px auto;"></div>
+    </div>
+
+    <!-- CONTACT IMAGE -->
+    <div style="text-align:center; padding:10px;">
+      <a href="https://uownleasing.com/contact/" target="_blank">
+        <img src="https://storage.googleapis.com/uown/kornerstone/UownEmail_Contact%20us_KSversion.png"
+          style="max-width:100%; height:auto;" />
+      </a>
+    </div>
+
+    <!-- SOCIAL TEXT -->
+    <div style="text-align:center; padding:10px; font-size:14px; color:#10526a;">
+      Stay connected with us on social media for updates and tips.
+    </div>
+
+    <!-- SOCIAL ICONS -->
+    <div style="text-align:center; padding-bottom:5px; font-size:0;">
+
+      <a href="https://www.facebook.com/Kornerstoneliving/" target="_blank"
+        style="display:inline-block; margin:0 5px; text-decoration:none;">
+        <img src="https://storage.googleapis.com/uown/kornerstone/green_facebook.png" height="25"
+          style="display:block; border:0;" />
+      </a>
+
+      <a href="https://www.linkedin.com/company/kornerstoneliving/" target="_blank"
+        style="display:inline-block; margin:0 5px; text-decoration:none;">
+        <img src="https://storage.googleapis.com/uown/kornerstone/green_linkedin.png" height="25"
+          style="display:block; border:0;" />
+      </a>
+
+      <a href="https://www.instagram.com/kornerstoneliving" target="_blank"
+        style="display:inline-block; margin:0 5px; text-decoration:none;">
+        <img src="https://storage.googleapis.com/uown/kornerstone/green_instagram.png" height="25"
+          style="display:block; border:0;" />
+      </a>
+
+    </div>
+
+    <!-- DIVIDER -->
+    <div style="text-align:center;">
+      <div style="border-top:1px solid #ae9566; width:50%; margin:20px auto;"></div>
+    </div>
+
+    <!-- FOOTER -->
+    <div style="text-align:center; padding: 0 15px 15px 15px; font-size:12px; color:#23496d;">
+      Kornerstone Â· CS@kornerstoneliving.com Â· (888) 521-5111
+    </div>
+
+  </div>
+
+</body>
+
+</html>

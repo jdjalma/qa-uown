@@ -81,6 +81,7 @@ export const MERCHANTS: Record<string, MerchantConfig> = {
     refCode: 'danielsjewelers',
     envOverrides: {
       stg: { number: 'OL90205-0001' },
+      qa1: { number: 'OL90205-0001' },
     },
   },
   DanielsJewelersClone: {
@@ -109,9 +110,10 @@ export const MERCHANTS: Record<string, MerchantConfig> = {
     username: 'kornerstone',
     password: envOr('MERCHANT_FIFTH_AVE_FURNITURE_NY_PASSWORD', 'U0wn_Kornerstone_012c'),
     number: 'KS3015',
+    refCode: 'KS3015',
     programs: ['13 month', '16 month'],
     envOverrides: {
-      qa1: { password: envOr('MERCHANT_FIFTH_AVE_FURNITURE_NY_QA1_PASSWORD', 'U0wn_Kornerstone_012c') },
+      qa1: { password: envOr('MERCHANT_FIFTH_AVE_FURNITURE_NY_QA1_PASSWORD', 'U0wn_kornerstone_4aZ9Xb') },
       qa2: { password: envOr('MERCHANT_FIFTH_AVE_FURNITURE_NY_QA2_PASSWORD', 'U0wn_Kornerstone_012c') },
     },
   },
@@ -215,8 +217,15 @@ export const MERCHANTS: Record<string, MerchantConfig> = {
     username: 'payTomorrow',
     password: envOr('MERCHANT_MSA_POWERSPORTS_PASSWORD', 'U0wn_payTomorrow'),
     number: 'OL90402-0001',
-    refCode: 'msapowersports',
+    refCode: 'OL90402-0001',
     ...PAYTOMORROW_PORTAL_DEFAULTS,
+    envOverrides: {
+      stg: {
+        number: 'OL90402-0001_clone_for_DevTest',
+        refCode: 'OL90402-0001_clone_for_DevTest',
+        username: 'Merchant_Dev_Test',
+      },
+    },
   },
   SaslowsJewelers: {
     fullName: "Saslow's Jewelers",
@@ -288,4 +297,49 @@ export function getMerchant(name: string, env?: string): MerchantConfig {
     return { ...base, ...merchant.envOverrides[env] };
   }
   return merchant;
+}
+
+/**
+ * General-purpose UOWN merchant pool for randomized test data.
+ * Criteria: env-agnostic, UOWN brand (not Kornerstone), no special platform config.
+ * Excluded: Kornerstone-brand, PayTomorrow-platform, env-specific, clones, DanielsJewelers
+ * (mainNextPayDate blocked until cherry-pick 62e2fc20 is applied per env).
+ */
+export const UOWN_GENERAL_MERCHANT_POOL: readonly string[] = [
+  'TireAgent',
+  'BuyOnTrust',
+  'ChoicePay',
+  'FormPiper',
+  'PayPossible',
+  'TerraceFinance',
+  'SaslowsJewelers',
+  'Everly',
+  'FlexxBuy',
+  'MyEyeMed',
+  '360Finance',
+  'FirstApp',
+] as const;
+
+/**
+ * Kornerstone-brand merchant pool — for tests that specifically require the KS
+ * webhook/holdDeposit contract (KORNERSTONE_MERCHANT_CONFIG).
+ */
+export const KORNERSTONE_GENERAL_MERCHANT_POOL: readonly string[] = [
+  'FifthAveFurnitureNY',
+  'ComfortZoneMattress',
+  'BodegaFurniture',
+] as const;
+
+/**
+ * Picks a random merchant key from the given pool (default: UOWN_GENERAL_MERCHANT_POOL).
+ * Logs the chosen key so failed tests remain reproducible.
+ *
+ * Usage:
+ *   const merchantKey = pickRandomMerchantKey();
+ *   const merchant = getMerchant(merchantKey, env);
+ */
+export function pickRandomMerchantKey(pool: readonly string[] = UOWN_GENERAL_MERCHANT_POOL): string {
+  const key = pool[Math.floor(Math.random() * pool.length)];
+  console.log(`[pickRandomMerchant] selected: ${key}`);
+  return key;
 }

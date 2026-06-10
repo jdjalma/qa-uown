@@ -566,6 +566,12 @@ export class PayPairPortalPage extends BasePage {
 
     await sleep(10_000);
 
+    // ── Dismiss SEON IDV overlay if present ───────────────────────
+    // SEON injects an iframe (data-testid="seon-idv-iframe") that overlays the
+    // CC payment form and intercepts pointer events. Close the modal via the X
+    // button in the widget iframe, then remove the blocking iframe from pt-iframe.
+    await this.dismissSeonOverlay(widgetIframe, ptFrame);
+
     // ── Fill CC info ──────────────────────────────────────────────
     const ccFirstNameField = ptFrame.locator(SELECTORS.ccFirstName).first();
     if (await ccFirstNameField.isVisible({ timeout: 30_000 }).catch(() => false)) {
@@ -662,8 +668,31 @@ export class PayPairPortalPage extends BasePage {
     }
 
     // Wait for payment processing — the submit triggers CC authorization + page transition.
-    // The provider_flow frame reloads to show T&C after successful authorization.
-    await sleep(10_000);
+    await sleep(5_000);
+
+    // Handle SEON IDV "Failed to verify identification" error — dismiss and retry submit.
+    // SEON verification may fail in sandbox (no camera); the form can proceed after dismissal.
+    const seonError = ptFrame.locator('text=Failed to verify identification').first();
+    if (await seonError.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      console.log('[PayPair Payment] SEON verification error detected — dismissing and retrying');
+      // Close the SEON error alert banner
+      const errorCloseBtn = ptFrame.locator('[role="alert"] ~ button, [role="alert"] button').first();
+      if (await errorCloseBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+        await errorCloseBtn.click();
+        console.log('[PayPair Payment] Dismissed SEON error banner');
+      }
+      await sleep(1_000);
+      // Re-submit
+      const retrySubmit = ptFrame.locator("button:has-text('Submit')").first();
+      if (await retrySubmit.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        await retrySubmit.scrollIntoViewIfNeeded();
+        await retrySubmit.click({ force: true });
+        console.log('[PayPair Payment] Payment form re-submitted after SEON dismissal');
+      }
+      await sleep(10_000);
+    } else {
+      await sleep(5_000);
+    }
   }
 
   /**
@@ -859,6 +888,38 @@ export class PayPairPortalPage extends BasePage {
     if (providerFrame?.url().includes('success')) {
       console.log('[PayPair ESign] SUCCESS page detected');
     }
+  }
+
+  /**
+   * Dismiss the SEON IDV (identity verification) overlay that blocks the CC payment form.
+   * SEON injects an iframe (data-testid="seon-idv-iframe") on top of the payment fields.
+   * Strategy: remove the blocking iframe and overlay elements from the DOM via JS.
+   * Do NOT click close buttons — the PayPair widget shares a close button that would
+   * dismiss the entire widget overlay.
+   */
+  private async dismissSeonOverlay(_widgetIframe: FrameLocator, ptFrame: FrameLocator): Promise<void> {
+    const seonIframe = ptFrame.locator('iframe[data-testid="seon-idv-iframe"]');
+    if (!await seonIframe.isVisible({ timeout: 5_000 }).catch(() => false)) {
+      console.log('[PayPair Payment] No SEON overlay detected');
+      return;
+    }
+    console.log('[PayPair Payment] SEON IDV overlay detected — removing from DOM');
+
+    // Remove the SEON iframe and any overlay/backdrop from the pt-iframe DOM
+    await ptFrame.locator('body').evaluate((body) => {
+      body.querySelectorAll('iframe[data-testid="seon-idv-iframe"]').forEach(el => el.remove());
+      body.querySelectorAll('[data-testid*="seon"], [class*="seon-idv"], [class*="seonIdv"]').forEach(el => el.remove());
+    }).catch(() => {});
+    await sleep(1_000);
+
+    // Verify removal
+    const stillVisible = await seonIframe.isVisible({ timeout: 2_000 }).catch(() => false);
+    if (stillVisible) {
+      await seonIframe.evaluate((el: HTMLElement) => el.remove()).catch(() => {});
+      console.log('[PayPair Payment] SEON iframe required second removal');
+    }
+
+    console.log('[PayPair Payment] SEON overlay dismissed');
   }
 
   /**

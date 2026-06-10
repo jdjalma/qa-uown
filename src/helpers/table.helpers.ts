@@ -60,6 +60,37 @@ export async function getTableHeaders(page: Page): Promise<string[]> {
   return page.locator(SELECTORS.tableHeader).allTextContents();
 }
 
+/**
+ * Normalizes a table header text by stripping sort-indicator unicode arrows
+ * (▲ ▼ △ ▽ ↑ ↓) and trimming whitespace. Case is preserved.
+ *
+ * Used by Origination column-order tests (task #1295) where header text on
+ * sortable columns is appended with a unicode arrow (qa1 finding, SPEC § 0.5).
+ */
+export function normalizeHeader(text: string): string {
+  return text.replace(/[▲▼△▽↑↓]/g, '').trim();
+}
+
+/**
+ * Returns the index of the FIRST header whose normalized text matches `label`.
+ * Case-insensitive equality.
+ *
+ * @returns -1 when no header matches.
+ */
+export function getColumnIndexByHeaderText(headers: string[], label: string): number {
+  const target = label.toLowerCase();
+  return headers.findIndex(h => normalizeHeader(h).toLowerCase() === target);
+}
+
+/**
+ * Returns cleaned + normalized table headers (sort indicators stripped, trimmed).
+ * Convenience wrapper around `getTableHeaders` + `normalizeHeader`.
+ */
+export async function getNormalizedHeaders(page: Page): Promise<string[]> {
+  const raw = await getTableHeaders(page);
+  return raw.map(normalizeHeader);
+}
+
 export async function getRowDataByIndex(page: Page, rowIndex: number): Promise<Record<string, string>> {
   const headers = await getTableHeaders(page);
   const row = page.locator(`${SELECTORS.tableRow}:nth-child(${rowIndex + 1})`);

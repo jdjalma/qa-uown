@@ -21,3 +21,5 @@ export * from './bank-account.response.js';
 export * from './customer.response.js';
 export * from './gowsign.response.js';
 export * from './gowsign-template.response.js';
+export * from './tms-payment.response.js';
+export * from './tms-audit.response.js';

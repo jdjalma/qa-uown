@@ -1,0 +1,93 @@
+- generic [ref=e1]:
+  - generic [ref=e48]:
+    - navigation [ref=e77]:
+      - link "company-logo" [ref=e78] [cursor=pointer]:
+        - /url: /search
+        - generic [ref=e79]:
+          - img [ref=e81]
+          - img "company-logo" [ref=e82]
+      - generic [ref=e85]:
+        - 'link "Servicing Account #" [ref=e88] [cursor=pointer]':
+          - /url: "#"
+          - generic [ref=e89]:
+            - generic [ref=e90]: "Servicing Account #"
+            - img [ref=e91]
+        - 'searchbox "Quick search by Servicing Account #" [ref=e94]'
+        - img [ref=e96]
+      - link "manager" [ref=e100] [cursor=pointer]:
+        - /url: "#"
+        - img [ref=e101]
+        - generic [ref=e103]: manager
+        - img [ref=e104]
+    - generic [ref=e119]:
+      - generic [ref=e120]: Search Result
+      - generic [ref=e121]:
+        - generic [ref=e122]:
+          - button "Filters" [ref=e124] [cursor=pointer]:
+            - img [ref=e125]
+            - text: Filters
+            - img [ref=e127]
+          - generic [ref=e129]:
+            - button "Account Sale" [ref=e133] [cursor=pointer]
+            - generic [ref=e135]:
+              - button "Email CSV":
+                - generic: Email CSV
+              - link:
+                - /url: blob:https://svc-website-qa1.uownleasing.com/45caf133-e74c-47be-a624-572688ad364a
+        - generic [ref=e136]:
+          - generic [ref=e144]:
+            - generic [ref=e145]:
+              - generic [ref=e147]:
+                - generic [ref=e149]: From
+                - searchbox "From" [ref=e153]
+                - generic [ref=e276]: Start date is required
+              - generic [ref=e155]:
+                - generic [ref=e157]: To
+                - searchbox "To" [ref=e161]: 06/10/2026
+              - generic [ref=e163]:
+                - generic [ref=e165]: SSN
+                - textbox "SSN" [ref=e169]
+              - generic [ref=e171]:
+                - generic [ref=e173]: Ref Account ID
+                - textbox "Ref Account ID" [ref=e177]
+              - generic [ref=e179]:
+                - generic [ref=e181]: Email
+                - textbox "Email" [ref=e185]
+              - generic [ref=e187]:
+                - generic [ref=e189]: Account PK
+                - textbox "Account PK" [ref=e193]
+              - generic [ref=e195]:
+                - generic [ref=e197]: Phone Number
+                - textbox "Phone Number" [ref=e201]
+              - generic [ref=e203]:
+                - generic [ref=e205]: Customer Name
+                - textbox "Customer Name" [ref=e209]: Test
+              - generic [ref=e211]:
+                - generic [ref=e213]: Last 4 CC digits
+                - textbox "Last 4 CC digits" [ref=e217]:
+                  - /placeholder: Last CC digits
+              - generic [ref=e219]:
+                - generic [ref=e221]: Company
+                - generic [ref=e227]:
+                  - generic [ref=e228]:
+                    - generic [ref=e229]: Company
+                    - combobox [ref=e231]
+                  - img [ref=e235]
+              - generic [ref=e238]:
+                - generic [ref=e240]: Merchant
+                - generic [ref=e246]:
+                  - generic [ref=e247]:
+                    - generic [ref=e248]: Search by Merchant
+                    - combobox [ref=e250]
+                  - img [ref=e254]
+              - generic [ref=e257]:
+                - generic [ref=e259]: Location
+                - generic [ref=e265]:
+                  - generic [ref=e266]:
+                    - generic [ref=e267]: Search by Location
+                    - combobox [ref=e269]
+                  - img [ref=e273]
+            - button "Search" [active] [ref=e275] [cursor=pointer]
+          - table [ref=e140]:
+            - generic [ref=e142]: There are no records to display
+  - alert [ref=e47]: Uown | Servicing

@@ -230,13 +230,30 @@ export default defineConfig({
 
     // ════════════════════════════════════════════════════════════════
     //  Task Testing — tests from tracked GitLab issues
+    //  Split per portal so storageState/baseURL match the portal under
+    //  test. Selection is tag-based: specs MUST declare `@origination`
+    //  or `@servicing` in their `tag:` list. A spec that lives in
+    //  docs/taskTestingUown without a portal tag will NOT be picked up
+    //  by either project (fail-fast — forces explicit portal choice).
     // ════════════════════════════════════════════════════════════════
     {
-      name: 'task-testing',
+      name: 'task-testing-origination',
       testDir: './docs/taskTestingUown',
+      grep: /@origination/,
       use: {
         ...browserProfile.contextOptions,
         baseURL: process.env.ORIGINATION_URL,
+        storageState: '.auth/origination.json',
+      },
+      dependencies: ['auth-origination'],
+    },
+    {
+      name: 'task-testing-servicing',
+      testDir: './docs/taskTestingUown',
+      grep: /@servicing/,
+      use: {
+        ...browserProfile.contextOptions,
+        baseURL: process.env.SERVICING_URL,
         storageState: '.auth/servicing.json',
       },
       dependencies: ['auth-servicing'],

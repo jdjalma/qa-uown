@@ -11,10 +11,27 @@ paths:
 Pattern:   {milestone}_{camelCaseTitle}_{taskNumber}
 Example:   R1.49.1_separateShortCodeInANewEntity_469
 Location:  docs/taskTestingUown/{testName}/{testName}.spec.ts
-Project:   task-testing
+Project:   task-testing-origination  OR  task-testing-servicing  (tag-selected — see below)
 ```
 
 Non-task tests: `tests/e2e/{portal}/` or `tests/api/`
+
+### task-testing project split — MANDATORY tag (discovered svc#530, 2026-05-24)
+
+O projeto `task-testing` foi splitado em `task-testing-origination` e `task-testing-servicing` para evitar `storageState`/`baseURL` mismatch quando uma spec cobre os dois portais.
+
+**Regra:** toda spec em `docs/taskTestingUown/` DEVE declarar `@origination` OU `@servicing` no campo `tag` do `testData`:
+
+```typescript
+const testData = [{
+  env: 'qa1',
+  tag: '@origination',   // seleciona task-testing-origination (baseURL + storageState Origination)
+  // ou
+  tag: '@servicing',    // seleciona task-testing-servicing (baseURL + storageState Servicing)
+}];
+```
+
+Se uma spec usa AMBOS os portais: separar os CTs que acessam Origination (tag `@origination`) dos que acessam Servicing (tag `@servicing`) — nunca misturar no mesmo CT. Sem essa tag, o Playwright seleciona o projeto errado e a página carregada não corresponde ao portal esperado. Ver [[application-lifecycle]] pitfall #61.
 
 ## Mandatory Principles
 
@@ -78,15 +95,15 @@ Antes de marcar um teste como pronto:
 
 ## Application Lifecycle Protocol (MANDATORY when feature creates applications)
 
-> **Regra inviolável:** qualquer teste que envolva `sendApplication` DEVE seguir a sequência canônica documentada em [`.claude/context/shared/application-lifecycle-protocol.md`](../context/shared/application-lifecycle-protocol.md). Violações conhecidas causam falhas bobas recorrentes (DENIED, 400, 500, timeouts).
+> **Regra inviolável:** qualquer teste que envolva `sendApplication` DEVE seguir a sequência canônica documentada em skill [[application-lifecycle]]. Violações conhecidas causam falhas bobas recorrentes (DENIED, 400, 500, timeouts).
 >
-> Agents que criam testes OU debug (`subagent-spec-test`, `subagent-impl-e2e`, `subagent-impl-api`, `subagent-debug-flaky`) DEVEM carregar esse protocolo antes de escrever/corrigir código.
+> Agents que criam testes OU debug (`qa-planner`, `qa-implementer`, `qa-debugger`) DEVEM carregar esse protocolo antes de escrever/corrigir código.
 
 **Checklist rápido (detalhes no protocolo):**
 
 - [ ] `buildTestData` sem `emailOverride` (email único por run — evita DataMismatchStep)
 - [ ] Kornerstone merchant → `bankData` no body do sendApplication
-- [ ] `submitApplication` sempre precedido de `getMissingFields(shortCode, { planId })`
+- [ ] `submitApplication` sempre precedido de `getMissingFields(shortCode, { planId })` **e `submitResp.ok` assertido explicitamente** (falha silenciosa → lead preso em `CC_AUTH_PASSED` → `settleApplication` 500; ver [[application-lifecycle]] pitfall #81)
 - [ ] CC: `TEST_CARDS.MASTERCARD_APPROVED` (nunca VISA_APPROVED — rollback em qa)
 - [ ] Ordem: `SIGNED → settle → FUNDING → FUNDED → ACTIVE`
 - [ ] SETTLED_IN_FULL via `makeCreditCardPayments(SETTLEMENT)` — nunca UPDATE direto (sem payment history → email template falha)
@@ -165,20 +182,20 @@ Disparou um destes? → Precisa validar log:
 
 Toda fase do pipeline deve aplicar:
 
-**Spec (`subagent-spec-test`)**
+**Planning (`qa-planner`)**
 - Cada cenário lista o(s) log(s) esperado(s) na seção "Validações"
 - Formato: `uown_los_lead_notes` (ou tabela específica do domínio) — pattern textual + ordem cronológica
 
-**Implementação (`subagent-impl-e2e` / `subagent-impl-api` / `subagent-impl-db-validation`)**
+**Implementação (`qa-implementer`)**
 - `test.step('validate activity log', ...)` após cada ação de negócio
 - Use `db.waitForRecord` / `db.getSingleRow` consultando `uown_los_lead_notes WHERE lead_pk = $1 ORDER BY pk DESC` (ou tabela correspondente)
 - Assert presença do pattern esperado + assert ausência de patterns negativos quando relevante (`"not offered"`, `"rejected"`, `"skipped"`, `"denied"`)
 
-**Validação de resultado (`subagent-validate-results`)**
+**Validação de resultado (`qa-validator`)**
 - Relatório DEVE listar log capturado por step (cita PK + texto)
 - Step sem log capturado → marcar como `[INCOMPLETO]`, não `[OK]`
 
-**Debug (`subagent-debug-flaky`)**
+**Debug (`qa-debugger`)**
 - Antes de hipotetizar, ler logs do lease (regra abaixo). Se a ação esperada não tem log → bug de backend (reportar) ou step não disparou (corrigir).
 
 ### Padrões mínimos de assert
@@ -261,7 +278,7 @@ Steps puramente de leitura (GET, query SELECT, consulta de UI sem mutação) nã
 
    Mesmo na exceção: requer **comentário no spec** justificando, E requer **reprodução
    em conta fresh** ANTES de classificar qualquer comportamento como bug (ver
-   `.claude/context/shared/bug-classification-rules.md`).
+   skill [[bug-classification]]).
 
 4. ❌ **UPDATE direto no DB em conta existente** — PROIBIDO por padrão (CLAUDE.md
    Exception 3). Aceito somente com autorização explícita do usuário registrada na
@@ -294,7 +311,7 @@ antes de prosseguir.
 
 ### Ver também
 
-- `.claude/context/shared/bug-classification-rules.md` — regras para classificar
+- skill [[bug-classification]] — regras para classificar
   comportamento como bug (exige reprodução em fresh).
 
 ## Lease State Machine

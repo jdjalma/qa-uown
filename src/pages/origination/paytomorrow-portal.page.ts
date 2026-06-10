@@ -6,6 +6,7 @@ import { ALL_TEST_CARDS } from '../../data/test-cards.js';
 import { TEST_BANK } from '../../config/constants.js';
 import { sleep } from '../../helpers/common.helpers.js';
 import { completeSignwellFlow, clickSignAllViaLink } from '../../helpers/signwell.helpers.js';
+import { signGowSignInFrame } from '../../helpers/gowsign-signing.helper.js';
 
 /**
  * PayTomorrow Portal Page — handles the EXTERNAL PayTomorrow merchant portal
@@ -521,12 +522,13 @@ export class PayTomorrowPortalPage extends BasePage {
   // ═══════════════════════════════════════════════════════════════════
 
   /**
-   * Select the first available offer on the offers page.
+   * Select an offer on the offers page.
    *
    * @param ptPage - The PayTomorrow page (may be a new tab)
+   * @param preferTerm - Optional: prefer offer containing this text (e.g. '16' for 16-month)
    */
-  async handleOffers(ptPage: Page): Promise<void> {
-    console.log('[PT Portal] Selecting offer');
+  async handleOffers(ptPage: Page, preferTerm?: string): Promise<void> {
+    console.log(`[PT Portal] Selecting offer${preferTerm ? ` (prefer term: ${preferTerm})` : ''}`);
 
     // Check for "cart exceeded maximum" error message first
     const bodyText = await ptPage.locator('body').textContent() ?? '';
@@ -536,8 +538,23 @@ export class PayTomorrowPortalPage extends BasePage {
     }
 
     // Wait for offers page — may take time for lender waterfall to complete
-    const selectOfferBtn = ptPage.locator(SELECTORS.ptSelectOffer).first();
-    await selectOfferBtn.waitFor({ state: 'visible', timeout: 60_000 });
+    const allOfferBtns = ptPage.locator(SELECTORS.ptSelectOffer);
+    await allOfferBtns.first().waitFor({ state: 'visible', timeout: 60_000 });
+
+    let selectOfferBtn = allOfferBtns.first();
+    if (preferTerm) {
+      const count = await allOfferBtns.count();
+      for (let i = 0; i < count; i++) {
+        const card = allOfferBtns.nth(i).locator('xpath=ancestor::*[contains(@class,"card") or contains(@class,"offer") or self::tr or self::div[.//button]]').first();
+        const cardText = await card.textContent().catch(() => '') ?? '';
+        if (cardText.includes(preferTerm)) {
+          selectOfferBtn = allOfferBtns.nth(i);
+          console.log(`[PT Portal] Found offer with "${preferTerm}" at index ${i}: ${cardText.replace(/\s+/g, ' ').trim().slice(0, 120)}`);
+          break;
+        }
+      }
+    }
+
     await selectOfferBtn.click();
     console.log('[PT Portal] Clicked select offer');
 
@@ -660,6 +677,13 @@ export class PayTomorrowPortalPage extends BasePage {
     console.log('[PT Contract] Iframe content loaded — CC fields visible');
     await sleep(1_000);
 
+    // SEON IDV overlay may be present — log but don't block. All clicks in the
+    // iframe use force:true to bypass SEON's pointer interception.
+    const seonIframe = frame.locator('iframe[data-testid="seon-idv-iframe"]');
+    if (await seonIframe.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      console.log('[PT Contract] SEON IDV overlay present — will use force:true on all clicks');
+    }
+
     const firstName = customerFirstName || 'Test';
     const lastName = customerLastName || 'Automation';
 
@@ -715,9 +739,13 @@ export class PayTomorrowPortalPage extends BasePage {
       await sleep(500);
     }
 
-    await submitBtn.scrollIntoViewIfNeeded();
-    await submitBtn.click();
-    console.log('[PT Contract] Clicked Submit — waiting for CC authorization...');
+    await submitBtn.scrollIntoViewIfNeeded().catch(() => {});
+    // Use JS dispatchEvent to bypass SEON IDV overlay's CSS pointer-events interception.
+    // Playwright's force:true still goes through the browser rendering pipeline (CDP
+    // Input.dispatchMouseEvent) which respects CSS pointer-events. JS dispatchEvent
+    // bypasses the CSS layer entirely.
+    await submitBtn.evaluate(el => el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })));
+    console.log('[PT Contract] Clicked Submit (via JS dispatch) — waiting for CC authorization...');
     await sleep(5_000);
 
     for (const resp of apiResponses) {
@@ -741,7 +769,7 @@ export class PayTomorrowPortalPage extends BasePage {
     }
   }
 
-  /** Complete T&C page: check all checkboxes and click PROCEED TO SIGNATURE */
+  /** Complete T&C page: check all checkboxes, handle Protection Plan if offered, click PROCEED TO SIGNATURE */
   private async completeTermsAndConditions(ptPage: Page, frame: FrameLocator): Promise<void> {
     const anyCheckbox = frame.locator(SELECTORS.checkboxInput).first();
     const tcVisible = await anyCheckbox.waitFor({ state: 'visible', timeout: 30_000 }).then(() => true).catch(() => false);
@@ -763,12 +791,79 @@ export class PayTomorrowPortalPage extends BasePage {
     console.log(`[PT Contract] Checked ${count} checkbox(es)`);
     await sleep(1_000);
 
-    const proceedBtn = frame.locator(SELECTORS.ptProceedToSignature).first();
-    if (await proceedBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await proceedBtn.scrollIntoViewIfNeeded();
-      await proceedBtn.click();
-      console.log('[PT Contract] Clicked PROCEED TO SIGNATURE');
+    // Protection Plan: when merchant offers insurance, "See Protection Benefits" appears
+    // instead of "Proceed to Signature". Must handle it before e-sign loads.
+    // DOM (MCP-verified 2026-05-25): radios live in a buddy.insure iframe NESTED inside the
+    // UOWN iframe. No #purchase-insurance-submit-btn exists here; "Proceed to signature"
+    // (in the UOWN iframe) serves as the submit after radio selection.
+    const seeProtectionBtn = frame.locator(SELECTORS.seeProtectionBenefitsBtn).first();
+    if (await seeProtectionBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
+      console.log('[PT Contract] Protection Plan offered — clicking "See Protection Benefits"');
+      await seeProtectionBtn.scrollIntoViewIfNeeded();
+      await seeProtectionBtn.click();
       await sleep(3_000);
+
+      // Radios are in a nested iframe (buddy.insure) inside the UOWN iframe
+      const buddyFrame = frame.frameLocator('iframe').first();
+      let radioClicked = false;
+      for (let attempt = 1; attempt <= 8 && !radioClicked; attempt++) {
+        const radios = buddyFrame.getByRole('radio');
+        const radioCount = await radios.count().catch(() => 0);
+        if (radioCount >= 2) {
+          await radios.nth(1).click({ force: true });
+          await sleep(500);
+          // Verify the radio is actually checked
+          const isChecked = await radios.nth(1).isChecked().catch(() => false);
+          if (isChecked) {
+            radioClicked = true;
+            console.log('[PT Contract] Protection Plan: opted OUT via buddy iframe');
+          } else {
+            console.log(`[PT Contract] Radio click did not register — attempt ${attempt}`);
+          }
+        } else {
+          console.log(`[PT Contract] Waiting for PP radios in buddy iframe... attempt=${attempt} (found ${radioCount})`);
+        }
+        if (!radioClicked) await sleep(2_000);
+      }
+
+      if (!radioClicked) {
+        console.log('[PT Contract] WARNING: Could not select PP radio — proceeding anyway');
+      }
+    }
+
+    // Buddy widget CORS bug (qa2/stg): opt-out submission may silently fail,
+    // causing PROCEED TO SIGNATURE to stay on the same page. The frontend
+    // unblocks after 3 consecutive clicks (submitFailCount > 1). Retry up to 5
+    // times and verify the iframe content actually changes.
+    const proceedBtn = frame.locator(SELECTORS.ptProceedToSignature).first();
+    if (await proceedBtn.isVisible({ timeout: 10_000 }).catch(() => false)) {
+      for (let clickAttempt = 1; clickAttempt <= 5; clickAttempt++) {
+        await proceedBtn.scrollIntoViewIfNeeded();
+        await proceedBtn.click();
+        console.log(`[PT Contract] Clicked PROCEED TO SIGNATURE (attempt ${clickAttempt})`);
+        await sleep(3_000);
+
+        // Check if the iframe advanced past T&C (button no longer visible or content changed)
+        const stillVisible = await proceedBtn.isVisible({ timeout: 2_000 }).catch(() => false);
+        if (!stillVisible) {
+          console.log('[PT Contract] PROCEED TO SIGNATURE no longer visible — iframe advanced');
+          break;
+        }
+
+        // Check if e-sign content appeared (GowSign/SignWell/PandaDocs)
+        const hasGowSign = await frame.locator(`${SELECTORS.gsStartSignatureButton}, ${SELECTORS.gsViewerRoot}`).first()
+          .isVisible({ timeout: 1_000 }).catch(() => false);
+        const hasSignwell = await frame.locator(SELECTORS.signwellIframe)
+          .isVisible({ timeout: 1_000 }).catch(() => false);
+        if (hasGowSign || hasSignwell) {
+          console.log('[PT Contract] E-sign content detected — iframe advanced');
+          break;
+        }
+
+        if (clickAttempt < 5) {
+          console.log(`[PT Contract] Iframe still on T&C page — retrying PROCEED TO SIGNATURE`);
+        }
+      }
     } else {
       console.log('[PT Contract] No PROCEED TO SIGNATURE button — trying Submit');
       const fallbackSubmit = frame.locator(`${SELECTORS.buttonPrimary}, button[type="submit"]`).first();
@@ -830,6 +925,59 @@ export class PayTomorrowPortalPage extends BasePage {
   }
 
   /**
+   * Remove the SEON IDV fraud detection overlay iframe from the UOWN iframe.
+   * SEON injects a full-page transparent iframe that intercepts all pointer events
+   * and mutates form elements (sets tabindex=-1, aria-hidden=true). We remove the
+   * iframe and restore original attributes so the test can interact with the form.
+   */
+  /**
+   * Wait for SEON IDV identity verification to complete inside the UOWN iframe.
+   * SEON intercepts all pointer events and mutates form elements (tabindex=-1,
+   * aria-hidden=true) during its capture. Once verification completes, SEON
+   * restores the original attributes and stops blocking. The form cannot be
+   * submitted until SEON finishes (returns "failed to verify identification").
+   */
+  private async waitForSeonIdvCompletion(ptPage: Page, frame: FrameLocator): Promise<void> {
+    const seonIframe = frame.locator('iframe[data-testid="seon-idv-iframe"]');
+    const hasSeon = await seonIframe.isVisible({ timeout: 5_000 }).catch(() => false);
+    if (!hasSeon) return;
+
+    console.log('[PT Contract] SEON IDV overlay detected — waiting for verification to complete');
+
+    // SEON signals completion by restoring data-prevtabindex/data-prevariahidden
+    // on the Submit button (it removes tabindex=-1 and aria-hidden=true).
+    // Wait for the Submit button to have its original attributes restored.
+    const uownFrame = ptPage.frame({ url: /uownleasing\.com/ });
+    for (let i = 0; i < 60; i++) {
+      // Check if SEON iframe is gone
+      if (!await seonIframe.isVisible({ timeout: 1_000 }).catch(() => false)) {
+        console.log(`[PT Contract] SEON IDV iframe disappeared after ${i + 1}s`);
+        await sleep(1_000);
+        return;
+      }
+
+      // Check if SEON stopped mutating elements (no more data-prevtabindex attributes)
+      if (uownFrame) {
+        const mutatedCount = await uownFrame.evaluate(() =>
+          document.querySelectorAll('[data-prevtabindex]').length,
+        ).catch(() => 99);
+        if (mutatedCount === 0) {
+          console.log(`[PT Contract] SEON IDV completed — no mutated elements remain (${i + 1}s)`);
+          await sleep(1_000);
+          return;
+        }
+        if (i % 10 === 9) {
+          console.log(`[PT Contract] SEON IDV still active — ${mutatedCount} mutated elements (${i + 1}s)`);
+        }
+      }
+
+      await sleep(1_000);
+    }
+
+    console.log('[PT Contract] SEON IDV timeout (60s) — proceeding anyway');
+  }
+
+  /**
    * Robustly fill a field inside the UOWN iframe.
    * Tries fill() first, verifies value, falls back to click+pressSequentially.
    * Same pattern as ContractPage.fillField() but works with FrameLocator.
@@ -843,15 +991,15 @@ export class PayTomorrowPortalPage extends BasePage {
       return;
     }
 
-    // Primary: click + fill
-    await field.click();
+    // Use JS focus + fill to bypass SEON IDV overlay's CSS pointer-events
+    await field.evaluate(el => { (el as HTMLInputElement).focus(); });
     await field.fill(value);
 
     // Verify the value actually stuck (React controlled inputs may reject fill())
     const actual = await field.inputValue().catch(() => '');
     if (actual !== value) {
       console.log(`[PT Contract] fill() didn't stick for ${selector} (got "${actual}") — using pressSequentially`);
-      await field.click({ clickCount: 3 }); // select all
+      await field.evaluate(el => { (el as HTMLInputElement).select(); });
       await field.pressSequentially(value, { delay: 30 });
     }
 
@@ -868,33 +1016,154 @@ export class PayTomorrowPortalPage extends BasePage {
 
     const signwellIframe = parentFrame.locator(SELECTORS.signwellIframe);
     const pandaDocsIframe = parentFrame.locator(SELECTORS.pandaDocsIframe);
+    const gowsignIframe = parentFrame.locator(SELECTORS.signingGowSignIframeByUrl);
+    const gowsignStartBtn = parentFrame.locator(SELECTORS.gsStartSignatureButton);
+    const gowsignViewerRoot = parentFrame.locator(SELECTORS.gsViewerRoot);
 
-    // Poll up to 60s for either e-sign iframe to appear
-    for (let attempt = 1; attempt <= 12; attempt++) {
+    // Also check at the page level — after PROCEED TO SIGNATURE the UOWN iframe
+    // might navigate and the GowSign viewer could render at the page level or in
+    // a sibling iframe that the parentFrame doesn't cover.
+    const pageLevelGowSignStart = ptPage.locator(SELECTORS.gsStartSignatureButton);
+    const pageLevelGowSignRoot = ptPage.locator(SELECTORS.gsViewerRoot);
+
+    for (let attempt = 1; attempt <= 15; attempt++) {
+      // 1. GowSign nested iframe (gowsign.com)
+      if (await gowsignIframe.isVisible({ timeout: 2_000 }).catch(() => false)) {
+        console.log('[PT Contract] GowSign iframe detected');
+        await this.completeGowSignInIframe(ptPage, parentFrame);
+        return;
+      }
+      // 2. GowSign Start button inside UOWN iframe (direct embed)
+      if (await gowsignStartBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        console.log('[PT Contract] GowSign Start button detected (direct embed in UOWN iframe)');
+        await this.completeGowSignInIframe(ptPage, parentFrame);
+        return;
+      }
+      // 3. GowSign viewer root (.gowsign-document) inside UOWN iframe
+      if (await gowsignViewerRoot.isVisible({ timeout: 1_000 }).catch(() => false)) {
+        console.log('[PT Contract] GowSign viewer root detected in UOWN iframe');
+        await this.completeGowSignInIframe(ptPage, parentFrame);
+        return;
+      }
+      // 4. GowSign at page level (outside UOWN iframe)
+      if (await pageLevelGowSignStart.isVisible({ timeout: 1_000 }).catch(() => false)) {
+        console.log('[PT Contract] GowSign Start button detected at page level');
+        await this.completeGowSignDirectOnPage(ptPage);
+        return;
+      }
+      if (await pageLevelGowSignRoot.isVisible({ timeout: 1_000 }).catch(() => false)) {
+        console.log('[PT Contract] GowSign viewer root detected at page level');
+        await this.completeGowSignDirectOnPage(ptPage);
+        return;
+      }
+      // 5. Signwell
       if (await signwellIframe.isVisible({ timeout: 2_000 }).catch(() => false)) {
         console.log('[PT Contract] Signwell iframe detected');
         await this.completeSignwellInIframe(ptPage, parentFrame);
         return;
       }
+      // 6. PandaDocs
       if (await pandaDocsIframe.isVisible({ timeout: 2_000 }).catch(() => false)) {
         console.log('[PT Contract] PandaDocs iframe detected');
         await this.completePandaDocsInIframe(ptPage, parentFrame);
         return;
       }
 
-      // Check if the page already completed (URL changed from /contract)
       if (!ptPage.url().includes('/contract')) {
         console.log(`[PT Contract] Page already advanced past contract: ${ptPage.url()}`);
         return;
+      }
+
+      // Debug: log what's visible in the iframe on every 3rd attempt
+      if (attempt % 3 === 0) {
+        try {
+          const iframeBodyText = await parentFrame.locator('body').first()
+            .textContent({ timeout: 3_000 }).catch(() => '<no body>');
+          const trimmed = (iframeBodyText || '').replace(/\s+/g, ' ').trim().slice(0, 300);
+          console.log(`[PT Contract] UOWN iframe body (attempt ${attempt}): "${trimmed}"`);
+
+          const pageBodySnippet = await ptPage.locator('body').first()
+            .textContent({ timeout: 3_000 }).catch(() => '<no body>');
+          const pageTrimmed = (pageBodySnippet || '').replace(/\s+/g, ' ').trim().slice(0, 300);
+          console.log(`[PT Contract] Page body (attempt ${attempt}): "${pageTrimmed}"`);
+        } catch { /* ignore debug log failures */ }
       }
 
       console.log(`[PT Contract] Waiting for e-sign iframe... attempt=${attempt}`);
       await sleep(3_000);
     }
 
-    // Last resort: try Signwell
-    console.log('[PT Contract] Timeout waiting for e-sign iframe — trying Signwell as fallback');
-    await this.completeSignwellInIframe(ptPage, parentFrame);
+    console.log('[PT Contract] Timeout waiting for e-sign iframe — trying GowSign then Signwell as fallback');
+    try {
+      await this.completeGowSignInIframe(ptPage, parentFrame);
+    } catch (err) {
+      console.log(`[PT Contract] GowSign fallback failed: ${err instanceof Error ? err.message : String(err)}`);
+      try {
+        await this.completeGowSignDirectOnPage(ptPage);
+      } catch (err2) {
+        console.log(`[PT Contract] GowSign page-level fallback failed: ${err2 instanceof Error ? err2.message : String(err2)}`);
+        await this.completeSignwellInIframe(ptPage, parentFrame);
+      }
+    }
+  }
+
+  private async completeGowSignInIframe(ptPage: Page, parentFrame: FrameLocator): Promise<void> {
+    const gowsignIframe = parentFrame.locator(SELECTORS.signingGowSignIframeByUrl);
+    const hasNestedIframe = await gowsignIframe.isVisible({ timeout: 5_000 }).catch(() => false);
+    const frame = hasNestedIframe
+      ? parentFrame.frameLocator(SELECTORS.signingGowSignIframeByUrl)
+      : parentFrame;
+
+    console.log(`[PT ESign GowSign] Using ${hasNestedIframe ? 'nested iframe' : 'parent frame'} for signing`);
+
+    const result = await signGowSignInFrame(ptPage, frame, {
+      preauthChoice: 'yes',
+      timeoutMs: 120_000,
+      waitForCompleted: true,
+    });
+    console.log(`[PT ESign GowSign] Signing result: startClicked=${result.startClicked} signClicked=${result.signClicked} capturedCompleted=${result.capturedCompleted} fieldsSigned=${result.fieldsSigned}`);
+
+    if (!result.signClicked) {
+      console.log('[PT ESign GowSign] WARNING: Sign was not clicked - signing may not have completed');
+    }
+
+    await sleep(5_000);
+
+    // Dismiss any post-signing modals
+    const closeBtn = ptPage.locator('.btn-rounded.close, button.close, [aria-label="Close"]').first();
+    if (await closeBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await closeBtn.click().catch(() => {});
+      console.log('[PT ESign GowSign] Dismissed post-signing modal');
+    }
+  }
+
+  /**
+   * Complete GowSign signing directly on the page (not inside an iframe).
+   * Used when the GowSign viewer renders at the page level after the UOWN iframe
+   * navigates or when the PT consumer app renders the signing outside the iframe.
+   */
+  private async completeGowSignDirectOnPage(ptPage: Page): Promise<void> {
+    console.log('[PT ESign GowSign Page] Signing directly on page level');
+
+    const pageLevelFrame = {
+      locator: (sel: string) => ptPage.locator(sel),
+      frameLocator: (sel: string) => ptPage.frameLocator(sel),
+      getByRole: (...args: Parameters<Page['getByRole']>) => ptPage.getByRole(...args),
+      getByText: (...args: Parameters<Page['getByText']>) => ptPage.getByText(...args),
+    } as unknown as FrameLocator;
+
+    const result = await signGowSignInFrame(ptPage, pageLevelFrame, {
+      preauthChoice: 'yes',
+      timeoutMs: 120_000,
+      waitForCompleted: true,
+    });
+    console.log(`[PT ESign GowSign Page] Signing result: startClicked=${result.startClicked} signClicked=${result.signClicked} capturedCompleted=${result.capturedCompleted} fieldsSigned=${result.fieldsSigned}`);
+
+    if (!result.signClicked) {
+      console.log('[PT ESign GowSign Page] WARNING: Sign was not clicked');
+    }
+
+    await sleep(5_000);
   }
 
   /**
@@ -1142,9 +1411,10 @@ export class PayTomorrowPortalPage extends BasePage {
    *
    * @param finalizationUrl - The URL from the PayTomorrow finalization email
    * @param ssn - SSN to use for identity verification
+   * @param preferTerm - Optional: prefer offer containing this text (e.g. '16' for 16-month)
    * @returns The new page used for the finalization flow
    */
-  async completeFinalizationFlow(finalizationUrl: string, ssn: string): Promise<Page> {
+  async completeFinalizationFlow(finalizationUrl: string, ssn: string, preferTerm?: string): Promise<Page> {
     console.log(`[PT Portal] Opening finalization URL: ${finalizationUrl}`);
 
     // Open a new tab for the finalization flow
@@ -1164,21 +1434,21 @@ export class PayTomorrowPortalPage extends BasePage {
       await sleep(2_000);
 
       await this.handleEmployment(newPage);
-      await this.handleOffers(newPage);
+      await this.handleOffers(newPage, preferTerm);
 
     } else if (currentUrl.includes('/verify/personal')) {
       // Full verification flow
       console.log('[PT Portal] On /verify/personal — starting full verification');
       await this.handleIdentityVerification(newPage, ssn);
       await this.handleEmployment(newPage);
-      await this.handleOffers(newPage);
+      await this.handleOffers(newPage, preferTerm);
 
     } else {
       // Unknown state — try identity verification as default
       console.log(`[PT Portal] Unknown URL pattern: ${currentUrl} — attempting identity verification`);
       await this.handleIdentityVerification(newPage, ssn);
       await this.handleEmployment(newPage);
-      await this.handleOffers(newPage);
+      await this.handleOffers(newPage, preferTerm);
     }
 
     return newPage;

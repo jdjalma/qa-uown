@@ -48,7 +48,12 @@ export class MissingDataFormPage extends BasePage {
     await this.page.locator('#bankAccountCustomerLastName').fill(bank.lastName);
 
     await this.page.locator('#bankAccountType').click();
-    await this.page.getByText(bank.accountType, { exact: true }).click();
+    // react-select uses class-prefixed options without `role="option"` — scope
+    // by the option container class. Strict-mode safe: matches only menu items.
+    await this.page
+      .locator(`.filter__option:has-text("${bank.accountType}")`)
+      .first()
+      .click();
 
     await this.page.locator('#bankRoutingNumber').fill(bank.routingNumber);
     await this.page.locator('#bankAccountNumber').fill(bank.accountNumber);
@@ -81,16 +86,30 @@ export class MissingDataFormPage extends BasePage {
     await submitBtn.click();
   }
 
+  /**
+   * The Complete page renders the processing fee inline inside the CC section
+   * description, e.g. "complete a $0.01 Authorization, today" or
+   * "complete a $1.50 Authorization, today". When `chargeProcessingFee=false`
+   * the page omits this sentence entirely (no `$N.NN Authorization` text).
+   *
+   * Text-based detection is intentional — the prior CSS-module hash selector
+   * (`.missing-data-panel_missingDataPanel__feeAmount__cn7Wg`) breaks on every
+   * webpack rebuild.
+   */
+  private feeLocator() {
+    return this.page.getByText(/\$\s?[\d,]+\.?\d*\s+Authorization/i).first();
+  }
+
   async isProcessingFeeDisplayed(): Promise<boolean> {
-    return this.page
-      .locator('.missing-data-panel_missingDataPanel__feeAmount__cn7Wg')
-      .isVisible()
+    return this.feeLocator()
+      .isVisible({ timeout: 5_000 })
       .catch(() => false);
   }
 
   async getProcessingFeeAmount(): Promise<string | null> {
-    const feeLocator = this.page.locator('.missing-data-panel_missingDataPanel__feeAmount__cn7Wg');
-    if (!(await feeLocator.isVisible().catch(() => false))) return null;
-    return (await feeLocator.textContent())?.trim() ?? null;
+    if (!(await this.isProcessingFeeDisplayed())) return null;
+    const text = (await this.feeLocator().textContent())?.trim() ?? '';
+    const match = text.match(/\$\s?([\d,]+\.?\d*)/);
+    return match ? `$${match[1]}` : null;
   }
 }

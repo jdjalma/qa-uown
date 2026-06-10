@@ -40,6 +40,11 @@ import { SeonClient } from '../api/clients/seon.client.js';
 import { BankAccountClient } from '../api/clients/bank-account.client.js';
 import { CustomersClient } from '../api/clients/customers.client.js';
 import { GowSignTemplateClient } from '../api/clients/gowsign-template.client.js';
+import { CorrespondenceClient } from '../api/clients/correspondence.client.js';
+import { TmsAuditClient } from '../api/clients/tms-audit.client.js';
+import { TmsPaymentClient } from '../api/clients/tms-payment.client.js';
+import { StickyRecoverClient } from '../api/clients/sticky-recover.client.js';
+import { SimpleSearchClient } from '../api/clients/simple-search.client.js';
 import { MerchantConfigurator } from './merchant-configurator.js';
 import {
   disableCssAnimations,
@@ -90,6 +95,11 @@ export interface ApiClients {
   bankAccount: BankAccountClient;
   customers: CustomersClient;
   gowSignTemplate: GowSignTemplateClient;
+  correspondence: CorrespondenceClient;
+  tmsAudit: TmsAuditClient;
+  tmsPayment: TmsPaymentClient;
+  stickyRecover: StickyRecoverClient;
+  simpleSearch: SimpleSearchClient;
 }
 
 export interface TestFixtureOptions {
@@ -176,6 +186,11 @@ export const test = base.extend<BaseTestFixtures & TestFixtureOptions, BaseWorke
       bankAccount: new BankAccountClient(request, testEnv),
       customers: new CustomersClient(request, testEnv),
       gowSignTemplate: new GowSignTemplateClient(request, testEnv),
+      correspondence: new CorrespondenceClient(request, testEnv),
+      tmsAudit: new TmsAuditClient(request, testEnv),
+      tmsPayment: new TmsPaymentClient(request, testEnv),
+      stickyRecover: new StickyRecoverClient(request, testEnv),
+      simpleSearch: new SimpleSearchClient(request, testEnv),
     });
   },
 
