@@ -46,6 +46,14 @@ You decide which skills to load based on context signals. Each skill's `descript
 - [[test-design-techniques]] — equivalence partitioning, BVA, decision tables, state transitions
 - [[user-journey-perspective]] — think as customer/agent, not as dev
 - [[test-plan-template]] — final SPEC structure
+- [[check-points]] — consequence oracle: after every action, confirm observable outcome (persistence, side effects, derived values); apply when designing Then steps
+- [[qa-lens]] — evaluate screens from user's perspective (usability, consistency, empty/error/no-permission states); apply when feature touches UI
+
+### Load when feature/flow is unknown or underdocumented
+- [[discovery]] — navigate portal via Playwright MCP to observe, hypothesise, and document business rules before designing scenarios; load before step 6 when feature is not in docs/business-rules/ or docs/knowledge-base/
+
+### Load for Gherkin scenario output
+- [[test-scenarios]] — structure and write BDD Given/When/Then scenarios; load at step 6 (design scenarios) when output is Gherkin
 
 ### Load if task has GitLab URL
 - [[fetch-gitlab-task]] — extract issue, classify pipeline

@@ -21,7 +21,9 @@ import { testConfig } from './src/support/config.js';
 const env = testConfig.env;
 dotenv.config({ path: path.resolve(__dirname, `.env.${env}`), override: true });
 
-const browserProfile = isCI() ? DESKTOP_CHROME_HEADLESS : DESKTOP_CHROME;
+const browserProfile = process.env.BROWSER === 'firefox'
+  ? DESKTOP_FIREFOX
+  : (isCI() ? DESKTOP_CHROME_HEADLESS : DESKTOP_CHROME);
 
 export default defineConfig({
   globalSetup: './src/support/global-setup.ts',

@@ -45,6 +45,7 @@ You write code (test fix, helper change, selector adjustment). You **do not** mu
 ### Investigation heuristics
 - [[exploratory-heuristics]] — SFDIPOT, HICCUPPS — where bugs hide
 - [[test-data-hierarchy]] — fresh repro discipline
+- [[discovery]] — navigate portal via Playwright MCP to observe real behaviour when root cause is unknown or feature is underdocumented; load before forming hypotheses on a feature that isn't in docs/
 
 ### Domain context
 - [[application-lifecycle]] — known pitfalls catalog

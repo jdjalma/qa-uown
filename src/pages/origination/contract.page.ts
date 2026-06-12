@@ -78,8 +78,8 @@ export class ContractPage extends BasePage {
 
   /**
    * Fill credit card information on the contract page.
-   * The contract page is consumer-facing and uses placeholder-based fields.
-   * Fields may use IDs (#ccFirstName) or placeholders ("Cardholder's First Name").
+   * Uses semantic getByLabel() as primary (cross-browser) with ID/placeholder fallback (Chrome).
+   * Firefox renders these inputs with associated <label> only — no id/placeholder attributes.
    */
   async fillCreditCardInfo(info: {
     firstName: string;
@@ -88,35 +88,44 @@ export class ContractPage extends BasePage {
     cvc: string;
     expDate: string; // format: "MM/YY" or "MM/YYYY"
   }): Promise<void> {
-    // Resolve first/last name fields — try ID first, then placeholder
-    const firstNameField = this.page.locator(
-      `${SELECTORS.ccFirstName}, input[placeholder*="First Name"]`
-    ).first();
-    const lastNameField = this.page.locator(
-      `${SELECTORS.ccLastName}, input[placeholder*="Last Name"]`
-    ).first();
+    const firstNameField = this.page
+      .getByLabel("Cardholder's First Name")
+      .or(this.page.locator(`${SELECTORS.ccFirstName}, input[placeholder*="First Name"]`))
+      .first();
+    const lastNameField = this.page
+      .getByLabel("Cardholder's Last Name")
+      .or(this.page.locator(`${SELECTORS.ccLastName}, input[placeholder*="Last Name"]`))
+      .first();
 
     await firstNameField.waitFor({ state: 'visible', timeout: 15_000 });
     await this.fillField(firstNameField, info.firstName);
     await this.fillField(lastNameField, info.lastName);
 
-    // Card number and CVC — use standard #ccValue / #cvc selectors
-    const cardField = this.page.locator(
-      `${SELECTORS.ccValue}, ${SELECTORS.ccNumber}, input[placeholder*="Card Number"]`
-    ).first();
-    const cvcField = this.page.locator(
-      `${SELECTORS.ccCvc}, input[placeholder*="CVC"], input[placeholder*="CVV"]`
-    ).first();
+    const cardField = this.page
+      .getByLabel('Card Number')
+      .or(this.page.locator(`${SELECTORS.ccValue}, ${SELECTORS.ccNumber}, input[placeholder*="Card Number"]`))
+      .first();
+    const cvcField = this.page
+      .getByLabel('CVC')
+      .or(this.page.getByLabel('CVV'))
+      .or(this.page.locator(`${SELECTORS.ccCvc}, input[placeholder*="CVC"], input[placeholder*="CVV"]`))
+      .first();
 
     await this.fillField(cardField, info.cardNumber);
     await this.fillField(cvcField, info.cvc);
 
-    // Expiration date via react-select or plain input
-    if (await this.ccExpInput.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await this.fillField(this.ccExpInput, info.expDate);
-      await this.ccExpInput.press('Enter');
+    // Expiration date — try XPath (existing), then label, then month/year split
+    const expByLabel = this.page.getByLabel('Expiration Date');
+    const expInput = (await this.ccExpInput.isVisible({ timeout: 3_000 }).catch(() => false))
+      ? this.ccExpInput
+      : (await expByLabel.isVisible({ timeout: 3_000 }).catch(() => false))
+        ? expByLabel
+        : null;
+
+    if (expInput) {
+      await this.fillField(expInput, info.expDate);
+      await expInput.press('Enter');
     } else {
-      // Fallback: try standard exp month/year selectors
       const expMonthInput = this.page.locator(SELECTORS.ccExpMonthInput);
       const expYearInput = this.page.locator(SELECTORS.ccExpYearInput);
       const [month, year] = info.expDate.split('/');
@@ -452,9 +461,10 @@ export class ContractPage extends BasePage {
     if (!isFirstCard) {
       await this.page.reload({ waitUntil: 'domcontentloaded' });
       await this.page.waitForLoadState('networkidle').catch(() => {});
-      const firstNameField = this.page.locator(
-        `${SELECTORS.ccFirstName}, input[placeholder*="First Name"]`
-      ).first();
+      const firstNameField = this.page
+        .getByLabel("Cardholder's First Name")
+        .or(this.page.locator(`${SELECTORS.ccFirstName}, input[placeholder*="First Name"]`))
+        .first();
       await firstNameField.waitFor({ state: 'visible', timeout: 15_000 });
       await sleep(500);
     }

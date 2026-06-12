@@ -1,8 +1,21 @@
 {
-  "skipDangerousModePermissionPrompt": true,
   "permissions": {
-    "defaultMode": "bypassPermissions",
-    "allow": [],
+    "allow": [
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "Agent",
+      "WebFetch",
+      "WebSearch",
+      "Task",
+      "mcp__playwright__*",
+      "mcp__postman__*",
+      "mcp__figma__*",
+      "mcp__ide__*"
+    ],
     "deny": [
       "Bash(git commit *)",
       "Bash(git commit)",
@@ -36,7 +49,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/scripts/session-start.sh 2>/dev/null || true"
+            "command": "bash /home/jose/projects/uown/automation/.claude/scripts/session-start.sh"
           }
         ]
       }
@@ -47,11 +60,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/scripts/pre-write-validate.sh 2>/dev/null || true"
+            "command": "bash /home/jose/projects/uown/automation/.claude/scripts/pre-write-validate.sh"
           },
           {
             "type": "command",
-            "command": "bash .claude/scripts/lock-selectors.sh 2>/dev/null || true"
+            "command": "bash /home/jose/projects/uown/automation/.claude/scripts/lock-selectors.sh"
           }
         ]
       }
@@ -62,11 +75,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/scripts/auto-review.sh 2>/dev/null || true"
+            "command": "bash /home/jose/projects/uown/automation/.claude/scripts/auto-review.sh"
           },
           {
             "type": "command",
-            "command": "bash .claude/scripts/unlock-selectors.sh 2>/dev/null || true"
+            "command": "bash /home/jose/projects/uown/automation/.claude/scripts/unlock-selectors.sh"
           }
         ]
       }
@@ -76,7 +89,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/scripts/subagent-log.sh 2>/dev/null || true"
+            "command": "bash /home/jose/projects/uown/automation/.claude/scripts/subagent-log.sh"
           }
         ]
       }
@@ -86,7 +99,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/scripts/subagent-log.sh 2>/dev/null || true"
+            "command": "bash /home/jose/projects/uown/automation/.claude/scripts/subagent-log.sh"
           }
         ]
       }
@@ -96,7 +109,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/scripts/session-review.sh 2>/dev/null || true"
+            "command": "bash /home/jose/projects/uown/automation/.claude/scripts/session-review.sh"
           }
         ]
       }

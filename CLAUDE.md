@@ -22,7 +22,7 @@ Test automation framework with **Playwright + TypeScript** for the UOWN Leasing 
 
 ## Architecture: 5 agents + ~35 QA skills
 
-Agents are **QA professionals**, not pipelines. Each agent loads relevant skills autonomously based on task signals. In addition, 3 user-invocable skills (`/caso-teste`, `/discovery`, `/relatorio-de-testes`) can be called directly for planning and documentation work.
+Agents are **QA professionals**, not pipelines. Each agent loads relevant skills autonomously based on context signals. All skills are available for automatic agent use; they can also be invoked directly by the user.
 
 ### Agents
 
@@ -43,9 +43,9 @@ Skills live in `.claude/skills/{slug}/SKILL.md` with `disable-model-invocation: 
 | **A — Strategic** | QA cognitive skills (analysis, design, triage) | `scope-analysis`, `acceptance-criteria-review`, `risk-based-prioritization`, `test-strategy-decision`, `test-design-techniques`, `exploratory-heuristics`, `defect-triage`, `user-journey-perspective` |
 | **B — Domain** | UOWN fintech knowledge | `qa-domain-reflexes`, `application-lifecycle`, `bug-classification`, `dom-investigation`, `merchant-preflight`, `activity-log-validation`, `ui-first-principle`, `test-data-hierarchy`, `ssn-test-modalities`, `gowsign-knowledge`, `payment-flows`, `fraud-vendors-knowledge`, `regression-suites-map`, `email-templates-catalog`, `volatile-knowledge-registry` |
 | **C — Patterns** | Code conventions | `page-object-pattern`, `api-client-pattern`, `db-polling-pattern`, `selector-hardening`, `helpers-catalog`, `e2e-examples`, `common-operations` |
-| **D — Standards** | Output formats | `test-plan-template`, `test-report-standard`, `e2e-checklist` |
+| **D — Standards** | Output formats | `test-plan-template`, `test-report-standard`, `e2e-checklist`, `task-evidence-report` |
 | **E — Workflows** | Procedures | `fetch-gitlab-task` |
-| **F — User Commands** | User-invocable slash commands (planning & docs) | `/test-scenarios` (Gherkin → `docs/scenarios/`), `/discovery` (UI investigation → `docs/knowledge-base/`), `/test-report` (executive report → `docs/reports/`); support: `qa-lens`, `check-points` |
+| **F — Planning & Docs** | Scenario writing, investigation, reporting, UI quality | `test-scenarios` (Gherkin → `docs/scenarios/`), `discovery` (UI investigation via Playwright → `docs/knowledge-base/`), `test-report` (executive report → `docs/reports/`), `qa-lens` (UI quality from user perspective), `check-points` (consequence oracle for Then steps) |
 
 Full skill list: [`.claude/skills/`](.claude/skills/)
 

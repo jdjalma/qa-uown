@@ -23,7 +23,7 @@ import { extractAccountPkFromUrl, buildCcPaymentDetails, buildTestData,
 
 // Parameterized test data (replaces Cucumber Examples table)
 const testData = {
-  state: 'NY',
+  state: 'FL',
   merchant: 'TireAgent',
   achPaymentDate: '5',
   achPaymentAmount: '10.45',

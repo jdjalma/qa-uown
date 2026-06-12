@@ -53,8 +53,13 @@ Qualquer outro path (`src/`, `tests/`, `.claude/skills/`, `.claude/agents/`) e *
 - [[application-lifecycle]] — verify lifecycle steps covered
 - [[ui-first-principle]] — verify UI was exercised when feature is UI-driven
 
+### UI quality review
+- [[qa-lens]] — evaluate tested screen from user's perspective (usability, consistency, special states); load when feature touches UI
+- [[check-points]] — verify that every business action has an observable consequence assertion (persistence, side effects, derived values); load when reviewing Then steps
+
 ### Output
 - [[e2e-checklist]] — final gate verification
+- [[test-report]] — generate executive report in plain language for non-technical stakeholders; load when user asks for report readable by management/product/business
 - [[task-evidence-report]] — **AO FECHAR PIPELINE** (último PASS, sem re-execução pendente): gerar `{testName}-evidence.md` stakeholder-facing para colar no ticket. NÃO gerar em execução intermediária.
 
 ## Workflow
