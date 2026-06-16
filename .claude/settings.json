@@ -17,10 +17,6 @@
       "mcp__ide__*"
     ],
     "deny": [
-      "Bash(git commit *)",
-      "Bash(git commit)",
-      "Bash(git push *)",
-      "Bash(git push)",
       "Bash(git reset --hard*)",
       "Bash(git reset --soft*)",
       "Bash(git clean *)",
@@ -100,6 +96,10 @@
           {
             "type": "command",
             "command": "bash /home/jose/projects/uown/automation/.claude/scripts/subagent-log.sh"
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/scripts/verify-skills-loaded.mjs\""
           }
         ]
       }

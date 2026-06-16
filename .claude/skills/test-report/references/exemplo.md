@@ -14,20 +14,20 @@ Shows the complete path: **scenarios file** (output of `/test-scenarios`) + **re
 # language: en
 Feature: Discount coupon application
 
-  Scenario: [negative] Expired coupon is rejected
-    Given an expired coupon "TENOFF"
-    When I enter the coupon in the cart
-    Then I see the message "Coupon expired"
+ Scenario: [negative] Expired coupon is rejected
+ Given an expired coupon "TENOFF"
+ When I enter the coupon in the cart
+ Then I see the message "Coupon expired"
 
-  Scenario: [negative] Coupon below minimum order value is rejected
-    Given a coupon "SHIP50" with a minimum order of $150.00
-    When I enter the coupon in the cart
-    Then I see the message "Minimum order not reached"
+ Scenario: [negative] Coupon below minimum order value is rejected
+ Given a coupon "SHIP50" with a minimum order of $150.00
+ When I enter the coupon in the cart
+ Then I see the message "Minimum order not reached"
 
-  Scenario: [positive] Valid coupon applies discount
-    Given a valid 10% coupon "TENOFF"
-    When I enter the coupon in the cart
-    Then the total becomes $90.00
+ Scenario: [positive] Valid coupon applies discount
+ Given a valid 10% coupon "TENOFF"
+ When I enter the coupon in the cart
+ Then the total becomes $90.00
 ```
 
 Coverage matrix from the file:

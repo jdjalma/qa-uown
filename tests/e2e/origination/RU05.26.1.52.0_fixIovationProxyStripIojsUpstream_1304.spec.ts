@@ -160,7 +160,8 @@ const BRAND_FIXTURES: BrandFixture[] = [
 ];
 
 test.describe('RU05.26.1.52.0 - Fix iovation proxy: strip /iojs upstream (#1304)', { tag: TAGS }, () => {
-  test.beforeEach(async () => {
+  test.beforeEach(async ({ testEnv }) => {
+    test.skip(testEnv.env !== 'qa1', 'iovation proxy spec uses qa1-only merchants and getApplication URLs — skip in other environments');
     annotate('env', process.env.ENV || 'qa1');
     annotate('spec', 'RU05.26.1.52.0 issue #1304');
   });

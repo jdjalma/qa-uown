@@ -57,9 +57,9 @@ select:mcp__playwright__browser_navigate,mcp__playwright__browser_snapshot,mcp__
 ```
 browser_navigate → URL alvo
 (se redirecionou para /login)
-  browser_snapshot → identificar campos de login
-  browser_fill_form → preencher username/password do .env
-  browser_click → LOG IN
+ browser_snapshot → identificar campos de login
+ browser_fill_form → preencher username/password do .env
+ browser_click → LOG IN
 ```
 
 ### Passo 2 — Definir viewport por portal
@@ -72,11 +72,11 @@ Viewport depende do portal sob teste. Investigar no viewport errado gera diagnó
 | Website (portal do customer — cliente final) | `375×667` → `768×1024` → `1440×900` (em sequência) | Fluxo do cliente é mobile-heavy (OTP, signing, application form em celular); bug que só aparece em 375px é regressão silenciosa se nunca inspecionamos lá |
 
 ```
-browser_resize({ width: 1440, height: 900 })  // sempre o primeiro
+browser_resize({ width: 1440, height: 900 }) // sempre o primeiro
 
 // Para Website, depois do snapshot em 1440, repetir em:
-browser_resize({ width: 768, height: 1024 })   // tablet
-browser_resize({ width: 375, height: 667 })    // mobile
+browser_resize({ width: 768, height: 1024 }) // tablet
+browser_resize({ width: 375, height: 667 }) // mobile
 ```
 
 > **Por quê 1440×900 para portais internos:** Bootstrap usa `d-lg-block` (breakpoint ≥992px). Em viewports menores, elementos da navbar superior caem em hamburger menu (`display: none`). 1440x900 é o tamanho usado pela suíte real em local headed.
@@ -98,42 +98,42 @@ O snapshot YAML é melhor que screenshot — mostra `role`, `name`, `[active]`, 
 Use `browser_evaluate` para extrair tudo que o selector enxerga:
 
 ```js
-() => {
-  // Substitua o pattern conforme o elemento que está sendo procurado
-  const candidates = Array.from(document.querySelectorAll('button, a, [role="button"], [role="link"], [role="menuitem"]'))
-    .filter(el => /TEXTO_DO_ELEMENTO/i.test(el.textContent || ''));
-  return candidates.map(el => ({
-    tag: el.tagName,                              // <— BUTTON vs A
-    role: el.getAttribute('role'),                // <— null vs "button" vs "link"
-    text: (el.textContent || '').trim().slice(0, 60),
-    classes: el.className.toString().slice(0, 80),
-    visible: el.offsetParent !== null,
-    ariaExpanded: el.getAttribute('aria-expanded'),
-    ariaHidden: el.getAttribute('aria-hidden'),
-    rect: el.getBoundingClientRect(),
-  }));
+ => {
+ // Substitua o pattern conforme o elemento que está sendo procurado
+ const candidates = Array.from(document.querySelectorAll('button, a, [role="button"], [role="link"], [role="menuitem"]'))
+ .filter(el => /TEXTO_DO_ELEMENTO/i.test(el.textContent || ''));
+ return candidates.map(el => ({
+ tag: el.tagName, // <— BUTTON vs A
+ role: el.getAttribute('role'), // <— null vs "button" vs "link"
+ text: (el.textContent || '').trim.slice(0, 60),
+ classes: el.className.toString.slice(0, 80),
+ visible: el.offsetParent !== null,
+ ariaExpanded: el.getAttribute('aria-expanded'),
+ ariaHidden: el.getAttribute('aria-hidden'),
+ rect: el.getBoundingClientRect,
+ }));
 }
 ```
 
 Se `visible: false`, faça uma segunda evaluate para escalar a ancestor chain e achar quem está escondendo:
 
 ```js
-() => {
-  const el = /* mesmo seletor */;
-  let parent = el.parentElement;
-  const chain = [];
-  while (parent && chain.length < 6) {
-    const cs = getComputedStyle(parent);
-    chain.push({
-      tag: parent.tagName,
-      classes: parent.className.toString().slice(0, 60),
-      display: cs.display,         // <— "none" = culpado
-      visibility: cs.visibility,
-      width: parent.offsetWidth,
-    });
-    parent = parent.parentElement;
-  }
-  return chain;
+ => {
+ const el = /* mesmo seletor */;
+ let parent = el.parentElement;
+ const chain = [];
+ while (parent && chain.length < 6) {
+ const cs = getComputedStyle(parent);
+ chain.push({
+ tag: parent.tagName,
+ classes: parent.className.toString.slice(0, 60),
+ display: cs.display, // <— "none" = culpado
+ visibility: cs.visibility,
+ width: parent.offsetWidth,
+ });
+ parent = parent.parentElement;
+ }
+ return chain;
 }
 ```
 
@@ -156,7 +156,7 @@ Se ≥ 1 linha tem ❌, o selector está errado. Cite a linha do page object e p
 Antes de mexer no page object, **prove pelo MCP** que o selector novo funciona:
 
 ```
-browser_click(target: <ref do snapshot>)  → ação acontece
+browser_click(target: <ref do snapshot>) → ação acontece
 browser_snapshot → confirma estado pós-click (dropdown aberto, navegação, etc.)
 ```
 
@@ -209,8 +209,8 @@ Se nenhum fallback é viável → marcar como `INVESTIGAR` no relatório e parar
 
 ```json
 [
-  { "tag": "A", "text": "History", "role": null, "classes": "dropdown-toggle nav-link", "visible": true },
-  { "tag": "BUTTON", "text": "Items Purchased", "role": "menuitem", "visible": false }
+ { "tag": "A", "text": "History", "role": null, "classes": "dropdown-toggle nav-link", "visible": true },
+ { "tag": "BUTTON", "text": "Items Purchased", "role": "menuitem", "visible": false }
 ]
 ```
 
@@ -222,15 +222,15 @@ Se nenhum fallback é viável → marcar como `INVESTIGAR` no relatório e parar
 | `role` do trigger | button | null (anchor) | ❌ |
 | `getByRole('button', /History/i)` casa? | sim | não | ❌ |
 
-**Causa raiz:** `servicing-base.page.ts:75` usava `getByRole('button', { name: /History/i })` mas portal renderiza `<a class="dropdown-toggle nav-link">`. `isVisible` retornava false → fallback `historyDropdown.click()` clicava no `<li>` pai, que não disparava o handler React do `<a>` filho → dropdown nunca abria → menuitem nunca renderizava.
+**Causa raiz:** `servicing-base.page.ts:75` usava `getByRole('button', { name: /History/i })` mas portal renderiza `<a class="dropdown-toggle nav-link">`. `isVisible` retornava false → fallback `historyDropdown.click` clicava no `<li>` pai, que não disparava o handler React do `<a>` filho → dropdown nunca abria → menuitem nunca renderizava.
 
-**Passo 6 (validar):** `getByRole('link', { name: /^History$/i }).click()` → `aria-expanded="true"`, 9 menuitems visíveis. `getByRole('menuitem', { name: 'Items Purchased' }).click()` → navegou para `/items-history/17127`. ✓
+**Passo 6 (validar):** `getByRole('link', { name: /^History$/i }).click` → `aria-expanded="true"`, 9 menuitems visíveis. `getByRole('menuitem', { name: 'Items Purchased' }).click` → navegou para `/items-history/17127`. ✓
 
 **Fix aplicado:**
 ```ts
 // servicing-base.page.ts
-readonly servicingDropdown = this.page.getByRole('link', { name: /^Servicing$/i }).first();
-readonly historyDropdown = this.page.getByRole('link', { name: /^History$/i }).first();
+readonly servicingDropdown = this.page.getByRole('link', { name: /^Servicing$/i }).first;
+readonly historyDropdown = this.page.getByRole('link', { name: /^History$/i }).first;
 // topMenuNavigateTo: removido try/fallback que mascarava o bug
 ```
 
@@ -242,19 +242,19 @@ Tempo total: ~10 minutos. Sem retry, sem heurística, sem `force: true`.
 
 **Sintoma:** seletor funciona quando testado via `mcp__playwright__browser_evaluate` (retorna elementos, click flipa estado), mas falha com 0 matches em runtime do teste Playwright executado minutos ou horas depois, no mesmo ambiente.
 
-**Caso canônico (svc#504, 6ª passada, 2026-05-22):** `[class*="customOptionStyles"]` retornou 2 elementos às 13:13 UTC via MCP. Runtime do teste às 14:18 UTC no mesmo qa1: `row.waitFor({ state: 'visible', timeout: 5_000 })` → timeout, 0 matches. A11y snapshot confirma que o combobox estava aberto e as opções visíveis — mas as classes DOM divergiram.
+**Caso canônico (, 6ª passada, 2026-05-22):** `[class*="customOptionStyles"]` retornou 2 elementos às 13:13 UTC via MCP. Runtime do teste às 14:18 UTC no mesmo qa1: `row.waitFor({ state: 'visible', timeout: 5_000 })` → timeout, 0 matches. A11y snapshot confirma que o combobox estava aberto e as opções visíveis — mas as classes DOM divergiram.
 
 **Causas possíveis (em ordem de probabilidade):**
 1. **FE build drift:** CSS-Module hashes e até prefixes mudam quando webpack reprocessa o bundle (redeploy, hot-reload em dev, bundle cache invalidation). O prefixo `customOptionStyles` pode virar `customOption`, `filterOption`, ou qualquer output dependente do module ID do webpack.
 2. **React-select portal visibility:** opções montadas em portal (`menuPortalTarget={document.body}`) podem existir no a11y tree mas ser consideradas off-screen por Playwright (`state: 'visible'` exige que nenhum ancestor tenha `visibility:hidden` / `display:none` / `opacity:0`). MCP `browser_snapshot` reporta a11y tree, não computed visibility — pode mostrar opção "presente" quando Playwright a considera "não visível".
-3. **Event-sequence timing:** MCP executa clicks com timing diferente do test runner. O menu pode fechar entre o passo de "abrir" e o passo de "clicar opção" quando driven via MCP vs. quando driven via `page.click()` no contexto de teste.
+3. **Event-sequence timing:** MCP executa clicks com timing diferente do test runner. O menu pode fechar entre o passo de "abrir" e o passo de "clicar opção" quando driven via MCP vs. quando driven via `page.click` no contexto de teste.
 
 **Fix / regra prática:**
 - MCP-live validation = passo obrigatório (regra #15) mas NÃO suficiente por si só.
 - Após validar via MCP, rodar o teste completo ≥ 2x antes de declarar o seletor estável.
 - Para seletores que dependem de CSS-Module classes ou portals: preferir keyboard contract ou IDs framework-generated que são imunes a build drift e portal visibility. Ver [[application-lifecycle]] pitfall #47 e #50.
 
-**Detecção:** se `browser_evaluate` retorna N > 0 mas o teste falha com 0 matches: suspeitar imediatamente de build drift (rodar `document.querySelectorAll('[class*="prefixOriginal"]').length` em tempo real no runtime do teste via `page.evaluate`) ou portal visibility (checar se o elemento tem `el.offsetParent !== null`). <!-- descoberto em svc#504 6ª passada, 2026-05-22 -->
+**Detecção:** se `browser_evaluate` retorna N > 0 mas o teste falha com 0 matches: suspeitar imediatamente de build drift (rodar `document.querySelectorAll('[class*="prefixOriginal"]').length` em tempo real no runtime do teste via `page.evaluate`) ou portal visibility (checar se o elemento tem `el.offsetParent !== null`). <!-- descoberto em 6ª passada, 2026-05-22 -->
 
 ---
 
@@ -269,7 +269,7 @@ Tempo total: ~10 minutos. Sem retry, sem heurística, sem `force: true`.
 2. Se anônima + headless concordam mas diferem do browser normal do usuário → causa é sessão/cookie/cache do usuário, não bug de aplicação.
 3. Se anônima + headless divergem → investigar state dependente (service-worker, CDN, ambiente de edge).
 
-**Aplica-se a:** testes de redirect condicional, rotas com autenticação implícita, SPAs com service-worker. <!-- descoberto em Task #1293, 2026-05-20 -->
+**Aplica-se a:** testes de redirect condicional, rotas com autenticação implícita, SPAs com service-worker. <!-- descoberto em , 2026-05-20 -->
 
 ---
 

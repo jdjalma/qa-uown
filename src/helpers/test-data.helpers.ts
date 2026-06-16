@@ -42,6 +42,21 @@ export interface BuildTestDataOptions {
    * Default: '01/01/1984'
    */
   dob?: string;
+  /**
+   * Append a unique unit/suite suffix to the per-state street address so that
+   * `streetAddress1` differs every run.
+   *
+   * Why: the underwriting `blacklistCheck` matches on `streetAddress1` + `zipCode`.
+   * The per-state fixture addresses in `state-address-mapper.ts` are STATIC and
+   * SHARED across all tests, so a single sandbox blacklist entry on, e.g.,
+   * `654 Sunset Blvd / 90028` (CA) poisons EVERY fresh CA application →
+   * deterministic `BLACKLIST_DENIED` even with fresh SSN/email/name.
+   * Discovered 2026-06-12 (modify-lease all-DENIED, blacklist pk:2165 from leadPk:97436).
+   *
+   * Default: false (legacy behavior — static address). Set true for tests that
+   * create fresh applications and must be immune to stale blacklist entries.
+   */
+  uniqueAddress?: boolean;
 }
 
 // ── Result ──────────────────────────────────────────────────────────
@@ -74,14 +89,22 @@ export function buildTestData(options: BuildTestDataOptions): TestData {
     approved = true,
     emailOverride,
     dob = '01/01/1984',
+    uniqueAddress = false,
   } = options;
 
   const envName = envOverride ?? process.env.ENV ?? 'sandbox';
 
   const env = new ConfigEnvironment(envName as EnvName);
-  const address = getAddressForState(state);
+  const baseAddress = getAddressForState(state);
   const merchantConfig = getMerchant(merchantName, envName);
   const runId = generateRunId();
+
+  // Optionally vary streetAddress1 per run to dodge stale blacklist entries on
+  // the shared static fixture address (see `uniqueAddress` doc above). The
+  // suffix is derived from runId so it stays unique + reproducible per run.
+  const address = uniqueAddress
+    ? { ...baseAddress, street: `${baseAddress.street} Unit ${runId.slice(-5)}` }
+    : baseAddress;
 
   const merchant: MerchantInfo = {
     username: merchantConfig.username,

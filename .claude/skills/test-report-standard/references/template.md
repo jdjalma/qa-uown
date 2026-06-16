@@ -104,7 +104,7 @@ Each scenario follows this exact pattern:
 **O que é verificado:** {comportamento do sistema em linguagem de negócio — o que o sistema faz, não o que o teste faz; menciona a origem do dado quando relevante}
 
 Exemplos:
-| Coluna1  | Coluna2  |
+| Coluna1 | Coluna2 |
 |----------|----------|
 | {valor1} | {valor2} |
 

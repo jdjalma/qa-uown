@@ -16,7 +16,7 @@ Sempre que precisar validar um efeito assíncrono no DB:
 - Sweep task (scheduled)
 - Payment settlement
 
-**NÃO use** para validação síncrona (response de API imediato). Use `expect()` direto.
+**NÃO use** para validação síncrona (response de API imediato). Use `expect` direto.
 
 ## Procedimento
 
@@ -26,22 +26,22 @@ Sempre que precisar validar um efeito assíncrono no DB:
 import { db } from "@/helpers/database.helpers";
 
 const log = await db.waitForRecord({
-  table: "uown_los_lead_notes",
-  filter: { lead_id: leadId, note_type: "SIGNING_COMPLETED" },
-  timeoutMs: 30_000,
-  intervalMs: 500,      // primeiro intervalo, depois cresce
-  maxIntervalMs: 5_000,
+ table: "uown_los_lead_notes",
+ filter: { lead_id: leadId, note_type: "SIGNING_COMPLETED" },
+ timeoutMs: 30_000,
+ intervalMs: 500, // primeiro intervalo, depois cresce
+ maxIntervalMs: 5_000,
 });
 ```
 
 ### Política de backoff
 
 ```
-attempt 1: t=0     (imediato — pode já estar lá)
+attempt 1: t=0 (imediato — pode já estar lá)
 attempt 2: t=500ms
-attempt 3: t=1.5s   (cresce 1.5x ou 2x)
+attempt 3: t=1.5s (cresce 1.5x ou 2x)
 attempt 4: t=3.5s
-attempt 5: t=7.5s   (cap em 5s para próximos)
+attempt 5: t=7.5s (cap em 5s para próximos)
 ...
 ```
 
@@ -57,7 +57,7 @@ Backoff exponencial é importante porque:
 | Esperar 1 row específica aparecer | `db.waitForRecord({ filter })` |
 | Esperar count >= N | `db.waitForCount({ filter, min: N })` |
 | Esperar campo mudar (UPDATE) | `db.waitForChange({ filter, field, expected })` |
-| Validação imediata após resposta API síncrona | `db.getSingleRow()` (sem polling) |
+| Validação imediata após resposta API síncrona | `db.getSingleRow` (sem polling) |
 
 (Verifique nomes exatos em `src/helpers/database.helpers.ts`.)
 
@@ -68,7 +68,7 @@ Backoff exponencial é importante porque:
 // ❌ Anti-pattern — flakiness garantida
 await page.waitForTimeout(5000);
 const row = await db.query("SELECT ...");
-expect(row).toBeDefined();
+expect(row).toBeDefined;
 ```
 Se o evento demora 6s nesse ambiente, falha. Se chega em 100ms, perdeu 4.9s. Use `waitForRecord`.
 
@@ -92,13 +92,13 @@ Polling acumula latência se a row ficou de uma execução anterior. Garanta cle
 filter: { lead_id, created_at_gte: testStartedAt }
 ```
 
-### 6. `timestamp without time zone` vs UTC comparison (svc#536, 2026-05-22)
+### 6. `timestamp without time zone` vs UTC comparison (2026-05-22)
 
-`Date.toISOString()` produces a UTC `Z` string. Comparing that against a Postgres `timestamp without time zone` column breaks silently when the DB host TZ differs from UTC — the predicate becomes false because Postgres interprets the literal without offset conversion.
+`Date.toISOString` produces a UTC `Z` string. Comparing that against a Postgres `timestamp without time zone` column breaks silently when the DB host TZ differs from UTC — the predicate becomes false because Postgres interprets the literal without offset conversion.
 
 ```typescript
 // ❌ Broken on hosts with TZ ≠ UTC
-filter: { created_at_gte: new Date().toISOString() }  // "$1 = '2026-05-22T09:00:00.000Z'" fails to match a UTC+3 host row
+filter: { created_at_gte: new Date.toISOString } // "$1 = '2026-05-22T09:00:00.000Z'" fails to match a UTC+3 host row
 ```
 
 **Safe alternatives (in order of preference):**
@@ -106,9 +106,9 @@ filter: { created_at_gte: new Date().toISOString() }  // "$1 = '2026-05-22T09:00
 2. **Cast to UTC in SQL:** `WHERE created_at AT TIME ZONE 'UTC' > $1` (explicit, works regardless of host TZ).
 3. **Correlation by unique marker:** use `source_uuid`, `x-run-id`, or similar inserted with the action (see pitfall #34 in [[application-lifecycle]]).
 
-**Detection:** query `SELECT now(), current_setting('TimeZone')` — if TZ ≠ UTC, timestamp comparisons against Node JS Date values are unreliable.
+**Detection:** query `SELECT now, current_setting('TimeZone')` — if TZ ≠ UTC, timestamp comparisons against Node JS Date values are unreliable.
 
-### 7. SQL projection vs JPA entity drift (svc#536, 2026-05-22)
+### 7. SQL projection vs JPA entity drift (2026-05-22)
 
 Writing raw SQL that projects columns that do NOT exist in the actual table causes silent failures (0 rows from `waitForRecord`) or Postgres errors swallowed by catch blocks.
 
@@ -117,7 +117,7 @@ Writing raw SQL that projects columns that do NOT exist in the actual table caus
 **Rule:** before projecting any column from a table not already in the catalog, run:
 ```sql
 SELECT column_name, data_type
-  FROM information_schema.columns
+ FROM information_schema.columns
  WHERE table_name = 'uown_due_date_moves'
  ORDER BY ordinal_position;
 ```

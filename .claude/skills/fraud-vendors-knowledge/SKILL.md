@@ -12,7 +12,7 @@ disable-model-invocation: true
 
 - Teste de aplicação envolvendo merchant com `isSeonIdCheckRequired=true` (Kornerstone family, e.g. KS3015).
 - Falha em `sendApplication` retornando 500 Apache HTML → suspeita DV360 UAT outage.
-- Token expiry sweep tests — Kount / GDS — Task #502.
+- Token expiry sweep tests — Kount / GDS.
 - Login-attempt scoring (Kount) — `uown_login_attempt` joins.
 - Activity log de UW mostrando `[Sentilink]`/`[Lexis]`/`[Kount]`/`[GDS]`/`[Neustar]` em `uown_los_lead_notes`.
 
@@ -27,21 +27,24 @@ NÃO aplicar para signing (use `gowsign-knowledge`), payment processing (use `pa
 | **SEON** | ID document scan + selfie liveness | Pré-`submitApplication`, somente se `merchant.isSeonIdCheckRequired = true` | API `POST /uown/los/seon/createOrUpdate` com `idVerifySuccess: true` (skip total) |
 | **Kount** | Login attempt scoring + device fingerprint | Origination login / risk decision | Token sweep `refreshKountAccessTokenSweep` — SSN catalog cobre bypass paths |
 | **DV360 (DataView360)** | UW backbone (mediator: Sentilink, LexisNexis, GDS, Neustar) | `sendApplication` → svc → DV360 UAT → UW decision | Não há bypass; depende do ambiente externo |
+| **NeuroID** | Behavioral/interaction fraud signal durante signing | Signing flow, gate-ado por `merchant.useNeuroIdCheck = true` | Sem bypass; observar via DB. **Fonte de truth de contagem = `uown_neuro_id_verification WHERE lead_pk=$1`** (helper `countNeuroIdCalls`), NÃO `uown_sv_outbound_api_log` |
+
+> **NeuroID — não usar `uown_sv_outbound_api_log` para correlação por `lead_pk`.** A tabela tem linhas de chamadas NeuroID (`url ILIKE '%neuro-id.com%'`), mas para **leads pré-funding** `account_pk`, `source_uuid` e `return_uuid` são todos **NULL** — não há chave de correlação com o `lead_pk`. Assertivas de "NeuroID foi/não foi chamado N vezes" devem usar `uown_neuro_id_verification WHERE lead_pk = $1` (`countNeuroIdCalls`, helpers-catalog). Confirmado por discovery probe `src/scripts/probe-neuroid-554.ts`. Valores de `neuro_id_status` observados em qa2: só `SUCCESS` e `PROFILE_NOT_FOUND` — o enum `NeuroIdStatus.NOT_ENOUGH_INTERACTION_DATA` está `@unconfirmed` em `src/types/enums.ts`. **`useNeuroIdCheck=true` está em `mustBeFalse` no merchant preflight contract** — ver Pitfall #9 abaixo e [[application-lifecycle]] Pitfall #102.
 
 Verificar em `src/data/merchant-config-contract.ts:54-74` — quais flags fraud-related o merchant pode ter ON/OFF:
 
 ```typescript
 BASE_MUST_BE_FALSE = [
-  'isIntellicheckRequired',
-  'isSeonIdCheckRequired',           // SEON OFF para UOWN base
-  'isBankVerificationRequired',
-  // ...
-  'useLexisNexis',
-  'useNeuroIdCheck',
-  // ...
-  'isFraudCheckRequired',
-  'useNeustar',
-  'useSentilink',
+ 'isIntellicheckRequired',
+ 'isSeonIdCheckRequired', // SEON OFF para UOWN base
+ 'isBankVerificationRequired',
+ // ...
+ 'useLexisNexis',
+ 'useNeuroIdCheck',
+ // ...
+ 'isFraudCheckRequired',
+ 'useNeustar',
+ 'useSentilink',
 ];
 ```
 
@@ -52,7 +55,7 @@ A regra: UOWN base merchants têm fraud flags OFF. Kornerstone tem `useWebhook=t
 #### Onde ativa
 
 - Merchant tem `isSeonIdCheckRequired = true` → pre-`submitApplication`.
-- Backend chama `IdVerificationService.verifySeon()` que **short-circuita em `idVerifySuccess == true`** (linha 173 do svc) — pula todos os name/DOB/expiration checks.
+- Backend chama `IdVerificationService.verifySeon` que **short-circuita em `idVerifySuccess == true`** (linha 173 do svc) — pula todos os name/DOB/expiration checks.
 - SDK SEON exige camera (document scan + selfie/liveness) → impossível em headless. Bypass via API é o padrão para automação.
 
 #### Endpoint de bypass
@@ -67,19 +70,19 @@ Body completo (`src/api/bodies/seon.body.ts:46-62`):
 
 ```typescript
 {
-  leadPk,
-  referenceId: crypto.randomUUID(),
-  fullName,
-  status: 'APPROVED',
-  success: true,
-  idVerifySuccess: true,        // ← este é o flag-chave do short-circuit
-  documentType: 'DRIVERS_LICENSE',
-  nameMatchCheckResult: 'PASS',
-  stateCheckResult: 'PASS',
-  postalCodeResult: 'PASS',
-  dateOfBirthResult: 'PASS',
-  birthDate,                    // ISO YYYY-MM-DD (Java LocalDate)
-  documentExpirationDate: '2030-01-01',
+ leadPk,
+ referenceId: crypto.randomUUID,
+ fullName,
+ status: 'APPROVED',
+ success: true,
+ idVerifySuccess: true, // ← este é o flag-chave do short-circuit
+ documentType: 'DRIVERS_LICENSE',
+ nameMatchCheckResult: 'PASS',
+ stateCheckResult: 'PASS',
+ postalCodeResult: 'PASS',
+ dateOfBirthResult: 'PASS',
+ birthDate, // ISO YYYY-MM-DD (Java LocalDate)
+ documentExpirationDate: '2030-01-01',
 }
 ```
 
@@ -113,7 +116,7 @@ Expected após bypass: `status='APPROVED' AND success=true AND id_verify_success
 2. `getApplicationStatus` → confirma `APPROVED`
 3. `api.seon.approveVerification(...)` → bypass via API
 4. `page.goto(contractUrl)` → UI
-5. `contract.dismissSeonOverlay()` — modal QR code do SEON pode aparecer mesmo após bypass; o page object precisa fechar
+5. `contract.dismissSeonOverlay` — modal QR code do SEON pode aparecer mesmo após bypass; o page object precisa fechar
 6. Fill CC + bank → submit → T&C → e-sign
 7. Origination portal → poll status até `CONTRACT_CREATED+`
 
@@ -123,9 +126,9 @@ Step 5 é o bug-fix recente: SEON SDK injeta overlay com QR code mesmo quando ba
 
 ```typescript
 interface SeonInfoResponseBody {
-  seonIdPk, leadPk, referenceId, fullName, status, success, idVerifySuccess,
-  documentType, nameMatchCheckResult, stateCheckResult, postalCodeResult,
-  dateOfBirthResult, birthDate, documentExpirationDate, error
+ seonIdPk, leadPk, referenceId, fullName, status, success, idVerifySuccess,
+ documentType, nameMatchCheckResult, stateCheckResult, postalCodeResult,
+ dateOfBirthResult, birthDate, documentExpirationDate, error
 }
 ```
 
@@ -134,7 +137,7 @@ interface SeonInfoResponseBody {
 #### Onde aparece no projeto
 
 - Token storage: `uown_kount_token` (`pk`, `access_token`, `expiration_time` — `timestamp WITHOUT time zone`).
-- Sweep service: `RefreshKountAccessTokenSweepService` — Quartz job, a cada ~10 min.
+- Sweep service: `RefreshKountAccessTokenSweepService` — Quartz job, runs every ~10 min.
 - API trigger manual: `POST /uown/svc/refreshKountAccessTokenSweep` (`ScheduledTaskClient.refreshKountAccessTokenSweep`).
 - Login attempts join: `uown_login_attempt` join com `uown_user` (probe-login-attempt-schema.ts já não existe, mas a tabela continua).
 
@@ -144,19 +147,19 @@ interface SeonInfoResponseBody {
 
 **Pitfall central** (`.claude/skills/common-operations/SKILL.md:488`):
 
-> `RefreshKountAccessTokenSweepService` e `RefreshGdsAccessTokenSweepService` (commit `213b96b54`) chamam `loadOrCreateToken().setPk(...)` seguido de `repo.save(...)`. Como entity usa `@GeneratedValue`, o `setPk` explícito é **IGNORADO** no INSERT — DB assigna novo PK. Consequência: **após delete pk=1 + sweep recreate, o row novo NÃO está em pk=1**. Tests com `WHERE pk = 1` quebram.
+> `RefreshKountAccessTokenSweepService` e `RefreshGdsAccessTokenSweepService` (commit `213b96b54`) chamam `loadOrCreateToken.setPk(...)` seguido de `repo.save(...)`. Como entity usa `@GeneratedValue`, o `setPk` explícito é **IGNORADO** no INSERT — DB assigna novo PK. Consequência: **após delete pk=1 + sweep recreate, o row novo NÃO está em pk=1**. Tests com `WHERE pk = 1` quebram.
 
 **Fix:**
 
 ```typescript
 // ❌
 const row = await db.getSingleRow<KountTokenRow>(
-  'SELECT expiration_time FROM uown_kount_token WHERE pk = 1'
+ 'SELECT expiration_time FROM uown_kount_token WHERE pk = 1'
 );
 
 // ✅
 const row = await db.getSingleRow<KountTokenRow>(
-  'SELECT expiration_time FROM uown_kount_token ORDER BY pk DESC LIMIT 1'
+ 'SELECT expiration_time FROM uown_kount_token ORDER BY pk DESC LIMIT 1'
 );
 ```
 
@@ -166,9 +169,9 @@ const row = await db.getSingleRow<KountTokenRow>(
 
 ```typescript
 const result = await db.getSingleRow<{ ok: boolean }>(
-  `SELECT (expiration_time > now() + interval '30 seconds') AS ok
-   FROM uown_kount_token WHERE pk = $1`,
-  [pk],
+ `SELECT (expiration_time > now + interval '30 seconds') AS ok
+ FROM uown_kount_token WHERE pk = $1`,
+ [pk],
 );
 ```
 
@@ -178,13 +181,13 @@ Detalhes em `.claude/skills/common-operations/SKILL.md § Timestamp Comparisons`
 
 `skill [[ssn-test-modalities]]` documenta SSNs específicos que passam por bypass / cache para evitar dependência do downstream UW (Sentilink/Lexis/GDS/Kount). Pitfall reportado:
 
-> Se o cron `getKountAccessTokenSweep`/`getGdsAccessTokenSweep` (Quartz cada 10min, Task #502) não conseguir renovar a tempo, SSNs FORA do catálogo podem retornar UW_DENIED espúrio.
+> Se o cron `getKountAccessTokenSweep`/`getGdsAccessTokenSweep` (Quartz, cada ~10min) não conseguir renovar a tempo, SSNs FORA do catálogo podem retornar UW_DENIED espúrio.
 
 **Workaround:** trigger manual antes da suite:
 
 ```typescript
-await api.scheduledTask.refreshKountAccessTokenSweep();
-await api.scheduledTask.refreshGdsAccessTokenSweep();
+await api.scheduledTask.refreshKountAccessTokenSweep;
+await api.scheduledTask.refreshGdsAccessTokenSweep;
 ```
 
 ### 4. DV360 / DataView360 — UW Backbone
@@ -200,19 +203,19 @@ DV360 (alias DataView360) é o mediator externo do UW: orquestra Sentilink, Lexi
 
 ```typescript
 async getDv360OutboundLog(leadPk: number) {
-  return this.queryOne(
-    `SELECT pk, lead_pk, request, url, response, row_created_timestamp
-     FROM uown_los_outbound_api_log
-     WHERE lead_pk = $1 AND url LIKE '%dataview360%'
-     ORDER BY pk DESC LIMIT 1`,
-    [leadPk],
-  );
+ return this.queryOne(
+ `SELECT pk, lead_pk, request, url, response, row_created_timestamp
+ FROM uown_los_outbound_api_log
+ WHERE lead_pk = $1 AND url LIKE '%dataview360%'
+ ORDER BY pk DESC LIMIT 1`,
+ [leadPk],
+);
 }
 ```
 
 #### 2026-05-18 OUTAGE — qa1 UAT (Memory: `project_dv360_uat_qa1_outage_2026_05_18`)
 
-**Sintoma confirmado durante task #518:**
+**Sintoma:**
 
 `POST /uown/los/sendApplication` em **qa1** retorna 500 do Apache do DV360 UAT **independentemente do merchant** testado.
 
@@ -224,9 +227,9 @@ Caminho da chamada:
 
 ```
 Browser → apply-qa1.uownleasing.com (svc qa1)
-       → svc chama DV360 UAT (alb.uown.uat.me.dataview360.com)
-       → Apache 500 (HTML genérico, não JSON estruturado)
-       → svc embrulha como 500 e devolve
+ → svc chama DV360 UAT (alb.uown.uat.me.dataview360.com)
+ → Apache 500 (HTML genérico, não JSON estruturado)
+ → svc embrulha como 500 e devolve
 ```
 
 **Evidência de svc saudável:** `uown_los_inbound_api_log` mostra `canContinueApplication` voltando 200 com payload completo. Diferença: `canContinueApplication` NÃO chama DV360 — só consulta lead local.
@@ -245,7 +248,7 @@ Browser → apply-qa1.uownleasing.com (svc qa1)
 // Run BEFORE qa-flow / E2E pipeline em qa1 que envolve sendApplication
 const probe = await api.application.sendApplication(merchant, applicant, order);
 if (probe.status === 500 && /Apache.*dataview360/i.test(JSON.stringify(probe.body))) {
-  test.skip(true, '[ENV-GAP] DV360 UAT instability — qa1 outage detected');
+ test.skip(true, '[ENV-GAP] DV360 UAT instability — qa1 outage detected');
 }
 ```
 
@@ -292,7 +295,7 @@ Se response contém `Apache/2.4.58 (Ubuntu)` ou similar → ENV-GAP, não bug.
 
 ### Pitfall #3 — SEON overlay UI mesmo após bypass
 
-`ContractPage.dismissSeonOverlay()` é mandatório no fluxo UI mesmo quando `idVerifySuccess=true` no DB. SDK do SEON injeta QR modal independente do estado do backend.
+`ContractPage.dismissSeonOverlay` é mandatório no fluxo UI mesmo quando `idVerifySuccess=true` no DB. SDK do SEON injeta QR modal independente do estado do backend.
 
 ### Pitfall #4 — Kount/GDS sweep pk=1 assumption
 
@@ -300,7 +303,7 @@ Se response contém `Apache/2.4.58 (Ubuntu)` ou similar → ENV-GAP, não bug.
 
 ### Pitfall #5 — `uown_kount_token.expiration_time` timezone
 
-`timestamp without time zone` + pg-node `Date` parsing é locale-dependent. Comparar PG-side com `(expiration_time > now() + interval '30 seconds')`, não JS-side.
+`timestamp without time zone` + pg-node `Date` parsing é locale-dependent. Comparar PG-side com `(expiration_time > now + interval '30 seconds')`, não JS-side.
 
 ### Pitfall #6 — Mudar fraud flag em merchant quebra preflight
 
@@ -313,6 +316,14 @@ Se response contém `Apache/2.4.58 (Ubuntu)` ou similar → ENV-GAP, não bug.
 ### Pitfall #8 — Kornerstone merchant exige bankData no sendApplication
 
 Tangencial mas relevante: KS3015 (FifthAveFurnitureNY) tem `isSeonIdCheckRequired=true` E exige `bankData` no body do sendApplication (`.claude/rules/testing.md § Application Lifecycle`). Esquecer um dos dois faz o lead nem chegar no SEON step.
+
+### Pitfall #9 — `useNeuroIdCheck` resetado pelo merchant preflight (falso-negativo NeuroID)
+
+`useNeuroIdCheck=true` está no conjunto `mustBeFalse` do contrato de merchant preflight (`merchant-config-contract.ts`). Auto-heal via `createOrUpdateMerchant` **reseta a flag para `false`**, desabilitando o NeuroID silenciosamente: NeuroID nunca dispara, todos os `count >= 1` guards falham, e o teste reporta **falso-negativo**. **Fix:** `skipMerchantPreflight: true` em TODA chamada `createPreQualifiedApplication` quando `useNeuroIdCheck=true` é a flag sob teste; compensar com pre-assert read-only inline (`SELECT use_neuro_id_check FROM uown_merchant WHERE ref_merchant_code='OW90337-0001'` + `test.skip` se `false`). Detalhe completo em [[application-lifecycle]] Pitfall #102. Análogo ao Pitfall #6 (qualquer fraud flag em `mustBeFalse` é resetada pelo auto-heal).
+
+### Pitfall #10 — `uown_sv_outbound_api_log` sem correlação `lead_pk` para leads pré-funding
+
+A tabela tem linhas de chamadas NeuroID (`url ILIKE '%neuro-id.com%'`) mas, para leads pré-funding, `account_pk`/`source_uuid`/`return_uuid` são NULL — nenhuma chave de correlação com o `lead_pk`. Usar essa tabela para assertivas de contagem NeuroID é impossível nesse contexto. **Fix:** usar `uown_neuro_id_verification WHERE lead_pk = $1` (`countNeuroIdCalls`) como fonte de truth. Confirmado via discovery probe: `src/scripts/probe-neuroid-554.ts`.
 
 ## Exemplos do projeto
 
@@ -337,7 +348,7 @@ Tangencial mas relevante: KS3015 (FifthAveFurnitureNY) tem `isSeonIdCheckRequire
 - Linhas 35-46: testData (NY + FifthAveFurnitureNY + orderTotal 1500)
 - Linhas 48-55: merchantConfig com try/catch defensivo (qa2 RBAC issue em `getMerchantsByRefCode`)
 - Linhas 119-136: SEON bypass via API
-- Linha 169: `await contract.dismissSeonOverlay()` ← mandatório no UI
+- Linha 169: `await contract.dismissSeonOverlay` ← mandatório no UI
 - Linhas 215-250: poll de lead status com `Get Document Status` button para forçar sync backend
 
 ### C. SEON client + body builder
@@ -356,7 +367,7 @@ Tangencial mas relevante: KS3015 (FifthAveFurnitureNY) tem `isSeonIdCheckRequire
 
 - Query latest token (não pk=1)
 - PG-side timestamp comparison
-- Trigger manual de sweep via `api.scheduledTask.refreshKountAccessTokenSweep()`
+- Trigger manual de sweep via `api.scheduledTask.refreshKountAccessTokenSweep`
 
 ## Checklist antes de marcar fraud-vendor test como pronto
 
@@ -364,7 +375,7 @@ Tangencial mas relevante: KS3015 (FifthAveFurnitureNY) tem `isSeonIdCheckRequire
 - [ ] Se merchant tem `isSeonIdCheckRequired=true`: bypass via `api.seon.approveVerification` antes de `submitApplication`
 - [ ] DOB convertido para `YYYY-MM-DD` (Java LocalDate)
 - [ ] DB validation em `uown_seon` confirma `status='APPROVED', success=true, id_verify_success=true`
-- [ ] UI test inclui `contract.dismissSeonOverlay()` mesmo após bypass
+- [ ] UI test inclui `contract.dismissSeonOverlay` mesmo após bypass
 - [ ] Queries em `uown_kount_token` / `uown_gds_token` usam `ORDER BY pk DESC LIMIT 1`, não `WHERE pk = 1`
 - [ ] Comparações de `expiration_time` feitas PG-side, não JS-side
 - [ ] Falha 500 com Apache HTML classificada como `[ENV-GAP] DV360 UAT instability`, não `[CONFIRMADO] bug`

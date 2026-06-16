@@ -80,12 +80,12 @@ Cuidado: 13 e 16 são valores de boundary — não são só representantes, vale
 
 **Exemplo UOWN — roteamento de vendor de signing:**
 
-| Condição              | C1 | C2 | C3 | C4 | C5 |
+| Condição | C1 | C2 | C3 | C4 | C5 |
 |---|---|---|---|---|---|
-| state == CA          | Y  | Y  | N  | N  | Y  |
-| merchant uses GoSign | Y  | N  | Y  | N  | Y  |
-| feature flag GoSign on | Y | Y  | Y  | N  | N  |
-| → vendor             | GoSign | SignWell | SignWell | SignWell | SignWell |
+| state == CA | Y | Y | N | N | Y |
+| merchant uses GoSign | Y | N | Y | N | Y |
+| feature flag GoSign on | Y | Y | Y | N | N |
+| → vendor | GoSign | SignWell | SignWell | SignWell | SignWell |
 
 C1 e C5 são interessantes: C1 confirma GoSign happy; C5 valida que com flag off, mesmo merchant configurado, cai em SignWell. **Cada coluna é um caso de teste candidato.**
 
@@ -105,8 +105,8 @@ Após montar, aplica:
 
 ```
 [NEW] → [PRE_QUALIFIED] → [QUALIFIED] → [LEASED] → [SIGNED] → [ACTIVATED]
-                                           ↓
-                                       [DECLINED] (terminal)
+ ↓
+ [DECLINED] (terminal)
 ```
 
 Casos:

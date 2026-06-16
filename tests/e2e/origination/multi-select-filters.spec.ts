@@ -105,6 +105,10 @@ test.describe(
   '1292_multiSelectFilters_origination',
   { tag: testData.tag.split(' ') },
   () => {
+    test.beforeEach(({ testEnv }) => {
+      test.skip(testEnv.env !== 'qa1', '1292 multi-select filters spec uses qa1 merchant data — skip in other environments');
+    });
+
     test('CT-00 — Overview/bottom multi-select smoke @smoke @regression', async ({ page }) => {
       const env = new ConfigEnvironment(testData.env);
       const overview = new OverviewPage(page);

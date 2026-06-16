@@ -44,15 +44,15 @@ Regra de bolso (decision tree):
 ```
 [Feature tem UI?]
 ├── SIM
-│   ├── [Setup caro?]
-│   │   ├── SIM → híbrido (API setup + UI exercise + DB assert)
-│   │   └── NÃO → UI puro (UI exercise + DB assert)
-│   └── (UI obrigatório no caminho do cliente)
+│ ├── [Setup caro?]
+│ │ ├── SIM → híbrido (API setup + UI exercise + DB assert)
+│ │ └── NÃO → UI puro (UI exercise + DB assert)
+│ └── (UI obrigatório no caminho do cliente)
 └── NÃO
-    ├── [Endpoint admin/sweep?]
-    │   ├── SIM → API-only (justifica em 1 linha)
-    │   └── NÃO → reconsiderar — talvez exista UI escondida
-    └── (API-only com DB assert)
+ ├── [Endpoint admin/sweep?]
+ │ ├── SIM → API-only (justifica em 1 linha)
+ │ └── NÃO → reconsiderar — talvez exista UI escondida
+ └── (API-only com DB assert)
 ```
 
 ### Passo 2 — Setup vs Exercise vs Assertion (separar)

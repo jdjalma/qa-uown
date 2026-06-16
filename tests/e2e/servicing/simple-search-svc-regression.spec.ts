@@ -314,6 +314,9 @@ test.describe(
   { tag: splitTags(BASE_TAG) },
   () => {
     test.beforeAll(async ({ db }) => {
+      // Skip resolution in non-qa1 environments — KAREN_STATIC contains qa1-specific
+      // values (last4, fallbackPhone, fallbackPhoneLeadPk) that don't exist in sandbox.
+      if ((process.env.ENV || 'sandbox') !== 'qa1') return;
       // Resolve happy lead fixture at runtime — leadPk↔accountPk pairings drift
       // on qa1 reseed (categoria drift-prone, ver [[volatile-knowledge-registry]]).
       // SVC search requires account_pk IS NOT NULL — Karen Holdin (lead 11319)
@@ -326,6 +329,7 @@ test.describe(
     });
 
     test.beforeEach(async ({ page, testEnv }) => {
+      test.skip(testEnv.env !== 'qa1', 'svc#454 SVC simpleSearch uses qa1-specific lead fixtures (KAREN_STATIC) — skip in other environments');
       await page.setViewportSize({ width: VIEWPORT.width, height: VIEWPORT.height });
       await page.goto(testEnv.servicingUrl, { waitUntil: 'domcontentloaded' });
       await loginToPortalIfNeeded(page, 'Servicing Login', testEnv.servicingUrl, testEnv);

@@ -54,13 +54,13 @@ Para criar uma conta partindo do zero ate `ACTIVE` (ou `SETTLED_IN_FULL` via SET
 
 Encadear manualmente no spec:
 ```typescript
-await driveLeadToFunding(api, merchant, ctx);                                // passos 8-10
-const fundedResp = await api.lead.updateFundingStatus([leadPk], 'FUNDED');   // passo 11
-const accountPk = await db.waitForAccountByLeadPk(leadPk, 60_000);           // passo 12
-await db.waitForAccountStatus(accountPk, 'ACTIVE', 180_000);                 // passo 13
+await driveLeadToFunding(api, merchant, ctx); // passos 8-10
+const fundedResp = await api.lead.updateFundingStatus([leadPk], 'FUNDED'); // passo 11
+const accountPk = await db.waitForAccountByLeadPk(leadPk, 60_000); // passo 12
+await db.waitForAccountStatus(accountPk, 'ACTIVE', 180_000); // passo 13
 // Para SETTLED_IN_FULL:
 const ccBody = buildCcArrangementBody({ accountPk, arrangementType: 'SETTLEMENT', ... });
-await api.paymentArrangement.makeCreditCardPayments(ccBody);                 // passo 14
-await db.waitForPaymentArrangementStatus(accountPk, 'SUCCESS', 60_000);      // passo 15
-await db.waitForAccountStatus(accountPk, 'SETTLED_IN_FULL', 60_000);         // passo 16
+await api.paymentArrangement.makeCreditCardPayments(ccBody); // passo 14
+await db.waitForPaymentArrangementStatus(accountPk, 'SUCCESS', 60_000); // passo 15
+await db.waitForAccountStatus(accountPk, 'SETTLED_IN_FULL', 60_000); // passo 16
 ```

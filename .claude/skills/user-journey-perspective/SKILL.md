@@ -32,14 +32,14 @@ disable-model-invocation: true
 - **Device:** mobile real (smartphone), conexão variável, atenção curta.
 - **Conhecimento:** zero sobre lease internals. Espera fluxo guiado.
 - **Sub-personas:**
-  - *Novo cliente:* primeira vez no UOWN; precisa criar account, KYC, signing.
-  - *Returning cliente:* já tem account; chega via novo merchant, novo lease, ou via Account Portal.
+ - *Novo cliente:* primeira vez no UOWN; precisa criar account, KYC, signing.
+ - *Returning cliente:* já tem account; chega via novo merchant, novo lease, ou via Account Portal.
 - **Pontos de dor recorrentes:**
-  - OTP no email — TTL, spam, atrasos.
-  - Plaid / MX link — quebra mid-flow, sai do app.
-  - GowSign iframe — tela pequena, scroll difícil.
-  - Read mode GoSign mobile (zoom de fonte — `project_gosign_rollout`).
-  - PDF rendering — coluna pequena ou faltante (caso CA).
+ - OTP no email — TTL, spam, atrasos.
+ - Plaid / MX link — quebra mid-flow, sai do app.
+ - GowSign iframe — tela pequena, scroll difícil.
+ - Read mode GoSign mobile (zoom de fonte — `project_gosign_rollout`).
+ - PDF rendering — coluna pequena ou faltante (caso CA).
 - **Pergunta-guia:** "Cliente está com pressa, no celular, no caixa da loja — esse passo é claro?"
 
 ### Agent (UOWN ou merchant ops)
@@ -48,14 +48,14 @@ disable-model-invocation: true
 - **Device:** desktop 1440px+ (regra #15 — Bootstrap `d-lg-block`).
 - **Conhecimento:** treinado no produto, conhece termos (OEP, EPO, NSF, dunning, NACHA).
 - **Sub-personas:**
-  - *Merchant agent:* funcionário do merchant; vê só leads próprios.
-  - *UOWN support agent:* vê todos; mais permissões.
-  - *Approval agent vs Read-only:* matriz de role afeta o que cada um faz.
+ - *Merchant agent:* funcionário do merchant; vê só leads próprios.
+ - *UOWN support agent:* vê todos; mais permissões.
+ - *Approval agent vs Read-only:* matriz de role afeta o que cada um faz.
 - **Pontos de dor recorrentes:**
-  - Lead em estado errado / não consegue avançar.
-  - Customer não recebeu OTP — agent precisa reenviar.
-  - Edit invoice — re-issue de contrato (`feedback_qa_flow_scope_dual_brand_lease_edit`).
-  - Refund / void de lease.
+ - Lead em estado errado / não consegue avançar.
+ - Customer não recebeu OTP — agent precisa reenviar.
+ - Edit invoice — re-issue de contrato (`feedback_qa_flow_scope_dual_brand_lease_edit`).
+ - Refund / void de lease.
 - **Pergunta-guia:** "Agent está em escritório, multi-tab, esse erro/log é actionable?"
 
 ### Admin / Ops
@@ -87,16 +87,16 @@ Para cada persona, narrar a sequência de telas/ações DO PONTO DE VISTA DELA:
 
 ```
 Customer:
-  1. Clica link no email do merchant ("Complete your application")
-  2. Chega no Website /{shortCode}/complete
-  3. Vê resumo do lease (cash price, schedule)
-  4. Preenche missing data se houver
-  5. Submit → vê confirmação
-  6. Recebe email com link de signing
-  7. Clica link, chega no signing flow
-  8. Lê contrato (GowSign iframe), assina
-  9. Vê confirmação de signing
-  10. Recebe email de welcome no Account Portal
+ 1. Clica link no email do merchant ("Complete your application")
+ 2. Chega no Website /{shortCode}/complete
+ 3. Vê resumo do lease (cash price, schedule)
+ 4. Preenche missing data se houver
+ 5. Submit → vê confirmação
+ 6. Recebe email com link de signing
+ 7. Clica link, chega no signing flow
+ 8. Lê contrato (GowSign iframe), assina
+ 9. Vê confirmação de signing
+ 10. Recebe email de welcome no Account Portal
 ```
 
 Cada passo é alvo potencial de teste. Cada passo tem oráculo: "o que o customer espera ver agora?"

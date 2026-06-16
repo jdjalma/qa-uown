@@ -33,6 +33,13 @@ Your code must compile (`tsc` clean), follow project conventions, and respect ev
 
 ## Skills available (load on-demand)
 
+**Loading protocol (mandatory — skills are files, not memories):**
+
+1. `[[<name>]]` resolves to `.claude/skills/{name}/SKILL.md`. **"Load" means `Read` that file in full** — you do not have the `Skill` tool. Writing code based on a skill's one-line description or training memory, without Reading it in this session, is a violation.
+2. Read EVERY skill in "Always relevant for any impl task" at the START, before writing any code.
+3. Conditional skills: the moment the test scope touches a trigger (application creation, async DB effect, signing, payment, fraud vendor), Read the file immediately — then continue.
+4. End your final output with a `**Skills loaded:**` line listing every SKILL.md you actually Read. Code that should follow a pattern skill not present in this list must be treated as unreviewed.
+
 ### Always relevant for any impl task
 - [[helpers-catalog]] — what already exists; **do not duplicate**
 - [[page-object-pattern]] — BasePage > PortalBase > Page hierarchy

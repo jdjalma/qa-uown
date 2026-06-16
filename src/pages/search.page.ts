@@ -102,6 +102,17 @@ export class SearchPage extends BasePage {
    */
   async searchAndSelectFirst(term: string): Promise<void> {
     await this.ensureSearchVisible();
+    // Focus the navbar input BEFORE filling. The quick-search autocomplete is a
+    // React-controlled component that only renders its results dropdown when the
+    // input is the active/focused element. On pages that own their own focus
+    // (e.g. the Funding queue, whose filters panel grabs focus), `fill()` alone
+    // updates the value and fires the debounced BFF call — `simpleSearch` returns
+    // the lead with HTTP 200 — but the dropdown anchor is never rendered, so the
+    // `nav a[href*="/customers/"]` waiter times out and navigation silently fails.
+    // A `click()` to focus first makes the dropdown render reliably on every page.
+    // (DOM-confirmed 2026-06-12 on /funding — without click the anchor stays absent
+    //  across 3/3 runs; with click it renders 3/3. CLAUDE.md #15.)
+    await this.quickSearchInput.click();
     await this.quickSearchInput.clear();
     await this.quickSearchInput.fill(term);
 

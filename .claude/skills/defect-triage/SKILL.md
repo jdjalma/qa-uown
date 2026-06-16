@@ -45,10 +45,10 @@ Antes de promover para `[CONFIRMADO]`:
 - [ ] **Fresh repro:** reproduzido em dados criados agora (não em registro pré-existente cuja história é desconhecida)?
 - [ ] **Issue existente:** já há ticket aberto pra isso? (perguntar ao user / buscar GitLab)
 - [ ] **Artefato descartado:**
-  - Não é flake do framework Playwright (timing local).
-  - Não é estado de dado pré-existente (lead em estado X criado em 2025, etc.).
-  - Não é env-específico (qa1 outage atual — `project_dv360_uat_qa1_outage_2026_05_18`).
-  - Não é config drift de merchant (regra #12).
+ - Não é flake do framework Playwright (timing local).
+ - Não é estado de dado pré-existente (lead em estado X criado em 2025, etc.).
+ - Não é env-específico (qa1 outage atual — `project_dv360_uat_qa1_outage_2026_05_18`).
+ - Não é config drift de merchant (regra #12).
 - [ ] **UI matches expected oracle:** o que o cliente vê é REALMENTE problema? (Float repr `18.4599...` é UX, não bug funcional — `feedback_float_repr_not_bug`).
 
 Se algum item falhou: classificação fica em `[HIPÓTESE]` ou `[OBSERVAÇÃO]`.

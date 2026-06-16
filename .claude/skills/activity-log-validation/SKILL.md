@@ -56,18 +56,18 @@ Consulte `docs/taskTestingUown/database-schema.md` ou Grep o nome do evento espe
 import { db } from "@helpers/database.helpers.js";
 
 const log = await db.waitForRecord<{ pk: number; notes: string; row_created_timestamp: Date }>({
-  query: `SELECT pk, notes, row_created_timestamp
-            FROM uown_los_lead_notes
-           WHERE lead_pk = $1
-             AND row_created_timestamp >= $2
-             AND notes ILIKE $3
-           ORDER BY row_created_timestamp DESC
-           LIMIT 1`,
-  params: [leadPk, triggerTs, '%[ContractService]%SIGNED%'],
-  timeoutMs: 30_000,
+ query: `SELECT pk, notes, row_created_timestamp
+ FROM uown_los_lead_notes
+ WHERE lead_pk = $1
+ AND row_created_timestamp >= $2
+ AND notes ILIKE $3
+ ORDER BY row_created_timestamp DESC
+ LIMIT 1`,
+ params: [leadPk, triggerTs, '%[ContractService]%SIGNED%'],
+ timeoutMs: 30_000,
 });
 
-expect(log).toBeDefined();
+expect(log).toBeDefined;
 expect(log.notes).toMatch(/\[ContractService\].*SIGNED/i);
 ```
 
@@ -91,7 +91,7 @@ Cada step com ação de negócio na SPEC **deve** ter linha "Activity log expect
 - **Activity log expected**: row em uown_los_lead_notes com `notes ILIKE '%[ContractService]%SIGNED%'`, lead_pk=:leadPk, row_created_timestamp >= trigger
 ```
 
-## Move Due Date — log canônico em `uown_sv_activity_log` (svc#536, 2026-05-22)
+## Move Due Date — log canônico em `uown_sv_activity_log` (2026-05-22)
 
 Ação Move Due Date é **account-centric** — log vai em `uown_sv_activity_log`, NÃO em `uown_los_lead_notes`.
 
@@ -112,14 +112,14 @@ Ação Move Due Date é **account-centric** — log vai em `uown_sv_activity_log
 
 ```typescript
 const log = await db.waitForRecord<{ notes: string; created_by: string }>({
-  query: `SELECT notes, created_by
-            FROM uown_sv_activity_log
-           WHERE account_pk = $1
-             AND log_type = 'DUE_DATE_MOVES'
-             AND row_created_timestamp >= $2
-           ORDER BY pk DESC LIMIT 1`,
-  params: [accountPk, triggerTs],
-  timeoutMs: 15_000,
+ query: `SELECT notes, created_by
+ FROM uown_sv_activity_log
+ WHERE account_pk = $1
+ AND log_type = 'DUE_DATE_MOVES'
+ AND row_created_timestamp >= $2
+ ORDER BY pk DESC LIMIT 1`,
+ params: [accountPk, triggerTs],
+ timeoutMs: 15_000,
 });
 expect(log.notes).toMatch(/Due Date changed from dueDate \d{4}-\d{2}-\d{2} by \d+ days/);
 ```
@@ -134,9 +134,9 @@ expect(log.notes).toMatch(/Due Date changed from dueDate \d{4}-\d{2}-\d{2} by \d
 | Signing event | `uown_los_lead_notes` | `lead_pk` | `[ContractService][isLeaseOrLeaseModSigned]...` |
 
 **Regra mnemônica:** ação sobre lead (pré-funding) → `uown_los_lead_notes (lead_pk)`; ação pós-funding sobre account → `uown_sv_activity_log (account_pk)`.
-Source: live qa1 lead_pk=11748 / account_pk=4774 (svc#530, 2026-05-24).
+Source: live qa1 lead_pk=11748 / account_pk=4774 (2026-05-24).
 
-## Settle Application — log canônico em `uown_los_lead_notes` (svc#530, 2026-05-24)
+## Settle Application — log canônico em `uown_los_lead_notes` (2026-05-24)
 
 Ação Settle Application produz notas em `uown_los_lead_notes` com `lead_pk`:
 
@@ -147,21 +147,21 @@ Ação Settle Application produz notas em `uown_los_lead_notes` com `lead_pk`:
 
 **Toast UI exato:** `"Successfully settled this lease"` (capturado ao vivo em qa1 lead 11748, 2026-05-24). Usar esta string exata em assertions de toast — não `"Settled successfully"` nem `"Lease settled"`.
 
-**Diagnostic pattern — `termnull` smell:** se as notas de Settle contêm a string `"termnull"`, o lead foi afetado pelo bug NPD=null (svc#530 pré-fix). Query de diagnóstico: `SELECT COUNT(*) FROM uown_los_lead_notes WHERE notes ILIKE '%termnull%'` — zero rows confirma fix aplicado. Ver [[application-lifecycle]] pitfall #62.
+**Diagnostic pattern — `termnull` smell:** se as notas de Settle contêm a string `"termnull"`, o lead foi afetado pelo bug NPD=null (pré-fix). Query de diagnóstico: `SELECT COUNT(*) FROM uown_los_lead_notes WHERE notes ILIKE '%termnull%'` — zero rows confirma fix aplicado. Ver [[application-lifecycle]] pitfall #62.
 
 **Assertion template:**
 
 ```typescript
 const settleNote = await db.waitForRecord<{ notes: string }>({
-  query: `SELECT notes FROM uown_los_lead_notes
-           WHERE lead_pk = $1
-             AND notes ILIKE '%[UOwnClient][settleApplication]%'
-           ORDER BY pk DESC LIMIT 1`,
-  params: [leadPk],
-  timeoutMs: 120_000,  // 120s configurado; se retornar 0 rows, suspeitar TZ drift antes de aumentar — ver pitfall #66 (causa raiz) / #65 (SUPERSEDED)
+ query: `SELECT notes FROM uown_los_lead_notes
+ WHERE lead_pk = $1
+ AND notes ILIKE '%[UOwnClient][settleApplication]%'
+ ORDER BY pk DESC LIMIT 1`,
+ params: [leadPk],
+ timeoutMs: 120_000, // 120s configurado; se retornar 0 rows, suspeitar TZ drift antes de aumentar — ver pitfall #66 (causa raiz) / #65 (SUPERSEDED)
 });
-expect(settleNote).toBeDefined();
-expect(settleNote.notes).not.toContain('termnull');  // confirma NPD não nulo
+expect(settleNote).toBeDefined;
+expect(settleNote.notes).not.toContain('termnull'); // confirma NPD não nulo
 ```
 
 ## Gaps conhecidos (ações que NÃO geram log atualmente)
@@ -170,7 +170,7 @@ Catálogo de actions que confirmadamente **não** produzem nota — abrir ticket
 
 | Action | Tabela primária de evidência | Lead notes? | Confirmado em |
 |---|---|---|---|
-| `POST /uown/sendWelcomeEmail/{pk}` | `uown_email_queue` (template_name='Welcome', status=SENT) | **NÃO** (0/45 em 60d) | 2026-05-20 — qa1 — task #517 |
+| `POST /uown/sendWelcomeEmail/{pk}` | `uown_email_queue` (template_name='Welcome', status=SENT) | **NÃO** (0/45 em 60d) | 2026-05-20 — qa1 — |
 | `settledInFullAccountEmailSweep` | `uown_email_queue` (template_name=`SettledInFullEmail`, PK monotônico) | indeterminado | 2026-06-02 — dev3 |
 | `RecurringPaymentReminderSweep` | `uown_email_queue` (template_name=`RecurringPaymentReminder`) | indeterminado | 2026-06-02 — dev3 |
 | `FirstPaymentReminderSweep` | `uown_email_queue` (template_name=`FirstPaymentReminder`) | indeterminado | 2026-06-02 — dev3 |

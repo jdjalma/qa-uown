@@ -28,6 +28,7 @@ test.describe('S7 discovery — History grid switch via page object (qa1)', () =
   test.use({ viewport: { width: 1440, height: 900 } });
 
   test('Switch History grid: Email, PayNearMe, CC Transactions (4452)', async ({ page, testEnv }) => {
+    test.skip(testEnv.env !== 'qa1', 'qa1-only discovery test — skip in non-qa1 environments');
     test.setTimeout(180_000);
     const summary = new ServicingAccountSummaryPage(page);
     const probe = new Probe(page);
@@ -56,6 +57,5 @@ test.describe('S7 discovery — History grid switch via page object (qa1)', () =
       console.log(`[S7][grid][PayNearMe] visible=${vis} url=${page.url().split('.com')[1]} ${JSON.stringify(dom)}`);
     });
 
-    expect(page.url()).toContain('qa1');
   });
 });

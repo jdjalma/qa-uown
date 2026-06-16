@@ -28,21 +28,21 @@ Sempre que decidir entre:
 ```
 A feature tem fluxo no portal Origination/Servicing/Website/AMS?
 ├─ SIM → E2E obrigatório
-│         API/DB pode complementar (setup, validation cross-cutting)
+│ API/DB pode complementar (setup, validation cross-cutting)
 └─ NÃO → API-only OK
-          (ex: admin endpoint, sweep, internal CRUD)
+ (ex: admin endpoint, sweep, internal CRUD)
 ```
 
 ## Casos onde API-only é aceitável
 
 1. **Admin/ops endpoints sem UI exposta**
-   Ex: `PATCH /uown/svc/gowsign-templates/{id}`, sweeps de scheduled tasks, internal CRUD configs.
+ Ex: `PATCH /uown/svc/gowsign-templates/{id}`, sweeps de scheduled tasks, internal CRUD configs.
 
 2. **Setup/precondições que aceleram o teste**
-   Criar lead via `sendApplication` antes de exercitar fluxo de signing UI. **A precondição é API; a feature é UI.**
+ Criar lead via `sendApplication` antes de exercitar fluxo de signing UI. **A precondição é API; a feature é UI.**
 
 3. **Validações DB cross-cutting**
-   Queries de assertion (activity log presente, FK não quebrou, count correto). Complemento, não substituto.
+ Queries de assertion (activity log presente, FK não quebrou, count correto). Complemento, não substituto.
 
 ## Casos onde API-only NÃO basta
 
@@ -78,7 +78,7 @@ await page.click("text=Confirm Signature");
 // VALIDAÇÃO — UI + DB
 await expect(page.locator(".badge")).toHaveText("Signed");
 const log = await waitForRecord({ table: "uown_los_lead_notes", filter: { lead_id: lead.id, note_type: "SIGNING_COMPLETED" } });
-expect(log).toBeDefined();
+expect(log).toBeDefined;
 ```
 
 ## Pitfalls

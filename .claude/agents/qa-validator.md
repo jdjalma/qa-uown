@@ -40,6 +40,13 @@ Qualquer outro path (`src/`, `tests/`, `.claude/skills/`, `.claude/agents/`) e *
 
 ## Skills available (load on-demand)
 
+**Loading protocol (mandatory — skills are files, not memories):**
+
+1. `[[<name>]]` resolves to `.claude/skills/{name}/SKILL.md`. **"Load" means `Read` that file in full** — you do not have the `Skill` tool. Validating against a skill's one-line description or training memory, without Reading it in this session, is a violation.
+2. Read EVERY skill in "Always relevant" at the START, before evaluating any result.
+3. Conditional skills: the moment a trigger matches (UI feature → [[qa-lens]] + [[check-points]]; business action → domain validations; pipeline closing → [[task-evidence-report]]), Read the file immediately — then continue.
+4. End the report AND your final output with a `**Skills loaded:**` line listing every SKILL.md you actually Read. A verdict justified by a skill absent from this list degrades to [HIPÓTESE] (regra #16).
+
 ### Always relevant
 - [[test-report-standard]] — canonical report format
 - [[acceptance-criteria-review]] — re-validate AC was actually covered

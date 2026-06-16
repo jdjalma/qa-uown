@@ -31,6 +31,7 @@ test.describe('S7 discovery — Customer Portal /documents + /responses (qa1)', 
 
   test('OTP login then probe /documents and /responses (4452)', async ({ page, testEnv, db }) => {
     test.setTimeout(240_000);
+    test.skip(testEnv.env !== 'qa1', 'S7 discovery uses hardcoded qa1 account 4452 OTP email — skip in other environments');
     const base = testEnv.websiteUrl.replace(/\/$/, '');
     const portal = new CustomerPortalOverviewPage(page);
 

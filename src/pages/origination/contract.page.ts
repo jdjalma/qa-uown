@@ -8,6 +8,8 @@ import {
 import { SELECTORS } from '../../selectors/common.selectors.js';
 import { TEST_BANK } from '../../config/constants.js';
 import type { TestCard } from '../../data/test-cards.js';
+import { AlternativeContractModalPage } from '../gowsign/index.js';
+import { signGowSignInFrame } from '../../helpers/gowsign-signing.helper.js';
 
 /**
  * Contract Page - consumer-facing payment form accessed via the contract/redirect URL.
@@ -530,15 +532,25 @@ export class ContractPage extends BasePage {
   // ═══════════════════════════════════════════════════════════════════
 
   /**
-   * Detect whether PandaDocs or Signwell is used, then complete e-sign.
-   * Waits up to 60s for either iframe to appear.
+   * Detect whether GowSign, PandaDocs, or Signwell is used, then complete e-sign.
+   * Waits up to 60s for one of the provider iframes to appear.
+   *
+   * Provider routing is determined by the backend (E-sign Provider Routing —
+   * GowSign template availability per state). Sandbox now routes states that have
+   * a GowSign template (e.g. NY → `NY_2025_SAC`) to GowSign, others fall back to
+   * Signwell. Detection is therefore auto — the page object must handle all three.
    */
   async completeESign(): Promise<void> {
+    const gowSignIframe = this.page.locator(SELECTORS.signingGowSignIframe);
     const pandaDocsIframe = this.page.locator(SELECTORS.pandaDocsIframe);
     const signwellIframe = this.page.locator(SELECTORS.signwellIframe);
 
-    // Wait for either iframe to appear (up to 60s)
+    // Wait for one of the provider iframes to appear (up to 60s)
     for (let attempt = 1; attempt <= 12; attempt++) {
+      if (await gowSignIframe.isVisible({ timeout: 2_000 }).catch(() => false)) {
+        await this.completeESignGowSign();
+        return;
+      }
       if (await pandaDocsIframe.isVisible({ timeout: 2_000 }).catch(() => false)) {
         await this.completeESignPandaDocs();
         return;
@@ -553,6 +565,50 @@ export class ContractPage extends BasePage {
 
     // Last resort: try Signwell (will timeout with a clear error if not found)
     await this.completeESignSignwell();
+  }
+
+  /**
+   * Complete e-sign via the GowSign embedded viewer.
+   *
+   * The UOwn parent page renders the GowSign document inside a fullscreen modal
+   * (`AlternativeContractModalPage` → `.alternative-contract-vendor_iframeContainer__yAn5c`
+   * wrapping `iframe.alternative-contract-vendor_iframe__nSb3A`). The signing
+   * ceremony itself runs INSIDE the cross-origin iframe and is driven by the
+   * canonical `signGowSignInFrame` helper (Start → adopt signature/initials via
+   * Type-mode font → Sign All → Finish), which also waits for the `completed`
+   * postMessage that the backend uses to advance the lead to SIGNED.
+   *
+   * Verified against the live sandbox DOM 2026-06-12 (lead 97457, template
+   * NY_2025_SAC): the iframe src host is `gowsign-app-dev-uown.azurewebsites.net`
+   * (NOT *.gowsign.com), the internal Start/Sign All/Finish accessible names match
+   * the helper's selectors, and the flow redirects to
+   * `/appComplete?...document_status=completed` on success.
+   */
+  private async completeESignGowSign(): Promise<void> {
+    const modal = new AlternativeContractModalPage(this.page);
+    await modal.waitForOpen(30_000);
+
+    const frame = modal.getGowSignFrame();
+    // Anchor on the iframe body + Start button before driving the ceremony.
+    await frame.locator('body').waitFor({ state: 'visible', timeout: 30_000 });
+
+    const result = await signGowSignInFrame(this.page, frame, {
+      preauthChoice: 'yes',
+      waitForCompleted: true,
+    });
+
+    if (!result.signClicked) {
+      throw new Error(
+        `[ESign GowSign] Signing ceremony did not reach final submit `
+        + `(startClicked=${result.startClicked}, fieldsSigned=${result.fieldsSigned}, `
+        + `preauthMarked=${result.preauthMarked ?? 'none'})`,
+      );
+    }
+
+    console.log(
+      `[ESign GowSign] Completed — fieldsSigned=${result.fieldsSigned}, `
+      + `completedMessage=${result.capturedCompleted}`,
+    );
   }
 
   /**

@@ -107,8 +107,8 @@ async function makePaymentOnCustomerPortal(
 // ── Scenario 1: Invoice Cancellation at APPROVED ─────────────────────
 
 const approvedCancellationData = {
-  state: 'CA',
-  merchant: 'ProgressMobility',
+  state: 'NY',
+  merchant: 'TerraceFinance',
   tag: buildTags(TestTag.REGRESSION),
 };
 
@@ -203,8 +203,8 @@ test.describe(`Invoice Cancellation at APPROVED`, { tag: splitTags(approvedCance
 // ── Scenario 2: Lease Cancellation at SIGNED ─────────────────────────
 
 const signedCancellationData = {
-  state: 'CA',
-  merchant: 'ProgressMobility',
+  state: 'NY',
+  merchant: 'TerraceFinance',
   tag: buildTags(TestTag.REGRESSION),
 };
 
@@ -259,8 +259,8 @@ test.describe(`Lease Cancellation at SIGNED`, { tag: splitTags(signedCancellatio
 // ── Scenario 3: Lease Cancellation at FUNDING — No Refund ────────────
 
 const fundingNoRefundData = {
-  state: 'CA',
-  merchant: 'ProgressMobility',
+  state: 'NY',
+  merchant: 'TerraceFinance',
   servicingPaymentAmount: '25',
   customerPaymentAmount: '15',
   tag: buildTags(TestTag.REGRESSION),
@@ -345,8 +345,8 @@ test.describe(`Lease Cancellation at FUNDING (no refund)`, { tag: splitTags(fund
 // ── Scenario 4: Lease Cancellation at FUNDING — With Refund ──────────
 
 const fundingWithRefundData = {
-  state: 'CA',
-  merchant: 'ProgressMobility',
+  state: 'NY',
+  merchant: 'TerraceFinance',
   servicingPaymentAmount: '25',
   customerPaymentAmount: '15',
   tag: buildTags(TestTag.REGRESSION),

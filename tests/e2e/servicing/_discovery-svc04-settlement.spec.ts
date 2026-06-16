@@ -36,8 +36,8 @@ test.describe('SVC-04 discovery — organic settlement oracles', () => {
     let accountPk = '';
 
     const { merchant, applicant } = buildTestData({
-      state: 'CA',
-      merchant: 'ProgressMobility',
+      state: 'NY',
+      merchant: 'TerraceFinance',
       orderTotal: '800',
       orderDescription: 'SVC-04 discovery settlement',
     });

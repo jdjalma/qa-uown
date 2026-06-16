@@ -42,13 +42,13 @@ Validação rodou em UOWN e Kornerstone empiricamente, incluindo regressão de c
 
 ## Índice de Achados
 
-| ID         | Tipo                                                                                |
+| ID | Tipo |
 | ---------- | ----------------------------------------------------------------------------------- |
-| **AC-01**  | Merchant ativo abre formulário. CONFIRMADO                                          |
-| **AC-02**  | Merchant inativo / terminated redireciona. CONFIRMADO                               |
-| **AC-03**  | Código inválido / rota genérica redireciona. CONFIRMADO                             |
-| **OBS-1**  | Lookup case-sensitive (`ks3015` vs `KS3015`). Melhoria UX                           |
-| **OBS-2**  | Backend retorna 500 em vez de 404 para código inexistente. Observability            |
+| **AC-01** | Merchant ativo abre formulário. CONFIRMADO |
+| **AC-02** | Merchant inativo / terminated redireciona. CONFIRMADO |
+| **AC-03** | Código inválido / rota genérica redireciona. CONFIRMADO |
+| **OBS-1** | Lookup case-sensitive (`ks3015` vs `KS3015`). Melhoria UX |
+| **OBS-2** | Backend retorna 500 em vez de 404 para código inexistente. Observability |
 
 ---
 
@@ -184,7 +184,7 @@ WHERE LOWER(ref_merchant_code) = LOWER(:input)
 
 **Evidência:** verificado em qa1 com Postman e leitura de `uown_los_inbound_api_log` (entries com `status_code=500` para códigos inexistentes).
 
-**Fix proposto:** alterar handler de `MerchantNotFoundException` para retornar `ResponseEntity.notFound()` em vez de propagar como 500. Backend job, não bloqueia a feature visual.
+**Fix proposto:** alterar handler de `MerchantNotFoundException` para retornar `ResponseEntity.notFound` em vez de propagar como 500. Backend job, não bloqueia a feature visual.
 
 </details>
 

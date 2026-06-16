@@ -14,10 +14,10 @@ Ao criar ou modificar API clients em `src/api/clients/`. NAO aplicar para page o
 
 ## Convencao
 
-- **Location:** `src/api/clients/` -- todos extendem `BaseClient`
-- **Bodies:** `src/api/bodies/` -- typed request bodies
-- **Responses:** `src/api/responses/` -- typed response interfaces
-- **Templates:** `src/fixtures/api-templates/` -- JSON templates for request bodies
+- **Location:** `src/api/clients/` — todos extendem `BaseClient`
+- **Bodies:** `src/api/bodies/` — typed request bodies
+- **Responses:** `src/api/responses/` — typed response interfaces
+- **Templates:** `src/fixtures/api-templates/` — JSON templates for request bodies
 - **Selectors:** centralizados em `src/selectors/common.selectors.ts`, typed em `src/selectors/selector.types.ts`. **Nunca** hardcode selectors em tests.
 
 ## BaseClient pattern
@@ -30,9 +30,9 @@ Every client extends `BaseClient` which provides:
 
 ## Typed bodies + responses convention
 
-1. **Request body** -- interface in `src/api/bodies/{domain}.body.ts` + `build*Body(overrides)` builder function
-2. **Response** -- interface in `src/api/responses/{domain}.response.ts`
-3. **Return type** -- always `Promise<ApiResponse<T>>` where `T` is the response interface
+1. **Request body** — interface in `src/api/bodies/{domain}.body.ts` + `build*Body(overrides)` builder function
+2. **Response** — interface in `src/api/responses/{domain}.response.ts`
+3. **Return type** — always `Promise<ApiResponse<T>>` where `T` is the response interface
 
 Example structure:
 ```typescript
@@ -45,9 +45,9 @@ export interface BankAccountResponse { pk: number; routingNumber: string; /* ...
 
 // src/api/clients/bank-account.client.ts
 export class BankAccountClient extends BaseClient {
-  async createOrUpdateBankAccount(body: CreateBankAccountBody): Promise<ApiResponse<BankAccountResponse>> {
-    return this.post('/uown/svc/createOrUpdateBankAccount', body);
-  }
+ async createOrUpdateBankAccount(body: CreateBankAccountBody): Promise<ApiResponse<BankAccountResponse>> {
+ return this.post('/uown/svc/createOrUpdateBankAccount', body);
+ }
 }
 ```
 
@@ -57,16 +57,16 @@ Some controllers require `X-API-Version` header. Use defaulted parameter with `n
 
 ```typescript
 async searchApplicationStatus(
-  body?: Record<string, unknown>,
-  apiVersion: string | null = '2',
+ body?: Record<string, unknown>,
+ apiVersion: string | null = '2',
 ): Promise<ApiResponse<LosPartnerApplicationResponse>> {
-  const extraHeaders: Record<string, string> = {};
-  if (apiVersion !== null) {
-    extraHeaders['X-API-Version'] = apiVersion;
-  }
-  return this.postWithOverride<LosPartnerApplicationResponse>(
-    '/uown/los/merchant/applications/search', body ?? {}, extraHeaders,
-  );
+ const extraHeaders: Record<string, string> = {};
+ if (apiVersion !== null) {
+ extraHeaders['X-API-Version'] = apiVersion;
+ }
+ return this.postWithOverride<LosPartnerApplicationResponse>(
+ '/uown/los/merchant/applications/search', body ?? {}, extraHeaders,
+);
 }
 ```
 
@@ -74,9 +74,9 @@ Canonical example: `src/api/clients/los-partner-application.client.ts` (WI-525).
 
 ## When NOT to create a new client
 
-- **Method already exists** -- check catalog first: [references/catalog.md](references/catalog.md)
-- **Endpoint is one-off** -- use inline `api.request.get/post` in the test
-- **Endpoint belongs to existing domain** -- add method to the existing client (e.g., new payment method goes in `PaymentArrangementClient`)
+- **Method already exists** — check catalog first: [references/catalog.md](references/catalog.md)
+- **Endpoint is one-off** — use inline `api.request.get/post` in the test
+- **Endpoint belongs to existing domain** — add method to the existing client (e.g., new payment method goes in `PaymentArrangementClient`)
 
 ## Existing clients (quick index)
 
@@ -104,15 +104,15 @@ Canonical example: `src/api/clients/los-partner-application.client.ts` (WI-525).
 
 ## Anti-patterns
 
-1. **Duplicating an existing client** -- always `grep -r 'class.*Client extends BaseClient'` first
-2. **Untyped responses** -- never use `Promise<ApiResponse<unknown>>` for production endpoints; create a response interface
-3. **Hardcoded headers** -- use `postWithOverride` pattern, not manual `fetch` calls
-4. **Missing builder** -- every non-trivial body must have a `build*Body(overrides)` function
-5. **Capital letter drift** -- some Java DTOs use `PK` (capital): `phonePK`, `customerPK`, `emailPK`. Check the backend DTO before typing.
+1. **Duplicating an existing client** — always `grep -r 'class.*Client extends BaseClient'` first
+2. **Untyped responses** — never use `Promise<ApiResponse<unknown>>` for production endpoints; create a response interface
+3. **Hardcoded headers** — use `postWithOverride` pattern, not manual `fetch` calls
+4. **Missing builder** — every non-trivial body must have a `build*Body(overrides)` function
+5. **Capital letter drift** — some Java DTOs use `PK` (capital): `phonePK`, `customerPK`, `emailPK`. Check the backend DTO before typing.
 
 ## Cross-links
 
-- [[application-lifecycle]] -- pitfall #31 (LosExternalMerchantController auth model)
-- [[common-operations]] -- reusable API call patterns
-- [[merchant-preflight]] -- `ensureMerchantReady` before application creation
-- [[helpers-catalog]] -- `buildCcPaymentDetails`, `buildCcArrangementBody`, etc.
+- [[application-lifecycle]] — pitfall #31 (LosExternalMerchantController auth model)
+- [[common-operations]] — reusable API call patterns
+- [[merchant-preflight]] — `ensureMerchantReady` before application creation
+- [[helpers-catalog]] — `buildCcPaymentDetails`, `buildCcArrangementBody`, etc.

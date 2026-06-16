@@ -39,6 +39,7 @@ test.describe('S6 discovery — Settlement / Banking / Contact (READ-ONLY)', () 
 
   test('A) SVC-04 Settlement — panel value + breakdown modal vs DB (eligible + $0.00)', async ({ page, testEnv, db }) => {
     test.setTimeout(180_000);
+    test.skip(testEnv.env !== 'qa1', 'S6 discovery uses hardcoded qa1 accounts 4452/3992 — skip in other environments');
     const summary = new ServicingAccountSummaryPage(page);
     const modal = new SettlementBreakdownModal(page);
 
@@ -91,6 +92,7 @@ test.describe('S6 discovery — Settlement / Banking / Contact (READ-ONLY)', () 
 
   test('B) SVC-06 Banking — Add modal fields + View All masking (NO Save/Delete)', async ({ page, testEnv, db }) => {
     test.setTimeout(180_000);
+    test.skip(testEnv.env !== 'qa1', 'S6 discovery uses hardcoded qa1 accounts 4452/3992 — skip in other environments');
     const summary = new ServicingAccountSummaryPage(page);
     const bank = new BankAccountPage(page);
     const pk = ACCT_ZERO; // 3992 has a bank account on file (160781900000)
@@ -153,6 +155,7 @@ test.describe('S6 discovery — Settlement / Banking / Contact (READ-ONLY)', () 
 
   test('C) SVC-07 Contact Opt-Out — Opt Out AI state + Podium button visibility (NO toggle)', async ({ page, testEnv, db }) => {
     test.setTimeout(180_000);
+    test.skip(testEnv.env !== 'qa1', 'S6 discovery uses hardcoded qa1 accounts 4452/3992 — skip in other environments');
     const summary = new ServicingAccountSummaryPage(page);
     const cust = new ServicingCustomerPage(page);
 

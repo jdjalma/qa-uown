@@ -50,7 +50,7 @@ disable-model-invocation: true
 - **Kornerstone exige bank data:** `mainBankRoutingNumber` + `mainBankAccountNumber` (pitfall #5)
 - **SETTLED_IN_FULL via payment real:** UPDATE direto nao popula `uown_sv_payment` (pitfall #9)
 - **Merchant preflight automatico:** `createPreQualifiedApplication` chama `ensureMerchantReady` (pitfall #10)
-- **`mainNextPayDate` obrigatorio:** pos svc#530, campo validado no body (pitfall #63)
+- **`mainNextPayDate` obrigatorio:** pos , campo validado no body (pitfall #63)
 
 ---
 
@@ -90,15 +90,23 @@ disable-model-invocation: true
 | 9 | Sweep falha silenciosamente | `makeCreditCardPayments(SETTLEMENT)` |
 | 10 | 400/500 aleatorio | Merchant preflight / config drift |
 | 39 | 500 rollback todos merchants | **[env-blocker]** bug svc (mitigado qa1) |
-| 48 | Backdrop intercepts clicks | `dismissCustomerInfoConfirmation()` |
+| 48 | Backdrop intercepts clicks | `dismissCustomerInfoConfirmation` |
 | 66 | 0 rows em timestamp filter | TZ drift: usar PK monoton. ou AT TIME ZONE |
 | 69 | Auth fails apos CT-10 | ensureAuthenticated v8 (JWT exp check) |
 | 87 | `sweep_logs.processed=0` em leitura imediata | Assertir `uown_email_queue` (PK monoton.), nao sweep_logs |
 | 88 | Sweep nao processa conta "elegivel" | Usar query EXATA do sweep (CASE-WHEN DOW) |
 | 89 | FirstPaymentReminder pula conta | Alinhar sched_summary + receivable.due_date |
 | 90 | Re-trigger retorna processed=0 | Dedup same-day Java; assertir row de hoje |
-| 91 | OTP Website pega codigo de outro run | `snapshotInboxUid()` antes + `getVerificationCode({ sinceUid })` |
-| 92 | Click sidebar Website intercepted pos-pagamento | `goToSidebarLink` chama `waitForSpinner()` antes |
+| 91 | OTP Website pega codigo de outro run | `snapshotInboxUid` antes + `getVerificationCode({ sinceUid })` |
+| 92 | Click sidebar Website intercepted pos-pagamento | `goToSidebarLink` chama `waitForSpinner` antes |
+| 98 | Quick search nao navega a partir de /funding (3x retry) | `searchAndSelectFirst` faz `input.click` (foco) antes de fill — dropdown so renderiza com input focado |
+| 99 | Sidebar Website "passa" mas update-contact da timeout/spinner infinito | `page.goto` fallback perde auth + `waitForSpinner` engole timeout → pass silencioso. Causa real: força-logout em /documents (OBS-WS-DOCS-LOGOUT) |
+| 102 | NeuroID nunca dispara / `count>=1` guard falha (falso-negativo) | `useNeuroIdCheck=true` em `mustBeFalse` → auto-heal reseta. `skipMerchantPreflight:true` + pre-assert read-only da flag |
+| 103 | Contagem NeuroID por `uown_sv_outbound_api_log WHERE lead_pk` retorna 0 | Sem correlação `lead_pk` pré-funding (NULLs). Usar `countNeuroIdCalls` (`uown_neuro_id_verification`) |
+| 104 | `configColumnsPanel` retorna 0 elementos em `/merchant` | Bootstrap dropdown, não dialog. Usar `configColumnsPanelMerchants` |
+| 105 | `label:has-text(...) input[type=checkbox]` não acha coluna em `/merchant` | Checkboxes nativos sem `<label>`; `input[type=checkbox][name="<label>"]` |
+| 106 | Wait por Apply/Save após toggle de coluna em `/merchant` nunca resolve | Seleção imediata (BR-01); não há Apply |
+| 107 | Filtro Active `/merchant` sem "All"; mudança não re-filtra | react-select `#isActive` (Active/Inactive); aplicar via Search (BR-06) |
 
 > Catalogo completo com 90 pitfalls + observacoes cross-cutting: [references/pitfalls.md](references/pitfalls.md)
 

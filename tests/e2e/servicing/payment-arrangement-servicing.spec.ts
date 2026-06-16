@@ -77,8 +77,8 @@ import {
 import { calculateDate } from '@helpers/date.helpers.js';
 
 const ARRANGEMENT_DATA = {
-  state: 'CA',
-  merchant: 'ProgressMobility',
+  state: 'NY',
+  merchant: 'TerraceFinance',
   /** Larger order so the weekly schedule generates multiple installments (small balances auto-cap to 1). */
   orderTotal: '800',
   /** Weekly schedule window: today → today+28d. */

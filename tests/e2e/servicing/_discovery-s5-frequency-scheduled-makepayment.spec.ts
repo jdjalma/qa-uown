@@ -34,6 +34,7 @@ test.describe('S5 discovery — Frequency / Scheduled Payment / Make Payment (qa
   // ──────────────────────────────────────────────────────────────────────
   test('A) Frequency Change — change WEEKLY->BI_WEEKLY, verify DB + activity log, restore', async ({ page, testEnv, db }) => {
     test.setTimeout(240_000);
+    test.skip(testEnv.env !== 'qa1', 'S5 discovery uses hardcoded qa1 accounts 4452/3992 — skip in other environments');
     const summary = new ServicingAccountSummaryPage(page);
     const customer = new ServicingCustomerPage(page);
 
@@ -152,6 +153,7 @@ test.describe('S5 discovery — Frequency / Scheduled Payment / Make Payment (qa
   // ──────────────────────────────────────────────────────────────────────
   test('B) Scheduled Payment — Servicing > Scheduled Payment form fields + validations (no submit)', async ({ page, testEnv }) => {
     test.setTimeout(180_000);
+    test.skip(testEnv.env !== 'qa1', 'S5 discovery uses hardcoded qa1 accounts 4452/3992 — skip in other environments');
     const summary = new ServicingAccountSummaryPage(page);
 
     await test.step('Open customer-information/3992', async () => {
@@ -211,6 +213,7 @@ test.describe('S5 discovery — Frequency / Scheduled Payment / Make Payment (qa
   // ──────────────────────────────────────────────────────────────────────
   test('C) Make Payment modal — fields, one-time vs existing bank, validations (no submit)', async ({ page, testEnv }) => {
     test.setTimeout(180_000);
+    test.skip(testEnv.env !== 'qa1', 'S5 discovery uses hardcoded qa1 accounts 4452/3992 — skip in other environments');
     const summary = new ServicingAccountSummaryPage(page);
 
     await test.step('Open customer-information/3992 (dismiss verify modal)', async () => {

@@ -54,10 +54,10 @@ Re-escreve cada AC em GWT:
 
 ```
 Given <estado inicial concreto, incluindo brand/portal/role/lead state>
-And   <pré-condições adicionais — merchant config, sql config, feature flag>
-When  <ação única, com inputs concretos>
-Then  <resultado observável principal>
-And   <side-effects esperados — activity log, email, DB row>
+And <pré-condições adicionais — merchant config, sql config, feature flag>
+When <ação única, com inputs concretos>
+Then <resultado observável principal>
+And <side-effects esperados — activity log, email, DB row>
 ```
 
 Se você não consegue preencher um campo sem inventar, o AC tem buraco. Marca o buraco como Open Question.
@@ -115,9 +115,9 @@ Entrega:
 
 ### AC Inventory
 1. AC original: "<texto>"
-   - Score testabilidade: X/6
-   - Buracos: {lista}
-   - Reformat GWT: ...
+ - Score testabilidade: X/6
+ - Buracos: {lista}
+ - Reformat GWT: ...
 2. ...
 
 ### AC Implícitos Propostos
@@ -173,12 +173,12 @@ Buracos: que portal? que vendor (SignWell/GoSign)? avançar para que status? act
 Reformat:
 ```
 Given lease em estado `LEASED`, signing via GoSign (state CA), customer no Website portal
-And   merchant TireAgent configurado para OEP 60-day
-When  customer clica "I agree" no iframe GoSign e completa todos os campos obrigatórios
-Then  lead avança para status `SIGNED` em uown_los_lead.status
-And   uown_los_lead_notes recebe linha com note_type='SIGNATURE_COMPLETED'
-And   merchant recebe email com template `signing-completed-merchant`
-And   customer vê página de confirmação com link para Account Portal
+And merchant TireAgent configurado para OEP 60-day
+When customer clica "I agree" no iframe GoSign e completa todos os campos obrigatórios
+Then lead avança para status `SIGNED` em uown_los_lead.status
+And uown_los_lead_notes recebe linha com note_type='SIGNATURE_COMPLETED'
+And merchant recebe email com template `signing-completed-merchant`
+And customer vê página de confirmação com link para Account Portal
 ```
 
 Implícitos detectados: activity log, email merchant, redirect destination, dual-vendor (SignWell parity?).

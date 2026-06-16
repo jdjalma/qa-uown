@@ -16,7 +16,7 @@ Project:   task-testing-origination  OR  task-testing-servicing  (tag-selected �
 
 Non-task tests: `tests/e2e/{portal}/` or `tests/api/`
 
-### task-testing project split — MANDATORY tag (discovered svc#530, 2026-05-24)
+### task-testing project split — MANDATORY tag (discovered 2026-05-24)
 
 O projeto `task-testing` foi splitado em `task-testing-origination` e `task-testing-servicing` para evitar `storageState`/`baseURL` mismatch quando uma spec cobre os dois portais.
 
@@ -67,7 +67,7 @@ Se uma spec usa AMBOS os portais: separar os CTs que acessam Origination (tag `@
 
 ### Origem da regra
 
-2026-05-06 — Task #505 GowSign Client Type. BUG-01 (placeholders `{{securityDeposit}}`/`{{costPriceWithFeeNoTax}}` vazios em documentos legais) foi descoberto **manualmente pelo Fernando** porque os testes automatizados API-only só liam log de backend (`[DocumentDispatchService][GowSign] missing N tokens`) sem renderizar o PDF. Tests UI-driven teriam falhado visivelmente no iframe GowSign — bug seria caught em CI antes de qualquer tester manual.
+2026-05-06 — BUG-01 (placeholders `{{securityDeposit}}`/`{{costPriceWithFeeNoTax}}` vazios em documentos legais) foi descoberto **manualmente pelo Fernando** porque os testes automatizados API-only só liam log de backend (`[DocumentDispatchService][GowSign] missing N tokens`) sem renderizar o PDF. Tests UI-driven teriam falhado visivelmente no iframe GowSign — bug seria caught em CI antes de qualquer tester manual.
 
 ### Checklist para spec-test / impl-e2e / impl-api
 
@@ -118,7 +118,7 @@ Antes de marcar um teste como pronto:
 >
 > **Estados com template GowSign em qa2 (28-04-2026):** somente **CA**. Todos os outros caem no fallback Signwell.
 >
-> **⚠️ INSTORE merchant exception (descoberto 2026-05-06 via Task #505):** para merchants com `merchant_type='INSTORE'`, o backend usa `merchant.state` (estado da loja física) ao invés do customer state para o lookup de template. Verificado em `EsignService.loadLeadEsignContext()` linhas 194-197 (svc R1.51.1):
+> **⚠️ INSTORE merchant exception (descoberto 2026-05-06:** para merchants com `merchant_type='INSTORE'`, o backend usa `merchant.state` (estado da loja física) ao invés do customer state para o lookup de template. Verificado em `EsignService.loadLeadEsignContext()` linhas 194-197 (svc R1.51.1):
 >
 > ```java
 > if (merchant.getMerchantInfo().getMerchantType() == MerchantType.INSTORE) {

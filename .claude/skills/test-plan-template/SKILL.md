@@ -80,8 +80,8 @@ disable-model-invocation: true
 ## Naming Convention (Task Tests)
 
 ```
-Pattern:   {milestone}_{camelCaseTitle}_{taskNumber}
-Example:   R1.49.1_separateShortCodeInANewEntity_469
+Pattern: {milestone}_{camelCaseTitle}_{taskNumber}
+Example: R1.49.1_separateShortCodeInANewEntity_469
 ```
 
 | Component | Rule |

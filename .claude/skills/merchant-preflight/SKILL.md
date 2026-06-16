@@ -23,7 +23,7 @@ Sem preflight, testes flakam por causa de drift silencioso do merchant: checkbox
 ```ts
 import { createPreQualifiedApplication } from "@/helpers/...";
 
-// ensureMerchantReady() é chamado automaticamente dentro de createPreQualifiedApplication
+// ensureMerchantReady é chamado automaticamente dentro de createPreQualifiedApplication
 const lead = await createPreQualifiedApplication({ merchant: "UOWN_DEMO" });
 ```
 
@@ -41,7 +41,7 @@ Se o teste cria application via UI `/new-application` ou API com client direto:
 ```ts
 import { ensureMerchantReady } from "@/helpers/...";
 
-await ensureMerchantReady(merchantSlug);  // chame ANTES de submitApplication
+await ensureMerchantReady(merchantSlug); // chame ANTES de submitApplication
 await api.sendApplication({ ... });
 ```
 
@@ -49,8 +49,8 @@ await api.sendApplication({ ... });
 
 ```ts
 await createPreQualifiedApplication({
-  merchant: "UOWN_DEMO",
-  skipMerchantPreflight: true,  // teste opera em lead pré-existente
+ merchant: "UOWN_DEMO",
+ skipMerchantPreflight: true, // teste opera em lead pré-existente
 });
 ```
 

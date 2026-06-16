@@ -25,8 +25,8 @@ import {
 import { TEST_CARDS } from '@data/index.js';
 
 const testData = {
-  state: 'CA',
-  merchant: 'ProgressMobility',
+  state: 'NY',
+  merchant: 'TerraceFinance',
   orderTotal: '3000',
   paymentAmount: '25',
   tag: buildTags(TestTag.REGRESSION),

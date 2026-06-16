@@ -29,42 +29,42 @@ Para cada cenário candidato, pontuar 0–3 em cada dimensão:
 
 ### Probabilidade (de quebrar)
 - **N — Novelty (código novo / acabou de mudar)**
-  - 0: código intocado há >6 meses
-  - 1: refactor cosmético recente
-  - 2: lógica alterada na release atual
-  - 3: feature nova greenfield
+ - 0: código intocado há >6 meses
+ - 1: refactor cosmético recente
+ - 2: lógica alterada na release atual
+ - 3: feature nova greenfield
 - **I — Integration points**
-  - 0: in-process puro
-  - 1: 1 DB query
-  - 2: 1 vendor externo (Kount, SEON, GowSign, Plaid, Twilio, Tilled, Repay, EasyPay, MX)
-  - 3: 2+ vendors ou orquestração assíncrona (webhook + scheduled task)
+ - 0: in-process puro
+ - 1: 1 DB query
+ - 2: 1 vendor externo (Kount, SEON, GowSign, Plaid, Twilio, Tilled, Repay, EasyPay, MX)
+ - 3: 2+ vendors ou orquestração assíncrona (webhook + scheduled task)
 - **B — Boundary / edge density**
-  - 0: input fechado (enum de 2 valores)
-  - 1: input com 1 range
-  - 2: input com múltiplos ranges (term 13m/16m, money, dates)
-  - 3: input livre / unicode / locales / float
+ - 0: input fechado (enum de 2 valores)
+ - 1: input com 1 range
+ - 2: input com múltiplos ranges (term 13m/16m, money, dates)
+ - 3: input livre / unicode / locales / float
 - **H — Histórico de bug**
-  - 0: módulo limpo
-  - 1: 1 bug fechado >6m atrás
-  - 2: bug recente (<3 meses)
-  - 3: regressão recorrente / hotfix recente (caso GoSign CA — `project_gosign_rollout`)
+ - 0: módulo limpo
+ - 1: 1 bug fechado >6m atrás
+ - 2: bug recente (<3 meses)
+ - 3: regressão recorrente / hotfix recente (caso GoSign CA — `project_gosign_rollout`)
 
 ### Impacto (se quebrar)
 - **C — Cliente final atinge?**
-  - 0: só agent vê (Origination/Servicing/AMS internos)
-  - 1: customer-facing mas reversível
-  - 2: customer-facing com efeito financeiro (signing, payment, schedule)
-  - 3: customer-facing irreversível ou regulado (lease assinado errado, NACHA, NSF)
+ - 0: só agent vê (Origination/Servicing/AMS internos)
+ - 1: customer-facing mas reversível
+ - 2: customer-facing com efeito financeiro (signing, payment, schedule)
+ - 3: customer-facing irreversível ou regulado (lease assinado errado, NACHA, NSF)
 - **F — Função crítica de negócio?**
-  - 0: cosmético
-  - 1: feature secundária
-  - 2: feature core (origination, signing, payment)
-  - 3: bloqueia revenue (não consegue submit, não consegue assinar, não consegue pagar)
+ - 0: cosmético
+ - 1: feature secundária
+ - 2: feature core (origination, signing, payment)
+ - 3: bloqueia revenue (não consegue submit, não consegue assinar, não consegue pagar)
 - **A — Audit / compliance?**
-  - 0: nada
-  - 1: log interno
-  - 2: trilha de auditoria de agent
-  - 3: legal/regulatório (lease document, NACHA, sanctions, ECOA)
+ - 0: nada
+ - 1: log interno
+ - 2: trilha de auditoria de agent
+ - 3: legal/regulatório (lease document, NACHA, sanctions, ECOA)
 
 **Score total = (N + I + B + H) × (C + F + A)**
 
@@ -186,7 +186,7 @@ Aplicação: regra de chão "GoSign template" → P0 para TODOS os templates ati
 
 Cenários: customer recebe OTP em todos os fluxos onde OTP é usado.
 
-Aplicação: 
+Aplicação:
 - N=3 (helper novo)
 - I=2 (Twilio + IMAP)
 - B=2 (rate-limit boundary + expiração)

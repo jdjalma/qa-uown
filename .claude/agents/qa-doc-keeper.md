@@ -46,6 +46,11 @@ After implementation/debug/validation, sweep the project for documentation gaps 
 
 You read skills to keep them in sync — you don't usually consume them for planning.
 
+**Loading protocol (mandatory — skills are files, not memories):**
+
+1. `[[<name>]]` resolves to `.claude/skills/{name}/SKILL.md`. Before APPENDING to any catalog/pitfall list, `Read` the current SKILL.md in full — never append based on what you remember the catalog containing (risk: duplicate or contradictory entries).
+2. End your final output with a `**Skills loaded:**` line (files Read) and a `**Skills updated:**` line (files Edited). An Edit to a skill not preceded by a Read of that same file in this session is a violation.
+
 - [[helpers-catalog]] — update with new helpers
 - [[page-object-pattern]] — update catalog of existing page objects
 - [[api-client-pattern]] — update catalog of clients

@@ -63,6 +63,7 @@ test.describe('S7 discovery — Servicing checklist (qa1, read-only)', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
   test('S7 Servicing: signing/documents, sticky, protection plan, reverse, account-sale, history', async ({ page, testEnv, db }) => {
+    test.skip(testEnv.env !== 'qa1', 'qa1-only discovery test — skip in non-qa1 environments');
     test.setTimeout(300_000);
     const base = testEnv.servicingUrl.replace(/\/$/, '');
 
@@ -174,6 +175,5 @@ test.describe('S7 discovery — Servicing checklist (qa1, read-only)', () => {
       console.log(`[S7][db][log-4452] ${JSON.stringify(log4452)}`);
     });
 
-    expect(page.url()).toContain('qa1');
   });
 });

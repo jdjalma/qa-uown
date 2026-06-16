@@ -79,7 +79,7 @@ disable-model-invocation: true
 
 **Casos conhecidos:**
 - `unified-flow` 2026-05-11: `<a>` vs `<button>` em "Items Purchased"
-- Refund/Reverse Servicing 2026-06-01 (dev3): tela correta e `/payment-history/{pk}` (NAO `/payment-transaction`); icone de reverse e `svg[data-icon="arrow-rotate-left"]` (NAO `.fa-undo`); `reverseReason` e React Select (`<div>`, NAO `<select>` - `selectOption()` falha). Sempre confirmar `tagName` via `browser_evaluate`. Ver application-lifecycle pitfalls #77/#78 e [[payment-flows]].
+- Refund/Reverse Servicing 2026-06-01 (dev3): tela correta e `/payment-history/{pk}` (NAO `/payment-transaction`); icone de reverse e `svg[data-icon="arrow-rotate-left"]` (NAO `.fa-undo`); `reverseReason` e React Select (`<div>`, NAO `<select>` - `selectOption` falha). Sempre confirmar `tagName` via `browser_evaluate`. Ver application-lifecycle pitfalls #77/#78 e [[payment-flows]].
 
 **Memórias relacionadas:** protocolo em [[dom-investigation]]; case study `unified-flow` 2026-05-11; `project_refund_servicing_flow` (2026-06-01)
 
@@ -104,6 +104,9 @@ disable-model-invocation: true
 
 **Tag a usar:** `[db-observation:{env}, query]` + `[user-provided:date]`
 
+**Casos conhecidos (pending deploy — re-verificar antes de afirmar):**
+- **GDS data fields on Merchant Config Columns** — os 3 campos GDS (`UW Pipeline`, `Fraud Threshold`, `Max Approval Amount`) NÃO estavam deployados em **qa1 em 2026-06-15** (confirmado via MCP Playwright). Quando a feature for deployada, esse status muda — re-verificar via Config Columns em `/merchant` (presença das 3 colunas no painel) ANTES de afirmar disponibilidade. Selectors prontos em `MerchantSettingSelectors` (`msUwPipelineInput`, `msFraudThresholdInput`, `msMaxApprovalAmountInput`, `msGdsDataToggle`). Fonte: `docs/knowledge-base/merchants-config-columns-export.md` + [[page-object-pattern]] MerchantListPage. Tag: `[db-observation:qa1, /merchant Config Columns]` + `[user-provided:2026-06-15]`.
+
 **Memórias relacionadas:** `reference_kornerstone_ks3015_qa2_only`, `project_dv360_uat_qa1_outage_2026_05_18`
 
 ### 7. Vendor outages e env health
@@ -120,7 +123,7 @@ disable-model-invocation: true
 
 ### 8. SQL config admin operations
 
-**Por que volatile:** endpoint correto não é o intuitivo; `sql_name` lookup é UPPERCASE (BE faz `.toUpperCase()`); queries lowercase retornam 0 rows; procedimento de fix é específico.
+**Por que volatile:** endpoint correto não é o intuitivo; `sql_name` lookup é UPPERCASE (BE faz `.toUpperCase`); queries lowercase retornam 0 rows; procedimento de fix é específico.
 
 **Fonte primária:**
 - Endpoint: `POST /uown/createOrUpdateSqlConfig` (NÃO `/uown/svc/...`)
@@ -145,7 +148,7 @@ disable-model-invocation: true
 
 ### 11. Sentry Session Replay — semantics per-tab (not per-application)
 
-**Por que volatile:** o `replayId` retornado por `Sentry.getReplay()?.getReplayId()` é per-browser-session/tab, não per-application. Testes que assertam unicidade de UUID entre duas apps na mesma aba estão incorretos. Behavior confirmado em qa1 2026-05-22 (Task #1291) — dois leads distintos na mesma aba compartilharam o mesmo `uuid` em `uown_lead_recording`. Fácil de assumir errado ao especificar ("recording de cada app deve ser distinto").
+**Por que volatile:** o `replayId` retornado por `Sentry.getReplay?.getReplayId` é per-browser-session/tab, não per-application. Testes que assertam unicidade de UUID entre duas apps na mesma aba estão incorretos. Behavior confirmado em qa1 2026-05-22 — dois leads distintos na mesma aba compartilharam o mesmo `uuid` em `uown_lead_recording`. Fácil de assumir errado ao especificar ("recording de cada app deve ser distinto").
 
 **Fonte primária:**
 - Sentry public docs sobre Session Replay (replay scope = browser session)
@@ -153,7 +156,7 @@ disable-model-invocation: true
 - Tabela: `SELECT pk, lead_pk, uuid FROM uown_lead_recording WHERE lead_pk IN (...)` — mesma aba → mesmo uuid; tabs separadas → uuid distinto (fixture Playwright cria context novo por test)
 
 **Regra de assertion:**
-- AC "recording link presente" = row EXISTS em `uown_lead_recording` para o `leadPk` → `expect(uuid).toBeTruthy()`
+- AC "recording link presente" = row EXISTS em `uown_lead_recording` para o `leadPk` → `expect(uuid).toBeTruthy`
 - NÃO assertar `uuid1 !== uuid2` quando ambas as leads foram criadas na mesma aba Playwright
 - Para tests same-tab (CT-01/CT-02 de #1291): igualdade de UUID é ESPERADA e confirma que o Sentry SDK está rodando normalmente
 
@@ -183,7 +186,7 @@ disable-model-invocation: true
 
 **Tag a usar:** `[src:database.helpers.ts:1354]`
 
-**Memórias relacionadas:** pitfall #55 (application-lifecycle), svc#454 F-09 (2026-05-24)
+**Memórias relacionadas:** pitfall #55 (application-lifecycle), F-09 (2026-05-24)
 
 ### 13. Fixture PKs em qa1 — drift por reseed
 
@@ -195,11 +198,11 @@ disable-model-invocation: true
 
 **Tag a usar:** `[db-observation:qa1, dynamic-lookup]` — NUNCA `[CONFIRMADO]` com PK fixo
 
-**Memórias relacionadas:** pitfall #57 (application-lifecycle), svc#454 Exec 2 (2026-05-24)
+**Memórias relacionadas:** pitfall #57 (application-lifecycle), Exec 2 (2026-05-24)
 
 ### 14. `getLosSearch_*` SQL aliases — drift pós-MR
 
-**Por que volatile:** MRs que corrigem aliases em SQLs especializados podem deixar arquivos irmãos desatualizados (BUG-1 svc#454: MR !1370 corrigiu 9/10 SQLs, `getLosSearch_FreeText.sql` ficou com `rowCreatedTime` em vez de `createdTimestamp`). Após qualquer MR no svc que toque SQLs de search, auditar aliases de TODOS.
+**Por que volatile:** MRs que corrigem aliases em SQLs especializados podem deixar arquivos irmãos desatualizados (BUG-1 : MR !1370 corrigiu 9/10 SQLs, `getLosSearch_FreeText.sql` ficou com `rowCreatedTime` em vez de `createdTimestamp`). Após qualquer MR no svc que toque SQLs de search, auditar aliases de TODOS.
 
 **Fonte primária:**
 - Script de auditoria: `src/scripts/audit-search-sqls.ts` — compara aliases entre todas as variantes
@@ -207,7 +210,7 @@ disable-model-invocation: true
 
 **Tag a usar:** `[db-observation:uown_sv_sql_config, LIKE 'GETLOSSEARCH%']` + `[svc-source:getLosSearch_*.sql]`
 
-**Memórias relacionadas:** pitfall #58 (application-lifecycle), BUG-1 svc#454 (2026-05-24)
+**Memórias relacionadas:** pitfall #58 (application-lifecycle), BUG-1 (2026-05-24)
 
 ### 15. Mapeamento label UI → `searchType` backend (Origination vs Servicing)
 
@@ -220,14 +223,14 @@ disable-model-invocation: true
 
 **Tag a usar:** `[dom-snapshot:date,portal]` + `[svc-source:SearchService.java]`
 
-**Memórias relacionadas:** pitfall #54 (application-lifecycle), svc#454 spec §13 (2026-05-24)
+**Memórias relacionadas:** pitfall #54 (application-lifecycle), spec §13 (2026-05-24)
 
 ### 16. Move Due Date — WEEKLY cap varia por env/versão
 
 **Por que volatile:** o teto de dias permitidos para Move Due Date em frequência WEEKLY mudou entre versões do svc. Hard-coding o valor num teste quebra silenciosamente ao rodar em env de versão diferente.
 
 **Valores observados:**
-- dev3 / svc#536 (era 2026-05-22): cap WEEKLY = **3 dias** (`WEEKLY→3d`, demais→7d; fonte `MoveDueDatesService.java:117-126`)
+- dev3 / (era 2026-05-22): cap WEEKLY = **3 dias** (`WEEKLY→3d`, demais→7d; fonte `MoveDueDatesService.java:117-126`)
 - qa1 (2026-06-10, S4): cap WEEKLY = **6 dias** (mensagem literal: `"Due date offset cannot exceed 6 days for WEEKLY frequency"`)
 
 **Fonte primária:**
@@ -237,7 +240,7 @@ disable-model-invocation: true
 
 **Tag a usar:** `[svc-source:MoveDueDatesService.java:linha]` + `[test-execution:{env},run-id]` — NUNCA `[CONFIRMADO]` com valor fixo sem tag de env+data
 
-**Memórias relacionadas:** `reference_move_due_date_validation` (dev3/svc#536 = 3d — datado, cross-check antes de usar), `project_move_due_date_trailing_slash_bug`, `feedback_drive_lead_to_funding_default_weekly`
+**Memórias relacionadas:** `reference_move_due_date_validation` (dev3/ = 3d — datado, cross-check antes de usar), `project_move_due_date_trailing_slash_bug`, `feedback_drive_lead_to_funding_default_weekly`
 
 ---
 

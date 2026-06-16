@@ -11,10 +11,10 @@ disable-model-invocation: true
 
 ## Principles
 
-1. **Never duplicate** -- always check this catalog before creating a new helper
-2. **Import via barrel** -- `import { helperFn } from '@helpers/index.js';`
+1. **Never duplicate** — always check this catalog before creating a new helper
+2. **Import via barrel** — `import { helperFn } from '@helpers/index.js';`
 3. **DB helpers are SELECT-only** unless explicitly authorized (CLAUDE.md Exception 3)
-4. **Re-export** -- new helpers must be re-exported via the barrel in `src/helpers/index.ts`
+4. **Re-export** — new helpers must be re-exported via the barrel in `src/helpers/index.ts`
 
 ## Helper Index
 
@@ -32,21 +32,21 @@ disable-model-invocation: true
 | `table.helpers.ts` | `src/helpers/` | Table interaction patterns |
 | `template-engine.ts` | `src/helpers/` | JSON template interpolation |
 | `test-artifact.helpers.ts` | `src/helpers/` | Test artifact management |
-| `test-data.helpers.ts` | `src/helpers/` | `buildTestData()` -- unified data builder |
+| `test-data.helpers.ts` | `src/helpers/` | `buildTestData` — unified data builder |
 | `worker-id.helper.ts` | `src/helpers/` | Worker-scoped unique IDs (PID + worker index) |
 | `network-intercept.helper.ts` | `src/helpers/` | HTTP traffic capture (NeuroID, endpoint call counter) |
 | `program-test-data.helper.ts` | `src/helpers/` | Test data lifecycle for merchant programs |
-| `correspondence.helpers.ts` | `src/helpers/` | DB queries for approval email template routing (Task #489) |
-| `gowsign-template-db.helpers.ts` | `src/helpers/` | DB queries for GowSign template routing (Task #505) |
-| `redirect.helpers.ts` | `src/helpers/` | URL-redirect assertions for `/getApplication/{code}` (Task #1293) |
-| `settled-in-full.helpers.ts` | `src/helpers/` | DB queries for Settled In Full email sweep (Task #491) |
-| `settlement.helpers.ts` | `src/helpers/` | Settlement Amount calculation oracle (svc#512) |
-| `account-aging.helpers.ts` | `src/helpers/` | Artificial delinquency aging for boundary-value CTs (svc#512) |
-| `recording.helpers.ts` | `src/helpers/` | DB + browser assertions for Sentry Session Replay (Task #1291) |
+| `correspondence.helpers.ts` | `src/helpers/` | DB queries for approval email template routing |
+| `gowsign-template-db.helpers.ts` | `src/helpers/` | DB queries for GowSign template routing |
+| `redirect.helpers.ts` | `src/helpers/` | URL-redirect assertions for `/getApplication/{code}` |
+| `settled-in-full.helpers.ts` | `src/helpers/` | DB queries for Settled In Full email sweep |
+| `settlement.helpers.ts` | `src/helpers/` | Settlement Amount calculation oracle |
+| `account-aging.helpers.ts` | `src/helpers/` | Artificial delinquency aging for boundary-value CTs |
+| `recording.helpers.ts` | `src/helpers/` | DB + browser assertions for Sentry Session Replay |
 | `servicing-dialogs.helpers.ts` | `src/helpers/` | Dismissal helpers for Servicing portal auto-rendering dialogs |
-| `sticky.helpers.ts` | `src/helpers/` | DB poll + introspection for StickyRecoverSweep (svc#485) |
+| `sticky.helpers.ts` | `src/helpers/` | DB poll + introspection for StickyRecoverSweep |
 | `datetime.helpers.ts` | `src/helpers/` | TZ-tolerant assertion for Java LocalDateTime vs DB timestamptz |
-| `search-sql-explain.helpers.ts` | `src/helpers/` | EXPLAIN ANALYZE runner for SQLs in `uown_sv_sql_config` (svc#454) |
+| `search-sql-explain.helpers.ts` | `src/helpers/` | EXPLAIN ANALYZE runner for SQLs in `uown_sv_sql_config` |
 
 ## Key database.helpers.ts Functions (quick reference)
 
@@ -58,6 +58,7 @@ disable-model-invocation: true
 | `approveAllPendingCcSalesForArrangement(arrangementPk)` | Approve ALL PENDING CC SALEs (no date gate) — multi-installment stand-in for env w/o processor (Exception 3) |
 | `getNeuroIdVerification(leadPk)` | Latest NeuroID verification row |
 | `waitForNeuroIdRecord(leadPk, timeout?)` | Poll for NeuroID row |
+| `countNeuroIdCalls(leadPk)` | `COUNT(*)` of `uown_neuro_id_verification WHERE lead_pk=$1` — source of truth for NeuroID-call assertions in signing-retry tests. NOT `uown_sv_outbound_api_log` (no `lead_pk` correlation for pre-funding leads — see fraud-vendors-knowledge) |
 | `getMerchantByRefCode(refCode)` | Merchant by ref_merchant_code |
 | `countMerchantByRefCode(refCode)` | Count for absence assertions |
 | `getAccountAutoPayTypes(accountPk)` | Auto-pay type records |
@@ -69,12 +70,12 @@ disable-model-invocation: true
 
 > Full signatures and detailed usage: [references/methods.md](references/methods.md)
 
-## Token Row Types (Task #502)
+## Token Row Types
 
 | Type | Table | Pitfall |
 |------|-------|---------|
-| `KountTokenRow` | `uown_kount_token` | `timestamp WITHOUT time zone` -- pg-node TZ-dependent |
-| `GdsTokenRow` | `uown_gds_token` | `timestamp WITH time zone` -- safe for JS comparison |
+| `KountTokenRow` | `uown_kount_token` | `timestamp WITHOUT time zone` — pg-node TZ-dependent |
+| `GdsTokenRow` | `uown_gds_token` | `timestamp WITH time zone` — safe for JS comparison |
 
 ## Test Data Sources
 
@@ -88,7 +89,7 @@ disable-model-invocation: true
 
 ## When to Create a New Helper
 
-1. Check this catalog -- does an equivalent already exist?
+1. Check this catalog — does an equivalent already exist?
 2. Check `src/helpers/index.ts` barrel for unlisted exports
 3. If truly new: create in `src/helpers/`, re-export via barrel, update this catalog
 4. DB helpers: SELECT-only by default; mutations require `authorizedBy` parameter

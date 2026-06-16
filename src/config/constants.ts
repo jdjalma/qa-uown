@@ -87,7 +87,14 @@ export const TEST_BANK = {
  */
 export function generateTestSSN(approved: boolean): string {
   if (approved) {
-    return `${100000000 + randomInt(899999998)}`;
+    // 8 random digits (10000000..99999999) + a non-9 last digit (0..8).
+    // The last digit drives the underwriting decision (lease state machine):
+    // SSN ending in 9 => UW_DENIED, anything else => UW_APPROVED.
+    // The previous `100000000 + randomInt(899999998)` left the last digit
+    // RANDOM, so ~10% of "approved" SSNs ended in 9 and were denied — a
+    // silent ~1-in-10 flake across every approval test. Pin the last digit
+    // to 0..8 so an "approved" SSN is deterministically approval-eligible.
+    return `${10000000 + randomInt(89999999)}${randomInt(9)}`;
   }
   // 8 random digits (10000000..99999999, 9-digit space starting at 1) + "9" suffix = 9 chars total.
   // Backend rejects SSNs without exactly 9 digits — earlier `100000000 + randomInt(89999999) + '9'`

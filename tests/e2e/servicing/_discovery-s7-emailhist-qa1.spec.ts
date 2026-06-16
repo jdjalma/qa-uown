@@ -25,6 +25,7 @@ test.describe('S7 discovery — dedicated history routes (qa1)', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
   test('email-history + phone-history + PayNearMe route probe (4452)', async ({ page, testEnv }) => {
+    test.skip(testEnv.env !== 'qa1', 'qa1-only discovery test — skip in non-qa1 environments');
     test.setTimeout(180_000);
     const base = testEnv.servicingUrl.replace(/\/$/, '');
     const summary = new ServicingAccountSummaryPage(page);
@@ -53,6 +54,5 @@ test.describe('S7 discovery — dedicated history routes (qa1)', () => {
       }
     });
 
-    expect(page.url()).toContain('qa1');
   });
 });

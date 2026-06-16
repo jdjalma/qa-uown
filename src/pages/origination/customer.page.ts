@@ -73,12 +73,39 @@ export class OriginationCustomerPage extends OriginationBasePage {
   /**
    * Click an action button from the customer summary collapsible menu.
    * Expands the menu first if needed.
+   *
+   * DOM-first finding (2026-06-12, MCP live lead 97502/97509, 1440×900):
+   * the action buttons (Modify Lease, Send to Signed, …) live in a
+   * horizontally `overflow-auto` container (`customerSummary__accountSummary`).
+   * Buttons past the visible width render OFF-SCREEN right (e.g. "Modify Lease"
+   * at x≈1625 on a 1440 viewport) while still reporting `visible:true`
+   * (offsetParent present). A normal `locator.click()` fails with
+   * "<ancestor> intercepts pointer events"; `click({ force: true })` clicks the
+   * element's center coordinate which is outside the scroll viewport, so the
+   * React onClick handler never fires and no modal opens — the failure then
+   * surfaces much later as a timeout on a field inside the modal that never
+   * mounted. The ONLY reliable trigger is a JS-dispatched click after
+   * scrollIntoView. See [[application-lifecycle]] pitfall (off-screen action
+   * button).
    */
   async clickActionButton(buttonText: string): Promise<void> {
     await this.expandActionsMenu();
     const btn = this.page.locator(`button:has-text("${buttonText}")`);
     await btn.waitFor({ state: 'visible', timeout: 10_000 });
-    await btn.click({ force: true });
+    // JS-dispatch the click: scrollIntoView brings the off-screen button into
+    // view and el.click() fires the real React handler regardless of the
+    // overflow container intercepting pointer events.
+    const dispatched = await this.page.evaluate((text) => {
+      const target = Array.from(document.querySelectorAll('button'))
+        .find((b) => (b.textContent || '').trim().includes(text));
+      if (!target) return false;
+      target.scrollIntoView({ block: 'center', inline: 'center' });
+      (target as HTMLButtonElement).click();
+      return true;
+    }, buttonText);
+    if (!dispatched) {
+      throw new Error(`[Customer] Action button "${buttonText}" not found in DOM`);
+    }
     console.log(`[Customer] Clicked "${buttonText}"`);
     await this.waitForSpinner();
   }
@@ -775,22 +802,34 @@ export class OriginationCustomerPage extends OriginationBasePage {
   async deleteAllInvoiceItems(): Promise<number> {
     let deleted = 0;
     const maxIterations = 20;
+    // The React onClick is on the SVG itself (confirmed via __reactProps inspection
+    // 2026-06-12, MCP live lead 97623). The wrapper div (#deleteActionIcon) has no
+    // React handler — clicking it does nothing. SVGs have no .click() method, so
+    // we must use dispatchEvent(MouseEvent). After dispatch React re-renders
+    // asynchronously; waitForFunction waits for the row count to actually drop.
+    const trashSel = 'svg[data-icon="trash-can"]';
 
     for (let i = 0; i < maxIterations; i++) {
-      const deleteBtn = this.page.locator(SELECTORS.invoiceItemDeleteButton).first();
-      if (!await deleteBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-        break;
-      }
+      const remaining = await this.page.locator(trashSel).count().catch(() => 0);
+      if (remaining === 0) break;
 
-      await deleteBtn.click();
+      const clicked = await this.page.evaluate((sel) => {
+        const svg = document.querySelector(sel);
+        if (!svg) return false;
+        svg.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+        return true;
+      }, trashSel);
 
-      // Handle confirmation dialog if present
-      const confirmBtn = this.page.getByRole('button', { name: /confirm|yes|ok|delete/i }).first();
-      if (await confirmBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
-        await confirmBtn.click();
-      }
+      if (!clicked) break;
 
-      await this.waitForSpinner();
+      const expected = remaining - 1;
+      await this.page.waitForFunction(
+        ({ sel, count }: { sel: string; count: number }) =>
+          document.querySelectorAll(sel).length <= count,
+        { sel: trashSel, count: expected },
+        { timeout: 5_000 },
+      ).catch(() => {});
+
       deleted++;
       console.log(`[DeleteInvoiceItems] Deleted item ${deleted}`);
     }
@@ -935,29 +974,46 @@ export class OriginationCustomerPage extends OriginationBasePage {
   async modifyLease(callback: (page: import('@playwright/test').Page) => Promise<void>): Promise<string> {
     await this.clickActionButton('Modify Lease');
 
-    // Warning modal may or may not appear — handle both cases
+    // Confirmation modal ALWAYS appears first (DOM-first finding 2026-06-12,
+    // MCP live lead 97502/97509): a centered dialog titled "Please confirm you
+    // want to modify the lease:" with a chargeback caution and CANCEL / Continue
+    // buttons. The main "Lease #..." modal (where #numberOfItems lives) only
+    // mounts AFTER clicking Continue. The button label is exactly "Continue"
+    // (capital C) — NOT the uppercase "CONTINUE" that appears in the caution
+    // body text. This is mandatory, not optional: if it is skipped the add-item
+    // form never appears and a later field wait times out misleadingly.
     const continueBtn = this.page.locator(SELECTORS.modifyLeaseWarningContinue);
-    if (await continueBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      console.log('[ModifyLease] Warning modal detected — clicking Continue');
-      await continueBtn.click();
-      await this.waitForSpinner();
-    } else {
-      console.log('[ModifyLease] No warning modal — proceeding directly');
-    }
+    await continueBtn.waitFor({ state: 'visible', timeout: 10_000 });
+    console.log('[ModifyLease] Confirmation modal — clicking Continue');
+    // React unmounts the warning dialog and mounts the invoice form during the
+    // click sequence, detaching the button before Playwright can complete its
+    // safe-click (element was detached from the DOM, retrying). JS dispatch fires
+    // immediately and survives the component swap.
+    await continueBtn.evaluate((el) => (el as HTMLElement).click());
+    await this.waitForSpinner();
 
-    // Wait for the invoice form to be ready (item fields visible)
-    const itemCodeField = this.page.locator(SELECTORS.naItemCode);
-    const deleteBtn = this.page.locator(SELECTORS.invoiceItemDeleteButton).first();
-    await Promise.race([
-      itemCodeField.waitFor({ state: 'visible', timeout: 15_000 }),
-      deleteBtn.waitFor({ state: 'visible', timeout: 15_000 }),
-    ]).catch(() => {
-      console.log('[ModifyLease] Invoice form fields not yet visible — waiting more');
-    });
-    await sleep(1_000);
+    // The add-item form (#numberOfItems / #itemCode / …) renders persistently at
+    // the top of the Modify Lease modal from the moment it mounts — it is NOT
+    // gated by deleting existing items (DOM-first finding 2026-06-12). So the
+    // single reliable readiness signal is #numberOfItems becoming visible.
+    // No .catch() here: if the modal never opened (e.g. off-screen action button
+    // click did not register), this throws HERE with the real cause, instead of
+    // silently proceeding and failing later inside the caller's callback.
+    await this.page
+      .locator(SELECTORS.naNumberOfItems)
+      .waitFor({ state: 'visible', timeout: 15_000 });
 
     // Execute the caller's modification logic
     await callback(this.page);
+
+    // Dismiss any lingering ADD-item toast before clicking Save. The ADD button shows
+    // "Item added successfully"; Save shows the lease-modified confirmation. If both
+    // are visible simultaneously, captureAndDismissToast throws a strict mode violation.
+    const toastClose = this.page.locator(SELECTORS.toastClose);
+    if (await toastClose.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      await toastClose.click().catch(() => {});
+    }
+    await this.page.locator(SELECTORS.toastBody).waitFor({ state: 'hidden', timeout: 8_000 }).catch(() => {});
 
     // Click Save — try modal save first, then page-level save
     const saveBtn = this.page.locator(SELECTORS.modifyLeaseSaveButton);

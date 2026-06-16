@@ -9,8 +9,8 @@
 ```ts
 import { generateTestSSN } from '@config/constants.js';
 
-generateTestSSN(true)   // SSN aleatorio NAO terminado em 9 -> UW_APPROVED
-generateTestSSN(false)  // SSN aleatorio terminado em 9       -> UW_DENIED
+generateTestSSN(true) // SSN aleatorio NAO terminado em 9 -> UW_APPROVED
+generateTestSSN(false) // SSN aleatorio terminado em 9 -> UW_DENIED
 ```
 
 **Convencao do sandbox/qa:** ultimo digito `9` forca denial no motor de UW mockado. Qualquer outro digito passa pelo fluxo normal (aprovado por default em qa). Producao usa Sentilink/Lexis real.
@@ -48,7 +48,7 @@ generateTestSSN(false)  // SSN aleatorio terminado em 9       -> UW_DENIED
 ### Override via env var
 
 ```bash
-TIRE_AGENT_SECOND_LOOK_SSN=100000053  # default; permite trocar sem editar codigo
+TIRE_AGENT_SECOND_LOOK_SSN=100000053 # default; permite trocar sem editar codigo
 ```
 
 ### Regras de reuso do SSN
@@ -137,18 +137,18 @@ Causa `HTTP 500 NullPointerException` no backend ao chamar `sendApplication`. Us
 
 ```sql
 SELECT
-  mp.pk,
-  mp.term_in_months,
-  mp.is_active,
-  mp.activation_date,
-  mp.deactivation_date
+ mp.pk,
+ mp.term_in_months,
+ mp.is_active,
+ mp.activation_date,
+ mp.deactivation_date
 FROM uown_merchant m
 JOIN uown_merchant_program mp ON mp.merchant_pk = m.pk
-WHERE m.merchant_number = $1  -- ex: 'OL90205-0079'
-  AND mp.term_in_months = 16
-  AND mp.is_active = true
-  AND (mp.activation_date IS NULL OR mp.activation_date <= NOW())
-  AND (mp.deactivation_date IS NULL OR mp.deactivation_date >= NOW());
+WHERE m.merchant_number = $1 — ex: 'OL90205-0079'
+ AND mp.term_in_months = 16
+ AND mp.is_active = true
+ AND (mp.activation_date IS NULL OR mp.activation_date <= NOW)
+ AND (mp.deactivation_date IS NULL OR mp.deactivation_date >= NOW);
 ```
 
 Resultado >= 1: suporta 16m. Resultado 0: nao suporta agora (corrigivel via Origination admin - Programs).

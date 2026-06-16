@@ -42,8 +42,8 @@ import {
 import { TEST_CARDS, TEST_BANK } from '@config/index.js';
 
 const PAYMENT_DATA = {
-  state: 'CA',
-  merchant: 'ProgressMobility',
+  state: 'NY',
+  merchant: 'TerraceFinance',
   paymentAmount: '100',
   /** Amount added on top of the contract balance to force an overpayment in S3. */
   overpaymentBuffer: 1,

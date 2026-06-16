@@ -35,18 +35,18 @@ Quando teste falha com `TimeoutError`, `not visible`, `0 elements`, `strict mode
 4. **Fixe viewport ≥ 1440×900** (Bootstrap usa `d-lg-block` que esconde elementos em viewport menor).
 5. `mcp__playwright__browser_snapshot` para árvore acessível.
 6. `mcp__playwright__browser_evaluate` para extrair:
-   - `tagName`
-   - `role` real (computed)
-   - `accessible name`
-   - `visible` (offsetParent !== null + display !== none)
-   - ancestor chain (até `<body>` ou container relevante)
+ - `tagName`
+ - `role` real (computed)
+ - `accessible name`
+ - `visible` (offsetParent !== null + display !== none)
+ - ancestor chain (até `<body>` ou container relevante)
 7. Construa tabela **DOM Real vs Selector Atual**:
 
-   | Aspecto | Selector atual | DOM real | Match? |
-   |---------|----------------|----------|--------|
-   | tagName | `button` | `a` | ❌ |
-   | role | `button` | `link` | ❌ |
-   | name | "Items Purchased" | "Items Purchased " (trailing space) | ⚠️ |
+ | Aspecto | Selector atual | DOM real | Match? |
+ |---------|----------------|----------|--------|
+ | tagName | `button` | `a` | ❌ |
+ | role | `button` | `link` | ❌ |
+ | name | "Items Purchased" | "Items Purchased " (trailing space) | ⚠️ |
 
 8. **Só agora** proponha fix preciso.
 
@@ -69,7 +69,7 @@ page.getByRole('button', { name: /^E[-\s]?Sign$/i })
 
 **Como detectar:** erro `strict mode violation: locator resolved to N elements` onde N > 1. Investigar via `mcp__playwright__browser_snapshot` para listar todos os botões na página.
 
-**Origem:** svc#530 F-005-remanescente (2026-05-24) — `signContractButton` em `OriginationCustomerPage` colidia com botão de status `"Change to Signed"`. Ver [[application-lifecycle]] pitfall #67.
+**Origem:** F-005-remanescente (2026-05-24) — `signContractButton` em `OriginationCustomerPage` colidia com botão de status `"Change to Signed"`. Ver [[application-lifecycle]] pitfall #67.
 
 ## Caso histórico (2026-05-11)
 
@@ -91,9 +91,9 @@ Tempo gasto via MCP DOM inspection: 10 minutos.
 ```ts
 // src/selectors/common.selectors.ts
 export const SELECTORS = {
-  submitButton: (page) => page.getByRole('button', { name: 'Submit' }),
-  merchantBadge: (page) => page.getByLabel('Merchant').locator('~ div'),
-  signingIframe: (page) => page.frameLocator('iframe[name="gowsign"]'),
+ submitButton: (page) => page.getByRole('button', { name: 'Submit' }),
+ merchantBadge: (page) => page.getByLabel('Merchant').locator('~ div'),
+ signingIframe: (page) => page.frameLocator('iframe[name="gowsign"]'),
 };
 ```
 

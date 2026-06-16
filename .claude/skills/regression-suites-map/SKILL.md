@@ -24,10 +24,10 @@ NAO aplicar para: bug fixes locais sem alcance (typo em log, refactor de fixture
 ### 1. Mudou sendApplication / submit handler / Complete page / MissingDataPanel
 
 **DUAL-BRAND + LEASE-EDIT OBRIGATORIO:**
-- Unified Flow E2E (UOWN TireAgent + Kornerstone KS3015) -- CADA cenario, nao smoke
+- Unified Flow E2E (UOWN TireAgent + Kornerstone KS3015) — CADA cenario, nao smoke
 - `new-application.spec.ts` + `new-application-api.spec.ts`
 - CT de lease-edit/re-issue: modificar invoice para MAIOR, re-submit, assert single submit (useRef reset)
-- UI-only -- proibido usar API direta para o Submit
+- UI-only — proibido usar API direta para o Submit
 - Activity log + DV360 probe em qa1
 
 ### 2. Mudou template signing / GoSign / Items Purchased
@@ -36,13 +36,13 @@ NAO aplicar para: bug fixes locais sem alcance (typo em log, refactor de fixture
 - Multi-state Signing Regression (47 states + 4 blocked)
 - Diff visual SignWell vs GoSign (pagina 1 tabela, headers, placeholders, branding)
 - GowSign suite COMPLETA (18 specs)
-- SignWell regression -- OBRIGATORIA (coexistencia, refactor pode regredir)
+- SignWell regression — OBRIGATORIA (coexistencia, refactor pode regredir)
 
 ### 3. Mudou roteamento e-sign / deteccao de provider
 
 - Multi-state Signing Regression
 - Verificar `uown_esign_document.client` por estado (CA qa2=GOWSIGN, CA stg=SIGNWELL override, outros=SIGNWELL fallback, NJ/VT/MN/ME=BLOCKED)
-- INSTORE merchants usam `merchant.state`, nao customer state -- usar ONLINE (TireAgent) para multi-state
+- INSTORE merchants usam `merchant.state`, nao customer state — usar ONLINE (TireAgent) para multi-state
 
 ### 4. Mudou contract page (CC + bank + T&C + iframe)
 
@@ -52,7 +52,7 @@ NAO aplicar para: bug fixes locais sem alcance (typo em log, refactor de fixture
 
 ### 5. Mudou correspondence / email template
 
-- `finalize-email-518-validation.spec.ts` -- BOTH brands (UOWN + Kornerstone)
+- `finalize-email-518-validation.spec.ts` — BOTH brands (UOWN + Kornerstone)
 - Verificar brand -> template_name: UOWN=`FinalizePurchaseEmail`, KS=`KORNERSTONE_FinalizePurchaseEmail`
 - Activity log + `uown_email_queue.template_name`
 
@@ -130,8 +130,8 @@ NAO aplicar para: bug fixes locais sem alcance (typo em log, refactor de fixture
 
 ## Cross-links
 
-- [[gowsign-knowledge]] -- signing provider details
-- [[fraud-vendors-knowledge]] -- DV360 probe
-- [[merchant-preflight]] -- merchant config validation
-- [[payment-flows]] -- payment endpoint details
-- [[e2e-examples]] -- test structure patterns
+- [[gowsign-knowledge]] — signing provider details
+- [[fraud-vendors-knowledge]] — DV360 probe
+- [[merchant-preflight]] — merchant config validation
+- [[payment-flows]] — payment endpoint details
+- [[e2e-examples]] — test structure patterns

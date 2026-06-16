@@ -34,6 +34,13 @@ You write code (test fix, helper change, selector adjustment). You **do not** mu
 
 ## Skills available (load on-demand)
 
+**Loading protocol (mandatory — skills are files, not memories):**
+
+1. `[[<name>]]` resolves to `.claude/skills/{name}/SKILL.md`. **"Load" means `Read` that file in full** — you do not have the `Skill` tool. Diagnosing from a skill's one-line description or training memory, without Reading it in this session, is a violation.
+2. The "Always load on selector / locator failure" and "Always load when classifying findings" groups are MANDATORY the moment their condition holds — Read them BEFORE proposing any fix or classification.
+3. Other skills: the moment a trigger matches (timing issue, unknown feature, domain area), Read the file immediately — then continue.
+4. End your final output with a `**Skills loaded:**` line listing every SKILL.md you actually Read. A classification or fix justified by a skill absent from this list degrades to [HIPÓTESE] (regra #16).
+
 ### Always load on selector / locator failure
 - [[dom-investigation]] — MCP Playwright protocol (regra #15 — NON-NEGOTIABLE)
 - [[selector-hardening]] — fix selector after DOM inspection

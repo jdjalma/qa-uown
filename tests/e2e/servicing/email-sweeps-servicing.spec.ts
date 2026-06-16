@@ -64,8 +64,8 @@ const SWEEP = {
 } as const;
 
 const FRESH_DATA = {
-  state: 'CA',
-  merchant: 'ProgressMobility',
+  state: 'NY',
+  merchant: 'TerraceFinance',
   orderTotal: '800',
 } as const;
 

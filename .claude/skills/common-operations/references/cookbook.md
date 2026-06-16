@@ -14,44 +14,44 @@ import { createPreQualifiedApplication, driveLeadToFunding } from '@helpers/api-
 import { sleep } from '@helpers/common.helpers.js';
 
 async function driveToFunded(
-  api: ApiClients,
-  db: DatabaseHelpers,
-  testEnv: ConfigEnvironment,
-  data: { env: string; state: string; merchant: string; orderTotal: string },
-  existingAccountPk?: string,
+ api: ApiClients,
+ db: DatabaseHelpers,
+ testEnv: ConfigEnvironment,
+ data: { env: string; state: string; merchant: string; orderTotal: string },
+ existingAccountPk?: string,
 ): Promise<{ leadPk: string; accountPk: string }> {
-  // GDS bypass: usar conta existente quando GDS indisponível
-  if (existingAccountPk) {
-    console.log(`[Setup] Using existing accountPk=${existingAccountPk} (GDS bypass)`);
-    return { leadPk: '0', accountPk: existingAccountPk };
-  }
+ // GDS bypass: usar conta existente quando GDS indisponível
+ if (existingAccountPk) {
+ console.log(`[Setup] Using existing accountPk=${existingAccountPk} (GDS bypass)`);
+ return { leadPk: '0', accountPk: existingAccountPk };
+ }
 
-  const td = buildTestData({ env: data.env, state: data.state, merchant: data.merchant, orderTotal: data.orderTotal });
+ const td = buildTestData({ env: data.env, state: data.state, merchant: data.merchant, orderTotal: data.orderTotal });
 
-  const ctx: TestContext = {
-    leadPk: '', leadUuid: '', accountPk: '', accountNumber: '',
-    contractStatus: '', contractUrl: '', websiteAccountPk: '', achAdded: 0, ccAdded: 0,
-    reportKeys: new Map<string, string>(),
-  };
+ const ctx: TestContext = {
+ leadPk: '', leadUuid: '', accountPk: '', accountNumber: '',
+ contractStatus: '', contractUrl: '', websiteAccountPk: '', achAdded: 0, ccAdded: 0,
+ reportKeys: new Map<string, string>,
+ };
 
-  // Padrão pre-qual: sendApplication SEM order -> 5s -> getApplicationStatus -> sendInvoice -> submitApplication
-  await createPreQualifiedApplication(api, td.merchant, td.applicant, ctx, {
-    submitPaymentInfoViaApi: true,
-  });
+ // Padrão pre-qual: sendApplication SEM order -> 5s -> getApplicationStatus -> sendInvoice -> submitApplication
+ await createPreQualifiedApplication(api, td.merchant, td.applicant, ctx, {
+ submitPaymentInfoViaApi: true,
+ });
 
-  // SIGNED -> SETTLED -> FUNDING
-  await driveLeadToFunding(api, td.merchant, ctx);
+ // SIGNED -> SETTLED -> FUNDING
+ await driveLeadToFunding(api, td.merchant, ctx);
 
-  // FUNDING -> FUNDED
-  await sleep(2_000);
-  const fundedResp = await api.lead.updateFundingStatus([Number(ctx.leadPk)], 'FUNDED');
-  if (!fundedResp.ok) throw new Error(`updateFundingStatus FUNDED failed: ${fundedResp.status}`);
+ // FUNDING -> FUNDED
+ await sleep(2_000);
+ const fundedResp = await api.lead.updateFundingStatus([Number(ctx.leadPk)], 'FUNDED');
+ if (!fundedResp.ok) throw new Error(`updateFundingStatus FUNDED failed: ${fundedResp.status}`);
 
-  // Aguardar criação da conta SVC (assíncrono após FUNDED)
-  const accountPk = await db.waitForAccountByLeadPk(ctx.leadPk, 30_000);
-  if (!accountPk) throw new Error(`SVC account not created for leadPk=${ctx.leadPk}`);
+ // Aguardar criação da conta SVC (assíncrono após FUNDED)
+ const accountPk = await db.waitForAccountByLeadPk(ctx.leadPk, 30_000);
+ if (!accountPk) throw new Error(`SVC account not created for leadPk=${ctx.leadPk}`);
 
-  return { leadPk: ctx.leadPk, accountPk };
+ return { leadPk: ctx.leadPk, accountPk };
 }
 ```
 
@@ -100,19 +100,19 @@ import { VALID_TEST_CARDS } from '@data/test-cards.js';
 
 // 1. Build body — OBJETO de opções (NÃO array + boolean)
 const body = buildCcArrangementBody({
-  accountPk: Number(ctx.accountPk),         // obrigatório, tipo number
-  arrangementType: 'SETTLEMENT',             // 'SETTLEMENT' | 'NORMAL'
-  ccNumber: VALID_TEST_CARDS[0].cardNumber,
-  ccExp: VALID_TEST_CARDS[0].expirationDate,
-  cvc: VALID_TEST_CARDS[0].cvv,
-  installments: [
-    { amount: '100', date: calculateDateISO(0) },  // amount=string, date=YYYY-MM-DD
-  ],
+ accountPk: Number(ctx.accountPk), // obrigatório, tipo number
+ arrangementType: 'SETTLEMENT', // 'SETTLEMENT' | 'NORMAL'
+ ccNumber: VALID_TEST_CARDS[0].cardNumber,
+ ccExp: VALID_TEST_CARDS[0].expirationDate,
+ cvc: VALID_TEST_CARDS[0].cvv,
+ installments: [
+ { amount: '100', date: calculateDateISO(0) }, // amount=string, date=YYYY-MM-DD
+ ],
 });
 
 // 2. Criar arrangement — corpo já tem accountPk, SEM parâmetro extra
 const res = await api.paymentArrangement.makeCreditCardPayments(body);
-expect(res.ok, `makeCreditCardPayments: ${res.status} — ${JSON.stringify(res.body)}`).toBeTruthy();
+expect(res.ok, `makeCreditCardPayments: ${res.status} — ${JSON.stringify(res.body)}`).toBeTruthy;
 
 // 3. CC é síncrono — arrangement já SUCCESS aqui
 const arrangement = await db.getPaymentArrangement(ctx.accountPk);
@@ -145,26 +145,26 @@ await page.locator("input[placeholder='Expires On']").fill(`${fullYear}-${expMon
 // Example: expMonth='12', expYear='28' -> fills '2028-12'
 ```
 
-When a Servicing account already has a card on file, `makeCcPaymentArrangement()` defaults to
+When a Servicing account already has a card on file, `makeCcPaymentArrangement` defaults to
 "Use existing card information". Pass `ccDetails` to switch to the one-time card form:
 
 ```typescript
 await servicingBasePage.makeCcPaymentArrangement({
-  startDate: calculateDate(0),
-  endDate: calculateDate(30),
-  frequency: 'Monthly',
-  ccDetails: {
-    firstName: 'John',
-    lastName: 'Doe',
-    cardNumber: VALID_TEST_CARDS[0].cardNumber,
-    cvc: VALID_TEST_CARDS[0].cvv,
-    expMonth: '12',
-    expYear: '28',   // 2-digit or 4-digit — method normalizes internally
-  },
+ startDate: calculateDate(0),
+ endDate: calculateDate(30),
+ frequency: 'Monthly',
+ ccDetails: {
+ firstName: 'John',
+ lastName: 'Doe',
+ cardNumber: VALID_TEST_CARDS[0].cardNumber,
+ cvc: VALID_TEST_CARDS[0].cvv,
+ expMonth: '12',
+ expYear: '28', // 2-digit or 4-digit — method normalizes internally
+ },
 });
 ```
 
-Selectors added in Task #483 (`CreditCardSelectors`):
+Selectors added in (`CreditCardSelectors`):
 
 | Selector key | Selector | Notes |
 |---|---|---|
@@ -188,20 +188,20 @@ import { calculateDateISO } from '@helpers/date.helpers.js';
 
 // Build body — OBJETO de opções
 const body = buildAchArrangementBody({
-  accountPk: Number(ctx.accountPk),   // obrigatório
-  arrangementType: 'SETTLEMENT',       // 'SETTLEMENT' | 'NORMAL', default='SETTLEMENT'
-  installments: [
-    { amount: '100', date: calculateDateISO(3) },  // amount=string, date=YYYY-MM-DD
-  ],
-  // Opcional: routingNumber, accountNumber, bankAccountType (defaults de TEST_BANK)
+ accountPk: Number(ctx.accountPk), // obrigatório
+ arrangementType: 'SETTLEMENT', // 'SETTLEMENT' | 'NORMAL', default='SETTLEMENT'
+ installments: [
+ { amount: '100', date: calculateDateISO(3) }, // amount=string, date=YYYY-MM-DD
+ ],
+ // Opcional: routingNumber, accountNumber, bankAccountType (defaults de TEST_BANK)
 });
 
 // Criar arrangement — corpo já tem accountPk, SEM parâmetro extra
 const res = await api.paymentArrangement.createOrUpdateAchPayments(body);
-expect(res.ok).toBeTruthy();
+expect(res.ok).toBeTruthy;
 
 // Verificar FK e pagamentos ACH criados
-const hasFk = await db.achPaymentHasArrangementFk();
+const hasFk = await db.achPaymentHasArrangementFk;
 expect(hasFk).toBe(true);
 
 const arrangement = await db.getPaymentArrangement(ctx.accountPk);
@@ -212,8 +212,8 @@ expect(payments[0].status).toBe('PENDING');
 
 // ACH sweep — só em ambientes com Profituity ativo (não qa1)
 // Se necessário testar sem Profituity, usar simulação via DB (ver database.helpers.ts):
-//   await db.simulateCcSweepForArrangement(ctx.arrangementPk);
-//   await db.recalculateArrangementStatus(ctx.arrangementPk);
+// await db.simulateCcSweepForArrangement(ctx.arrangementPk);
+// await db.recalculateArrangementStatus(ctx.arrangementPk);
 ```
 
 ---
@@ -222,7 +222,7 @@ expect(payments[0].status).toBe('PENDING');
 
 ```typescript
 // Endpoint TMS usa API KEY separada (FIVE9_TMS_API_KEY, não SVC key)
-// testEnv.tmsApiKey  <- chave correta
+// testEnv.tmsApiKey <- chave correta
 const res = await api.account.moveDueDatesByDays(ctx.accountPk, 7);
 // ou via TMS:
 // POST /uown/tms/v1/accounts/{pk}/next-due-date/adjustments
@@ -235,7 +235,7 @@ const res = await api.account.moveDueDatesByDays(ctx.accountPk, 7);
 
 ```typescript
 // Sweep CC
-await api.scheduledTask.sendCreditCardPaymentsSweep();
+await api.scheduledTask.sendCreditCardPaymentsSweep;
 
 // Ou via trigger genérico (nome da task)
 await api.scheduledTask.triggerScheduledTask('sendCreditCardPaymentsSweep');
@@ -245,35 +245,35 @@ await api.scheduledTask.triggerScheduledTask('sendCreditCardPaymentsSweep');
 
 ## Merchant Create/Edit Flow (Origination)
 
-> Task #1262. Uses `MerchantEditPage` (`src/pages/origination/merchant-edit.page.ts`).
+> . Uses `MerchantEditPage` (`src/pages/origination/merchant-edit.page.ts`).
 
 ```typescript
 import { MerchantEditPage } from '@pages/origination/merchant-edit.page.js';
 
 // Create a new merchant with Inventory Category
-await test.step('Navigate to Add Merchant form', async () => {
-  merchantPage = new MerchantEditPage(page);
-  await merchantPage.navigateToAddMerchant(env.originationUrl);
+await test.step('Navigate to Add Merchant form', async  => {
+ merchantPage = new MerchantEditPage(page);
+ await merchantPage.navigateToAddMerchant(env.originationUrl);
 });
 
-await test.step('Fill form and save', async () => {
-  await merchantPage.fillMerchantForm({
-    refCode: 'OW90999-0001',
-    name: 'Test Merchant',
-    legalName: 'Test Merchant LLC',
-    locationName: 'Main Location',
-    inventoryCategory: 'ELECTRONICS',
-  });
-  // selectInventoryCategory is called internally by fillMerchantForm when inventoryCategory is provided
+await test.step('Fill form and save', async  => {
+ await merchantPage.fillMerchantForm({
+ refCode: 'OW90999-0001',
+ name: 'Test Merchant',
+ legalName: 'Test Merchant LLC',
+ locationName: 'Main Location',
+ inventoryCategory: 'ELECTRONICS',
+ });
+ // selectInventoryCategory is called internally by fillMerchantForm when inventoryCategory is provided
 });
 
 // Verify DB — note uown_merchant column names
-await test.step('Verify DB record', async () => {
-  const row = await db.getMerchantByRefCode('OW90999-0001');
-  expect(row.inventory_category).toBe('ELECTRONICS');
-  // Timestamp columns: row_created_timestamp / row_updated_timestamp (NOT created_at/updated_at)
-  // Acting user column: agent (NOT created_by/updated_by)
-  expect(row.agent).toBeDefined();
+await test.step('Verify DB record', async  => {
+ const row = await db.getMerchantByRefCode('OW90999-0001');
+ expect(row.inventory_category).toBe('ELECTRONICS');
+ // Timestamp columns: row_created_timestamp / row_updated_timestamp (NOT created_at/updated_at)
+ // Acting user column: agent (NOT created_by/updated_by)
+ expect(row.agent).toBeDefined;
 });
 
 // Verify absence (blocked save — e.g., missing Inventory Category)
@@ -287,8 +287,8 @@ Origination forms mix `filter__*` (themed, classNamePrefix="filter") and `css-*`
 
 ```typescript
 const REACT_SELECT_OPTION_UNION =
-  '.filter__option, [class*="css-"][class*="option-"], ' +
-  '[class*="-option"]:not([class*="options"]):not([class*="placeholder"]):not([class*="single-value"])';
+ '.filter__option, [class*="css-"][class*="option-"], ' +
+ '[class*="-option"]:not([class*="options"]):not([class*="placeholder"]):not([class*="single-value"])';
 ```
 
 ### Clone dropdown (Add Merchant form)
@@ -296,15 +296,15 @@ const REACT_SELECT_OPTION_UNION =
 The clone trigger is `<a class="dropdownContainer__ddButton">` (not `<button>`). Menu items are `.dropdown-item` inside `.dropdown.show`. The first item is a header containing the search input — always exclude it:
 
 ```typescript
-// openCloneDropdown() clicks the <a> trigger
-await merchantPage.openCloneDropdown();
+// openCloneDropdown clicks the <a> trigger
+await merchantPage.openCloneDropdown;
 // selectMerchantToClone types in search input and clicks first non-header item
 await merchantPage.selectMerchantToClone('OW90218');
 ```
 
 ---
 
-## Email Dispatch - Two-Stage Pipeline (Task #491)
+## Email Dispatch - Two-Stage Pipeline
 
 > **CRITICAL:** Any test that validates an email triggered by a sweep task MUST run BOTH sweeps in sequence, or the IMAP assertion will time out.
 
@@ -332,7 +332,7 @@ WHERE account_pk = <accountPk>
 ORDER BY row_created_timestamp DESC;
 ```
 
-### Schema notes (Task #491)
+### Schema notes
 
 - `uown_sv_account` does **NOT** have `customer_pk`. The relationship is: `uown_sv_customer.account_pk -> uown_sv_account.pk`.
 - `uown_correspondence_logs` native columns: `pk`, `agent`, `row_created_timestamp`, `row_updated_timestamp`, `tenant_id`, `web_user_id`, `data_map`, `error`, `source`, `template_name`, `correspondence_type`, `account_pk`, `lead_pk`. There is NO `recipient`, `status`, or `updated_by` — derive those via JOIN on `uown_email_queue`.
@@ -341,32 +341,32 @@ ORDER BY row_created_timestamp DESC;
 
 ```typescript
 import {
-  findEligibleSettledInFullAccount,
-  waitForEmailQueueRecord,
-  waitForEmailQueueDispatched,
-  getCorrespondenceLog,
+ findEligibleSettledInFullAccount,
+ waitForEmailQueueRecord,
+ waitForEmailQueueDispatched,
+ getCorrespondenceLog,
 } from '@helpers/index.js';
 ```
 
 ---
 
-## Timestamp Comparisons - pg-node and `timestamp without time zone` (Task #502)
+## Timestamp Comparisons - pg-node and `timestamp without time zone`
 
-> **PITFALL:** When pg-node reads a `timestamp without time zone` column, the returned JS `Date` is timezone-interpreted by the Node.js process locale. Comparing `row.expiration_time.getTime()` against `Date.now()` is unreliable across environments.
+> **PITFALL:** When pg-node reads a `timestamp without time zone` column, the returned JS `Date` is timezone-interpreted by the Node.js process locale. Comparing `row.expiration_time.getTime` against `Date.now` is unreliable across environments.
 
 **Wrong pattern (do NOT use):**
 ```typescript
 // WRONG — timezone-sensitive
 const row = await db.getSingleRow<KountTokenRow>('SELECT expiration_time FROM uown_kount_token WHERE pk = 1');
-expect(row.expiration_time.getTime()).toBeGreaterThan(Date.now()); // unreliable
+expect(row.expiration_time.getTime).toBeGreaterThan(Date.now); // unreliable
 ```
 
 **Correct pattern - push comparison to PG:**
 ```typescript
 // CORRECT — comparison happens in Postgres, JS receives boolean
 const { ok } = await db.getSingleRow<{ ok: boolean }>(
-  `SELECT (expiration_time > now() + interval '30 seconds') AS ok FROM uown_kount_token WHERE pk = $1`,
-  [1],
+ `SELECT (expiration_time > now + interval '30 seconds') AS ok FROM uown_kount_token WHERE pk = $1`,
+ [1],
 );
 expect(ok).toBe(true);
 ```
@@ -374,10 +374,10 @@ expect(ok).toBe(true);
 Alternatively, use `waitForValueChange` to detect that the token string itself changed:
 ```typescript
 const newToken = await db.waitForValueChange(
-  'SELECT access_token FROM uown_kount_token WHERE pk = $1',
-  [1],
-  oldToken,
-  30_000,
+ 'SELECT access_token FROM uown_kount_token WHERE pk = $1',
+ [1],
+ oldToken,
+ 30_000,
 );
 expect(newToken).not.toBe(oldToken);
 ```
@@ -388,7 +388,7 @@ expect(newToken).not.toBe(oldToken);
 
 ---
 
-## MerchantConfigurator - qa2 known quirk (Task #505 / hotfix R1.51.1)
+## MerchantConfigurator - qa2 known quirk
 
 `MerchantConfigurator.configureByName(merchantName, ...)` calls `/uown/los/getMerchantsByRefCode` using the lowercase `refCode` key from `src/data/merchants.ts` (e.g., `'danielsjewelers'`). In qa2, this endpoint matches by the actual `ref_merchant_code` column value (e.g., `'OL90205-0079'`). The mismatch causes the configurator to return 0 results and fail silently.
 
@@ -398,8 +398,8 @@ Pass `skipMerchantPreflight: true`:
 
 ```typescript
 await createPreQualifiedApplication(api, merchant, applicant, ctx, {
-  submitPaymentInfoViaApi: true,
-  skipMerchantPreflight: true,
+ submitPaymentInfoViaApi: true,
+ skipMerchantPreflight: true,
 });
 ```
 
@@ -413,9 +413,9 @@ await mSetup.configure(MERCHANTS.DanielsJewelers.number, { isCcRequired: true, .
 
 ---
 
-## Token Tables - known app constraint (Task #502)
+## Token Tables - known app constraint
 
-`RefreshKountAccessTokenSweepService` and `RefreshGdsAccessTokenSweepService` (commit `213b96b54`) call `loadOrCreateToken().setPk(...)` followed by `repo.save(...)`. Because the entity uses `@GeneratedValue`, the explicit `setPk` is ignored on INSERT — the DB assigns a new PK. Consequence: **after deleting pk=1, the sweep recreates the row at a new auto-incremented PK, not pk=1**. Use `ORDER BY pk DESC LIMIT 1` or `waitForValueChange` targeting the latest row instead.
+`RefreshKountAccessTokenSweepService` and `RefreshGdsAccessTokenSweepService` (commit `213b96b54`) call `loadOrCreateToken.setPk(...)` followed by `repo.save(...)`. Because the entity uses `@GeneratedValue`, the explicit `setPk` is ignored on INSERT — the DB assigns a new PK. Consequence: **after deleting pk=1, the sweep recreates the row at a new auto-incremented PK, not pk=1**. Use `ORDER BY pk DESC LIMIT 1` or `waitForValueChange` targeting the latest row instead.
 
 ---
 
@@ -424,19 +424,19 @@ await mSetup.configure(MERCHANTS.DanielsJewelers.number, { isCcRequired: true, .
 ```typescript
 // Declarar ANTES de test.step
 const ctx: {
-  leadPk: string;
-  leadUuid: string;
-  accountPk: string;
-  arrangementPk: string;
+ leadPk: string;
+ leadUuid: string;
+ accountPk: string;
+ arrangementPk: string;
 } = { leadPk: '', leadUuid: '', accountPk: '', arrangementPk: '' };
 
 // Preencher em steps
-await test.step('Setup', async () => {
-  ctx.accountPk = '4438';
+await test.step('Setup', async  => {
+ ctx.accountPk = '4438';
 });
 
-await test.step('Assert', async () => {
-  // ctx.accountPk disponível aqui
-  const status = await db.getAccountStatus(ctx.accountPk);
+await test.step('Assert', async  => {
+ // ctx.accountPk disponível aqui
+ const status = await db.getAccountStatus(ctx.accountPk);
 });
 ```

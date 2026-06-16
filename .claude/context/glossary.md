@@ -42,7 +42,7 @@ Mapping of terms from the legacy Java/Cucumber project to the current project (`
 | `generatePhone()` | `generatePhone()` | `src/config/constants.ts` |
 | `generateEmail()` | `generateUniqueEmail()` | `src/config/constants.ts` |
 
-## Underwriting Routing — Task #439
+## Underwriting Routing
 
 | Java Concept | TypeScript / Test Concept | Notes |
 |--------------|--------------------------|-------|

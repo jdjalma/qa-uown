@@ -38,11 +38,11 @@ Tabela fonte da verdade para evidência de "email foi enviado". Sweep `triggerSc
 
 ```sql
 SELECT pk, account_pk, lead_pk, to_email_addresses, subject,
-       template_name, status, sent_time, email_body_type
-  FROM uown_email_queue
+ template_name, status, sent_time, email_body_type
+ FROM uown_email_queue
  WHERE account_pk = :accountPk
-   AND template_name = :templateName  -- case-sensitive
-   AND row_created_timestamp >= :triggerTs
+ AND template_name = :templateName — case-sensitive
+ AND row_created_timestamp >= :triggerTs
  ORDER BY row_created_timestamp DESC
  LIMIT 1;
 ```
@@ -123,10 +123,10 @@ Exemplos reais (lead 11407):
 Validação correta:
 ```sql
 SELECT pk, notes, row_created_timestamp
-  FROM uown_los_lead_notes
+ FROM uown_los_lead_notes
  WHERE lead_pk = :leadPk
-   AND row_created_timestamp >= :triggerTs
-   AND notes ILIKE '%[ContractService]%SIGNED%';
+ AND row_created_timestamp >= :triggerTs
+ AND notes ILIKE '%[ContractService]%SIGNED%';
 ```
 
 ## 6. Gaps confirmados de observabilidade

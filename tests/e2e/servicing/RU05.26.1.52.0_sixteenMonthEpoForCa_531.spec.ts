@@ -428,6 +428,15 @@ function expectNotCaFormula(
   expect(Math.abs(epo - ca)).toBeGreaterThan(tolerance);
 }
 
+// Skip in environments where KS merchants (KS5936/KS3015) are not registered.
+// Tagged @qa1 throughout — only qa1 and stg have the required merchant+program config.
+test.beforeEach(() => {
+  test.skip(
+    CURRENT_ENV !== 'qa1' && CURRENT_ENV !== 'stg',
+    'svc#531 requires qa1 or stg — KS merchants (KS5936/KS3015) are not available in this environment',
+  );
+});
+
 // ═══════════════════════════════════════════════════════════════════════
 //  GROUP A — Primary scenarios (within 90-day window)
 // ═══════════════════════════════════════════════════════════════════════

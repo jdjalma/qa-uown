@@ -638,6 +638,9 @@ export interface ColumnOrderSelectors {
   configColumnsTrigger: string;
   /** Config Columns side-panel container ("Configure the view"). */
   configColumnsPanel: string;
+  /** Config Columns panel on the Merchants list page — Bootstrap dropdown variant
+   *  (`div.dropdown.show`, NOT a dialog/modal/aside). Task #1309. */
+  configColumnsPanelMerchants: string;
   /** Individual column checkbox inside the Config Columns panel (by name attr). */
   configColumnsCheckbox: (name: string) => string;
   /** CSV export trigger probe — matches Download/Export CSV (direct download).

@@ -80,6 +80,9 @@ async function assertLeadProgramServiceLog(
 
 test.describe('RU05.26.1.52.0_offerBoth13And16Programs_537', { tag: TAG.split(' ') }, () => {
   test.setTimeout(600_000);
+  test.beforeEach(({ testEnv }) => {
+    test.skip(testEnv.env !== 'qa1', 'svc#537 uses KS3015 (Kornerstone) + qa1-only 16m SSN routing — skip in other environments');
+  });
 
   test('16m-eligible via new-application wizard + email validation + 13m/16m tab verification', async ({
     page, api, db, email, ctx,

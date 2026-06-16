@@ -15,9 +15,9 @@ disable-model-invocation: true
 - [ ] **Triple validation per CT**: payload/response asserted + DB persistence confirmed + UI rendering verified
 - [ ] **Video**: `VIDEO=on` (default) — never override to `off` in test configuration
 - [ ] **Screenshots**: at least 1 per CT, taken after the key assertion (proves acceptance criterion)
-  - Saved to `tests/{folder}/screenshots/{testName}-{NN}-{desc}.png`
-  - Attached to report via `test.info().attach()`
-  - Focused on the state that proves the criterion (not generic page captures)
+ - Saved to `tests/{folder}/screenshots/{testName}-{NN}-{desc}.png`
+ - Attached to report via `test.info.attach`
+ - Focused on the state that proves the criterion (not generic page captures)
 
 ## 1. Application Flow (Origination)
 
@@ -80,10 +80,10 @@ disable-model-invocation: true
 
 | Route/Action | Admin | Manager | Readonly | Merchant |
 |-------------|:-----:|:-------:|:--------:|:--------:|
-| View list   |  Y    |   Y     |    Y     |    N     |
-| Create      |  Y    |   Y     |    N     |    N     |
-| Edit        |  Y    |   N     |    N     |    N     |
-| Delete      |  Y    |   N     |    N     |    N     |
+| View list | Y | Y | Y | N |
+| Create | Y | Y | N | N |
+| Edit | Y | N | N | N |
+| Delete | Y | N | N | N |
 
 ## 8. Database Validations
 

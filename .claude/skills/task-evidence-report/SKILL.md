@@ -181,12 +181,12 @@ _Nenhum nesta validação._
 
 ## Mapeamento dos campos
 
-| Placeholder           | Origem                                                          |
+| Placeholder | Origem |
 | --------------------- | --------------------------------------------------------------- |
-| `{taskId}`            | número GitLab/Jira (ex: 530, 1293)                              |
-| `{taskTitle}`         | título curto da issue                                           |
-| `{testName}`          | mesmo slug usado em `-spec.md`/`-report.md`                     |
-| `{env}`               | qa1 / qa2 / stg                                                 |
+| `{taskId}` | número GitLab/Jira (ex: 530, 1293) |
+| `{taskTitle}` | título curto da issue |
+| `{testName}` | mesmo slug usado em `-spec.md`/`-report.md` |
+| `{env}` | qa1 / qa2 / stg |
 
 ## Checklist antes de fechar o arquivo
 
@@ -215,6 +215,6 @@ Sem sinal explícito → NÃO gerar. Em dúvida, perguntar ao usuário.
 - [[bug-classification]] - taxonomia `[CONFIRMADO] / [HIPÓTESE] / [OBSERVAÇÃO]`.
 - [[volatile-knowledge-registry]] - categorias drift-prone exigem source-tag de código fonte.
 - Exemplos atuais (consultar como referência de estilo, não de pattern):
-  - `docs/taskTestingUown/RU05.26.1.52.0_redirectInvalidOrInactiveApplicationLinks_1293/gitlab-comment.md` (simples, ~70 linhas)
-  - `docs/taskTestingUown/RU05.26.1.52.0_settleApplicationFailsWhenNextPayDateMissing_530/gitlab-comment.md` (cross-brand, ~150 linhas)
-  - `docs/taskTestingUown/RU05.26.1.52.0_optimizeHighCpuQueriesQuery4_454/gitlab-comment.md` (3 achados técnicos, ~250 linhas)
+ - `docs/taskTestingUown/RU05.26.1.52.0_redirectInvalidOrInactiveApplicationLinks_1293/gitlab-comment.md` (simples, ~70 linhas)
+ - `docs/taskTestingUown/RU05.26.1.52.0_settleApplicationFailsWhenNextPayDateMissing_530/gitlab-comment.md` (cross-brand, ~150 linhas)
+ - `docs/taskTestingUown/RU05.26.1.52.0_optimizeHighCpuQueriesQuery4_454/gitlab-comment.md` (3 achados técnicos, ~250 linhas)

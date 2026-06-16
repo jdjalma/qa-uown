@@ -193,7 +193,12 @@ export const SELECTORS: AppSelectors = {
   //   2. DOM markers (UOwn alternative-contract wrapper, SignWell-Embedded-Iframe id)
   signingAnyIframe: 'iframe',
   signingGowSignIframe: 'iframe.alternative-contract-vendor_iframe__nSb3A',
-  signingGowSignIframeByUrl: 'iframe[src*="gowsign.com"]',
+  // Broadened from 'gowsign.com' → 'gowsign': in sandbox the GowSign vendor host
+  // is `gowsign-app-dev-uown.azurewebsites.net` (verified via live DOM 2026-06-12,
+  // lead 97457), NOT *.gowsign.com. The substring 'gowsign' matches both the
+  // azurewebsites sandbox host and prod `*.gowsign.com`. See pitfall — GowSign
+  // host varies per environment.
+  signingGowSignIframeByUrl: 'iframe[src*="gowsign"]',
   signingSignWellIframeByUrl: 'iframe[src*="signwell.com"], iframe#SignWell-Embedded-Iframe',
   signingPandaDocsIframeByUrl: 'iframe[src*="pandadoc.com"]',
 
@@ -377,7 +382,13 @@ export const SELECTORS: AppSelectors = {
 
   // ── Modify Lease ─────────────────────────────────────────────────
   modifyLeaseButton: "button:has-text('Modify Lease'), button >> span:has-text('Modify Lease')",
-  modifyLeaseWarningContinue: ".modal.show button:has-text('Continue')",
+  // DOM-first (2026-06-12, MCP live lead 97502/97509): the modify-lease
+  // confirmation dialog renders as both `.modal.show` and `[role="dialog"]`;
+  // the action button label is exactly "Continue" (the uppercase "CONTINUE" in
+  // the caution body is plain text, not the button). Scope to a visible dialog
+  // and match the literal button text.
+  modifyLeaseWarningContinue:
+    ".modal.show button:has-text('Continue'), [role='dialog'] button:has-text('Continue')",
   modifyLeaseWarningCancel: ".modal.show button:has-text('Cancel')",
   modifyLeaseSaveButton: ".modal.show button:has-text('SAVE'), .modal.show button:has-text('Save')",
   activityLogCard: "xpath=//div[contains(@class,'card')]//div[contains(text(),'Activity') or contains(text(),'activity')]/..",
@@ -508,7 +519,7 @@ export const SELECTORS: AppSelectors = {
   naDeliveryFee: '#deliveryFee',
   naInstallationFee: '#installationFee',
   naMiscFee: '#miscFee',
-  naSubmitItemLease: "button[type='submit']:has-text('Submit'), button.btn-secondary:has-text('Submit'), button:has-text('Add Item')",
+  naSubmitItemLease: "button[type='submit']:has-text('Submit'), button.btn-secondary:has-text('Submit'), button:has-text('Add Item'), button:has-text('ADD')",
   naSalesPerson: '#salesPerson',
   naInvoiceNumber: '#invoiceNumber',
 
@@ -642,6 +653,10 @@ export const SELECTORS: AppSelectors = {
   configColumnsTrigger: "button:has-text('Config Columns'), a:has-text('Config Columns'), [aria-label='Config Columns']",
   // Side panel opened by the trigger ("Configure the view" heading per SPEC § 0.5).
   configColumnsPanel: "[role='dialog']:has-text('Configure the view'), .modal:has-text('Configure the view'), [class*='configColumns'], aside:has-text('Configure the view')",
+  // Merchants list page (/merchant) — Config Columns is a Bootstrap dropdown
+  // (`div.dropdown.show`), NOT a dialog/modal/aside. The generic `configColumnsPanel`
+  // above does NOT match here. Discovery: docs/knowledge-base/merchants-config-columns-export.md. Task #1309.
+  configColumnsPanelMerchants: "div.dropdown.show:has-text('Configure the view')",
   // Each column checkbox is matched by the option name (e.g. "Sales Rep Code").
   configColumnsCheckbox: (name: string) => `label:has-text(${JSON.stringify(name)}) input[type='checkbox'], input[type='checkbox'][name=${JSON.stringify(name)}]`,
   // CSV export probes (SPEC § 0.5 + multi-select-filters.spec.ts CT-09 pattern).

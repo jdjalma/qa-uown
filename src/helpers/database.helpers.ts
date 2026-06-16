@@ -1450,6 +1450,36 @@ export class DatabaseHelpers {
     );
   }
 
+  /**
+   * Count NeuroID verification rows for a lead (svc#554 — prevent repeated
+   * NeuroID calls during signing retries).
+   *
+   * IMPLEMENTATION CHOICE — Option B (uown_neuro_id_verification by lead_pk).
+   * Decided after the svc#554 discovery probe (src/scripts/probe-neuroid-554.ts,
+   * run against qa2 2026-06-15):
+   *   - `uown_sv_outbound_api_log` does have NeuroID rows
+   *     (url ILIKE '%neuro%', e.g. https://api.neuro-id.com/v4.1/sites/.../profiles/{id}),
+   *     BUT it has NO `lead_pk` / `service` column AND for every NeuroID row
+   *     `account_pk`, `source_uuid` and `return_uuid` are all NULL. There is no
+   *     reliable key to correlate those rows to a freshly created lead, so
+   *     Option A from the SPEC is NOT viable.
+   *   - `uown_neuro_id_verification` HAS `lead_pk` and one row is written per
+   *     backend NeuroID verification attempt for the lead. This is the
+   *     correlatable source of truth for "was NeuroID called again?".
+   *
+   * The svc#554 assertion model: a backend NeuroID call materializes a row here.
+   * "No new NeuroID call on retry" ⇒ this COUNT does not increase between the
+   * first submit and the post-retry observation.
+   *
+   * SELECT-only (CLAUDE.md Exception 3 respected).
+   */
+  async countNeuroIdCalls(leadPk: string | number): Promise<number> {
+    return this.getSingleNumber(
+      `SELECT COUNT(*) FROM uown_neuro_id_verification WHERE lead_pk = $1`,
+      [Number(leadPk)],
+    );
+  }
+
   // ── Query plan helpers ─────────────────────────────────────────────
 
   async getTableRowEstimate(tableName: string): Promise<number> {

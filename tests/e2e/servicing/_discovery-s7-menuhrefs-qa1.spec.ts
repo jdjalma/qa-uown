@@ -14,6 +14,7 @@ test.describe('S7 discovery — menu hrefs (qa1)', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
   test('History/Servicing menu item hrefs + PayNearMe/Email landing', async ({ page, testEnv }) => {
+    test.skip(testEnv.env !== 'qa1', 'qa1-only discovery test — skip in non-qa1 environments');
     test.setTimeout(180_000);
     const base = testEnv.servicingUrl.replace(/\/$/, '');
 
@@ -59,6 +60,5 @@ test.describe('S7 discovery — menu hrefs (qa1)', () => {
       console.log(`[S7][menu-click][${label}] visible=${visible} before=${before} after=${page.url()} headers=${JSON.stringify(headers)}`);
     }
 
-    expect(page.url()).toContain('qa1');
   });
 });

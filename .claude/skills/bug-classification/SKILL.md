@@ -21,8 +21,8 @@ Uma ocorrência isolada num registro pré-existente é **observação**, não bu
 - Para virar "Bug de Aplicação" exige reprodução em **conta/lead/dado criado do zero pela própria execução do teste** (preferencialmente) ou em dados fresh do dia corrente.
 - Se não reproduziu em fresh data → classificar como `INVESTIGAR` ou `OBSERVAÇÃO A CONFIRMAR`, nunca "bug".
 - Se o caso foi observado em registro pré-existente (fixture antiga, seed data, conta manual do QA), a suspeita vale mas exige:
-  1. Tentativa de reprodução em conta criada pelo próprio teste, OU
-  2. Confirmação no código-fonte de inconsistência determinística (não apenas correlação circunstancial).
+ 1. Tentativa de reprodução em conta criada pelo próprio teste, OU
+ 2. Confirmação no código-fonte de inconsistência determinística (não apenas correlação circunstancial).
 
 ---
 
@@ -54,7 +54,7 @@ Antes de escrever seção `## Bugs de Aplicação Encontrados` ou recomendar fix
 
 ## Regra 4 — NÃO recomendar fix de código em evidência única
 
-Sugestões de código (`entityManager.clear()`, JPA hints, refactors de service) são aceitas SOMENTE quando:
+Sugestões de código (`entityManager.clear`, JPA hints, refactors de service) são aceitas SOMENTE quando:
 
 - Bug reproduzido ≥ 2 vezes de forma independente, OU
 - Análise estática do código prova inconsistência determinística (não apenas plausibilidade de race condition), OU
@@ -95,7 +95,7 @@ Preferir descrição sobre afirmação; hipótese sobre certeza.
 - Comportamento: `correspondence_logs.error = "No data associated with correspondence request"` bloqueando enfileiramento.
 - **Reprodução em fresh:** testado com account 11386 (UOWN fresh) + 11403 (Kornerstone fresh) — MESMO erro nas duas.
 - **Task existente:** perguntado ao user — não havia task conhecida.
-- **Código:** `CorrespondenceService.createCorrespondence()` visivelmente depende de `CommonDataPojo` populado pela query SQL do template; query retornando 0 rows é inconsistência determinística observável.
+- **Código:** `CorrespondenceService.createCorrespondence` visivelmente depende de `CommonDataPojo` populado pela query SQL do template; query retornando 0 rows é inconsistência determinística observável.
 - **Veredicto:** Bug legítimo — reproduzível, sem task prévia, causa estática identificada.
 
 ### ❌ Caso incorreto — BUG-APP-A do pipeline #491

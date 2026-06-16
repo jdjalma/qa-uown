@@ -19,49 +19,49 @@ import { setupApplicationViaApi } from '@helpers/api-setup.helpers.js';
 import type { TestContext } from '@support/base-test.js';
 
 const testData = [
-  {
-    env: 'sandbox',
-    state: 'NY',
-    merchant: 'TerraceFinance',
-    orderTotal: '621',
-    tag: buildTags(TestTag.REGRESSION, TestTag.CRITICAL),
-  },
+ {
+ env: 'sandbox',
+ state: 'NY',
+ merchant: 'TerraceFinance',
+ orderTotal: '621',
+ tag: buildTags(TestTag.REGRESSION, TestTag.CRITICAL),
+ },
 ];
 
 for (const data of testData) {
-  test.describe(`R1.49.1_featureName_469 - ${data.env}/${data.merchant}`, { tag: splitTags(data.tag) }, () => {
-    test.use({ envName: data.env });
+ test.describe(`R1.49.1_featureName_469 - ${data.env}/${data.merchant}`, { tag: splitTags(data.tag) },  => {
+ test.use({ envName: data.env });
 
-    test('should create application and reach UW_APPROVED', async ({ page, api, db, testEnv }) => {
-      test.setTimeout(300_000);
-      const ctx: TestContext = {
-        leadPk: '', leadUuid: '', accountPk: '', accountNumber: '',
-        contractStatus: '', contractUrl: '', websiteAccountPk: '', achAdded: 0, ccAdded: 0,
-        reportKeys: new Map(),
-      };
+ test('should create application and reach UW_APPROVED', async ({ page, api, db, testEnv }) => {
+ test.setTimeout(300_000);
+ const ctx: TestContext = {
+ leadPk: '', leadUuid: '', accountPk: '', accountNumber: '',
+ contractStatus: '', contractUrl: '', websiteAccountPk: '', achAdded: 0, ccAdded: 0,
+ reportKeys: new Map,
+ };
 
-      await test.step('Submit application via API', async () => {
-        const result = await setupApplicationViaApi(api, {
-          merchant: testEnv.getCredentials('merchant'), // or use td.merchant
-          applicant: { /* see api-setup.helpers */ },
-          order: { merchandiseDescription: 'Test', merchandiseAmount: data.orderTotal },
-          env: data.env,
-        });
-        ctx.leadPk = result.leadPk;
-        ctx.leadUuid = result.leadUuid;
-      });
+ await test.step('Submit application via API', async  => {
+ const result = await setupApplicationViaApi(api, {
+ merchant: testEnv.getCredentials('merchant'), // or use td.merchant
+ applicant: { /* see api-setup.helpers */ },
+ order: { merchandiseDescription: 'Test', merchandiseAmount: data.orderTotal },
+ env: data.env,
+ });
+ ctx.leadPk = result.leadPk;
+ ctx.leadUuid = result.leadUuid;
+ });
 
-      await test.step('Verify lead status in DB', async () => {
-        const status = await db.getLeadStatus(ctx.leadPk);
-        expect(status).toBe('UW_APPROVED');
-      });
+ await test.step('Verify lead status in DB', async  => {
+ const status = await db.getLeadStatus(ctx.leadPk);
+ expect(status).toBe('UW_APPROVED');
+ });
 
-      await test.step('Complete contract in browser', async () => {
-        const customerPage = new OriginationCustomerPage(page);
-        // Browser interaction
-      });
-    });
-  });
+ await test.step('Complete contract in browser', async  => {
+ const customerPage = new OriginationCustomerPage(page);
+ // Browser interaction
+ });
+ });
+ });
 }
 ```
 
@@ -73,23 +73,23 @@ import { TestTag, buildTags, splitTags } from '@ptypes/enums.js';
 import { buildTestData } from '@helpers/test-data.helpers.js';
 
 const testData = [
-  { env: 'sandbox', merchant: 'TerraceFinance', tag: buildTags(TestTag.REGRESSION) },
+ { env: 'sandbox', merchant: 'TerraceFinance', tag: buildTags(TestTag.REGRESSION) },
 ];
 
 for (const data of testData) {
-  test.describe(`R1.49.1_featureName_469 - ${data.env}`, { tag: splitTags(data.tag) }, () => {
-    test.use({ envName: data.env });
+ test.describe(`R1.49.1_featureName_469 - ${data.env}`, { tag: splitTags(data.tag) },  => {
+ test.use({ envName: data.env });
 
-    test('should submit and get UW_APPROVED via API', async ({ api, db, testEnv }) => {
-      test.setTimeout(120_000);
-      const td = buildTestData({ env: data.env, state: 'FL', merchant: data.merchant });
+ test('should submit and get UW_APPROVED via API', async ({ api, db, testEnv }) => {
+ test.setTimeout(120_000);
+ const td = buildTestData({ env: data.env, state: 'FL', merchant: data.merchant });
 
-      await test.step('Send application', async () => {
-        const response = await api.application.sendApplication(td.merchant, td.applicant, td.order);
-        expect(response.ok, `sendApplication: ${response.status}`).toBeTruthy();
-      });
-    });
-  });
+ await test.step('Send application', async  => {
+ const response = await api.application.sendApplication(td.merchant, td.applicant, td.order);
+ expect(response.ok, `sendApplication: ${response.status}`).toBeTruthy;
+ });
+ });
+ });
 }
 ```
 
@@ -102,22 +102,22 @@ import { test, expect } from '@fixtures/test-context.fixture.js';
 import { TestTag, buildTags, splitTags } from '@ptypes/enums.js';
 
 const testData = [
-  { env: 'qa1', tag: buildTags(TestTag.REGRESSION, TestTag.QA1) },
+ { env: 'qa1', tag: buildTags(TestTag.REGRESSION, TestTag.QA1) },
 ];
 
 for (const data of testData) {
-  test.describe(`R1.49.1_featureName_469 - ${data.env}`, { tag: splitTags(data.tag) }, () => {
-    test.use({ envName: data.env });
+ test.describe(`R1.49.1_featureName_469 - ${data.env}`, { tag: splitTags(data.tag) },  => {
+ test.use({ envName: data.env });
 
-    test('CT-01: Verify index exists on table', async ({ db }) => {
-      test.setTimeout(60_000);
+ test('CT-01: Verify index exists on table', async ({ db }) => {
+ test.setTimeout(60_000);
 
-      await test.step('CT-01: Query pg_indexes for expected index', async () => {
-        const exists = await db.indexExistsOnTable('idx_name', 'table_name');
-        expect(exists).toBe(true);
-      });
-    });
-  });
+ await test.step('CT-01: Query pg_indexes for expected index', async  => {
+ const exists = await db.indexExistsOnTable('idx_name', 'table_name');
+ expect(exists).toBe(true);
+ });
+ });
+ });
 }
 ```
 
@@ -125,24 +125,24 @@ for (const data of testData) {
 
 ```typescript
 test('full flow with shared context', async ({ page }) => {
-  const ctx: {
-    leadPk?: number;
-    contractUrl?: string;
-    status?: string;
-  } = {};
+ const ctx: {
+ leadPk?: number;
+ contractUrl?: string;
+ status?: string;
+ } = {};
 
-  await test.step('Step 1 - Create', async () => {
-    ctx.leadPk = 12345; // assigned in step 1
-  });
+ await test.step('Step 1 - Create', async  => {
+ ctx.leadPk = 12345; // assigned in step 1
+ });
 
-  await test.step('Step 2 - Verify', async () => {
-    // ctx.leadPk is available here
-    expect(ctx.leadPk).toBeDefined();
-  });
+ await test.step('Step 2 - Verify', async  => {
+ // ctx.leadPk is available here
+ expect(ctx.leadPk).toBeDefined;
+ });
 });
 ```
 
-## 5. Account Aging Pattern — `withAgedAccount` (svc#512, 2026-05-22)
+## 5. Account Aging Pattern — `withAgedAccount` (2026-05-22)
 
 For boundary-value tests on delinquency-driven features (Settlement Amount, EPO bands, delinquency sweeps), age a SEED account before the assertion and restore in `finally`.
 
@@ -152,19 +152,19 @@ For boundary-value tests on delinquency-driven features (Settlement Amount, EPO 
 import { ageAccount, restoreAccount, SEED_DELINQUENCY_DAYS } from '@helpers/index.js';
 
 test('CT-A5: Settlement 50% band at 91 days delinquent', async ({ db, page }) => {
-  test.setTimeout(120_000);
-  const SEED_ACCOUNT_PK = 4353; // authorized seed for svc#512 in qa1
+ test.setTimeout(120_000);
+ const SEED_ACCOUNT_PK = 4353; // authorized seed for in qa1
 
-  await ageAccount(db, SEED_ACCOUNT_PK, 91);
-  try {
-    await test.step('Verify 50% discount displayed in modal', async () => {
-      const modal = new SettlementBreakdownModal(page);
-      await modal.open();
-      expect(await modal.getValueByLabel('Discount %')).toBe('50%');
-    });
-  } finally {
-    await restoreAccount(db, SEED_ACCOUNT_PK, SEED_DELINQUENCY_DAYS); // restores to 60
-  }
+ await ageAccount(db, SEED_ACCOUNT_PK, 91);
+ try {
+ await test.step('Verify 50% discount displayed in modal', async  => {
+ const modal = new SettlementBreakdownModal(page);
+ await modal.open;
+ expect(await modal.getValueByLabel('Discount %')).toBe('50%');
+ });
+ } finally {
+ await restoreAccount(db, SEED_ACCOUNT_PK, SEED_DELINQUENCY_DAYS); // restores to 60
+ }
 });
 ```
 
@@ -173,13 +173,13 @@ test('CT-A5: Settlement 50% band at 91 days delinquent', async ({ db, page }) =>
 ```typescript
 import { withAgedAccount } from '@helpers/index.js';
 
-await withAgedAccount(db, 4353, 91, async () => {
-  expect(await modal.getValueByLabel('Discount %')).toBe('50%');
+await withAgedAccount(db, 4353, 91, async  => {
+ expect(await modal.getValueByLabel('Discount %')).toBe('50%');
 });
 ```
 
 **Rules:**
-- Only use on explicitly AUTHORIZED seed accounts (svc#512: 4353/4355/4358/4359 in qa1).
+- Only use on explicitly AUTHORIZED seed accounts (: 4353/4355/4358/4359 in qa1).
 - try/finally restore is MANDATORY — see [[application-lifecycle]] pitfall #45.
 - Do NOT use `withAgedAccount` on arbitrary active accounts — side effects on shared test data.
 - `SEED_DELINQUENCY_DAYS = 60` is the documented restore target — do not restore to 0 or NULL.
@@ -190,10 +190,10 @@ await withAgedAccount(db, 4353, 91, async () => {
 import { uniqueEmail, uniqueName, getWorkerRunId } from '@helpers/index.js';
 
 // Parallel-safe unique data
-const email = uniqueEmail('fresh.member');  // fresh.member_003120_1710583_0@e2e.test
-const name = uniqueName('Test Company');     // Test Company 003120
-const runId = getWorkerRunId();              // 003120
+const email = uniqueEmail('fresh.member'); // fresh.member_003120_1710583_0@e2e.test
+const name = uniqueName('Test Company'); // Test Company 003120
+const runId = getWorkerRunId; // 003120
 
 // In logs for diagnosis
-console.log(`[worker=${getWorkerRunId()}] Creating application...`);
+console.log(`[worker=${getWorkerRunId}] Creating application...`);
 ```

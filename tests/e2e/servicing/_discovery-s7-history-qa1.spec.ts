@@ -25,6 +25,7 @@ test.describe('S7 discovery — History dropdown (Email + PayNearMe), qa1', () =
   test.use({ viewport: { width: 1440, height: 900 } });
 
   test('History → Email and History → PayNearMe content for 4452', async ({ page, testEnv }) => {
+    test.skip(testEnv.env !== 'qa1', 'qa1-only discovery test — skip in non-qa1 environments');
     test.setTimeout(180_000);
     const base = testEnv.servicingUrl.replace(/\/$/, '');
 
@@ -57,6 +58,5 @@ test.describe('S7 discovery — History dropdown (Email + PayNearMe), qa1', () =
       console.log(`[S7][history-paynearme-4452] ${JSON.stringify(dom)}`);
     });
 
-    expect(page.url()).toContain('qa1');
   });
 });

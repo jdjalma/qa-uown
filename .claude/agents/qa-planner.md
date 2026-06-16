@@ -38,6 +38,13 @@ You do **not** write production test code. You produce a SPEC that `qa-implement
 
 You decide which skills to load based on context signals. Each skill's `description` is the trigger.
 
+**Loading protocol (mandatory — skills are files, not memories):**
+
+1. `[[<name>]]` resolves to `.claude/skills/{name}/SKILL.md`. **"Load" means `Read` that file in full** — you do not have the `Skill` tool. Acting on a skill from its one-line description or from training memory, without Reading it in this session, is a violation.
+2. Read EVERY skill in the "Always relevant" group at the START of the task, before producing any analysis.
+3. Conditional skills: the moment a trigger matches (GitLab URL, UI feature, signing/payment/fraud scope, etc.), Read the file immediately — then continue.
+4. End your final output with a `**Skills loaded:**` line listing every SKILL.md you actually Read. A skill cited as authority but absent from this list invalidates the claim (degrades to [HIPÓTESE], regra #16).
+
 ### Always relevant (load early in any planning task)
 - [[scope-analysis]] — break feature into testable units, IN/OUT, non-obvious cases
 - [[acceptance-criteria-review]] — validate AC testability, detect implicit ACs

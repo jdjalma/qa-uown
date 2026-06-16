@@ -41,7 +41,7 @@ Todo report gerado DEVE incluir o disclaimer no topo, logo apos o `# Relatorio d
 
 ## Artifact Rules
 
-- Create/update after EVERY execution -- never skip
+- Create/update after EVERY execution — never skip
 - Never leave PENDING values after successful execution
 - If `.md` exists: preserve Informacoes da Tarefa + Descricao, update everything else
 - If task metadata missing: omit rows (no placeholders)
@@ -50,13 +50,13 @@ Todo report gerado DEVE incluir o disclaimer no topo, logo apos o `# Relatorio d
 ## Scenario Format (CT-XX)
 
 Each scenario MUST have:
-- Header: `### CT-XX` -- only prefix CT and scenario code
-- `**Objetivo:**` -- one sentence, what the scenario validates
-- `**O que e verificado:**` -- system behavior in business language, NOT test code or assertions
-- `#### Como verificar manualmente` -- numbered steps, specific URLs, expected values, SQL/curl/UI navigation
+- Header: `### CT-XX` — only prefix CT and scenario code
+- `**Objetivo:**` — one sentence, what the scenario validates
+- `**O que e verificado:**` — system behavior in business language, NOT test code or assertions
+- `#### Como verificar manualmente` — numbered steps, specific URLs, expected values, SQL/curl/UI navigation
 - Status: `**PASSOU**` or `**FALHOU**` (with `> Falha: {error}`) or `**SKIPPED**` (with `> Motivo:`)
 - `---` separator after every scenario (including last)
-- Values from REAL execution output -- never placeholders
+- Values from REAL execution output — never placeholders
 
 > Full format with examples: [references/template.md](references/template.md)
 
@@ -73,16 +73,16 @@ At least 1 per CT, taken immediately after the key assertion. API-only: no scree
 
 ## Report Location
 
-All reports live in `docs/taskTestingUown/` (gitignored -- local only).
+All reports live in `docs/taskTestingUown/` (gitignored — local only).
 
 | File | Created by |
 |------|-----------|
 | `{testName}-report.md` | `qa-validator` |
 | `{testName}-scenarios.md` | `qa-flow` Fase 2 |
 
-No separate bugs file -- bugs are documented inside `-report.md`.
+No separate bugs file — bugs are documented inside `-report.md`.
 
-## Source-Tagging -- Evidence Provenance
+## Source-Tagging — Evidence Provenance
 
 Toda afirmacao tecnica num report deve carregar **tag de proveniencia**. Operacionaliza regra #10 (conservadora) e regra #16 (reports = history).
 
@@ -104,7 +104,7 @@ Toda afirmacao tecnica num report deve carregar **tag de proveniencia**. Operaci
 ### Where to apply (MANDATORY)
 
 - Every `**Evidencia:**` and `**Causa provavel:**` line in bug reports
-- Every `[CONFIRMADO]` classification -- **without primary source tag, degrades to `[HIPOTESE]`**
+- Every `[CONFIRMADO]` classification — **without primary source tag, degrades to `[HIPOTESE]`**
 - System behavior assertions in `**O que e verificado:**` (when beyond obvious)
 - Every leadPk/accountPk in Evidencias table
 
@@ -116,7 +116,7 @@ Toda afirmacao tecnica num report deve carregar **tag de proveniencia**. Operaci
 | `[HIPOTESE]` | yes | `[OBSERVACAO]` |
 | `[OBSERVACAO]` | yes | (keeps) |
 
-Memory is a dated record -- may be stale. Drift-prone categories in [[volatile-knowledge-registry]] always require primary source tag.
+Memory is a dated record — may be stale. Drift-prone categories in [[volatile-knowledge-registry]] always require primary source tag.
 
 > Full examples: [references/template.md](references/template.md)
 

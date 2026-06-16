@@ -362,9 +362,10 @@ test.describe(
     });
 
     test('S3 — isActive tri-state (true | false | omitted) drives URL + totalElements', async ({
-      page,
+      page, testEnv,
     }) => {
       test.setTimeout(180_000);
+      test.skip(testEnv.env !== 'qa1', 'S3 asserts qa1-specific inactive>active merchant counts — skip in other environments');
 
       const amsBase = await loginToAms(page);
       const merchantsPage = new AmsMerchantsPage(page);
@@ -435,9 +436,10 @@ test.describe(
     });
 
     test('S8 — Users page: getAllAvailableMerchants is lazy-loaded only on Add User click', async ({
-      page,
+      page, testEnv,
     }) => {
       test.setTimeout(120_000);
+      test.skip(testEnv.env !== 'qa1', 'S8 lazy-load behavior verified against qa1 AMS — skip in other environments');
 
       const amsBase = await loginToAms(page);
 

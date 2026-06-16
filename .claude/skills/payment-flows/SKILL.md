@@ -1,10 +1,10 @@
 ---
 name: payment-flows
-description: Use when a test or task touches payment in the UOWN platform -- CC/ACH arrangements, EPO/payoff, allocation strategy, settled-in-full, refund, 13m vs 16m program eligibility, due amounts, CC sweep, receivables. Triggers on file paths like `tests/**/*payment*`, `tests/**/*epo*`, `tests/**/*cc*`, `tests/**/*finalize*`, `src/api/clients/payment-arrangement.client.ts`, `src/api/clients/credit-card.client.ts`, `src/api/clients/svc-payoff.client.ts`, `src/pages/servicing/payment-transaction.page.ts`, or business mentions of "pay credit card today", "make ACH payment", "EPO Only", "Payment/EPO", "payoff amount", "settle in full", "16 meses", "Kornerstone payment".
+description: Use when a test or task touches payment in the UOWN platform — CC/ACH arrangements, EPO/payoff, allocation strategy, settled-in-full, refund, 13m vs 16m program eligibility, due amounts, CC sweep, receivables. Triggers on file paths like `tests/**/*payment*`, `tests/**/*epo*`, `tests/**/*cc*`, `tests/**/*finalize*`, `src/api/clients/payment-arrangement.client.ts`, `src/api/clients/credit-card.client.ts`, `src/api/clients/svc-payoff.client.ts`, `src/pages/servicing/payment-transaction.page.ts`, or business mentions of "pay credit card today", "make ACH payment", "EPO Only", "Payment/EPO", "payoff amount", "settle in full", "16 meses", "Kornerstone payment".
 disable-model-invocation: true
 ---
 
-# Payment Flows -- UOWN domain knowledge
+# Payment Flows — UOWN domain knowledge
 
 > Tudo que um teste de payment precisa saber. Para tabelas detalhadas de endpoints, DB columns, enums, e activity log patterns, ver [references/endpoints-tables.md](references/endpoints-tables.md).
 
@@ -25,15 +25,15 @@ NAO aplicar para: signing (use `gowsign-knowledge`), fraud-vendor (use `fraud-ve
 
 ```
 UW_APPROVED -> CC_AUTH_PASSED -> CONTRACT_CREATED -> SIGNED -> SETTLED -> FUNDING -> FUNDED -> ACTIVE
-                                                                                        |
-                                                                                     SETTLED_IN_FULL
+ |
+ SETTLED_IN_FULL
 ```
 
 - `CC_AUTH_PASSED`: CC + bank info submitted via `authorizeCreditCard`. E-sign becomes active.
 - `FUNDED`: becomes `uown_sv_account`. Receivables created. All payments via `/uown/svc/...`.
 - `SETTLED_IN_FULL`: payoff completed. Sweep email runs.
 
-**Rule: no servicing payment before FUNDED** -- `makeCreditCardPayments` on a lead still in `CONTRACT_CREATED` returns 400.
+**Rule: no servicing payment before FUNDED** — `makeCreditCardPayments` on a lead still in `CONTRACT_CREATED` returns 400.
 
 ## Canonical setup sequence
 
@@ -66,7 +66,7 @@ Calls `ensureMerchantReady` (rule 12), fills bank info for Kornerstone, avoids t
 
 - **Page object:** `PaymentHistoryPage` (`src/pages/servicing/payment-history.page.ts`)
 - **Icone de reverse:** `svg[data-icon="arrow-rotate-left"]` (NAO `.fa-undo`)
-- **`reverseReason` e React Select** (`<div>`, NAO `<select>` nativo): selecionar via clique no controle + clique na opcao. `selectOption()` NAO funciona. Confirmar `tagName` via `browser_evaluate` antes de qualquer assert.
+- **`reverseReason` e React Select** (`<div>`, NAO `<select>` nativo): selecionar via clique no controle + clique na opcao. `selectOption` NAO funciona. Confirmar `tagName` via `browser_evaluate` antes de qualquer assert.
 - **Opcoes do dropdown (texto exato no DOM):** "Reverse", "Fully Refund", "**Partially** Refund" (NAO "Partial Refund" - o enum `ReverseReason.PARTIAL_REFUND` tem valor de texto errado)
 - **Campo amount (`#paymentAmount`)** visivel APENAS quando "Partially Refund" e selecionado
 - **Activity log:** refund vai para `uown_sv_activity_log` (acao de Servicing), NAO `uown_los_lead_notes` (LOS) - mesma tabela do Move Due Date
@@ -94,7 +94,7 @@ Cross-links: application-lifecycle pitfalls #79 (ACH async) e #80 (overpayment a
 
 Criar um **Payment Arrangement** (parcelamento) pelo modal Make Payment do Servicing. Diferente do Make Payment one-shot acima: aqui o checkbox "Payment Arrangement" abre Start Date / End Date / Frequency + tabela de parcelas auto-populada.
 
-- **Page objects:** `ServicingBasePage.makeCcPaymentArrangement()` (CC) e `ServicingBasePage.makeAchPaymentArrangement()` (ACH, criado 2026-06-01). Schedule comum via privado `fillArrangementSchedule()`.
+- **Page objects:** `ServicingBasePage.makeCcPaymentArrangement` (CC) e `ServicingBasePage.makeAchPaymentArrangement` (ACH, criado 2026-06-01). Schedule comum via privado `fillArrangementSchedule`.
 
 - **Arrangement Type e React Select UI EXPLICITO, NAO backend-derivado.** O modal tem `label[for="paymentArrangementType"]` com opcoes `NORMAL` / `SETTLEMENT`. O JSDoc antigo de `makeCcPaymentArrangement` (2026-03-17) dizia "UI does NOT expose an explicit arrangementType field; backend derives it from amount" — esse comentario estava ERRADO/desatualizado. Selector: `SELECTORS.arrangementTypeDropdown` (label-scoped `label[for=paymentArrangementType] ~ div[class*=control]`). Confirmado via DOM-first dev3 2026-06-01.
 
@@ -105,9 +105,9 @@ Criar um **Payment Arrangement** (parcelamento) pelo modal Make Payment do Servi
 - **Auto-distribuicao:** `totalPaymentAmount` (input editavel, auto-populado do schedule) e distribuido automaticamente pelas parcelas geradas. Com o date picker corretamente preenchido via native setter, `today → today+28` Weekly gera **5 parcelas** (F-007/S7 RESOLVIDO 2026-06-01 - nao era bug de produto, era o date picker ignorando o texto).
 
 - **ACH vs CC (estado pos-submit):**
-  - **ACH** = arrangement `status=NOT_STARTED` + `uown_sv_achpayment` parcelas `PENDING` (ASSINCRONO — promove a `PICKED_TO_SEND` so pos-sweep diario). DB-confirmado dev3: arrangement pk77 acct138.
-  - **CC single-installment** = SINCRONO, arrangement `status=SUCCESS` na mesma request; SALE transaction criada com `payment_arrangement_pk` setado. DB-confirmado dev3: arrangement pk72 acct141 → SALE APPROVED.
-  - **CC multi-installment** = arrangement fica em **`IN_PROGRESS`**, NAO `SUCCESS`. So a parcela de `posting_date = today` processa sincronamente (APPROVED); as parcelas futuras (`posting_date > today`) ficam `PENDING` ate o posting date chegar. **Comportamento CORRETO do produto** - NAO bug. `simulateCcSweepForArrangement` (date-gated `posting_date <= CURRENT_DATE`) NAO destrava as futuras. Em env sem processor (dev3): usar `db.approveAllPendingCcSalesForArrangement(arrangementPk)` (sem date gate, stand-in autorizado Exception 3, mesmo padrao S4/S5) + `recalculateArrangementStatus`. DB-confirmado dev3: arrangement pk100 com 5 SALEs (pk3328 APPROVED + pk3329-3332 PENDING). Cross-link: application-lifecycle pitfall #86.
+ - **ACH** = arrangement `status=NOT_STARTED` + `uown_sv_achpayment` parcelas `PENDING` (ASSINCRONO — promove a `PICKED_TO_SEND` so pos-sweep diario). DB-confirmado dev3: arrangement pk77 acct138.
+ - **CC single-installment** = SINCRONO, arrangement `status=SUCCESS` na mesma request; SALE transaction criada com `payment_arrangement_pk` setado. DB-confirmado dev3: arrangement pk72 acct141 → SALE APPROVED.
+ - **CC multi-installment** = arrangement fica em **`IN_PROGRESS`**, NAO `SUCCESS`. So a parcela de `posting_date = today` processa sincronamente (APPROVED); as parcelas futuras (`posting_date > today`) ficam `PENDING` ate o posting date chegar. **Comportamento CORRETO do produto** - NAO bug. `simulateCcSweepForArrangement` (date-gated `posting_date <= CURRENT_DATE`) NAO destrava as futuras. Em env sem processor (dev3): usar `db.approveAllPendingCcSalesForArrangement(arrangementPk)` (sem date gate, stand-in autorizado Exception 3, mesmo padrao S4/S5) + `recalculateArrangementStatus`. DB-confirmado dev3: arrangement pk100 com 5 SALEs (pk3328 APPROVED + pk3329-3332 PENDING). Cross-link: application-lifecycle pitfall #86.
 
 Cross-links: application-lifecycle pitfalls #82 (Arrangement Type UI explicito), #85 (date picker native setter), #86 (CC multi-installment IN_PROGRESS). Page object catalog em [[page-object-pattern]]. Helper catalog em [[helpers-catalog]].
 
@@ -173,7 +173,7 @@ Cross-links: application-lifecycle pitfalls #87-#90; [[email-templates-catalog]]
 
 ## Rating letter em Payment Arrangement (CORRIGIDO dev3 2026-06-01)
 
-**`uown_sv_account.rating='P'` (Promise to Pay) E PERSISTIDO na criacao do arranjo** - tanto ACH quanto CC. Isto **corrige** business-rule §54, que documentava como "BUG CONHECIDO (Task #446)" a NAO-persistencia do campo. DB-confirmado em dev3 (2026-06-01): o campo PERSISTE corretamente. §54 estava documentando o bug de forma incorreta.
+**`uown_sv_account.rating='P'` (Promise to Pay) E PERSISTIDO na criacao do arranjo** - tanto ACH quanto CC. Isto **corrige** business-rule §54, que documentava como "BUG CONHECIDO" a NAO-persistencia do campo. DB-confirmado em dev3 (2026-06-01): o campo PERSISTE corretamente. §54 estava documentando o bug de forma incorreta.
 
 - **Criacao do arranjo (ACH e CC):** `rating='P'` gravado em `uown_sv_account`; `previous_rating` salvo no arranjo para auditoria; auto-pay existente preservado.
 - **CC arrangement SUCCESS:** `rating` resetado para `null` + autopay re-ligado. Isto e **comportamento correto de negocio** (conta voltou ao normal apos quitar), NAO bug.
@@ -185,9 +185,9 @@ Cross-links: application-lifecycle pitfalls #87-#90; [[email-templates-catalog]]
 
 ```typescript
 enum AllocationStrategy {
-  DEFAULT = 'Payment/EPO',          // pays regular + EPO together
-  REGULAR_RECEIVABLES = 'Payment',   // regular receivables only
-  EPO_ONLY = 'EPO Only',             // EPO only
+ DEFAULT = 'Payment/EPO', // pays regular + EPO together
+ REGULAR_RECEIVABLES = 'Payment', // regular receivables only
+ EPO_ONLY = 'EPO Only', // EPO only
 }
 ```
 
@@ -197,13 +197,13 @@ enum AllocationStrategy {
 
 1. **`chargeFee=true`** mandatory in every CC transaction (via builder, not literal)
 2. **`TEST_CARDS.MASTERCARD_APPROVED`** (BIN 5500) for CC payments; VISA rolled back in qa
-3. **Float assertions:** use `toBeCloseTo` or `Number()` comparison, never `toBe` for monetary values
+3. **Float assertions:** use `toBeCloseTo` or `Number` comparison, never `toBe` for monetary values
 4. **Activity log mandatory** for every payment action (CLAUDE.md rule 13)
 5. **UI-first** when feature has a portal screen (CLAUDE.md rule 14)
-6. **`accountPk` only after FUNDED** -- distinct from `leadPk`
-7. **16m eligibility is merchant-config, not brand** -- any merchant with `term_in_months=16 AND is_active=true`
+6. **`accountPk` only after FUNDED** — distinct from `leadPk`
+7. **16m eligibility is merchant-config, not brand** — any merchant with `term_in_months=16 AND is_active=true`
 8. **Move Due Date cap:** WEEKLY=3d, others=7d. Safe universal offset=3
-9. **`getMissingFields` before `submitApplication`** -- sets `merchantProgramPk`, without it 400
+9. **`getMissingFields` before `submitApplication`** — sets `merchantProgramPk`, without it 400
 
 ## Pitfalls
 
@@ -215,12 +215,12 @@ enum AllocationStrategy {
 | 4 | Missing `chargeFee=true` | Use `buildCcArrangementBody` builder |
 | 5 | SETTLED_IN_FULL via direct UPDATE | Must use `makeCreditCardPayments(SETTLEMENT)` for sweep to work |
 | 6 | Allocation strategy moved from CC Transactions | Now in Payment History "Update Payment" modal |
-| 7 | Float in assertions | Use `toBeCloseTo(b, 2)` or `Number()` |
+| 7 | Float in assertions | Use `toBeCloseTo(b, 2)` or `Number` |
 | 8 | CC sweep row not at pk=1 | Use `ORDER BY pk DESC LIMIT 1` |
 | 9 | Confusing accountPk/leadPk/leadUuid | leadPk for LOS, accountPk for SVC (only after FUNDED) |
 | 10 | Missing `getMissingFields` call | Required before `submitApplication` |
 | 11 | Refund procurado em `/payment-transaction` (sem icone reverse) | Usar `/payment-history/{accountPk}` + `PaymentHistoryPage` (app-lifecycle #77) |
-| 12 | `selectOption()` no `reverseReason` (React Select) no-op | Clique no controle + clique na opcao "Partially Refund" (app-lifecycle #78) |
+| 12 | `selectOption` no `reverseReason` (React Select) no-op | Clique no controle + clique na opcao "Partially Refund" (app-lifecycle #78) |
 | 13 | Assert de ACH Make Payment tima out a 60s apesar de toast de sucesso | ACH e assincrono: assertir `uown_sv_achpayment WHERE status='PENDING'` + `ADDED : ACHPayment` log; NUNCA `uown_sv_payment` (so pos-sweep 19:00) (app-lifecycle #79) |
 | 14 | Teste assertando rejeicao de overpayment no modal Make Payment falha | Modal NAO valida teto de valor - overpayment e aceito de proposito; assertir comportamento positivo (payment criado, CC APPROVED) (app-lifecycle #80) |
 | 15 | Codigo/JSDoc assume Arrangement Type backend-derivado do amount | Arrangement Type e React Select UI explicito (`label[for=paymentArrangementType]`, NORMAL/SETTLEMENT). Selecionar via `SELECTORS.arrangementTypeDropdown`. JSDoc antigo de `makeCcPaymentArrangement` (2026-03-17) estava errado (app-lifecycle #82) |
@@ -253,9 +253,9 @@ enum AllocationStrategy {
 
 ## Cross-links
 
-- [[application-lifecycle]] -- pitfall #11 (FK violation), full state machine
-- [[common-operations]] -- `buildCcPaymentDetails`, reusable patterns
-- [[bug-classification]] -- float divergence classification
-- [[ssn-test-modalities]] -- 16m SSN modalities
-- [[merchant-preflight]] -- `ensureMerchantReady` before application creation
-- [[activity-log-validation]] -- assertion templates
+- [[application-lifecycle]] — pitfall #11 (FK violation), full state machine
+- [[common-operations]] — `buildCcPaymentDetails`, reusable patterns
+- [[bug-classification]] — float divergence classification
+- [[ssn-test-modalities]] — 16m SSN modalities
+- [[merchant-preflight]] — `ensureMerchantReady` before application creation
+- [[activity-log-validation]] — assertion templates

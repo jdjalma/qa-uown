@@ -27,6 +27,7 @@ test.describe('S7 discovery — Customer Portal /documents via SPA nav (qa1)', (
 
   test('In-app navigate to Documents after OTP login (4452)', async ({ page, testEnv, db }) => {
     test.setTimeout(240_000);
+    test.skip(testEnv.env !== 'qa1', 'S7 discovery uses hardcoded qa1 account 4452 OTP email — skip in other environments');
     const portal = new CustomerPortalOverviewPage(page);
 
     await page.goto(testEnv.websiteUrl, { waitUntil: 'domcontentloaded' });

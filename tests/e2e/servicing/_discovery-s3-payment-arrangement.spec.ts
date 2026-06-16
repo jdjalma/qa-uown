@@ -29,6 +29,7 @@ test.describe('S3 discovery — Payment Arrangement lifecycle (qa1, account 4452
 
   test('Visualization: /payment-arrangement display page — columns, rows, expand sub-table, Edit/Cancel affordance', async ({ page, testEnv }) => {
     test.setTimeout(180_000);
+    test.skip(testEnv.env !== 'qa1', 'S3 discovery uses hardcoded qa1 account 4452 — skip in other environments');
     const paPage = new PaymentArrangementPage(page);
 
     await test.step('Navigate to /payment-arrangement/4452 (auth via storageState)', async () => {

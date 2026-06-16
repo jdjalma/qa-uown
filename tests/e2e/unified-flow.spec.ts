@@ -192,7 +192,9 @@ test.describe(`Unified Flow - ${testData.state}/${testData.merchant}`, { tag: te
         return;
       }
 
-      // Navigate back to origination portal customer page (UI-driven, preserves auth)
+      // The contract/e-sign flow ends on the secure-* domain ("Thank You!" page) —
+      // return to the origination portal before using quick search (mirrors tests/ci variant).
+      await loginToPortalWithOptions(page, env.originationUrl, env);
       const customerPage = await navigateToOriginationCustomer(page, ctx.leadPk);
 
       // Click "Get Document Status" to trigger backend sync (Java: shortcut action)
@@ -434,7 +436,12 @@ test.describe(`Unified Flow - ${testData.state}/${testData.merchant}`, { tag: te
       const card = TEST_CARDS.VISA_APPROVED;
       const billing = { address: address.street, city: address.city, state: testData.state, zip: address.zipCode };
       const servicingCustomer = new ServicingCustomerPage(page);
-      await servicingCustomer.makeCcPayment(testData.ccPaymentDate, testData.ccPaymentAmount, buildCcPaymentDetails(card, billing));
+      // Cardholder name is required by the one-time CC form (sandbox/stg+) — mirrors tests/ci variant
+      await servicingCustomer.makeCcPayment(testData.ccPaymentDate, testData.ccPaymentAmount, {
+        ...buildCcPaymentDetails(card, billing),
+        firstName: applicant.firstName,
+        lastName: applicant.lastName,
+      });
       ctx.ccAdded++;
     });
 
@@ -443,7 +450,11 @@ test.describe(`Unified Flow - ${testData.state}/${testData.merchant}`, { tag: te
       const card = TEST_CARDS.VISA_APPROVED;
       const billing = { address: address.street, city: address.city, state: testData.state, zip: address.zipCode };
       const servicingCustomer = new ServicingCustomerPage(page);
-      await servicingCustomer.makeCcPayment('0', testData.ccPaymentAmount, buildCcPaymentDetails(card, billing, AllocationStrategy.REGULAR_RECEIVABLES));
+      await servicingCustomer.makeCcPayment('0', testData.ccPaymentAmount, {
+        ...buildCcPaymentDetails(card, billing, AllocationStrategy.REGULAR_RECEIVABLES),
+        firstName: applicant.firstName,
+        lastName: applicant.lastName,
+      });
       ctx.ccAdded++;
     });
 

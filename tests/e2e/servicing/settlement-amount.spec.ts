@@ -404,6 +404,7 @@ test.describe(
       });
 
       test('B2 — rating C: $0.00, no offer', async ({ page, api, db, testEnv }) => {
+        test.skip(testEnv.env !== 'qa1', 'uses qa1 fixture account 1185 (rating C) — skip in other environments');
         const fixture = FIXTURES.B2_ratingC;
         await gotoAccount(page, testEnv.servicingUrl, fixture.accountPk);
         const oracle = await readOracle(api, db, fixture.accountPk);
@@ -411,6 +412,7 @@ test.describe(
       });
 
       test('B4 — non-ACTIVE (PAID_OUT): $0.00', async ({ page, api, db, testEnv }) => {
+        test.skip(testEnv.env !== 'qa1', 'uses qa1 fixture account 107 (PAID_OUT) — skip in other environments');
         const fixture = FIXTURES.B4_paidOut;
         await gotoAccount(page, testEnv.servicingUrl, fixture.accountPk);
         const oracle = await readOracle(api, db, fixture.accountPk);
@@ -493,6 +495,7 @@ test.describe(
     // while modal renders without (`$1094.65`). Both formats are accepted
     // here — AC#2 mandates value equivalence, not formatting parity.
     test('C5 — Settlement Amount matches Delinquency150DayOfferEmail balance @priority-high @ac-2', async ({ page, testEnv }) => {
+      test.skip(testEnv.env !== 'qa1', 'uses qa1 fixture account 200 with hardcoded oracle $1094.65 — skip in other environments');
       const fixture = FIXTURES.A4_happy; // acc 200, 1423d
       await gotoAccount(page, testEnv.servicingUrl, fixture.accountPk);
 
@@ -517,6 +520,7 @@ test.describe(
     });
 
     test('C3 — Protection Plan Fee line present (acc 3755)', async ({ page, testEnv }) => {
+      test.skip(testEnv.env !== 'qa1', 'uses qa1 fixture account 3755 (PP fee $110) — skip in other environments');
       const fixture = FIXTURES.C3_pp;
       await gotoAccount(page, testEnv.servicingUrl, fixture.accountPk);
       const modal = new SettlementBreakdownModal(page);

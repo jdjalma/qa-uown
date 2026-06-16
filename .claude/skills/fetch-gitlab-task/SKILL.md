@@ -34,7 +34,7 @@ https://{host}/{project_path}/-/issues/{iid}
 
 ```bash
 curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-  "https://{host}/api/v4/projects/{encoded_path}/issues/{iid}"
+ "https://{host}/api/v4/projects/{encoded_path}/issues/{iid}"
 ```
 
 Extraia:
@@ -51,7 +51,7 @@ Extraia:
 
 ```bash
 curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-  "https://{host}/api/v4/projects/{encoded_path}/issues/{iid}/notes?sort=asc"
+ "https://{host}/api/v4/projects/{encoded_path}/issues/{iid}/notes?sort=asc"
 ```
 
 Filtre `system=false` — só comentários humanos.

@@ -72,6 +72,7 @@ test.describe('Website OTP Login — SVC-460 regression', { tag: splitTags(SMOKE
   });
 
   test('US-1: happy-path email login generates correct activity logs', async ({ page, testEnv, db }) => {
+    test.skip(testEnv.env !== 'qa2', 'US-1 uses qa2 test account fixture and OTP index — skip in other environments');
     const websitePage = new WebsiteBasePage(page);
     const otpSincePk = await db.getMaxLoginAttemptPk(TEST_ACCOUNT.email);
     const logSincePk = await db.getMaxActivityLogPk(TEST_ACCOUNT.accountPk);

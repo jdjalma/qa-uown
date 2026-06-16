@@ -125,6 +125,7 @@ async function setupFreshLeadWithCompleteUrl(
     merchant: MERCHANT_KEY,
     orderTotal: ORDER_TOTAL,
     orderDescription: `recording-link-#1291 ${state}`,
+    uniqueAddress: true, // dodge static CA address blacklist (654 Sunset Blvd/90028, pk:2165)
   });
 
   // Each call gets its own ctx-like scratch — but createPreQualifiedApplication

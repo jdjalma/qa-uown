@@ -228,7 +228,7 @@ ApiResponse<T> = { ok, status, statusText, headers, body: T, raw }
 - `AccountClient` — cancelAccount, getFrequencyChanges, getDueDateMoves, moveDueDatesByDays
 - `MerchantClient` — getMerchantsByRefCode, updateMerchants, etc.
 - `SvcContactClient` / `SvcPhoneClient` / `SvcEmailClient` / `SvcPayoffClient` — servicing contact ops
-- `LosPartnerAuthClient` / `LosPartnerApplicationClient` — Bearer token issuance e partner API (Task #482)
+- `LosPartnerAuthClient` / `LosPartnerApplicationClient` — Bearer token issuance e partner API
 
 #### GET com Content-Type header
 

@@ -2,16 +2,16 @@
 
 > Extracted from SKILL.md. This is the detailed per-client catalog. For patterns and conventions, see [../SKILL.md](../SKILL.md).
 
-## AccountClient — methods (Task #502, #442, #448, #490)
+## AccountClient — methods
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
 | `getNextReceivable` | `getNextReceivable(accountPk)` | GET `/uown/svc/getNextReceivable/{pk}` — returns `SvcReceivableResponse` |
 | `getDueDateMoves` | `getDueDateMoves(accountPk, page?, size?)` | GET `/uown/svc/accounts/{pk}/due-date-moves` — returns `DueDateMovesPage` |
 | `moveDueDatesByDays` | `moveDueDatesByDays(accountPk, moveNumberOfDays)` | POST `/uown/svc/moveDueDatesByDays/{pk}` — moves future due dates by N days; returns `DueDateMoveRecord` |
-| `adjustNextDueDate` | `adjustNextDueDate(accountPk, body)` | POST `/uown/tms/v1/accounts/{pk}/next-due-date/adjustments` — TMS/IVR endpoint; uses **TMS API key** (`env.tmsApiKey`); returns `DueDateAdjustmentResponse` (Task #448) |
-| `sendPodiumLink` | `sendPodiumLink(accountPk)` | POST `/uown/svc/accounts/{pk}/podium-link` — sends Podium review invite; returns `PodiumInvitationResponse` (Task #442) |
-| `sendCustomerPortalLink` | `sendCustomerPortalLink(accountPk)` | POST `/uown/svc/sendCustomerPortalLink/{accountPk}` — sends Customer Portal Reminder email + SMS; returns `PortalInvitationResponse` (Task #490) |
+| `adjustNextDueDate` | `adjustNextDueDate(accountPk, body)` | POST `/uown/tms/v1/accounts/{pk}/next-due-date/adjustments` — TMS/IVR endpoint; uses **TMS API key** (`env.tmsApiKey`); returns `DueDateAdjustmentResponse` |
+| `sendPodiumLink` | `sendPodiumLink(accountPk)` | POST `/uown/svc/accounts/{pk}/podium-link` — sends Podium review invite; returns `PodiumInvitationResponse` |
+| `sendCustomerPortalLink` | `sendCustomerPortalLink(accountPk)` | POST `/uown/svc/sendCustomerPortalLink/{accountPk}` — sends Customer Portal Reminder email + SMS; returns `PortalInvitationResponse` |
 
 **Response interfaces (`src/api/responses/account.response.ts`):**
 
@@ -20,9 +20,9 @@
 | `SvcReceivableResponse` | `pk`, `accountPk`, `dueDate`, `amount`, `status`, ... |
 | `DueDateMoveRecord` | `pk`, `accountPk`, `moveNumberOfDays`, `isFpdChange`, `agent`, `rowCreatedTimestamp`, `nextReceivable` |
 | `DueDateMovesPage` | `content: DueDateMoveRecord[]`, `totalElements`, `totalPages`, `number`, `size` |
-| `NextDueDateAdjustmentBody` | `dueDate: string \| null`, `offset: number` (Task #448) |
-| `DueDateAdjustmentResponse` | `accountPk: number`, `originalDueDate: string`, `newDueDate: string` (Task #448) |
-| `PortalInvitationResponse` | `message?`, `errorMessage?` (Task #490) |
+| `NextDueDateAdjustmentBody` | `dueDate: string \| null`, `offset: number` |
+| `DueDateAdjustmentResponse` | `accountPk: number`, `originalDueDate: string`, `newDueDate: string` |
+| `PortalInvitationResponse` | `message?`, `errorMessage?` |
 
 ## MerchantClient — program activation/deactivation scheduling (2026-04-22)
 
@@ -34,11 +34,11 @@
 - DTO `ProgramInfo` has NO `merchantPk` field — merchant association is separate (use `addProgramsToMerchant(merchantPk, [programPk])`)
 - Backend **always overwrites** `active` flag via `ProgramActivationUtils.isActiveOnDate(activationDate, deactivationDate, today)` — dates are Source of Truth
 - Response is `MerchantProgram` wrapper: access via `response.body.programInfo.*` (not flat)
-- Validation: `activationDate > deactivationDate` -> 400 `"activationDate must be before or equal to deactivationDate"` (backend actually returns 500 in qa2 -- [CONFIRMADO] BUG-01)
+- Validation: `activationDate > deactivationDate` -> 400 `"activationDate must be before or equal to deactivationDate"` (backend actually returns 500 in qa2 — [CONFIRMADO] BUG-01)
 - `states` and `allowedFrequencyOverride` are comma-separated String in Java, not arrays
 
 **Request body:** `ProgramInfoBody` in `src/api/bodies/program-info.body.ts` + `buildProgramInfoBody(overrides)` builder
-**Response:** `ProgramInfo` in `src/api/responses/merchant.response.ts` -- extended with `activationDate`, `deactivationDate` + 16 financial fields (all optional, backward-compatible)
+**Response:** `ProgramInfo` in `src/api/responses/merchant.response.ts` — extended with `activationDate`, `deactivationDate` + 16 financial fields (all optional, backward-compatible)
 
 **Related scheduled task:**
 
@@ -46,7 +46,7 @@
 |----------|-------|
 | `api.scheduledTask.triggerScheduledTask('ProgramActivationDeactivationSweep')` | Canonical task name is `ProgramActivationDeactivationSweep` (NOT `merchantProgramActivation...` as initial scope assumed). Reconciles `is_active` based on dates via `MerchantProgramRepo.reconcileMerchantProgramActiveFlags` |
 
-## MerchantClient — error log methods (Task #1240)
+## MerchantClient — error log methods
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
@@ -62,7 +62,7 @@
 | `MerchantApiErrorLog` | same as above minus `first5Cc`/`last4Cc` |
 | `MerchantApiErrorLogSearchResults` | `logs: MerchantApiErrorLog[]`, `totalCount`, `moreResults` |
 
-## ApplicationClient — authorizeCreditCard (Task #1240) + getMissingFields flow (Task #1242)
+## ApplicationClient — authorizeCreditCard + getMissingFields flow
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
@@ -78,7 +78,7 @@
 // 1. sendApplication -> get redirectUrl -> extract planId + shortCode
 const sendRes = await api.application.sendApplication(merchant, applicant, order);
 const option13 = sendRes.body!.paymentDetailsList!.find(p => p.termInMonths === 13);
-const planId = extractPlanId(option13!.redirectUrl!);     // e.g., 'WK13'
+const planId = extractPlanId(option13!.redirectUrl!); // e.g., 'WK13'
 const shortCode = extractShortCode(option13!.redirectUrl!); // e.g., 'ABC123'
 
 // 2. getMissingFields — REQUIRED: sets merchantProgramPk on the lead
@@ -86,13 +86,13 @@ await api.application.getMissingFields(shortCode, { planId });
 
 // 3. submitApplication — planId selects the payment option
 await api.application.submitApplication(leadPk, firstName, lastName, {
-  planId, ccNumber: card.number, cvc: card.cvv, ccType: 'VISA', ccExp: card.expirationDate,
+ planId, ccNumber: card.number, cvc: card.cvv, ccType: 'VISA', ccExp: card.expirationDate,
 });
 ```
 
 **CC last name match:** `CCCheckService.checkCCLastNameMatch` validates CC cardholder's last name matches customer's last name from `sendApplication`. Always reuse exact `firstName`/`lastName` from applicant data.
 
-## BankAccountClient — bank account management (Task #497)
+## BankAccountClient — bank account management
 
 Location: `src/api/clients/bank-account.client.ts`. Host: `svc`. Fixture: `api.bankAccount`.
 
@@ -106,16 +106,16 @@ Location: `src/api/clients/bank-account.client.ts`. Host: `svc`. Fixture: `api.b
 
 Bodies: `src/api/bodies/bank-account.body.ts` | Responses: `src/api/responses/bank-account.response.ts`
 
-## ScheduledTaskClient — token sweep methods (Task #502) + getScheduledTaskByName (Task #491) + resumeScheduledTask (Task #505)
+## ScheduledTaskClient — token sweep methods + getScheduledTaskByName + resumeScheduledTask
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `refreshKountAccessTokenSweep` | `refreshKountAccessTokenSweep(): Promise<ApiResponse<unknown>>` | POST `/uown/svc/refreshKountAccessTokenSweep` — triggers Kount token refresh sweep |
-| `refreshGdsAccessTokenSweep` | `refreshGdsAccessTokenSweep(): Promise<ApiResponse<unknown>>` | POST `/uown/svc/refreshGdsAccessTokenSweep` — triggers GDS token refresh sweep |
+| `refreshKountAccessTokenSweep` | `refreshKountAccessTokenSweep: Promise<ApiResponse<unknown>>` | POST `/uown/svc/refreshKountAccessTokenSweep` — triggers Kount token refresh sweep |
+| `refreshGdsAccessTokenSweep` | `refreshGdsAccessTokenSweep: Promise<ApiResponse<unknown>>` | POST `/uown/svc/refreshGdsAccessTokenSweep` — triggers GDS token refresh sweep |
 | `getScheduledTaskByName` | `getScheduledTaskByName(taskName)` | GET `/uown/svc/getScheduledTaskByName/{taskName}` — returns `ScheduledTaskMetadataResponseBody` |
-| `resumeScheduledTask` | `resumeScheduledTask(taskName: string): Promise<ApiResponse<unknown>>` | POST `/uown/svc/resumeScheduledTask/{taskName}` — resumes a paused scheduled task by name (Task #505) |
+| `resumeScheduledTask` | `resumeScheduledTask(taskName: string): Promise<ApiResponse<unknown>>` | POST `/uown/svc/resumeScheduledTask/{taskName}` — resumes a paused scheduled task by name |
 
-> **Pitfall (Task #502 CT-06):** The `uown_scheduled_task` table columns are `scheduled_task_name` and `cron_trigger` -- NOT `name` and `cron_expression`. Use these exact column names in any raw SQL against this table.
+> **Pitfall (CT-06):** The `uown_scheduled_task` table columns are `scheduled_task_name` and `cron_trigger` — NOT `name` and `cron_expression`. Use these exact column names in any raw SQL against this table.
 
 **Response interface:**
 
@@ -123,7 +123,7 @@ Bodies: `src/api/bodies/bank-account.body.ts` | Responses: `src/api/responses/ba
 |-----------|--------|
 | `ScheduledTaskMetadataResponseBody` | `scheduledTaskName`, `cronTrigger`, `sqlToPickAccounts`, `isActive`, `templateName`, plus other backend fields. **Backend Jackson serialization uses camelCase**, not snake_case. |
 
-## SvcPhoneClient — opt-out / DNC / DNT flags (Task #505)
+## SvcPhoneClient — opt-out / DNC / DNT flags
 
 Location: `src/api/clients/svc-phone.client.ts`. Fixture: `api.svcPhone`.
 
@@ -150,7 +150,7 @@ Location: `src/api/clients/svc-phone.client.ts`. Fixture: `api.svcPhone`.
 
 **Notes:** `optOutAi`/`optOutAiReason` are `null` until backend R1.50.0 deploys (Flyway migration V20260318174113).
 
-## SvcContactClient — phone contact info updates (Task #146)
+## SvcContactClient — phone contact info updates
 
 Location: `src/api/clients/svc-contact.client.ts`. Fixture: `api.svcContact`.
 
@@ -169,20 +169,20 @@ Location: `src/api/clients/svc-contact.client.ts`. Fixture: `api.svcContact`.
 | `CreateOrUpdateContactInfoBody` | `accountPk: number`, `phones?: ContactPhoneInfo[]`, `emails?: ContactEmailInfo[]` |
 
 **Notes:**
-- Field names use **capital K** -- `phonePK`, `customerPK`, `emailPK` (not `phonePk`)
+- Field names use **capital K** — `phonePK`, `customerPK`, `emailPK` (not `phonePk`)
 - `phoneNumber` is `number` (Java Long), not `string`
-- Fix confirmed (Task #146): `sendVerificationCode` returns 200 after a phone is saved via `createOrUpdateContactInfo`
+- Fix confirmed: `sendVerificationCode` returns 200 after a phone is saved via `createOrUpdateContactInfo`
 
-## CustomersClient — customer search v1/v2 with Origination fallback (Task #510)
+## CustomersClient — customer search v1/v2 with Origination fallback
 
 Location: `src/api/clients/customers.client.ts`. Host: TMS (via private `postTms` helper). Fixture: `api.customers`.
 
-Auth: uses `FIVE9_TMS_API_KEY` via `postTms` -- same pattern as `AccountClient.adjustNextDueDate`.
+Auth: uses `FIVE9_TMS_API_KEY` via `postTms` — same pattern as `AccountClient.adjustNextDueDate`.
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `searchCustomersV2` | `searchCustomersV2(body: FindCustomerBody)` | POST `/uown/tms/v2/customers/search` -- new endpoint; returns `FindCustomerResponse`; includes `customerAccountDomain` (`'SERVICING'` or `'ORIGINATION'`) for fallback routing |
-| `searchAccountsV1` | `searchAccountsV1(body: FindCustomerBody)` | POST `/uown/tms/v1/accounts/search` -- **@Deprecated** legacy endpoint; returns `LegacyAccountSearchResponse` (opaque `Record<string, unknown>`) |
+| `searchCustomersV2` | `searchCustomersV2(body: FindCustomerBody)` | POST `/uown/tms/v2/customers/search` — new endpoint; returns `FindCustomerResponse`; includes `customerAccountDomain` (`'SERVICING'` or `'ORIGINATION'`) for fallback routing |
+| `searchAccountsV1` | `searchAccountsV1(body: FindCustomerBody)` | POST `/uown/tms/v1/accounts/search` — **@Deprecated** legacy endpoint; returns `LegacyAccountSearchResponse` (opaque `Record<string, unknown>`) |
 
 **When to use:** Use `searchCustomersV2` for all new tests. Use `searchAccountsV1` only to validate backward-compatibility or to test the deprecation boundary explicitly.
 
@@ -190,7 +190,7 @@ Auth: uses `FIVE9_TMS_API_KEY` via `postTms` -- same pattern as `AccountClient.a
 
 | Interface | Fields |
 |-----------|--------|
-| `FindCustomerBody` | `phone?: string`, `last4SSN?: string`, `dob?: string` -- all optional; at least one must be provided |
+| `FindCustomerBody` | `phone?: string`, `last4SSN?: string`, `dob?: string` — all optional; at least one must be provided |
 
 **Response interfaces (`src/api/responses/customer.response.ts`):**
 
@@ -198,18 +198,18 @@ Auth: uses `FIVE9_TMS_API_KEY` via `postTms` -- same pattern as `AccountClient.a
 |-----------|--------|
 | `CustomerAccountDomain` | `'SERVICING' \| 'ORIGINATION'` |
 | `FindCustomerResponse` | `leadPk`, `leadStatus`, `customerAccountDomain: CustomerAccountDomain`, `profile?: CustomerProfile`, plus backend-added fields |
-| `CustomerProfile` | permissive shape with `[key: string]: unknown` escape hatch -- fields vary by domain |
-| `LegacyAccountSearchResponse` | `Record<string, unknown>` -- opaque; /v1 shape not typed |
+| `CustomerProfile` | permissive shape with `[key: string]: unknown` escape hatch — fields vary by domain |
+| `LegacyAccountSearchResponse` | `Record<string, unknown>` — opaque; /v1 shape not typed |
 
-**Known backend issue:** `/v2/customers/search` on qa2 returns 500 (`leadStatus` SQL grammar error -- column not projected by mapper). Confirmed bug in Task #510. Tests that run against qa2 should expect potential 500 and skip rather than fail.
+**Known backend issue:** `/v2/customers/search` on qa2 returns 500 (`leadStatus` SQL grammar error — column not projected by mapper). Confirmed bug in . Tests that run against qa2 should expect potential 500 and skip rather than fail.
 
-## SvcEmailClient — contact info / email updates (Task #442)
+## SvcEmailClient — contact info / email updates
 
 Location: `src/api/clients/svc-email.client.ts`. Fixture: `api.svcEmail`.
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `getContactInfo` | `getContactInfo(accountPk)` | GET `/uown/svc/getPrimaryCustomerContactInfo/{accountPk}` -- returns full contact info (email list + phone list) |
+| `getContactInfo` | `getContactInfo(accountPk)` | GET `/uown/svc/getPrimaryCustomerContactInfo/{accountPk}` — returns full contact info (email list + phone list) |
 | `createOrUpdateEmail` | `createOrUpdateEmail(body: CreateOrUpdateEmailBody)` | POST `/uown/svc/createOrUpdateEmail` |
 
 **Request body:**
@@ -228,17 +228,17 @@ Location: `src/api/clients/svc-email.client.ts`. Fixture: `api.svcEmail`.
 | `SvPhoneInContactResponse` | `pk: number`, `phoneInfo: PhoneInfoResponse` |
 | `ContactInformationResponse` | `accountPk: number`, `leadPk?: number`, `emailList: SvEmailResponse[]`, `phoneList: SvPhoneInContactResponse[]` |
 
-**Notes:** `ContactInformationResponse` returns BOTH email and phone lists in a single call -- prefer over separate phone/email lookups when both are needed.
+**Notes:** `ContactInformationResponse` returns BOTH email and phone lists in a single call — prefer over separate phone/email lookups when both are needed.
 
-## GowSignTemplateClient — template CRUD (Task #505 / hotfix R1.51.1)
+## GowSignTemplateClient — template CRUD
 
 Location: `src/api/clients/gowsign-template.client.ts`. Host: `svc`. Fixture: `api.gowSignTemplate`.
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `createTemplate` | `createTemplate(body: GowSignTemplateCreateBody): Promise<ApiResponse<GowSignTemplate>>` | POST `/uown/svc/gowsign-templates` -- creates a new GowSign template |
-| `getTemplate` | `getTemplate(templateId: string): Promise<ApiResponse<GowSignTemplate>>` | GET `/uown/svc/gowsign-templates/{templateId}` -- retrieves a template by ID |
-| `updateTemplate` | `updateTemplate(templateId: string, body: GowSignTemplatePatchBody): Promise<ApiResponse<GowSignTemplate>>` | PATCH `/uown/svc/gowsign-templates/{templateId}` -- partial update |
+| `createTemplate` | `createTemplate(body: GowSignTemplateCreateBody): Promise<ApiResponse<GowSignTemplate>>` | POST `/uown/svc/gowsign-templates` — creates a new GowSign template |
+| `getTemplate` | `getTemplate(templateId: string): Promise<ApiResponse<GowSignTemplate>>` | GET `/uown/svc/gowsign-templates/{templateId}` — retrieves a template by ID |
+| `updateTemplate` | `updateTemplate(templateId: string, body: GowSignTemplatePatchBody): Promise<ApiResponse<GowSignTemplate>>` | PATCH `/uown/svc/gowsign-templates/{templateId}` — partial update |
 | `deleteTemplate` | `deleteTemplate(templateId: string): Promise<ApiResponse<unknown>>` | DELETE `/uown/svc/gowsign-templates/{templateId}` |
 
 **Bodies (`src/api/bodies/gowsign-template.body.ts`):**
@@ -258,32 +258,32 @@ Location: `src/api/clients/gowsign-template.client.ts`. Host: `svc`. Fixture: `a
 
 ## Header-versioned endpoints (WI-525, 2026-05-20)
 
-Some `svc` controllers gate behavior by header instead of URL path -- most notably `LosExternalMerchantController` (base `/uown/los/merchant/applications`), which **requires `X-API-Version: 2`** at the controller class level. Calls without the header are rejected before reaching the controller, so the AOP audit log row is also missing -- the request looks invisible.
+Some `svc` controllers gate behavior by header instead of URL path — most notably `LosExternalMerchantController` (base `/uown/los/merchant/applications`), which **requires `X-API-Version: 2`** at the controller class level. Calls without the header are rejected before reaching the controller, so the AOP audit log row is also missing — the request looks invisible.
 
 **Canonical pattern (overload with optional version):** expose `apiVersion` as a defaulted parameter with `null` meaning "omit", so callers can opt-in to the version that matters and opt-out for negative tests (e.g. forcing a 4xx by stripping the header).
 
 ```typescript
 async searchApplicationStatus(
-  body?: Record<string, unknown>,
-  apiVersion: string | null = '2',
+ body?: Record<string, unknown>,
+ apiVersion: string | null = '2',
 ): Promise<ApiResponse<LosPartnerApplicationResponse>> {
-  const extraHeaders: Record<string, string> = {};
-  if (apiVersion !== null) {
-    extraHeaders['X-API-Version'] = apiVersion;
-  }
-  return this.postWithOverride<LosPartnerApplicationResponse>(
-    '/uown/los/merchant/applications/search',
-    body ?? {},
-    extraHeaders,
-  );
+ const extraHeaders: Record<string, string> = {};
+ if (apiVersion !== null) {
+ extraHeaders['X-API-Version'] = apiVersion;
+ }
+ return this.postWithOverride<LosPartnerApplicationResponse>(
+ '/uown/los/merchant/applications/search',
+ body ?? {},
+ extraHeaders,
+);
 }
 ```
 
-**Canonical example in repo:** [`src/api/clients/los-partner-application.client.ts`](../../../../src/api/clients/los-partner-application.client.ts) -- `searchApplicationStatus` (added WI-525). Apply the same overload shape when wrapping other header-versioned endpoints.
+**Canonical example in repo:** [`src/api/clients/los-partner-application.client.ts`](../../../../src/api/clients/los-partner-application.client.ts) — `searchApplicationStatus` (added WI-525). Apply the same overload shape when wrapping other header-versioned endpoints.
 
 > See [[application-lifecycle]] pitfall #31 for the auth model of `LosExternalMerchantController` (body-field credentials, not bearer token).
 
-## SvcPayoffClient — response extension (svc#512, 2026-05-22)
+## SvcPayoffClient — response extension (2026-05-22)
 
 **Response interface extension:** `src/api/responses/svc-payoff.response.ts`
 
@@ -291,23 +291,23 @@ Two new optional fields added to the payoff/servicing-info response shape:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `settlementAmount` | `number \| undefined` | Settlement Amount in USD -- computed by backend `getSettlementAmount.sql` (sql_name `GETSETTLEMENTAMOUNT`). Present when account is delinquent and eligible for a settlement offer. Absent or `undefined` when no settlement offer applies (e.g. not delinquent, rating B, CANCELLED). |
+| `settlementAmount` | `number \| undefined` | Settlement Amount in USD — computed by backend `getSettlementAmount.sql` (sql_name `GETSETTLEMENTAMOUNT`). Present when account is delinquent and eligible for a settlement offer. Absent or `undefined` when no settlement offer applies (e.g. not delinquent, rating B, CANCELLED). |
 | `settlementAmountBreakdown` | `(string[] \| null)[] \| undefined` | Ordered breakdown rows as `[label, value]` string pairs. Backend returns an array of 2-element arrays. Null elements can appear for rows with missing data (defensive parse required). |
 
 **Usage notes:**
-- Both fields are optional -- always guard with `?? undefined` before asserting.
+- Both fields are optional — always guard with `?? undefined` before asserting.
 - `settlementAmount` is the oracle to compare against UI rendered value (formatted as `$X,XXX.XX`).
-- `settlementAmountBreakdown` mirrors what `SettlementBreakdownModal.getBreakdownRows()` reads from the DOM -- divergence between API and UI is a rendering bug, not a data bug.
-- `calculateSettlement()` from `settlement.helpers.ts` is the independent correctness oracle -- compare all three: API response, UI modal, helper formula.
+- `settlementAmountBreakdown` mirrors what `SettlementBreakdownModal.getBreakdownRows` reads from the DOM — divergence between API and UI is a rendering bug, not a data bug.
+- `calculateSettlement` from `settlement.helpers.ts` is the independent correctness oracle — compare all three: API response, UI modal, helper formula.
 
-## TmsAuditClient — account summary methods (svc#536, 2026-05-22)
+## TmsAuditClient — account summary methods (2026-05-22)
 
 Location: `src/api/clients/tms-audit.client.ts`. Host: TMS. Fixture: `api.tmsAudit` (verify in `base-test.ts`).
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `getAccountSummary` | `getAccountSummary(accountPk): Promise<ApiResponse<TmsAccountSummaryResponse>>` | GET `/uown/tms/v1/accounts/{accountPk}/summary` -- v1 endpoint (R1.52.0). Returns `TmsAccountSummaryResponse` with `numberOfDueDateMoves` + `lastScheduleMovedDate`. Auth: TMS API key. |
-| `getAccountSummaryLegacy` | `getAccountSummaryLegacy(accountPk): Promise<ApiResponse<TmsAccountSummaryResponse>>` | GET `/uown/tms/getAccountSummary/{accountPk}` -- legacy `TmsController` endpoint. Same response shape. Use for backward-compat CTs only. |
+| `getAccountSummary` | `getAccountSummary(accountPk): Promise<ApiResponse<TmsAccountSummaryResponse>>` | GET `/uown/tms/v1/accounts/{accountPk}/summary` — v1 endpoint (R1.52.0). Returns `TmsAccountSummaryResponse` with `numberOfDueDateMoves` + `lastScheduleMovedDate`. Auth: TMS API key. |
+| `getAccountSummaryLegacy` | `getAccountSummaryLegacy(accountPk): Promise<ApiResponse<TmsAccountSummaryResponse>>` | GET `/uown/tms/getAccountSummary/{accountPk}` — legacy `TmsController` endpoint. Same response shape. Use for backward-compat CTs only. |
 
 **Response interface (`src/api/responses/tms-audit.response.ts`):**
 
@@ -317,11 +317,11 @@ Location: `src/api/clients/tms-audit.client.ts`. Host: TMS. Fixture: `api.tmsAud
 
 **Key field notes:**
 - `numberOfDueDateMoves` sources from `uown_sv_sched_summary.due_date_moves` (integer).
-- `lastScheduleMovedDate` is `row_created_timestamp` of the latest `uown_due_date_moves` row. Serializes as Java `LocalDateTime` without TZ offset (e.g. `"2026-05-22T12:05:20.756016"`). Server TZ in qa1 is ~+3h vs UTC -- compare against DB using `expectWithinTzWindow` from `datetime.helpers.ts`, not direct equality.
+- `lastScheduleMovedDate` is `row_created_timestamp` of the latest `uown_due_date_moves` row. Serializes as Java `LocalDateTime` without TZ offset (e.g. `"2026-05-22T12:05:20.756016"`). Server TZ in qa1 is ~+3h vs UTC — compare against DB using `expectWithinTzWindow` from `datetime.helpers.ts`, not direct equality.
 - `null` for both fields when no moves exist (backend early-return path).
-- Field spelling is `lastScheduleMovedDate` (with trailing "d") -- canonical per dev Marcos 2026-05-22; do NOT "fix" to match the issue title.
+- Field spelling is `lastScheduleMovedDate` (with trailing "d") — canonical per dev Marcos 2026-05-22; do NOT "fix" to match the issue title.
 
-## AMS Merchants endpoint — GET /uown/merchants (svc#504, 2026-05-22)
+## AMS Merchants endpoint — GET /uown/merchants (2026-05-22)
 
 **Endpoint:** `GET /uown/merchants?page=&size=&search=&isActive=`
 
@@ -337,30 +337,30 @@ This endpoint replaced the legacy `POST /uown/getMerchantsByCriteria` for the AM
 | `size` | integer | Page size |
 | `sort` | string | Default sort: `refMerchantCode ASC` |
 
-**Response shape -- `Page<BasicMerchantInfo>` (Spring envelope):**
+**Response shape — `Page<BasicMerchantInfo>` (Spring envelope):**
 
 ```json
 {
-  "content": [
-    {
-      "merchantPk": 123,
-      "rowCreatedTimestamp": "...",
-      "rowUpdatedTimestamp": "...",
-      "merchantName": "FifthAveFurnitureNY",
-      "merchantLocation": "New York",
-      "merchantCode": "KS3015",
-      "acceptsNewApps": true,
-      "clientType": "KORNERSTONE",
-      "state": "NY",
-      "city": "New York",
-      "isActive": true,
-      "lastAccessTime": null
-    }
-  ],
-  "totalElements": 1124,
-  "totalPages": 113,
-  "number": 0,
-  "size": 10
+ "content": [
+ {
+ "merchantPk": 123,
+ "rowCreatedTimestamp": "...",
+ "rowUpdatedTimestamp": "...",
+ "merchantName": "FifthAveFurnitureNY",
+ "merchantLocation": "New York",
+ "merchantCode": "KS3015",
+ "acceptsNewApps": true,
+ "clientType": "KORNERSTONE",
+ "state": "NY",
+ "city": "New York",
+ "isActive": true,
+ "lastAccessTime": null
+ }
+ ],
+ "totalElements": 1124,
+ "totalPages": 113,
+ "number": 0,
+ "size": 10
 }
 ```
 
@@ -370,32 +370,32 @@ This endpoint replaced the legacy `POST /uown/getMerchantsByCriteria` for the AM
 |--------------------|-----------|------|
 | `merchantLocation` | `location_name` | NOT `locationName` in the JSON |
 | `merchantCode` | `ref_merchant_code` | NOT `refMerchantCode` in the JSON |
-| `lastAccessTime` | `last_access_time` | Enriched by `searchMerchants` -- NULL when no recorded login |
+| `lastAccessTime` | `last_access_time` | Enriched by `searchMerchants` — NULL when no recorded login |
 
-**Known observation (F-004 -- [OBSERVACAO]):** `lastAccessTime` is `null` for all merchants tested in qa1 (2026-05-22). Not confirmed as a bug -- could be legitimate (no agent has logged in to any merchant portal in qa1). Requires Marcos Silvano confirmation (AC-6 pending).
+**Known observation (F-004 — [OBSERVACAO]):** `lastAccessTime` is `null` for all merchants tested in qa1 (2026-05-22). Not confirmed as a bug — could be legitimate (no agent has logged in to any merchant portal in qa1). Requires Marcos Silvano confirmation (AC-6 pending).
 
 **Legacy endpoint:** `POST /uown/getMerchantsByCriteria` is preserved for non-AMS consumers (e.g., Origination `/merchant` page) but no longer accepts `includeLastLogin` and does NOT enrich `lastAccessTime` (intentional per MR!1430).
 
-**Sibling endpoint preserved:** `GET /uown/getAllAvailableMerchants` (moved from `LosController` to `AmsController` -- path unchanged at `/uown/getAllAvailableMerchants`). The old path `/uown/los/getAllAvailableMerchants` no longer exists. Used by AMS Users "Add User" modal (lazy-loaded on click, not on page load -- per MR!170).
+**Sibling endpoint preserved:** `GET /uown/getAllAvailableMerchants` (moved from `LosController` to `AmsController` — path unchanged at `/uown/getAllAvailableMerchants`). The old path `/uown/los/getAllAvailableMerchants` no longer exists. Used by AMS Users "Add User" modal (lazy-loaded on click, not on page load — per MR!170).
 
 ---
 
-**qa2 template seed snapshot (as of 2026-05-06) -- state=CA:**
+**qa2 template seed snapshot (as of 2026-05-06) — state=CA:**
 
 | pk | template_id | name | client_type |
 |----|-------------|------|-------------|
 | 1 | `lkdu73w7dctuj7kxhc6omwvf` | California Lease Agreement | NULL (default fallback) |
 | 2 | `mu97ag8wkchj1icvn5amz5s6` | CA_2025_SAC_jewelry | `'DANIELS_JEWELERS,JEWELRY'` |
 
-## SimpleSearchClient — svc#454 (added 2026-05-24)
+## SimpleSearchClient — (added 2026-05-24)
 
 - **Path:** `src/api/clients/simple-search.client.ts`
-- **Purpose:** Wraps the two simple-search endpoints audited by svc#454: `POST /uown/los/simpleSearch/{term}` (Origination) and `GET /uown/svc/simpleSearch/{term}` (Servicing regression).
+- **Purpose:** Wraps the two simple-search endpoints audited by : `POST /uown/los/simpleSearch/{term}` (Origination) and `GET /uown/svc/simpleSearch/{term}` (Servicing regression).
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `searchLos` | `searchLos(input: string, opts?: SearchLosOptions): Promise<ApiResponse<SimpleSearchResponseBody>>` | POST `/uown/los/simpleSearch/{input}` -- LOS multi-tenant search with `searchType` in query-string and `merchantRefCodes` in body |
-| `searchSvc` | `searchSvc(input: string, opts?: SearchSvcOptions): Promise<ApiResponse<...>>` | GET `/uown/svc/simpleSearch/{input}` -- Servicing regression endpoint; no body (query-string only) |
+| `searchLos` | `searchLos(input: string, opts?: SearchLosOptions): Promise<ApiResponse<SimpleSearchResponseBody>>` | POST `/uown/los/simpleSearch/{input}` — LOS multi-tenant search with `searchType` in query-string and `merchantRefCodes` in body |
+| `searchSvc` | `searchSvc(input: string, opts?: SearchSvcOptions): Promise<ApiResponse<...>>` | GET `/uown/svc/simpleSearch/{input}` — Servicing regression endpoint; no body (query-string only) |
 
 **Special options in `SearchLosOptions`:**
 
@@ -412,4 +412,4 @@ This endpoint replaced the legacy `POST /uown/getMerchantsByCriteria` for the AM
 - Response is a **WRAPPER** `{ searchResults: [...], count, moreResults }`, NOT a flat array. Parser will return `body=[]` silently if declared as flat.
 - `searchType=null` triggers FreeText pre-detect path.
 
-**When NOT to use:** Do not call `searchLos` via the BFF host without a valid session -- API key alone yields 401 from `MerchantCodeAspect`. Use the svc bypass or UI page context instead.
+**When NOT to use:** Do not call `searchLos` via the BFF host without a valid session — API key alone yields 401 from `MerchantCodeAspect`. Use the svc bypass or UI page context instead.

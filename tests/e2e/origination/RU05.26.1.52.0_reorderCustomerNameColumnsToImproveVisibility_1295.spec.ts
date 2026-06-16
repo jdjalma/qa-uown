@@ -565,6 +565,7 @@ test.describe(
         merchant: 'TerraceFinance',
         orderTotal: '1000',
         orderDescription: 'Reorder1295',
+        uniqueAddress: true, // dodge static CA address blacklist (654 Sunset Blvd/90028, pk:2165)
       });
 
       let expectedFirstName = td.applicant.firstName;

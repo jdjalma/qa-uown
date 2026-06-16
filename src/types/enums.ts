@@ -27,6 +27,22 @@ export enum NeuroIdStatus {
   SUCCESS = 'SUCCESS',
   PROFILE_NOT_FOUND = 'PROFILE_NOT_FOUND',
   FAILED = 'FAILED',
+  /**
+   * svc#554 (AC-03) — "not enough interaction data" outcome. The NeuroID
+   * backend may return a low-interaction signal when the SDK collected too
+   * few behavioral events (e.g. SDK starved). Per AC-03 this MUST NOT deny
+   * the customer.
+   *
+   * ⚠️ @unconfirmed — this exact string was NOT observed in qa2 during the
+   * svc#554 discovery probe (src/scripts/probe-neuroid-554.ts, 2026-06-15):
+   * the only `neuro_id_status` values present in qa2 were SUCCESS and
+   * PROFILE_NOT_FOUND. The token below mirrors the NeuroID profile API's
+   * documented "not enough interaction" classification; the consuming test
+   * (CT-02) treats a non-match as N/A rather than failing, and annotates the
+   * actual observed status. Promote to a confirmed value (remove this note)
+   * once a real qa2 row with this status is captured.
+   */
+  NOT_ENOUGH_INTERACTION_DATA = 'NOT_ENOUGH_INTERACTION_DATA',
 }
 
 export enum FraudStatus {

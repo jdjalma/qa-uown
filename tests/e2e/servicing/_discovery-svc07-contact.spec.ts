@@ -25,6 +25,7 @@ const ACCOUNT_PK = '224';
 test.describe('SVC-07 discovery — contact compliance + Podium', () => {
   test('Opt Out AI activity-log compliance + Send Podium Link network status', async ({ page, testEnv, db }) => {
     test.setTimeout(240_000);
+    test.skip(testEnv.env !== 'dev3', 'SVC-07 discovery uses hardcoded account 224 (dev3 only) — skip in other environments');
 
     const wmRows = await db.query(
       'SELECT COALESCE(max(pk),0) AS max_pk FROM uown_sv_activity_log WHERE account_pk = $1', [ACCOUNT_PK],

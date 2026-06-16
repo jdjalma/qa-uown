@@ -35,8 +35,8 @@ Sempre que planejar:
 ```ts
 // CERTO — fresh via automação
 const lead = await createPreQualifiedApplication({
-  merchant: "UOWN_DEMO",
-  ssn: generateTestSsn(),  // SSN novo a cada execução
+ merchant: "UOWN_DEMO",
+ ssn: generateTestSsn, // SSN novo a cada execução
 });
 ```
 
@@ -75,7 +75,7 @@ Memory `feedback_no_db_mutation_to_force_pass`: skip/timeout é resultado válid
 
 ### Regra
 
-Testes que **não** exercitam comportamento específico de um merchant (fluxo KS, config regional, quirk de portal) devem usar `pickRandomMerchantKey()` em vez de hardcodar sempre o mesmo merchant.
+Testes que **não** exercitam comportamento específico de um merchant (fluxo KS, config regional, quirk de portal) devem usar `pickRandomMerchantKey` em vez de hardcodar sempre o mesmo merchant.
 
 **Por que:** quando todos os testes criam aplicações para `PayPossible`/`DanielsJewelers`, bugs de configuração em outros merchants ficam invisíveis até produção.
 
@@ -88,7 +88,7 @@ import { pickRandomMerchantKey, getMerchant } from '@data/index.js';
 const merchant = getMerchant('PayPossible', env);
 
 // Usar:
-const merchantKey = pickRandomMerchantKey();          // UOWN pool (default)
+const merchantKey = pickRandomMerchantKey; // UOWN pool (default)
 const merchant = getMerchant(merchantKey, env);
 // Log automático: "[pickRandomMerchant] selected: TerraceFinance"
 ```
@@ -118,7 +118,7 @@ Ambas exportadas de `src/data/merchants.ts` via `@data/index.js`.
 
 ### Reproduzindo falha após random
 
-O `pickRandomMerchantKey()` faz `console.log('[pickRandomMerchant] selected: <key>')`. Para reproduzir, hardcode temporariamente o merchant que apareceu no log e re-execute.
+O `pickRandomMerchantKey` faz `console.log('[pickRandomMerchant] selected: <key>')`. Para reproduzir, hardcode temporariamente o merchant que apareceu no log e re-execute.
 
 ## Pitfalls
 

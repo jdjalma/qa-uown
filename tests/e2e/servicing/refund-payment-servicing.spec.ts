@@ -29,8 +29,8 @@ import { buildCcArrangementBody } from '@api/bodies/payment-arrangement.body.js'
 import { TEST_CARDS } from '@data/index.js';
 
 const REFUND_DATA = {
-  state: 'CA',
-  merchant: 'ProgressMobility',
+  state: 'NY',
+  merchant: 'TerraceFinance',
   paymentAmount: '100',
   partialRefundAmount: '40',
   tag: buildTags(TestTag.REGRESSION),
