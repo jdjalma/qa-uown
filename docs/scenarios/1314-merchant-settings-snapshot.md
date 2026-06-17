@@ -108,8 +108,10 @@ Feature: Merchant Settings Snapshot Tracking
 
 ## Pending items
 
-### G1 — TC-06: Path to produce a lead at FUNDING with no lead snapshot
-The ticket describes a scenario where a lead "bypassed normal approval flow via admin override." There is no documented UI path in the Origination portal that allows a lead to enter FUNDING without first reaching `UW_APPROVED`. This must be clarified with the dev team before the corresponding test is implemented — possible workarounds: direct DB manipulation (requires explicit authorization per Exception 3) or a dedicated dev/admin endpoint. Handoff: `/discovery` or dev confirmation.
+> Discovery resolved these gaps. Detail: [`docs/knowledge-base/underwriting-and-funding-test-data-paths.md`](../knowledge-base/underwriting-and-funding-test-data-paths.md) (G1/G2 + qa2 caveats) and the execution report `docs/taskTestingUown/RU05.26.1.53.0_merchantSettingsSnapshotTracking_1314/…-report.md`.
 
-### G2 — TC-02: Reliable denial trigger in sandbox/qa1
-TC-02 requires a lead that will be denied by underwriting. The specific fraud score or credit condition that triggers denial in sandbox/qa1 is not documented. Before implementation, the QA implementer must confirm with the team whether there is a test SSN, a merchant config, or a score override that reliably produces `UW_DENIED` in the target environment.
+### G1 — RESOLVED: snapshot tables deployed in qa2; account snapshot PROVEN
+The #1314 snapshot tables (`uown_los_lead_merchant_settings_snapshot`, `uown_sv_account_merchant_settings_snapshot`) are deployed in qa2 (Flyway `…1.53.0`, 2026-06-15). The positive account-snapshot-on-funding path is PROVEN (cycle 3, TC-06-baseline / TC-05). The negative TC-06 ("no account snapshot when no lead snapshot exists") requires a DB `DELETE` of the lead-snapshot row before funding — snapshots fire on essentially every approval, so this is the only route. **TC-07 (no-lead-snapshot path) is `test.skip` pending explicit DB-DELETE authorization (Exception 2 / Rule #9).**
+
+### G2 — RESOLVED (qa2 contradiction): ending-in-9 NOT honoured in qa2
+`[CONFIRMADO]` — an ending-in-9 SSN for terraceFinance is **approved** in qa2 (lead 16556, UW_APPROVED, 0 vendor calls), because qa2 routes TERRACE_FINANCE through the BlackBox/ABB engine, not the mock that short-circuits ending-in-9 (sandbox/qa1-only). **TC-02 needs a confirmed deterministic `UW_DENIED` trigger from PO/dev for qa2, OR the negative scenario must be run on sandbox/qa1** where the mock is honoured. Until then TC-02 is `test.skip`. See [[application-lifecycle]] #109 and [[ssn-test-modalities]] §6.
