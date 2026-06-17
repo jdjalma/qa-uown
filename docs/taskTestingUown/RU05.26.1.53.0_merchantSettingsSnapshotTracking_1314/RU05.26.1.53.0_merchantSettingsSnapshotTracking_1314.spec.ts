@@ -332,60 +332,62 @@ test.describe(`${TEST_NAME} - qa2/terraceFinance`, { tag }, () => {
   });
 
   // ════════════════════════════════════════════════════════════════════════
-  //  TC-02 (P1) — No lead snapshot on UW denial (ending-in-9 SSN)
+  //  TC-02 (P1) — No lead snapshot when the application is auto-denied.
   //
-  //  SKIPPED (cycle 2 — qa2 has no CONFIRMED deterministic UW_DENIED trigger).
-  //  ─────────────────────────────────────────────────────────────────────
-  //  Cycle 1 finding: an ending-in-9 SSN (generateTestSSN(false)) for terraceFinance
-  //  returned UW_APPROVED in qa2 (lead 16556, lead_status='UW_APPROVED'), NOT the
-  //  documented UW_DENIED. The "ending-in-9 → UW_DENIED" rule is a property of the
-  //  MOCKED UW engine ([[ssn-test-modalities]] §6 / [[fraud-vendors-knowledge]] §5),
-  //  and the discovery doc confirmed it on qa1 — NOT qa2.
+  //  DENIAL TRIGGER (2026-06-17): the merchant config `auto_deny_application=TRUE`
+  //  on terraceFinance (pk 26). The user enabled it in qa2 to provide the
+  //  deterministic denial qa2 previously lacked. This is the `merchantAutoDenyCheck`
+  //  pipeline step (Step 2, BUSINESS_RULES.md / 02-originacao-pipeline.md §Step 2):
+  //  it runs AFTER stateCheck and BEFORE underwriting, so the lead never reaches the
+  //  UW engine. Result: `lead_status='DENIED'` (internal `MERCHANT_AUTO_DENIED`),
+  //  NOT `UW_DENIED` — confirmed read-only in qa2 (merchant 26 has 30 `DENIED` leads;
+  //  `UW_DENIED` is a distinct value, see Ticket461-svc / Ticket1084).
   //
-  //  [HIPÓTESE] (Rule #10 — NOT confirmed): the TERRACE_FINANCE client type in qa2
-  //  routes underwriting through a path that does not honour the ending-in-9 mock
-  //  short-circuit (real GDS/DV360 engine, or a per-client-type config), so the
-  //  short-circuit never fires and the lead is approved on the happy path instead.
+  //  SCOPE NOTE (honest): auto-deny is a PRE-UW denial, not a UW-engine decline.
+  //  The #1314 invariant under test is "a denied lead gets NO lead snapshot" (the
+  //  snapshot is written only on UW approval). An auto-denied lead never reaches UW
+  //  approval, so the negative invariant is exercised correctly. The ending-in-9
+  //  ("UW_DENIED") path is a no-op in qa2 ([[ssn-test-modalities]] §6, pitfall #109);
+  //  we therefore use a NORMAL approval-eligible SSN so the merchant auto-deny config
+  //  is the SOLE cause of denial (isolates the trigger).
   //
-  //  Why this is skipped rather than re-pointed at a new trigger:
-  //   - Confirming the trigger requires reading uown_los_outbound_api_log /
-  //     uown_los_lead_notes for lead 16556 (which UW engine decided it) AND probing
-  //     candidate merchants for a deterministic decline — both need the qa2 DB,
-  //     which was unreachable this cycle (localhost:5445 tunnel down). Re-pointing
-  //     TC-02 at an UNVERIFIED trigger would be a guess, forbidden by Rule #10.
-  //   - A pre-UW DENIED (Blacklist button → BLACKLIST_DENIED, or no-business-in-state)
-  //     is NOT "denied by underwriting" — the AC wants an engine-level UW_DENIED, so
-  //     those are not valid substitutes (discovery doc BR-G2.3). Blacklist must also
-  //     go through the product blacklist path, never a raw DB write (Rule #9).
+  //  STATE: must be a leasing-eligible state (TX). stateCheck precedes auto-deny in
+  //  the pipeline; a no-business-in-state would short-circuit BEFORE auto-deny fires.
   //
-  //  Env/PO question (raise before un-skipping):
-  //   (Q1) In qa2, does TERRACE_FINANCE bypass the mocked UW engine? If so, which
-  //        client type/merchant DOES exercise the mock so ending-in-9 declines?
-  //   (Q2) Is there a deterministic, vendor-independent UW_DENIED trigger in qa2
-  //        (specific SSN, score override, or merchant config) that yields a true
-  //        underwriting decline (not BLACKLIST_DENIED / state-deny)?
-  //
-  //  Un-skip when (a) the qa2 DB tunnel is up to confirm the trigger end-to-end, AND
-  //  (b) Q1/Q2 are answered. The negative AC (no snapshot on UW denial) remains
-  //  UNVERIFIED in qa2 until then — do NOT mark it MET. The full body is preserved
-  //  below so it runs unchanged once a confirmed denial trigger is wired in.
+  //  GUARDRAIL: the auto-deny flag is asserted ON below (read-only, self-documenting)
+  //  so this test FAILS LOUDLY if run with auto-deny OFF instead of silently mis-passing.
   // ════════════════════════════════════════════════════════════════════════
-  test.skip('TC-02: no lead snapshot when the lead is denied by underwriting', async ({ api, db }, testInfo) => {
+  test('TC-02: no lead snapshot when the application is auto-denied (merchant auto_deny_application)', async ({ api, db }, testInfo) => {
     test.setTimeout(360_000); // qa2 denied path can take >180s
 
     await assertMerchantContract(db);
 
-    const td = buildTestData({ env: 'qa2', state: STATE, merchant: TERRACE.key, approved: false });
-    // approved:false → generateTestSSN(false) → ending-in-9 → deterministic UW_DENIED.
+    // Precondition (read-only, self-documenting): auto_deny_application must be ON,
+    // otherwise the denial trigger is absent and this test would mis-pass.
+    await test.step('Precondition: terraceFinance auto_deny_application = TRUE', async () => {
+      const flag = await db.queryOne<{ auto_deny_application: boolean }>(
+        `SELECT auto_deny_application FROM uown_merchant WHERE pk = $1`,
+        [TERRACE.pk],
+      );
+      expect(
+        flag?.auto_deny_application,
+        `terraceFinance (pk ${TERRACE.pk}) auto_deny_application must be ON for this denial test ` +
+          `(user-set in qa2). Run with auto-deny ON or the denial trigger is absent.`,
+      ).toBe(true);
+    });
+
+    // approved:true → generateTestSSN(true) → NON-ending-in-9 → approval-eligible SSN.
+    // Denial here comes SOLELY from the merchant auto-deny config, not the SSN.
+    const td = buildTestData({ env: 'qa2', state: STATE, merchant: TERRACE.key, approved: true });
 
     let leadPk = '';
-    await test.step('Send denial application (ending-in-9 SSN) and poll for UW_DENIED', async () => {
+    await test.step('Send application (normal SSN) and poll for the auto-deny decision', async () => {
       const appResp = await api.application.sendApplication(td.merchant, td.applicant);
       expect(appResp.ok, `sendApplication: ${appResp.status} ${JSON.stringify(appResp.body).slice(0, 200)}`).toBeTruthy();
       const leadUuid = appResp.body.accountNumber ?? String(appResp.body.authorizationNumber ?? '');
       leadPk = String(appResp.body.authorizationNumber ?? '');
 
-      // Poll status until the engine declines; reconcile portal leadPk along the way.
+      // Poll status until the pipeline declines; reconcile portal leadPk along the way.
       const deadline = Date.now() + 300_000;
       let status = '';
       while (Date.now() < deadline) {
@@ -399,15 +401,18 @@ test.describe(`${TEST_NAME} - qa2/terraceFinance`, { tag }, () => {
       testInfo.annotations.push({ type: 'leadPk', description: leadPk });
     });
 
-    await test.step('Confirm UW_DENIED (engine decline, not a pre-UW deny variant)', async () => {
-      // Distinguish UW_DENIED from BLACKLIST_DENIED/DENIED (SPEC TC-02 pitfall).
+    await test.step('Confirm pre-UW auto-deny (lead_status=DENIED, not a UW_DENIED engine decline)', async () => {
+      // Auto-deny (merchantAutoDenyCheck) yields lead_status='DENIED' (internal
+      // MERCHANT_AUTO_DENIED). It is a PRE-UW deny, distinct from 'UW_DENIED' and
+      // never 'BLACKLIST_DENIED'. We assert it is a DENIED-class status that is NOT
+      // a blacklist deny; the snapshot invariant below is what the AC turns on.
       const leadStatus = (await db.getLeadStatus(leadPk)) ?? '';
-      console.log(`[TC-02] lead ${leadPk} lead_status="${leadStatus}"`);
-      expect(leadStatus.toUpperCase(), `expected UW_DENIED-class status, got "${leadStatus}"`).toMatch(/DENIED/);
-      expect(leadStatus.toUpperCase(), 'must be an underwriting decline, not blacklist').not.toContain('BLACKLIST');
+      console.log(`[TC-02] lead ${leadPk} lead_status="${leadStatus}" (expected DENIED via MERCHANT_AUTO_DENIED)`);
+      expect(leadStatus.toUpperCase(), `expected a DENIED-class status, got "${leadStatus}"`).toMatch(/DENIED/);
+      expect(leadStatus.toUpperCase(), 'must not be a blacklist deny').not.toContain('BLACKLIST');
     });
 
-    await test.step('No lead snapshot was written', async () => {
+    await test.step('No lead snapshot was written for the denied lead', async () => {
       const absent = await db.waitForRecordAbsent(
         'uown_los_lead_merchant_settings_snapshot', 'lead_pk = $1', [leadPk], 30_000,
       );
@@ -874,33 +879,45 @@ test.describe.serial(`${TEST_NAME} - qa2/Kornerstone/KS1011`, { tag: KS_TAG }, (
   });
 
   // ════════════════════════════════════════════════════════════════════════
-  //  TC-KS-denial (P1) — No KS lead snapshot on UW denial.
+  //  TC-KS-denial (P1) — No KS lead snapshot when the application is auto-denied.
   //
-  //  SKIPPED in qa2 (documented skip, NOT silent) — mirrors the UOWN TC-02 decision.
-  //  ─────────────────────────────────────────────────────────────────────
-  //  The "ending-in-9 → UW_DENIED" rule is a property of the MOCKED UW engine, gated
-  //  by the test-server config `deny.ssn.ending.with.9`. In qa2 that flag is
-  //  effectively FALSE ([[ssn-test-modalities]] §6 caveat, [CONFIRMADO] 2026-06-16;
-  //  [[application-lifecycle]] pitfall #109): an ending-in-9 lead routes the real
-  //  engine and APPROVES, so a "no snapshot on denial" assertion would falsely fail
-  //  (or falsely pass for the wrong reason). KS denial is brand-orthogonal — the
-  //  denial-no-snapshot invariant is already covered by the (also-skipped) UOWN TC-02;
-  //  this KS counterpart adds parity-completeness, not new coverage.
+  //  DENIAL TRIGGER (2026-06-17): `auto_deny_application=TRUE` on KS1011 (pk 315),
+  //  user-set in qa2 to mirror terraceFinance. Same `merchantAutoDenyCheck` Step 2
+  //  pre-UW deny → `lead_status='DENIED'` (internal MERCHANT_AUTO_DENIED), NOT
+  //  `UW_DENIED`. Brand parity ([[ssn-test-modalities]] §5, INVIOLÁVEL): the
+  //  denial-no-snapshot invariant must be covered for Kornerstone too.
   //
-  //  Un-skip when: (a) run in sandbox/qa1 (mock honored), OR (b) the qa2 flag is
-  //  enabled (DevOps / DB write, Rule #9), OR (c) a confirmed deterministic UW_DENIED
-  //  trigger for KS in qa2 is provided by PO/dev. Body preserved for reuse.
+  //  Mirrors the UOWN TC-02 adaptation:
+  //   - NORMAL approval-eligible SSN (generateTestSSN(true)) so the auto-deny config
+  //     is the SOLE cause of denial (ending-in-9 is a no-op in qa2, pitfall #109).
+  //   - bankData REQUIRED for Kornerstone routing even on the denial path (pitfall #5).
+  //   - State TX (leasing-eligible) so stateCheck does not short-circuit before auto-deny.
+  //   - auto-deny flag asserted ON (read-only, self-documenting) — fails loudly if OFF.
   // ════════════════════════════════════════════════════════════════════════
-  test.skip('TC-KS-denial: no KS lead snapshot when denied by underwriting', async ({ api, db }, testInfo) => {
+  test('TC-KS-denial: no KS lead snapshot when the application is auto-denied (merchant auto_deny_application)', async ({ api, db }, testInfo) => {
     test.setTimeout(360_000); // qa2 denied path can take >180s
 
     await assertKsMerchantContract(db);
 
-    const td = buildTestData({ env: 'qa2', state: STATE, merchant: KS.key, approved: false });
-    // approved:false → generateTestSSN(false) → ending-in-9 (mock-only deterministic denial).
+    // Precondition (read-only, self-documenting): KS1011 auto_deny_application must be ON.
+    await test.step('Precondition: KS1011 auto_deny_application = TRUE', async () => {
+      const flag = await db.queryOne<{ auto_deny_application: boolean }>(
+        `SELECT auto_deny_application FROM uown_merchant WHERE pk = $1`,
+        [KS.pk],
+      );
+      expect(
+        flag?.auto_deny_application,
+        `KS1011 (pk ${KS.pk}) auto_deny_application must be ON for this denial test ` +
+          `(user-set in qa2). Run with auto-deny ON or the denial trigger is absent.`,
+      ).toBe(true);
+    });
+
+    // approved:true → generateTestSSN(true) → NON-ending-in-9 → approval-eligible SSN;
+    // denial comes SOLELY from the KS merchant auto-deny config.
+    const td = buildTestData({ env: 'qa2', state: STATE, merchant: KS.key, approved: true });
 
     let leadPk = '';
-    await test.step('Send KS denial application (ending-in-9 SSN + bankData) and poll for UW_DENIED', async () => {
+    await test.step('Send KS application (normal SSN + bankData) and poll for the auto-deny decision', async () => {
       // bankData required for KS routing even on the denial path (pitfall #5) → use the
       // body-overload of sendApplication and inject the bank fields, mirroring the
       // createPreQualifiedApplication bankData path.
@@ -928,13 +945,14 @@ test.describe.serial(`${TEST_NAME} - qa2/Kornerstone/KS1011`, { tag: KS_TAG }, (
       testInfo.annotations.push({ type: 'leadPk', description: leadPk });
     });
 
-    await test.step('Confirm UW_DENIED (engine decline, not a pre-UW deny variant)', async () => {
+    await test.step('Confirm pre-UW auto-deny (lead_status=DENIED, not a UW_DENIED engine decline)', async () => {
       const leadStatus = (await db.getLeadStatus(leadPk)) ?? '';
-      expect(leadStatus.toUpperCase(), `expected UW_DENIED-class status, got "${leadStatus}"`).toMatch(/DENIED/);
-      expect(leadStatus.toUpperCase(), 'must be an underwriting decline, not blacklist').not.toContain('BLACKLIST');
+      console.log(`[TC-KS-denial] lead ${leadPk} lead_status="${leadStatus}" (expected DENIED via MERCHANT_AUTO_DENIED)`);
+      expect(leadStatus.toUpperCase(), `expected a DENIED-class status, got "${leadStatus}"`).toMatch(/DENIED/);
+      expect(leadStatus.toUpperCase(), 'must not be a blacklist deny').not.toContain('BLACKLIST');
     });
 
-    await test.step('No KS lead snapshot was written', async () => {
+    await test.step('No KS lead snapshot was written for the denied lead', async () => {
       const absent = await db.waitForRecordAbsent(
         'uown_los_lead_merchant_settings_snapshot', 'lead_pk = $1', [leadPk], 30_000,
       );

@@ -138,12 +138,19 @@ Toda omissao DEVE ser explicita. Silent skips nao sao aceitos.
 
 Silent skip de brand = violacao.
 
+### 5.1. Kornerstone brand-parity findings — abertos, NAO confirmados
+
+> Descobertos ao validar snapshot por brand. Ambos `[HIPÓTESE]`/`[OBSERVAÇÃO]` — NAO tratar como bug confirmado; candidatos a confirmar com dev/PO.
+
+- **OQ-KS-1 `[HIPÓTESE]`:** `uown_los_lead.company='UOWN'` (propagando para `uown_sv_account.company`) em leads funded de **KS1011 / merchant_pk=315**, apesar de `client_type=KORNERSTONE`. Hipotese: a **brand e carimbada na CRIACAO do lead**, NAO no funding/copia do snapshot — o proprio snapshot carrega corretamente `merchant_pk=315` + `fraud_threshold=5`. Reproduzido **3×** em qa2. Candidato a app issue — confirmar com dev/PO antes de classificar como bug. Impacta o checklist de brand coverage (§5): a assertion `uown_sv_account.company='KORNERSTONE'` pode falhar legitimamente por este motivo — investigar a fonte antes de marcar o teste como red. Tag: `[db-observation:qa2,2026-06-17]` + `[test-execution:qa2, KS1011/merchant_pk=315]`.
+- **OQ-KS-2 `[OBSERVAÇÃO]`:** KS `submitApplication` retorna `"Failed to verify identification"` apesar de `is_seon_id_check_required=FALSE`. Co-sinal de OQ-KS-1 (ambos em fluxo Kornerstone qa2). Tag: `[api-response:submitApplication]` + `[test-execution:qa2]`.
+
 ---
 
 ## 6. Principios
 
 - `generateTestSSN(true|false)` e o gerador canonico - NUNCA fixar SSN para testes genericos
-- Ultimo digito `9` forca denial no motor UW mockado (convencao sandbox/qa1 APENAS - ver caveat qa2 abaixo)
+- Ultimo digito `9` forca denial no motor UW mockado (convencao sandbox/qa1 — caveat qa2 §6: no-op em qa2; e a memoria datada `ssn9-denial-gate-off-sandbox-qa1` indica gate OFF tambem em sandbox/qa1 desde 2026-06-17 → cross-check antes de assumir denial). Para denial deterministico em qa2 usar `auto_deny_application` (§6.1)
 - Sufixo `916` forca EligibleTerms 16 no mock BlackBox (qa1 confirmado 2026-05-24)
 
 ### Caveat qa2 - UW denial determinism e environment-specific (INVIOLAVEL)
@@ -153,8 +160,23 @@ Silent skip de brand = violacao.
 - **Config que controla:** `com.uownleasing.svc.service.SendApplicationService.deny.ssn.ending.with.9` (boolean, default no codigo `true`). Codigo: `svc/.../application/SendApplicationService.java:361-365` — nega se `!isProduction()` **E** flag `true` **E** `mainSSN.endsWith("9")`. Store: tabela `uown_configuration_management(key,value)` (key ausente em qa2 → default `true` deveria valer; override `false` vem de properties de deploy acima da tabela, `[HIPÓTESE]`). **TESTADO 2026-06-16: setar a key `=true` (via `POST /ConfigurationManagement/createOrUpdateConfig` + `forceReloadConfig`) NAO bastou em qa2** — ending-in-9 ainda aprovou (lead 16583). A denial tambem exige `!isProduction()`; qa2 e tratado como prod p/ esse gate (ou build defasado). Config sozinha NAO habilita denial em qa2 → usar sandbox/qa1 ou escalar dev/DevOps. (Config foi revertida.)
 - `[CONFIRMADO]` (2026-06-16, qa2): um lead terraceFinance com SSN ending-in-9 retornou **UW_APPROVED** com **0 vendor calls** em `uown_los_outbound_api_log` (o gate nao disparou → BlackBox decidiu) - `[db-observation:uown_los_lead_notes]`. Reproduzir com `src/scripts/probe-uw-denial-engine.ts <env> <leadPk>`.
 - **Antes de usar ending-in-9 como trigger de denial fora de sandbox/qa1:** confirmar a engine decisora via `uown_los_outbound_api_log` / `uown_los_lead_notes`. Se a engine real decide, o mock nao dispara.
-- Para testes de denial em qa2/prod-like: rodar o cenario negativo em sandbox/qa1 (mock honrado) OU obter trigger `UW_DENIED` deterministico confirmado pela PO/dev. Pre-UW deny (Blacklist button -> BLACKLIST_DENIED, no-business-in-state) NAO e "denied by underwriting" e nao substitui o AC.
-- Cross-link: [[application-lifecycle]] Pitfall #109; `docs/knowledge-base/underwriting-and-funding-test-data-paths.md`; [[fraud-vendors-knowledge]] §5.
+- **SUPERSEDED (parcialmente):** o ending-in-9 mock e no-op em qa2, mas **agora EXISTE um trigger de denial deterministico em qa2** — `uown_merchant.auto_deny_application=TRUE` (ver §6.1 abaixo). Isso substitui o gap anterior que dizia "sem trigger UW_DENIED deterministico em qa2". Nuance: auto-deny e PRE-UW, NAO exercita o decline literal da engine UW (ver §6.1).
+- Para testes que precisam de um **lead DENIED** em qa2: usar `auto_deny_application` (§6.1). Para testar o **decline literal da engine de underwriting** em qa2/prod-like: rodar o cenario negativo em sandbox/qa1 (mock honrado) OU obter trigger `UW_DENIED` da engine confirmado pela PO/dev — auto-deny e pre-UW e nao substitui esse AC especifico. Pre-UW deny (Blacklist button -> BLACKLIST_DENIED, no-business-in-state) NAO e "denied by underwriting" e nao substitui o AC de decline da engine.
+- Cross-link: [[application-lifecycle]] Pitfall #109; `docs/knowledge-base/underwriting-and-funding-test-data-paths.md`; [[fraud-vendors-knowledge]] §5; memoria datada `ssn9-denial-gate-off-sandbox-qa1` (gate OFF tambem em sandbox/qa1 desde 2026-06-17 — cross-check, nao copiar cego).
+
+---
+
+### 6.1. Receita de denial DETERMINISTICO em qa2 — `auto_deny_application` (INVIOLAVEL)
+
+> **`uown_merchant.auto_deny_application = TRUE` e o trigger de denial deterministico e vendor-independent para qa2.** Independe da engine UW (real ou mock), independe de SSN.
+
+- **Onde dispara:** origination pipeline **Step 2 `merchantAutoDenyCheck`** — **PRE-UW**, ANTES do underwriting engine.
+- **Resultado:** `uown_los_lead.lead_status='DENIED'` (motivo interno `MERCHANT_AUTO_DENIED`) — **distinto de `UW_DENIED`** (o decline da engine UW). Ambos os valores existem como estados separados em qa2.
+- **Activity log:** `Executed: merchantAutoDenyCheck → Application denied as merchant is set to be auto denied`.
+- **Quando usar:** quando o teste precisa de um lead **DENIED** em qa2 (o mock ending-in-9 e no-op em qa2 — ver §6 e memoria `ssn9-denial-gate-off-sandbox-qa1`).
+- **Nuance critica:** auto-deny e denial **PRE-UW** — **NAO exercita um decline literal da engine de underwriting**. Para AC que exige especificamente "denied BY underwriting", isto NAO substitui (usar sandbox/qa1 ou trigger de engine confirmado).
+- **Mutacao do merchant:** ligar/desligar `auto_deny_application` e UPDATE no DB (Exception 2/3 do CLAUDE.md) — exige autorizacao explicita do user; preferir setup via UI de merchant config quando disponivel. NAO deixar o flag ligado apos o teste se outras suites usam o mesmo merchant.
+- **Tag:** `[db-observation:qa2,2026-06-17]` + `[test-execution:qa2, leads 16597/16598]`.
 - SSN `100000053` e amarrado a profile exato - reusar com dados diferentes causa ADDRESS_MISMATCH
 - Kornerstone (KS*) sempre recebe 16m por rota separada (independente de sufixo SSN)
 - Brand e ortogonal a modalidade - depende da config do merchant, nao do nome
