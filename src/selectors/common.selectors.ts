@@ -607,6 +607,42 @@ export const SELECTORS: AppSelectors = {
   msFraudThresholdInput: "input[name='fraudThreshold']",
   msMaxApprovalAmountInput: "input[name='maxApprovalAmount']",
   msGdsDataToggle: "button:has-text('GDS Data')",
+  // EPO 5% / EPO 10% on /merchantSetting are GDS-section triple-checkbox bulk controls
+  // (DOM-first verified qa2 2026-06-16). Real structure:
+  //   div.d-flex.flex-column
+  //     ├─ div#toggler              (visible row)
+  //     │    ├─ input#epo5-main     (enable-the-field checkbox; value="true")
+  //     │    └─ svg.fa-caret-down   (cursor-pointer — OPENS the collapse dropdown)
+  //     └─ div.position-relative.row
+  //          └─ div.checkbox-dropdown_…card__… .collapse   (display:none until caret click)
+  //               ├─ input#epo5        (True)   + text "True"
+  //               └─ input#epo5-false  (False)  + text "False"
+  // The True/False inputs are NOT revealed by checking `-main` — they live inside a
+  // Bootstrap `.collapse` that only expands when the caret-down toggle is clicked.
+  // NOTE: `#toggler` id is duplicated across fields (invalid HTML), so scope the caret
+  // via `:has(#epoN-main)` to hit exactly one. After the caret opens the dropdown the
+  // True/False inputs are genuinely visible/checkable — no force:true needed.
+  msEpo5MainCheckbox: '#epo5-main',
+  msEpo5CaretToggle: '#toggler:has(#epo5-main) svg.fa-caret-down',
+  msEpo5TrueCheckbox: '#epo5',
+  msEpo5FalseCheckbox: '#epo5-false',
+  msEpo10MainCheckbox: '#epo10-main',
+  msEpo10CaretToggle: '#toggler:has(#epo10-main) svg.fa-caret-down',
+  msEpo10TrueCheckbox: '#epo10',
+  msEpo10FalseCheckbox: '#epo10-false',
+  // GDS-section SAVE button — disabled until a field is changed (form dirty).
+  // Anchored on the CSS-module prefix to disambiguate from the filter-panel SAVE.
+  msGdsSaveButton: "button[class*='merchantSetting_merchantSettingContainer__saveButton'], button:has-text('SAVE')",
+  // Merchant table row matched by visible text (refCode or merchant code, e.g. 'OL90202-0001').
+  msMerchantRowByText: (text: string) =>
+    `.rdt_TableRow:has-text(${JSON.stringify(text)}), div[role='row']:has-text(${JSON.stringify(text)}), table tbody tr:has-text(${JSON.stringify(text)})`,
+  // "Search table" box inside the Filters panel — filters the merchant table by code/name.
+  // DOM-first (qa2 2026-06-16): `textbox "Search"` placeholder "Search table".
+  // The default table renders only ~20 rows; terraceFinance (OL90202-0001) is NOT among them —
+  // it must be typed here and the filter applied before the row exists in the DOM.
+  msMerchantSearchTableInput: "input[placeholder='Search table']",
+  // Filter-panel apply button (accessible name "Search"). Distinct from the SAVE/GDS buttons.
+  msMerchantFilterSearchButton: "button:has-text('Search')",
 
   // ── Contract page — missing employment info (planId empty in /complete URL) ──
   /** "Next paycheck" date input shown when planId is missing in the /complete URL */

@@ -19,7 +19,7 @@ disable-model-invocation: true
 | Cenario | SSN | Merchant | Notas |
 |---------|-----|----------|-------|
 | Aprovacao generica (qualquer modalidade) | `generateTestSSN(true)` | qualquer | Default para maioria dos testes |
-| Denial generico | `generateTestSSN(false)` (termina em 9) | qualquer | UW_DENIED imediato |
+| Denial generico | `generateTestSSN(false)` (termina em 9) | qualquer | UW_DENIED imediato **so em sandbox/qa1** (mock). Em qa2 TERRACE_FINANCE aprova via BlackBox/ABB - ver caveat qa2 §6 |
 | 16m direto (single submission) | `888880916` (ou qualquer sufixo `916`) | qualquer com 16m ativo | NAO amarrado a profile |
 | Second Look (denied 13m -> approved 16m) | `100000053` | TireAgent + CA + profile Brian | Amarrado a profile especifico |
 | 13m + 16m (cliente escolhe) | `generateTestSSN(true)` | Kornerstone com 16m + bank data | planId seleciona modalidade |
@@ -143,8 +143,18 @@ Silent skip de brand = violacao.
 ## 6. Principios
 
 - `generateTestSSN(true|false)` e o gerador canonico - NUNCA fixar SSN para testes genericos
-- Ultimo digito `9` forca denial no motor UW mockado (convencao sandbox/qa)
+- Ultimo digito `9` forca denial no motor UW mockado (convencao sandbox/qa1 APENAS - ver caveat qa2 abaixo)
 - Sufixo `916` forca EligibleTerms 16 no mock BlackBox (qa1 confirmado 2026-05-24)
+
+### Caveat qa2 - UW denial determinism e environment-specific (INVIOLAVEL)
+
+> O "ending-in-9 -> UW_DENIED" e um gate de **test-server** controlado por config boolean, NAO uma propriedade da credit engine. So dispara em **nao-prod** e quando a flag `deny.ssn.ending.with.9` esta `true`. Em **sandbox/qa1** a flag esta efetivamente `true` (nega); em **qa2** esta efetivamente `false` (aprova).
+
+- **Config que controla:** `com.uownleasing.svc.service.SendApplicationService.deny.ssn.ending.with.9` (boolean, default no codigo `true`). Codigo: `svc/.../application/SendApplicationService.java:361-365` — nega se `!isProduction()` **E** flag `true` **E** `mainSSN.endsWith("9")`. Store: tabela `uown_configuration_management(key,value)` (key ausente em qa2 → default `true` deveria valer; override `false` vem de properties de deploy acima da tabela, `[HIPÓTESE]`). **TESTADO 2026-06-16: setar a key `=true` (via `POST /ConfigurationManagement/createOrUpdateConfig` + `forceReloadConfig`) NAO bastou em qa2** — ending-in-9 ainda aprovou (lead 16583). A denial tambem exige `!isProduction()`; qa2 e tratado como prod p/ esse gate (ou build defasado). Config sozinha NAO habilita denial em qa2 → usar sandbox/qa1 ou escalar dev/DevOps. (Config foi revertida.)
+- `[CONFIRMADO]` (2026-06-16, qa2): um lead terraceFinance com SSN ending-in-9 retornou **UW_APPROVED** com **0 vendor calls** em `uown_los_outbound_api_log` (o gate nao disparou → BlackBox decidiu) - `[db-observation:uown_los_lead_notes]`. Reproduzir com `src/scripts/probe-uw-denial-engine.ts <env> <leadPk>`.
+- **Antes de usar ending-in-9 como trigger de denial fora de sandbox/qa1:** confirmar a engine decisora via `uown_los_outbound_api_log` / `uown_los_lead_notes`. Se a engine real decide, o mock nao dispara.
+- Para testes de denial em qa2/prod-like: rodar o cenario negativo em sandbox/qa1 (mock honrado) OU obter trigger `UW_DENIED` deterministico confirmado pela PO/dev. Pre-UW deny (Blacklist button -> BLACKLIST_DENIED, no-business-in-state) NAO e "denied by underwriting" e nao substitui o AC.
+- Cross-link: [[application-lifecycle]] Pitfall #109; `docs/knowledge-base/underwriting-and-funding-test-data-paths.md`; [[fraud-vendors-knowledge]] §5.
 - SSN `100000053` e amarrado a profile exato - reusar com dados diferentes causa ADDRESS_MISMATCH
 - Kornerstone (KS*) sempre recebe 16m por rota separada (independente de sufixo SSN)
 - Brand e ortogonal a modalidade - depende da config do merchant, nao do nome

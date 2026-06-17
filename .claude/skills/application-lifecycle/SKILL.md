@@ -107,6 +107,10 @@ disable-model-invocation: true
 | 105 | `label:has-text(...) input[type=checkbox]` não acha coluna em `/merchant` | Checkboxes nativos sem `<label>`; `input[type=checkbox][name="<label>"]` |
 | 106 | Wait por Apply/Save após toggle de coluna em `/merchant` nunca resolve | Seleção imediata (BR-01); não há Apply |
 | 107 | Filtro Active `/merchant` sem "All"; mudança não re-filtra | react-select `#isActive` (Active/Inactive); aplicar via Search (BR-06) |
+| 108 | `/merchantSetting` row timeout — merchant não está nas ~20 rows default | Digitar o código na caixa "Search table" (`msMerchantSearchTableInput`) + aplicar ANTES de selecionar a row; tabela não carrega todos por padrão |
+| 109 | ending-in-9 SSN APROVA em qa2 (esperava UW_DENIED) | Short-circuit ending-in-9 é da engine UW MOCKADA; TERRACE_FINANCE em qa2 pode rotear engine real → mock não dispara. Sem trigger UW_DENIED determinístico confirmado em qa2 (≠ qa1) |
+| 110 | `#epo5-false`/`#epo10-false` "not visible" em `/merchantSetting` (check timeout) | EPO triple é dropdown `.collapse`: True/False vivem em painel `display:none`. Checar `-main` NÃO revela; clicar o **caret-down** (`#toggler:has(#epoN-main) svg.fa-caret-down`) abre. Depois check SEM `force:true` |
+| 111 | Último sub-test de `describe.serial` falha com `"context"/"page"/"testEnv" fixtures are not supported in afterAll` + teardown não executa (drift vaza) | `afterAll` só aceita fixtures **worker-scoped**. `db` é worker (OK); `page`/`context`/`testEnv` são test-scoped (PROIBIDO). Usar `{ browser, db }` e criar o próprio `browser.newContext()`; derivar env via `new ConfigEnvironment(process.env.ENV)` |
 
 > Catalogo completo com 90 pitfalls + observacoes cross-cutting: [references/pitfalls.md](references/pitfalls.md)
 

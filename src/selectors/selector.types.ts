@@ -506,6 +506,25 @@ export interface MerchantSettingSelectors {
   msFraudThresholdInput: string;
   msMaxApprovalAmountInput: string;
   msGdsDataToggle: string;
+  /** EPO 5% / EPO 10% are GDS-section triple-checkbox collapse dropdowns (DOM-first verified qa2 2026-06-16). */
+  msEpo5MainCheckbox: string;
+  /** Caret-down toggle that opens the EPO5 True/False collapse dropdown. */
+  msEpo5CaretToggle: string;
+  msEpo5TrueCheckbox: string;
+  msEpo5FalseCheckbox: string;
+  msEpo10MainCheckbox: string;
+  /** Caret-down toggle that opens the EPO10 True/False collapse dropdown. */
+  msEpo10CaretToggle: string;
+  msEpo10TrueCheckbox: string;
+  msEpo10FalseCheckbox: string;
+  /** GDS-section SAVE button (disabled until the form is dirty). Distinct from the filter-panel SAVE. */
+  msGdsSaveButton: string;
+  /** Merchant table row matched by visible refCode/code text (e.g. 'OL90202-0001'). */
+  msMerchantRowByText: (text: string) => string;
+  /** Filters-panel "Search table" box — filters the merchant table by code/name. */
+  msMerchantSearchTableInput: string;
+  /** Filters-panel apply button (accessible name "Search"). Distinct from SAVE/GDS buttons. */
+  msMerchantFilterSearchButton: string;
 }
 
 export interface ServicingInformationSelectors {
