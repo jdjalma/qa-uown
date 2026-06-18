@@ -1,6 +1,8 @@
 import { OriginationBasePage } from './origination-base.page.js';
 import { SELECTORS } from '../../selectors/common.selectors.js';
 import { getTableHeaders, getColumnIndexByHeaderText } from '../../helpers/table.helpers.js';
+import { FilteredCsvDownloadControls } from './filtered-csv-download.controls.js';
+import { type Download } from '@playwright/test';
 
 /**
  * Page object for the Origination portal Leads table (Search Result page).
@@ -17,6 +19,9 @@ import { getTableHeaders, getColumnIndexByHeaderText } from '../../helpers/table
  * NOTE: No Funded Amount column, no Signed Lease column.
  */
 export class LeadsPage extends OriginationBasePage {
+
+  /** Shared CSV export controls (task #1321). Leads tooltipIdPrefix = `leads-csv-download`. */
+  readonly csv = new FilteredCsvDownloadControls(this.page, 'leads-csv-download');
 
   // ── Navigation ───────────────────────────────────────────────────────
 
@@ -306,6 +311,22 @@ export class LeadsPage extends OriginationBasePage {
     const rows = this.page.locator(SELECTORS.tableRow);
     return rows.nth(rowIndex).locator(SELECTORS.tableCell).allTextContents();
   }
+
+  // ── CSV export (task #1321 — delegates to the shared controls) ───────
+
+  isDownloadCsvVisible(): Promise<boolean> { return this.csv.isDownloadCsvVisible(); }
+  isDownloadCsvEnabled(): Promise<boolean> { return this.csv.isDownloadCsvEnabled(); }
+  isEmailCsvVisible(): Promise<boolean> { return this.csv.isEmailCsvVisible(); }
+  isEmailCsvEnabled(): Promise<boolean> { return this.csv.isEmailCsvEnabled(); }
+  hoverDownloadCsv(): Promise<void> { return this.csv.hoverDownloadCsv(); }
+  getDownloadDisabledTooltip(): Promise<string | null> { return this.csv.getDownloadDisabledTooltip(); }
+  downloadCsv(): Promise<Download> { return this.csv.downloadCsv(); }
+  openEmailCsvModal(): Promise<void> { return this.csv.openEmailCsvModal(); }
+  emailCsvModalTitle(): Promise<string | null> { return this.csv.emailCsvModalTitle(); }
+  isEmailCsvSendEnabled(): Promise<boolean> { return this.csv.isEmailCsvSendEnabled(); }
+  fillEmailCsvAddress(address: string): Promise<void> { return this.csv.fillEmailCsvAddress(address); }
+  cancelEmailCsvModal(): Promise<void> { return this.csv.cancelEmailCsvModal(); }
+  getTotalRowCount(): Promise<number | null> { return this.csv.getTotalRowCount(); }
 
   // ── Private ──────────────────────────────────────────────────────────
 

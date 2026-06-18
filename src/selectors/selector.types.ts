@@ -85,6 +85,8 @@ export interface SearchSelectors {
   searchInputLegacy: string;
   searchTypeDropdown: string;
   searchButton: string;
+  /** Overview table-panel free-text search ("Search table") — empty-set lever (#1321). */
+  overviewTableSearch: string;
   searchResultAccountLink: string;
   // ── Quick search bar (Origination + Servicing) — svc#454 ──
   /** Desktop-only wrapper for the quick search form (Bootstrap `d-lg-block`, ≥992px). */
@@ -667,6 +669,33 @@ export interface ColumnOrderSelectors {
   csvDownloadTrigger: string;
   /** CSV email-variant trigger (sends CSV via email — no direct download). */
   csvEmailTrigger: string;
+
+  // ── Task #1321 — CSV export size-limit guard (Overview + Leads) ──
+  /** Precise Download CSV button (the `<button>` with text "Download CSV").
+   *  Hash-agnostic class probe `filtered-csv-download_csvButton__…` plus text. */
+  csvDownloadButton: string;
+  /** Download CSV button in its ENABLED state (`filtered-csv-download_enabledButton__…`). */
+  csvDownloadButtonEnabled: string;
+  /** Download CSV button in its DISABLED state (`filtered-csv-download_disabledButton__…`;
+   *  `background:#5a6268; cursor:not-allowed`). */
+  csvDownloadButtonDisabled: string;
+  /** Precise Email CSV button (the `<button>` with text "Email CSV"). */
+  csvEmailButton: string;
+  /** Directing tooltip wrapper for the Download CSV control, by tooltipIdPrefix.
+   *  Overview = `overview-csv-download`, Leads = `leads-csv-download`. */
+  csvDownloadTooltipById: (tooltipIdPrefix: string) => string;
+  /** Email CSV modal dialog (title "Which email should we send this CSV file to?"). */
+  csvEmailModal: string;
+  /** Email CSV modal title text. */
+  csvEmailModalTitle: string;
+  /** Email address input inside the Email CSV modal (placeholder "Enter your email..."). */
+  csvEmailModalInput: string;
+  /** Send button inside the Email CSV modal (disabled until an address is entered). */
+  csvEmailModalSendButton: string;
+  /** CANCEL button inside the Email CSV modal. */
+  csvEmailModalCancelButton: string;
+  /** rdt pagination footer text container — holds the "X-Y of N" total. */
+  rdtPaginationFooter: string;
 }
 
 // ── Servicing — CC History / Edit Pending CC Payment Modal ────────────────────

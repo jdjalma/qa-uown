@@ -17,6 +17,7 @@ export type { TermsSummary } from './terms-of-agreement.page.js';
 export { MerchantSettingPage } from './merchant-setting.page.js';
 export { ErrorLogPage } from './error-log.page.js';
 export { LeadsPage } from './leads.page.js';
+export { FilteredCsvDownloadControls } from './filtered-csv-download.controls.js';
 export { ProgramsPage } from './programs.page.js';
 export { OpenToBuyPage } from './open-to-buy.page.js';
 export { NewApplicationFiltersPage } from './new-application-filters.page.js';

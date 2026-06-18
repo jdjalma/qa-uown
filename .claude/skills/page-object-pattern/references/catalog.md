@@ -14,12 +14,47 @@
  - `getDashboardMetric(metricName)` - returns text of a named metric card
  - `verifyDashboardLoaded` - waits for spinner, then races between filters button and table
  - `getRowDataByReferenceId(leadPk)` - paginates the leads table, returns row matching `Reference #`
+ - `searchTable(value)` (added 2026-06-18, #1321) - types into the **table-panel** "Search table" free-text box (`SELECTORS.overviewTableSearch`). Use a non-matching value to drive the table to an **empty set** — this is the reliable empty-set lever (the table-panel `#fromDate` resets to today on render, so a future-only date window does NOT reliably empty the table — pitfall #115)
+ - `expandTableFilters` (added 2026-06-18, #1321) - expands the **table-panel** filter form via `multiSelectFilterButton` with a **retry loop**. NOT a single click: `verifyDashboardLoaded` returns when the Filters button appears (Promise.race) BEFORE the table finishes loading on QA2, so a re-render can re-collapse the width-collapse-animated panel right after a toggle click (pitfall #116)
+ - `csv: FilteredCsvDownloadControls` field (added 2026-06-18, #1321) - composed CSV controls (see component below), constructed with `tooltipIdPrefix='overview-csv-download'`
 
 - **Selector:** `SELECTORS.dashboardCard = "[class*='summaryBox__']"` (added in). CSS module prefix anchor — hash suffix changes per webpack build. Do NOT hardcode the full hash class.
+
+- **Two filter forms (pitfall #114 — disambiguate by id, never positional nth()):** Overview renders TWO independent filter forms, each with MM/DD/YYYY date inputs:
+ - **Top-bar KPI form:** ids `#from`/`#to`, toggle class `overview_filterButton__` — drives the metric cards.
+ - **Table panel:** ids `#fromDate`/`#toDate`, toggle class `index-module_filterButton__` — drives the table + CSV export.
+ A positional `nth()` selector hits the KPI form. Always target the table-panel inputs by id and expand via the table-panel toggle (`expandTableFilters`).
 
 - **Auth / navigation notes (see pitfalls #74-#76):**
  - Navigate to `${originationBase}/overview`, NOT `originationBase` root (root = login page always)
  - `localStorage.clear` required before reload if testing stale-data absence after session deletion
+
+---
+
+## FilteredCsvDownloadControls - shared CSV export component (added 2026-06-18, #1321)
+
+- **Location:** `src/pages/origination/filtered-csv-download.controls.ts`
+- **Extends:** none — plain composed controls class (`constructor(page, tooltipIdPrefix)`), NOT a page object. Composed into `OverviewPage` and `LeadsPage` via a `csv` field; mirrors the app's single reusable `FilteredCsvDownload` component (MR !1481) so the tooltip/modal/state logic is not duplicated across the two screens (rule #2).
+- **`tooltipIdPrefix`:** `overview-csv-download` (Overview) | `leads-csv-download` (Leads) — the ONLY per-screen difference besides the download filename (`all-filtered-leads.csv` vs `leads-results.csv`).
+- **Methods (all return data/Locators — no `expect` inside, assertions live in tests):**
+ - `isDownloadCsvVisible` / `isDownloadCsvEnabled` - Download CSV gated by `hasDownloadPermission && headers.length>0`; enabled = `enabledButton` class present AND `disabledButton` absent
+ - `isEmailCsvVisible` / `isEmailCsvEnabled` - Email CSV always rendered; disabled ONLY on empty table (NOT gated by download permission or size limit)
+ - `hoverDownloadCsv` / `getDownloadDisabledTooltip` - hover surfaces the **directing** tooltip ("This export is too large to download directly. Please use Email CSV instead. …") rendered ONLY in the size-exceeded case. `getDownloadDisabledTooltip` matches the directing PHRASE scoped to the wrapper span, NOT the wrapper's raw text (the `<span>` wrapper's `textContent` is just the button label "Download CSV" — treating it as a tooltip is a false positive; the enabled case correctly returns null)
+ - `downloadCsv` - clicks Download CSV, returns captured `Download` (happy path), via `waitForDownload`
+ - `openEmailCsvModal` / `emailCsvModalTitle` / `isEmailCsvSendEnabled` / `fillEmailCsvAddress` / `cancelEmailCsvModal` - Email CSV modal flow ("Which email should we send this CSV file to?"; Send disabled until address typed; CANCEL closes without sending)
+ - `getTotalRowCount` - reads the rdt pagination footer ("X-Y of N" → N) for row-count reconciliation against the CSV
+- **CRITICAL — button disambiguation (pitfall #117):** Email CSV and Download CSV buttons SHARE the `filtered-csv-download_csvButton` class, and Email CSV is FIRST in the DOM. A bare class selector + `.first()` resolves to Email CSV → a "download" click opens the email modal. `SELECTORS.csvDownloadButton` is disambiguated by `:has-text('Download CSV')` — never select the download button by class alone.
+- **Selectors (`common.selectors.ts`):** `csvDownloadButton` / `csvDownloadButtonEnabled` / `csvDownloadButtonDisabled`, `csvEmailButton`, `csvDownloadTooltipById(prefix)`, `csvEmailModal` / `csvEmailModalTitle` / `csvEmailModalInput` / `csvEmailModalSendButton` / `csvEmailModalCancelButton`, `rdtPaginationFooter`.
+- **Helpers consumed:** `waitForDownload`, `parseCsv`, `deleteDownloadedFile` (`downloads.helpers.ts`).
+- **KB:** `docs/knowledge-base/overview-leads-csv-export-size-limit.md` (48 MiB size guard, threshold/messages, Overview-vs-Leads diffs).
+
+---
+
+## LeadsPage - Origination leads list (CSV additions 2026-06-18, #1321)
+
+- **Location:** `src/pages/origination/leads.page.ts`
+- **Extends:** `OriginationBasePage`
+- **CSV methods (added #1321):** delegate to a composed `csv: FilteredCsvDownloadControls` field constructed with `tooltipIdPrefix='leads-csv-download'` — same public surface as Overview's `csv`. Leads CSV exports 17 columns incl. SSN; downloaded artifacts must be deleted via `deleteDownloadedFile` (PII hygiene).
 
 ---
 

@@ -71,6 +71,28 @@ page.getByRole('button', { name: /^E[-\s]?Sign$/i })
 
 **Origem:** F-005-remanescente (2026-05-24) — `signContractButton` em `OriginationCustomerPage` colidia com botão de status `"Change to Signed"`. Ver [[application-lifecycle]] pitfall #67.
 
+## Regra — botões que COMPARTILHAM a mesma classe: desambiguar por texto único, nunca `.first()`
+
+Quando dois botões na mesma página são renderizados pelo MESMO componente e compartilham a classe CSS (ex: `filtered-csv-download_csvButton` para Email CSV E Download CSV), um seletor de classe nua + `.first()` casa com o PRIMEIRO no DOM — que pode NÃO ser o que você quer.
+
+**Caso canônico (#1321, 2026-06-18, MCP em QA2):** Email CSV e Download CSV compartilham `filtered-csv-download_csvButton`; **Email CSV é primeiro no DOM**. Um seletor `button[class*='filtered-csv-download_csvButton']` + `.first()` resolve para Email CSV → um clique de "download" abre o modal de email (sintoma silencioso: o teste de download passa pelo caminho errado).
+
+```ts
+// ❌ Resolve para Email CSV (primeiro no DOM) — clica o botão errado
+page.locator("button[class*='filtered-csv-download_csvButton']").first()
+
+// ✅ Desambiguar pelo texto único do botão alvo
+csvDownloadButton: "button[class*='filtered-csv-download_csvButton']:has-text('Download CSV')",
+```
+
+**Como detectar:** `browser_evaluate` listando todos os elementos com a classe compartilhada → se N > 1, desambiguar por `:has-text(...)`, `getByRole({ name })` ou um atributo único. Ver [[application-lifecycle]] pitfall #117 e [[page-object-pattern]] FilteredCsvDownloadControls.
+
+## Regra — múltiplos forms com inputs idênticos na mesma página: alvejar por id, nunca por posição
+
+Quando uma tela tem DOIS forms com campos do mesmo tipo/placeholder (ex: Overview tem um form KPI no topo e um form de tabela embaixo, AMBOS com inputs de data MM/DD/YYYY), um seletor posicional (`nth()`) é frágil e tende a casar o form errado.
+
+**Caso canônico (#1321, 2026-06-18):** Overview top-bar KPI form usa ids `#from`/`#to` (toggle `overview_filterButton__`, drives metric cards) vs. table panel `#fromDate`/`#toDate` (toggle `index-module_filterButton__`, drives table + CSV). `nth()` posicional acerta o KPI form. Alvejar os inputs do table panel por id e expandir via o toggle do próprio painel. Ver [[application-lifecycle]] pitfall #114.
+
 ## Caso histórico (2026-05-11)
 
 `unified-flow.spec.ts` "Items Purchased" — `TimeoutError`. Investigação inicial assumiu timing; fix proposto era aumentar timeout. **Causa real**: o elemento era `<a>` (link), não `<button>`. `getByRole('button', { name: 'Items Purchased' })` nunca casaria.

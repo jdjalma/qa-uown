@@ -94,6 +94,12 @@ export const SELECTORS: AppSelectors = {
   searchInputLegacy: "input[name='search']",
   searchTypeDropdown: '#search-type-dropdown',
   searchButton: "button[name='searchButton']",
+  // Overview TABLE-panel free-text search (placeholder "Search table"). A non-matching
+  // value yields a deterministic EMPTY table (DOM-confirmed QA2 2026-06-18: 0 rows +
+  // "There are no records to display" + both export buttons disabled). Used as the
+  // empty-set lever for the Overview CTs (#1321) — the From/To date window is unreliable
+  // because the table-panel `#fromDate` resets to today (Formik default).
+  overviewTableSearch: "input[placeholder='Search table']",
   // ── Quick Search bar (svc#454 — Origination + Servicing) ──────────
   // DOM live-validated for SPEC RU05.26.1.52.0 (qa1, 1440×900, post-login).
   // The desktop quick search form is wrapped in `<form class="d-none d-lg-block">`
@@ -698,6 +704,34 @@ export const SELECTORS: AppSelectors = {
   // CSV export probes (SPEC § 0.5 + multi-select-filters.spec.ts CT-09 pattern).
   csvDownloadTrigger: "button:has-text('Download CSV'), a:has-text('Download CSV'), button:has-text('Export CSV'), a:has-text('Export CSV'), button:has-text('Export')",
   csvEmailTrigger: "button:has-text('Email CSV'), a:has-text('Email CSV')",
+
+  // ── Task #1321 — CSV export size-limit guard (Overview + Leads) ──
+  // The app renders a single `FilteredCsvDownload` component on both screens.
+  // Download CSV = <button> "Download CSV"; classes include
+  // `filtered-csv-download_csvButton__<hash>` and, depending on state,
+  // `filtered-csv-download_enabledButton__<hash>` or
+  // `filtered-csv-download_disabledButton__<hash>` (hash-agnostic match).
+  // DOM facts captured on QA2 2026-06-18 (deployed bundle + live React props);
+  // validated by running this task's E2E. KB: overview-leads-csv-export-size-limit.md.
+  // IMPORTANT: Email CSV and Download CSV buttons SHARE the `filtered-csv-download_csvButton`
+  // class (DOM-confirmed: both match `button[class*='filtered-csv-download_csvButton']`,
+  // and the Email CSV button is FIRST in the DOM). So this must disambiguate by the unique
+  // "Download CSV" text — otherwise `.first()` resolves to the Email CSV button and a
+  // download click opens the email modal instead (root cause of the CT-01/CT-02 download timeout).
+  csvDownloadButton: "button[class*='filtered-csv-download_csvButton']:has-text('Download CSV')",
+  csvDownloadButtonEnabled: "button[class*='filtered-csv-download_csvButton'][class*='enabledButton']",
+  csvDownloadButtonDisabled: "button[class*='filtered-csv-download_csvButton'][class*='disabledButton']",
+  csvEmailButton: "button:has-text('Email CSV')",
+  // The Download CSV button is wrapped in a <span id="{tooltipIdPrefix}-{random}">.
+  csvDownloadTooltipById: (tooltipIdPrefix: string) => `span[id^=${JSON.stringify(tooltipIdPrefix + '-')}]`,
+  // Email CSV modal — a dialog with title "Which email should we send this CSV file to?".
+  csvEmailModal: "[role='dialog']:has-text('Which email should we send this CSV file to?'), .modal:has-text('Which email should we send this CSV file to?')",
+  csvEmailModalTitle: "text=Which email should we send this CSV file to?",
+  csvEmailModalInput: "input[placeholder='Enter your email...']",
+  csvEmailModalSendButton: "button:has-text('Send')",
+  csvEmailModalCancelButton: "button:has-text('CANCEL')",
+  // rdt pagination footer — text matches /\d+-\d+ of (\d+)/ (the filtered total).
+  rdtPaginationFooter: '.rdt_Pagination',
 
   // ── Task #505 — Opt Out AI (Servicing — Primary Contact / Mobile Phone) ──
   primaryContactEditButton: '#PrimaryContact-edit',

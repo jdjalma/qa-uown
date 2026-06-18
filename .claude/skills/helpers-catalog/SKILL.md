@@ -25,7 +25,7 @@ disable-model-invocation: true
 | `common.helpers.ts` | `src/helpers/` | Shared utilities (sleep, retry, etc.) |
 | `database.helpers.ts` | `src/helpers/` | DB queries, polling, waitForRecord |
 | `date.helpers.ts` | `src/helpers/` | Date formatting/parsing |
-| `downloads.helpers.ts` | `src/helpers/` | File download verification |
+| `downloads.helpers.ts` | `src/helpers/` | File download verification + CSV parse + PII-safe cleanup (`waitForDownload`, `saveDownload`, `downloadAndReadContent`, `getLastDownloadedFile`, `parseCsv`, `deleteDownloadedFile`) |
 | `email.helpers.ts` | `src/helpers/` | IMAP email reading (Gmail) — OTP/link extraction with UID-watermark freshness filter (`snapshotInboxUid` + `getVerificationCode(..., { sinceUid })`) |
 | `navigation.helpers.ts` | `src/helpers/` | Page navigation patterns |
 | `signwell.helpers.ts` | `src/helpers/` | Signwell e-sign helpers |
@@ -47,6 +47,17 @@ disable-model-invocation: true
 | `sticky.helpers.ts` | `src/helpers/` | DB poll + introspection for StickyRecoverSweep |
 | `datetime.helpers.ts` | `src/helpers/` | TZ-tolerant assertion for Java LocalDateTime vs DB timestamptz |
 | `search-sql-explain.helpers.ts` | `src/helpers/` | EXPLAIN ANALYZE runner for SQLs in `uown_sv_sql_config` |
+
+## CSV export helpers — `downloads.helpers.ts` (added 2026-06-18, #1321)
+
+For asserting a downloaded CSV's column SET and row count against the portal total ([[check-points]] consequence oracle) — not just "a file arrived".
+
+| Function | Signature → Purpose |
+|----------|---------------------|
+| `parseCsv(content)` | `(string) → { headers: string[]; dataRowCount: number }` — RFC-4180-aware: respects double-quoted fields with embedded commas/newlines so quoted multi-line cells don't inflate the row count. Strips BOM. Does NOT log cell content (Leads CSV carries SSN — PII hygiene) |
+| `deleteDownloadedFile(filePath)` | `(string \| null) → void` — best-effort cleanup of a downloaded artifact (Leads CSV contains SSN). No-ops on null/missing; never logs content. Call after assertions on any download that may carry PII |
+
+> Pair with `waitForDownload` (capture) → `saveDownload` (persist) → `parseCsv` (assert) → `deleteDownloadedFile` (cleanup). The `FilteredCsvDownloadControls` component ([[page-object-pattern]]) returns the `Download` from `downloadCsv()` for this chain.
 
 ## Key database.helpers.ts Functions (quick reference)
 

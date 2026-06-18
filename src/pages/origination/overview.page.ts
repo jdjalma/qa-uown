@@ -1,12 +1,17 @@
 import { OriginationBasePage } from './origination-base.page.js';
 import { SELECTORS } from '../../selectors/common.selectors.js';
 import { findFirstMatchingRow, getNormalizedHeaders, getColumnIndexByHeaderText, goToNextPage } from '../../helpers/table.helpers.js';
+import { FilteredCsvDownloadControls } from './filtered-csv-download.controls.js';
+import { type Download } from '@playwright/test';
 
 export class OverviewPage extends OriginationBasePage {
   readonly dashboardCards = this.page.locator(SELECTORS.dashboardCard);
   readonly totalApplications = this.page.locator('[data-metric="totalApplications"]');
   readonly approvedCount = this.page.locator('[data-metric="approved"]');
   readonly pendingCount = this.page.locator('[data-metric="pending"]');
+
+  /** Shared CSV export controls (task #1321). Overview tooltipIdPrefix = `overview-csv-download`. */
+  readonly csv = new FilteredCsvDownloadControls(this.page, 'overview-csv-download');
 
   async getDashboardMetric(metricName: string): Promise<string> {
     const metric = this.page.locator(`[data-metric="${metricName}"]`);
@@ -99,6 +104,57 @@ export class OverviewPage extends OriginationBasePage {
   async selectAllLocations(): Promise<void> {
     await this.expandFilters();
     await this.selectMultiFilterOption('Location', 'Select All');
+  }
+
+  /**
+   * Sets the Overview TABLE-panel From/To date inputs (MM/DD/YYYY).
+   * Overview has TWO filter forms, each with MM/DD/YYYY inputs: the top-bar KPI form
+   * (`#from`/`#to`, drives the metric cards) and the TABLE panel (`#fromDate`/`#toDate`,
+   * drives the table + CSV export). Target the table-panel inputs BY ID — positional
+   * nth(0)/nth(1) hits the KPI form and leaves the table unfiltered. DOM-confirmed QA2
+   * 2026-06-18. NOTE: `#fromDate` resets to today (Formik default), so a future-only
+   * window is NOT a reliable empty-set lever — use `searchTable()` for that.
+   */
+  async setDateRange(fromDate: string, toDate: string): Promise<void> {
+    await this.expandTableFilters();
+    await this.page.locator('#fromDate').fill(fromDate);
+    await this.page.locator('#toDate').fill(toDate);
+  }
+
+  /**
+   * Expands the TABLE-panel filter form (distinct from the top KPI filter form).
+   * The two forms have separate toggles: the KPI form uses `overview_filterButton__`
+   * (handled by `expandFilters`), while the TABLE panel — `#fromDate`/`#toDate`,
+   * Merchant Support, "Search table", Status — is toggled by `index-module_filterButton__`
+   * (`multiSelectFilterButton`). The table-panel inputs are hidden until this is clicked.
+   * DOM-confirmed QA2 2026-06-18.
+   */
+  async expandTableFilters(): Promise<void> {
+    await this.waitForSpinner();
+    const searchInput = this.page.locator(SELECTORS.overviewTableSearch);
+    const toggle = this.page.locator(SELECTORS.multiSelectFilterButton).first();
+    // The table panel is a width-collapse animation; the Overview's initial table load
+    // can re-render and re-collapse it right after the toggle click (race observed on QA2).
+    // Retry the toggle until the input is actually visible — and only click when it is NOT
+    // visible, so an already-open panel is never toggled shut.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (await searchInput.isVisible({ timeout: 1_500 }).catch(() => false)) return;
+      await toggle.click().catch(() => {});
+      if (await searchInput.isVisible({ timeout: 3_000 }).catch(() => false)) return;
+    }
+    // Surface a clear failure instead of silently proceeding to a fill timeout.
+    await searchInput.waitFor({ state: 'visible', timeout: 5_000 });
+  }
+
+  /**
+   * Types a value into the Overview TABLE-panel free-text search ("Search table").
+   * A non-matching value (then `submitFilters`) yields a deterministic EMPTY table —
+   * the reliable empty-set lever for #1321 (DOM-confirmed QA2 2026-06-18: 0 rows +
+   * "There are no records to display" + both export buttons disabled).
+   */
+  async searchTable(value: string): Promise<void> {
+    await this.expandTableFilters();
+    await this.page.locator(SELECTORS.overviewTableSearch).fill(value);
   }
 
   /**
@@ -215,6 +271,22 @@ export class OverviewPage extends OriginationBasePage {
       .waitFor({ state: 'hidden', timeout: 3_000 })
       .catch(() => {});
   }
+
+  // ── CSV export (task #1321 — delegates to the shared controls) ───────
+
+  isDownloadCsvVisible(): Promise<boolean> { return this.csv.isDownloadCsvVisible(); }
+  isDownloadCsvEnabled(): Promise<boolean> { return this.csv.isDownloadCsvEnabled(); }
+  isEmailCsvVisible(): Promise<boolean> { return this.csv.isEmailCsvVisible(); }
+  isEmailCsvEnabled(): Promise<boolean> { return this.csv.isEmailCsvEnabled(); }
+  hoverDownloadCsv(): Promise<void> { return this.csv.hoverDownloadCsv(); }
+  getDownloadDisabledTooltip(): Promise<string | null> { return this.csv.getDownloadDisabledTooltip(); }
+  downloadCsv(): Promise<Download> { return this.csv.downloadCsv(); }
+  openEmailCsvModal(): Promise<void> { return this.csv.openEmailCsvModal(); }
+  emailCsvModalTitle(): Promise<string | null> { return this.csv.emailCsvModalTitle(); }
+  isEmailCsvSendEnabled(): Promise<boolean> { return this.csv.isEmailCsvSendEnabled(); }
+  fillEmailCsvAddress(address: string): Promise<void> { return this.csv.fillEmailCsvAddress(address); }
+  cancelEmailCsvModal(): Promise<void> { return this.csv.cancelEmailCsvModal(); }
+  getTotalRowCount(): Promise<number | null> { return this.csv.getTotalRowCount(); }
 
   // ── Private helpers ──────────────────────────────────────────────────
 
