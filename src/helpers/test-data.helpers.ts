@@ -6,7 +6,10 @@
  * runId generation, and applicant/order object construction.
  */
 import { ConfigEnvironment, type EnvName, generateRunId, generateTestSSN, generateTestPhone } from '@config/index.js';
-import { getAddressForState, type AddressData, getMerchant, type MerchantConfig } from '@data/index.js';
+import {
+  getAddressForState, type AddressData, getMerchant, type MerchantConfig,
+  randomFullName, randomAddress, randomAdultDob, resolveSsn, type SsnStrategy,
+} from '@data/index.js';
 import type { MerchantInfo, ApplicantInfo, OrderInfo } from '@api/bodies/index.js';
 
 // ── Options ─────────────────────────────────────────────────────────
@@ -57,6 +60,22 @@ export interface BuildTestDataOptions {
    * create fresh applications and must be immune to stale blacklist entries.
    */
   uniqueAddress?: boolean;
+  /**
+   * Use the realistic random-data factory for the applicant: a real-looking
+   * random name, a random VALID address (real city/ZIP for the state + random
+   * house number/unit — inherently blacklist-immune, so `uniqueAddress` is
+   * redundant), and a random adult DOB. Email still comes from the worker-unique
+   * inbox alias; SSN/state are unchanged.
+   * **Default: `true`.** Opt out with `realistic: false` to get the legacy
+   * deterministic `TestFN…/TestLN…` name + static `STATE_ADDRESSES` fixture
+   * (only when a test specifically needs a pinned name/address).
+   */
+  realistic?: boolean;
+  /**
+   * SSN strategy when `realistic` is set: `'approve'` | `'deny'` | `'sticky16m'`
+   * | a literal SSN. Defaults follow `approved` (`'approve'`/`'deny'`).
+   */
+  ssn?: SsnStrategy;
 }
 
 // ── Result ──────────────────────────────────────────────────────────
@@ -88,23 +107,31 @@ export function buildTestData(options: BuildTestDataOptions): TestData {
     orderDescription = 'Test',
     approved = true,
     emailOverride,
-    dob = '01/01/1984',
+    dob,
     uniqueAddress = false,
+    realistic = true,
+    ssn: ssnStrategy,
   } = options;
 
   const envName = envOverride ?? process.env.ENV ?? 'sandbox';
 
   const env = new ConfigEnvironment(envName as EnvName);
-  const baseAddress = getAddressForState(state);
   const merchantConfig = getMerchant(merchantName, envName);
   const runId = generateRunId();
 
-  // Optionally vary streetAddress1 per run to dodge stale blacklist entries on
-  // the shared static fixture address (see `uniqueAddress` doc above). The
-  // suffix is derived from runId so it stays unique + reproducible per run.
-  const address = uniqueAddress
-    ? { ...baseAddress, street: `${baseAddress.street} Unit ${runId.slice(-5)}` }
-    : baseAddress;
+  // Resolve the address. Realistic mode → real city/ZIP + random house number
+  // (already blacklist-immune). Legacy mode → static per-state fixture, with the
+  // optional `uniqueAddress` unit suffix to dodge stale blacklist entries.
+  let address: AddressData;
+  if (realistic) {
+    const ra = randomAddress(state);
+    address = { street: ra.street, city: ra.city, zipCode: ra.zip };
+  } else {
+    const baseAddress = getAddressForState(state);
+    address = uniqueAddress
+      ? { ...baseAddress, street: `${baseAddress.street} Unit ${runId.slice(-5)}` }
+      : baseAddress;
+  }
 
   const merchant: MerchantInfo = {
     username: merchantConfig.username,
@@ -112,20 +139,26 @@ export function buildTestData(options: BuildTestDataOptions): TestData {
     number: merchantConfig.number,
   };
 
-  // Name suffix is always alpha-only (no numbers/hyphens) — required by application name fields
+  // Name: realistic pool, or the legacy alpha-only `TestFN<runId>` suffix
+  // (alpha-only is required by the application name fields).
   const nameSuffix = runId.replace(/[^a-zA-Z]/g, '').slice(0, 8) || 'abcdef';
+  const { firstName, lastName } = realistic
+    ? randomFullName()
+    : { firstName: `TestFN${nameSuffix}`, lastName: `TestLN${nameSuffix}` };
 
   const applicant: ApplicantInfo = {
-    firstName: `TestFN${nameSuffix}`,
-    lastName: `TestLN${nameSuffix}`,
+    firstName,
+    lastName,
     email: emailOverride ?? env.uniqueEmailAlias,
-    ssn: generateTestSSN(approved),
+    ssn: realistic
+      ? resolveSsn(ssnStrategy ?? (approved ? 'approve' : 'deny'))
+      : generateTestSSN(approved),
     phone: generateTestPhone(),
     address: address.street,
     city: address.city,
     state,
     zip: address.zipCode,
-    dob,
+    dob: dob ?? (realistic ? randomAdultDob() : '01/01/1984'),
   };
 
   const order: OrderInfo = {

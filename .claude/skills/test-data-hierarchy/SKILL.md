@@ -14,6 +14,14 @@ disable-model-invocation: true
 4. **SELECT direto no DB** — leitura é sempre OK (read-only)
 5. **INSERT/UPDATE/DELETE direto no DB** — PROIBIDO sem autorização explícita do user (Exception 3 do CLAUDE.md)
 
+> **Realistic fresh data é first-class (camada 1/2).** A factory `src/data/realistic/`
+> (e o atalho `buildTestData({ realistic: true, ssn })`) gera applicant/cart realista e
+> **único por chamada** — `randomAddress` randomiza house#+unit, tornando o endereço
+> inerentemente **blacklist-immune** (resolve o blacklist-poisoning da fixture estática
+> compartilhada). É a forma PREFERIDA de obter applicants/carts frescos. Use
+> `categoryForMerchant(clientType)` para manter os itens coerentes com o merchant.
+> Catálogo completo em [[helpers-catalog]] · fontes: `src/data/realistic/`, `src/helpers/test-data.helpers.ts`.
+
 ## Quando aplicar
 
 Sempre que planejar:

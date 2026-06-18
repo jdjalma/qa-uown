@@ -84,8 +84,43 @@ disable-model-invocation: true
 | Merchants | `src/data/merchants.ts` |
 | Test programs | `src/data/test-programs.ts` |
 | Test cards | `src/data/test-cards.ts` |
-| Addresses | `src/data/addresses.ts` |
+| Addresses (static fixture) | `src/data/state-address-mapper.ts` (`STATE_ADDRESSES`) |
+| Realistic random-data factory | `src/data/realistic/` — see subsection below |
 | Constants | `src/config/constants.ts` |
+
+### Realistic data factory — `src/data/realistic/` (added 2026-06)
+
+Generates real-looking, **unique-per-call** fresh data (people, names, addresses,
+products, both cart shapes). REUSES — does not duplicate — `generateTestSSN`/
+`generateTestPhone` (`@config/constants`), the env email alias, and the PayPair
+builders + `TireAgentProduct`/`PayPairPersonalInfo` (`src/data/tire-agent.data.ts`).
+High-level API imports from `@data/index.js`; RNG primitives (`int`, `pick`,
+`splitAmount`, …) stay namespaced under `@data/realistic`.
+
+| Function | Purpose (signature) |
+|----------|---------------------|
+| `randomApplicant(opts)` | `(RandomPersonOptions) → ApplicantInfo` — name + valid unique address + test SSN + phone + adult DOB |
+| `randomPerson(opts)` | `→ RandomPerson` (ApplicantInfo + `annualIncome`) |
+| `randomPayPairPersonalInfo(opts)` | `→ PayPairPersonalInfo` (partner-portal) |
+| `resolveSsn(strategy)` | `'approve' \| 'deny' \| 'sticky16m'(082390916) \| literal` |
+| `randomLineItems(opts)` | `→ InvoiceLineItem[]` (UOWN sendApplication/sendInvoice) |
+| `randomPayPairCart(opts)` | `→ TireAgentProduct[]` (PayPair Cart) |
+| `randomCart` / `cartToLineItems` / `cartToPayPair` / `cartTotal` | neutral `CartLine[]` model + adapters |
+| `categoryForMerchant(clientType)` | merchant `client_type` → catalog category (DANIELS_JEWELERS→Jewelry, TIREAGENT→Tires, KORNERSTONE→Furniture) — keeps cart items coherent with the MERCHANT |
+| `randomAddress(state)` | real (city,ZIP) per state + random house#/unit ⇒ **unique street every call (blacklist-immune)** |
+| `randomFullName` / `PRODUCT_CATALOG` | name pool (120 first / 112 last) / 52-item catalog across ~15 categories (each item's category matches its description); real (city,ZIP) for ~24 states |
+
+`RandomCartOptions`: `{ count, total, maxQuantity, category }`. Shortcut:
+`buildTestData({ realistic: true, ssn })` → realistic name + valid unique address + adult DOB in one call.
+
+```ts
+const applicant = randomApplicant({ state: 'OH', ssn: 'sticky16m' });
+const lineItems = randomLineItems({ category: categoryForMerchant('DANIELS_JEWELERS'), total: 900 });
+const ppCart    = randomPayPairCart({ category: 'Tires', total: 800 });
+```
+
+**When NOT to use:** a test that must pin a deterministic SSN/address for a routing
+assertion (use a literal `SsnStrategy` / static `STATE_ADDRESSES`).
 
 ## When to Create a New Helper
 

@@ -1,13 +1,16 @@
 /**
  * Source-of-truth data file for the multi-state signing regression suite.
  *
- * Task #2 deliverable — feeds `tests/e2e/signing-regression/multi-state-signing.spec.ts` (Task #4).
- * Spec: `docs/taskTestingUown/multiStateSigningRegression/multiStateSigningRegression-spec.md`
- *
- * Routing rule (qa2 baseline, confirmed 2026-04-28):
- *   - CA → GOWSIGN (only state with a GowSign template deployed in qa2)
- *   - All other allowed states → SIGNWELL (fallback via merchant.esign_client)
+ * Routing rule (qa2 baseline):
+ *   - A state routes to GOWSIGN when a GowSign template exists for it in qa2; else SIGNWELL
+ *     (fallback via merchant.esign_client). The GowSign rollout is expanding state-by-state.
  *   - NJ, VT, MN, ME → BLOCKED (stateCheck denial — no esign_document created)
+ *   - ⚠️ STALE-RISK (rule #16): the original 2026-04-28 baseline assumed "CA only" GowSign.
+ *     As of 2026-06-17 the live qa2 map has GowSign templates for AL, CA, FL, GA, LA, NC, NY,
+ *     OH, PA (see docs/knowledge-base/16m-lease-and-gowsign-signwell-routing-qa2.md). Only the
+ *     CA, AL and TX rows below have been re-verified against the live DB (2026-06-18). The
+ *     remaining states (FL/GA/LA/NC/NY/OH/PA still marked SIGNWELL here) are UNVERIFIED and
+ *     likely stale — re-confirm with getGowSignTemplatesForState() before trusting them.
  *
  * Env-specific overrides (PROVIDER_ENV_OVERRIDES):
  *   - In stg the GoSign template for CA is NOT yet deployed (2026-04-29).
@@ -84,7 +87,10 @@ export const STATE_MATRIX: readonly StateMatrixRow[] = [
   {
     state: 'AL',
     allowed: true,
-    expectedProvider: 'SIGNWELL',
+    // GOWSIGN (qa2): AL templates AL_2025_SAC (pk25, 13m) + AL_2025_SAC_16_MONTHS (pk26, 16m)
+    // are deployed. Live DB + UI confirmed 2026-06-18 (leads 16649 13m, 16653 16m →
+    // uown_esign_document.client='GOWSIGN'). stg lags → SIGNWELL via override below.
+    expectedProvider: 'GOWSIGN',
     lessor: 'Mollie, LLC, dba Uown',
     validMerchant: 'TerraceFinance',
   },
@@ -348,11 +354,12 @@ export const STATE_MATRIX: readonly StateMatrixRow[] = [
     validMerchant: 'TerraceFinance',
   },
   {
-    // TX: GowSign template deployed via svc#515 (2026-05-26).
-    // Previously SIGNWELL (fallback); now routes to GOWSIGN like CA.
     state: 'TX',
     allowed: true,
-    expectedProvider: 'GOWSIGN',
+    // SIGNWELL: TX has NO GowSign template in qa2 (0 rows in uown_gow_sign_template,
+    // live DB confirmed 2026-06-18) → falls back to merchant.esign_client.
+    // TX is the EPO *content reference* for the AL/OH 16m templates, NOT a GowSign-routed state.
+    expectedProvider: 'SIGNWELL',
     lessor: 'Mollie, LLC, dba Uown',
     validMerchant: 'TerraceFinance',
   },
@@ -481,6 +488,8 @@ export type EnvName = 'sandbox' | 'qa1' | 'qa2' | 'stg' | 'dev1' | 'dev2' | 'dev
  * Current entries:
  *   - CA on stg → SIGNWELL: GoSign template not yet deployed in stg (2026-04-29).
  *     Frontend falls back to merchant.esign_client (SIGNWELL).
+ *   - AL on stg → SIGNWELL [inferred, 2026-06-18]: AL templates are live in qa2
+ *     but stg almost certainly lags (stg DB unreachable to confirm — verify when reachable).
  *
  * When product distributes the GoSign template to a new env or state, add or
  * remove the entry here AND update the comment with the rollout date.
@@ -489,6 +498,9 @@ const PROVIDER_ENV_OVERRIDES: Readonly<
   Record<string, Partial<Record<EnvName, SigningProvider>>>
 > = {
   CA: {
+    stg: 'SIGNWELL',
+  },
+  AL: {
     stg: 'SIGNWELL',
   },
 };

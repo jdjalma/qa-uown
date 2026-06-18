@@ -122,6 +122,20 @@ export async function signGowSignInFrame(
     await page.waitForTimeout(700);
   }
 
+  // 3b. Safety net — o dialog de confirmacao "All fields are complete. Click
+  // Finish to finalize your document." (pos "Sign All") pode aparecer logo apos o
+  // loop encerrar. Seu Finish e o finalizador real (a toolbar fica sob o overlay).
+  // isVisible() e instantaneo quando nao ha dialog (ex: CA) — custo ~0.
+  const confirmFinish = frame
+    .getByRole('dialog')
+    .getByRole('button', { name: /^Finish$/i })
+    .first();
+  if (await confirmFinish.isVisible().catch(() => false)) {
+    await confirmFinish.click({ timeout: 5_000 }).catch(() => {});
+    result.signClicked = true;
+    await page.waitForTimeout(1_000);
+  }
+
   // 4. Aguarda postMessage 'completed' (sinal definitivo de doc assinado)
   if (opts.waitForCompleted && result.signClicked) {
     const captured = await waitForPostMessage(page, 'completed', { timeoutMs: 30_000 });
@@ -197,9 +211,15 @@ async function runSigningStateMachine(
     }
   }
 
-  // 5. Final submit (Finish / Submit / Done / Sign) — completa documento
-  // #finishSignatureButton e o ID canonico apos preencher todos os required.
+  // 5. Final submit (Finish / Submit / Done / Sign) — completa documento.
+  // PRIORIDADE: o dialog de confirmacao "All fields are complete. Click Finish
+  // to finalize your document." (aparece apos "Sign All" em contratos multi-campo).
+  // O Finish DENTRO do dialog e o finalizador real; o #finishSignatureButton da
+  // toolbar fica INTERCEPTADO pelo overlay (bg-black/25) do dialog e o click falha.
+  // Contratos com muitos campos (ex: NY 16 paginas) exibem este dialog apos "Sign All".
+  // #finishSignatureButton continua como fallback para contratos sem dialog (ex: CA).
   const submitCandidates = [
+    () => frame.getByRole('dialog').getByRole('button', { name: /^Finish$/i }),
     () => frame.locator('#finishSignatureButton'),
     () => frame.getByRole('button', { name: /^Finish$/i }),
     () => frame.getByRole('button', { name: /^Submit$/i }),

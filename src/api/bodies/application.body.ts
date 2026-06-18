@@ -128,7 +128,7 @@ export const DEFAULT_LINE_ITEMS: InvoiceLineItem[] = [
     lineItemSerialNumber: 'S94712065',
     lineItemProductNumber: 'A561SKU283',
     lineItemProductDescription: 'Ottoman',
-    lineItemProductCategory: 'TIRES_&_WHEELS',
+    lineItemProductCategory: 'Furniture',
     lineItemType: 'D',
     lineItemQuantityOrdered: '1',
     lineItemUnitPrice: '531.44',
@@ -189,6 +189,9 @@ export interface SendApplicationOverrides {
    * `reference_qa1_16m_eligibility_blocked`.
    */
   mainAnnualIncome?: number;
+  /** Override `mainEmployerName` (default `'Uown TEST'`). Use the realistic
+   *  factory's `randomEmployer()` for varied, real-looking employers. */
+  employerName?: string;
 }
 
 export function buildSendApplicationBody(
@@ -218,7 +221,7 @@ export function buildSendApplicationBody(
     mainPostalCode: applicant.zip,
     mainCellPhone: applicant.phone,
     emailAddress: applicant.email,
-    mainEmployerName: 'Uown TEST',
+    mainEmployerName: overrides?.employerName ?? 'Uown TEST',
     mainPastBankruptcy: false,
     mainCurrentOrFutureBankruptcy: false,
     languagePreference: 'E',

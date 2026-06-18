@@ -491,11 +491,12 @@ test.describe('RU06.26.1.53.0 — Prevent Repeated NeuroID Calls During Signing 
         merchantKey: 'SaslowsJewelersCA',
         state: 'CA',
         label: 'CT-05 prior data',
-        withBank: false,
+        withBank: true,
       }, testInfo));
 
     await test.step('First submit via UI establishes prior NeuroID data', async () => {
-      await completeFirstSubmit(page, setup, /* withBank */ false);
+      // withBank: true — ensures portal skips bank form on return-to-sign
+      await completeFirstSubmit(page, setup, /* withBank */ true);
     });
 
     let count1 = 0;
@@ -562,7 +563,7 @@ test.describe('RU06.26.1.53.0 — Prevent Repeated NeuroID Calls During Signing 
     await test.step('Lead reaches post-signing status (CONTRACT_CREATED or beyond)', async () => {
       const reached = await db
         .waitForValueEquals(
-          `SELECT status FROM uown_los_lead WHERE pk = $1`,
+          `SELECT lead_status FROM uown_los_lead WHERE pk = $1`,
           [Number(setup.leadPk)],
           'CONTRACT_CREATED',
           120_000,

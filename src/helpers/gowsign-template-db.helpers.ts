@@ -358,23 +358,39 @@ export function extractTemplateIdFromEsignDocumentRequest(
 
 /**
  * Composite helper: load the latest GOWSIGN esign document for a lead,
- * extract its `templateId` from the request payload, fetch the matching
- * template row, and assert it equals `expectedTemplateId`.
+ * extract its vendor `templateId` from the request payload, fetch the matching
+ * template row, and assert it is the expected template.
  *
- * Returns both rows so the caller can chain further assertions on the
- * template (e.g. `assertTemplateClientTypeContains(template, 'PRIMARY')`)
- * without re-querying.
+ * IMPORTANT — a GowSign template has TWO distinct identifiers, never equal:
+ *   - `uown_gow_sign_template.template_id` is the GowSign VENDOR opaque hash
+ *     (e.g. "aa1kmya9pq69uim1u4ma405b"). It is also what the dispatch payload
+ *     carries at `request.document.templateId`, so it is always the JOIN KEY
+ *     used to find the row — but it is NOT human-readable.
+ *   - `uown_gow_sign_template.name` is the human-readable business name
+ *     (e.g. "OH_2025_SAC_16_MONTHS"), matching `uown_esign_document.document_name`.
+ *   (Verified in qa2: zero rows where `name = template_id` — the two columns
+ *    never collide, so accepting either as the expected identifier is
+ *    unambiguous.)
+ *
+ * Callers legitimately identify "the selected template" by EITHER convention:
+ *   - Pass the human NAME (e.g. "OH_2025_SAC_16_MONTHS"), matching `document_name`.
+ *   - Pass the vendor HASH (e.g. "mu97ag8wkchj1icvn5amz5s6") from the DB column.
+ * So `expectedTemplate` is matched against `template.name` OR
+ * `template.templateId` — whichever the caller passes. Both rows are returned
+ * so the caller can chain further assertions (e.g.
+ * `assertTemplateClientTypeContains(template, 'PRIMARY')`) without re-querying.
  *
  * Throws (fail-fast) when:
  *   - No GOWSIGN esign document exists for the lead
  *   - The request payload is missing or unparseable
- *   - The extracted templateId does not exist in `uown_gow_sign_template`
- *   - The extracted templateId does not equal `expectedTemplateId`
+ *   - The extracted vendor templateId does not exist in `uown_gow_sign_template`
+ *   - The matched template's `name` AND `templateId` both differ from
+ *     `expectedTemplate`
  */
 export async function assertSelectedTemplateForLead(
   db: DatabaseHelpers,
   leadPk: number,
-  expectedTemplateId: string,
+  expectedTemplate: string,
 ): Promise<{ esignDoc: EsignDocumentMinimalRow; template: GowSignTemplateRow }> {
   const esignDoc = await getEsignDocumentByLeadAndClient(db, leadPk, 'GOWSIGN');
   if (!esignDoc) {
@@ -385,7 +401,7 @@ export async function assertSelectedTemplateForLead(
   const extractedTemplateId = extractTemplateIdFromEsignDocumentRequest(esignDoc.request);
   if (!extractedTemplateId) {
     throw new Error(
-      `assertSelectedTemplateForLead: could not extract templateId from uown_esign_document.request ` +
+      `assertSelectedTemplateForLead: could not extract vendor templateId from uown_esign_document.request ` +
         `(esign_doc.pk=${esignDoc.pk}, lead_pk=${leadPk}). ` +
         `Expected JSON shape: { "document": { "templateId": "..." } }.`,
     );
@@ -393,14 +409,19 @@ export async function assertSelectedTemplateForLead(
   const template = await getGowSignTemplate(db, extractedTemplateId);
   if (!template) {
     throw new Error(
-      `assertSelectedTemplateForLead: extracted templateId="${extractedTemplateId}" ` +
+      `assertSelectedTemplateForLead: extracted vendor templateId="${extractedTemplateId}" ` +
         `(from esign_doc.pk=${esignDoc.pk}, lead_pk=${leadPk}) does not exist in uown_gow_sign_template`,
     );
   }
-  if (template.templateId !== expectedTemplateId) {
+  // Accept a match on EITHER the human-readable name or the vendor hash — both
+  // uniquely identify the row (they never coincide). This is the
+  // least-surprising contract: the human name "OH_2025_SAC_16_MONTHS" lives in
+  // `name`, NOT `template_id` (which is the opaque vendor hash).
+  if (template.name !== expectedTemplate && template.templateId !== expectedTemplate) {
     throw new Error(
-      `assertSelectedTemplateForLead: lead_pk=${leadPk} got templateId="${template.templateId}" ` +
-        `but expected "${expectedTemplateId}" (esign_doc.pk=${esignDoc.pk})`,
+      `assertSelectedTemplateForLead: lead_pk=${leadPk} got template name="${template.name}" ` +
+        `(vendor template_id="${template.templateId}") but expected "${expectedTemplate}" ` +
+        `to match either the name or the vendor template_id (esign_doc.pk=${esignDoc.pk})`,
     );
   }
   return { esignDoc, template };
