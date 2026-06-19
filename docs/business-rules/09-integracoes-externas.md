@@ -1,3 +1,16 @@
+---
+title: Integracoes com Terceiros
+domain: business-rules
+status: stable
+volatility: volatile
+last_verified: 2026-06-18
+sources:
+  - code: src/data/merchant-config-contract.ts#offerInsurance
+  - db: uown_sv_protection_plan
+  - env: qa2
+covers: [buddy-insurance, taxcloud, taxjar, five9, kornerstone, proget, skit-ai, vendor-health]
+---
+
 # Integracoes com Terceiros
 ## UOwn Leasing - SVC Platform
 

@@ -1,3 +1,15 @@
+---
+title: CCBIN Field — Employment & Financial Step
+domain: knowledge-base
+status: snapshot
+volatility: stable
+last_verified: 2026-06-15
+sources:
+  - env: qa2
+covers: [ccbin-field, employment-financial-step, credit-card-bin-visualization, autofill, completion-indicator]
+promoted_to: []
+---
+
 # CCBIN Field — Employment & Financial Step
 
 > Charter: Explore the Employment & Financial step CCBIN improvements (task #1322) with Playwright MCP to discover: G1 — autofill UX for CC/ACH fields; G2 — green check completion indicator; G3 — Kornerstone purple card styling; G4 — interactive card DOM structure.

@@ -1,0 +1,988 @@
+{
+  "generated_by": "scripts/docs-tooling.mjs",
+  "domain": "knowledge-base",
+  "docs": [
+    {
+      "file": "16m-lease-and-gowsign-signwell-routing-qa2.md",
+      "path": "docs/knowledge-base/16m-lease-and-gowsign-signwell-routing-qa2.md",
+      "title": "Creating a 16-Month Lease & Controlling GowSign vs Signwell Routing (qa2)",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "volatile",
+      "last_verified": "2026-06-17",
+      "covers": [
+        "16m-lease",
+        "gowsign-routing",
+        "gowsign-routing",
+        "gowsign-routing",
+        "esign"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "qa2"
+        },
+        {
+          "type": "code",
+          "value": "src/data/state-merchant-matrix.ts#expectedProvider"
+        },
+        {
+          "type": "db",
+          "value": "uown_gow_sign_template"
+        },
+        {
+          "type": "db",
+          "value": "uown_esign_document"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "The one rule that decides the provider",
+          "anchor": "the-one-rule-that-decides-the-provider"
+        },
+        {
+          "heading": "qa2 GowSign template map (DB-confirmed 2026-06-17)",
+          "anchor": "qa2-gowsign-template-map-db-confirmed-2026-06-17"
+        },
+        {
+          "heading": "Getting the 16-month TERM (qa2) — the merchant decides, not the SSN",
+          "anchor": "getting-the-16-month-term-qa2-the-merchant-decides-not-the-ssn"
+        },
+        {
+          "heading": "Route A — Kornerstone merchant (ABB returns EligibleTerms 16)",
+          "anchor": "route-a-kornerstone-merchant-abb-returns-eligibleterms-16"
+        },
+        {
+          "heading": "Route B — Merchant configured with ONLY a 16-month program (forces 16m)",
+          "anchor": "route-b-merchant-configured-with-only-a-16-month-program-forces-16m"
+        },
+        {
+          "heading": "The offer is `UW EligibleTerms ∩ merchant programs` — UW can cap it to 16m alone",
+          "anchor": "the-offer-is-uw-eligibleterms-merchant-programs-uw-can-cap-it-to-16m-alone"
+        },
+        {
+          "heading": "Putting it together — the recipe table",
+          "anchor": "putting-it-together-the-recipe-table"
+        },
+        {
+          "heading": "Completing the signing ceremony in the browser (Route A) — current blocker",
+          "anchor": "completing-the-signing-ceremony-in-the-browser-route-a-current-blocker"
+        },
+        {
+          "heading": "Related: dual 13m + 16m offering (what the user is testing next)",
+          "anchor": "related-dual-13m-16m-offering-what-the-user-is-testing-next"
+        },
+        {
+          "heading": "Connections with what was already known",
+          "anchor": "connections-with-what-was-already-known"
+        },
+        {
+          "heading": "Gaps / to investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "alabama-gowsign-template.md",
+      "path": "docs/knowledge-base/alabama-gowsign-template.md",
+      "title": "Alabama (AL) GowSign Lease-Purchase Template",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "volatile",
+      "last_verified": "2026-06-17",
+      "covers": [
+        "template-rendering",
+        "template-rendering",
+        "epo",
+        "template-rendering",
+        "state-rules"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "qa2"
+        },
+        {
+          "type": "lead",
+          "value": "16649"
+        },
+        {
+          "type": "code",
+          "value": "src/data/state-merchant-matrix.ts#expectedProvider"
+        },
+        {
+          "type": "db",
+          "value": "uown_gow_sign_template"
+        },
+        {
+          "type": "db",
+          "value": "uown_esign_document"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Available templates (qa2, DB-confirmed 2026-06-17)",
+          "anchor": "available-templates-qa2-db-confirmed-2026-06-17"
+        },
+        {
+          "heading": "Provider routing for AL — GowSign (refutes the stale matrix)",
+          "anchor": "provider-routing-for-al-gowsign-refutes-the-stale-matrix"
+        },
+        {
+          "heading": "Flow and states (step by step, as driven this run)",
+          "anchor": "flow-and-states-step-by-step-as-driven-this-run"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "🔴 BR-06 / Defect — Empty merged values in the AL GowSign contract (customer-visible)",
+          "anchor": "-br-06-defect-empty-merged-values-in-the-al-gowsign-contract-customer-visible"
+        },
+        {
+          "heading": "13m vs 16m — the defect is only partially shared (16m render confirmed, lead 16653)",
+          "anchor": "13m-vs-16m-the-defect-is-only-partially-shared-16m-render-confirmed-lead-16653"
+        },
+        {
+          "heading": "EPO-vs-Texas verdict (Gustavo's \"EPO Section same as Texas — TX_2025_SAC_16_MONTHS.docx\")",
+          "anchor": "epo-vs-texas-verdict-gustavos-epo-section-same-as-texas-tx_2025_sac_16_monthsdocx"
+        },
+        {
+          "heading": "Signwell baseline (qa1) — the defect IS a migration regression `[confirmed]`",
+          "anchor": "signwell-baseline-qa1-the-defect-is-a-migration-regression-confirmed"
+        },
+        {
+          "heading": "Modify / re-analysis with more items (lead 16660) — regression persists",
+          "anchor": "modify-re-analysis-with-more-items-lead-16660-regression-persists"
+        },
+        {
+          "heading": "Signing completion (AC-1 / Scenarios 1,2) — DONE + two framework gaps found",
+          "anchor": "signing-completion-ac-1-scenarios-12-done-two-framework-gaps-found"
+        },
+        {
+          "heading": "Logic and Exceptions / values rendered OK",
+          "anchor": "logic-and-exceptions-values-rendered-ok"
+        },
+        {
+          "heading": "Connections with what was already known",
+          "anchor": "connections-with-what-was-already-known"
+        },
+        {
+          "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        },
+        {
+          "heading": "Reproduction assets",
+          "anchor": "reproduction-assets"
+        }
+      ]
+    },
+    {
+      "file": "ccbin-employment-financial-step.md",
+      "path": "docs/knowledge-base/ccbin-employment-financial-step.md",
+      "title": "CCBIN Field — Employment & Financial Step",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "stable",
+      "last_verified": "2026-06-15",
+      "covers": [
+        "ccbin",
+        "employment-financial-step",
+        "ccbin",
+        "completion-indicator",
+        "completion-indicator"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "qa2"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Environment & Access",
+          "anchor": "environment-access"
+        },
+        {
+          "heading": "Available Operations",
+          "anchor": "available-operations"
+        },
+        {
+          "heading": "Task #1322 Deployed State (qa2 — 2026-06-15)",
+          "anchor": "task-1322-deployed-state-qa2-2026-06-15"
+        },
+        {
+          "heading": "CCBIN Field (`#mainCreditCardBin`)",
+          "anchor": "ccbin-field-maincreditcardbin"
+        },
+        {
+          "heading": "Bank / ACH Fields",
+          "anchor": "bank-ach-fields"
+        },
+        {
+          "heading": "Interactive Card Component (G4)",
+          "anchor": "interactive-card-component-g4"
+        },
+        {
+          "heading": "DOM structure",
+          "anchor": "dom-structure"
+        },
+        {
+          "heading": "Digit span states",
+          "anchor": "digit-span-states"
+        },
+        {
+          "heading": "UOWN card colors",
+          "anchor": "uown-card-colors"
+        },
+        {
+          "heading": "Completion Indicator (G2)",
+          "anchor": "completion-indicator-g2"
+        },
+        {
+          "heading": "Autofill (G1)",
+          "anchor": "autofill-g1"
+        },
+        {
+          "heading": "Kornerstone Card (G3)",
+          "anchor": "kornerstone-card-g3"
+        },
+        {
+          "heading": "Validation on Blur (G5 — New finding)",
+          "anchor": "validation-on-blur-g5-new-finding"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Connections with What Was Already Known",
+          "anchor": "connections-with-what-was-already-known"
+        },
+        {
+          "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "merchant-funding-report-emails.md",
+      "path": "docs/knowledge-base/merchant-funding-report-emails.md",
+      "title": "Merchant Edit — Funding Report Emails",
+      "domain": "knowledge-base",
+      "status": "stable",
+      "volatility": "stable",
+      "last_verified": "2026-06-15",
+      "covers": [
+        "merchant-management",
+        "correspondence",
+        "correspondence"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "qa2"
+        },
+        {
+          "type": "gitlab",
+          "value": "task-1301"
+        },
+        {
+          "type": "db",
+          "value": "uown_merchant"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Available Operations",
+          "anchor": "available-operations"
+        },
+        {
+          "heading": "Flow and States",
+          "anchor": "flow-and-states"
+        },
+        {
+          "heading": "Toggle controls field visibility [confirmed]",
+          "anchor": "toggle-controls-field-visibility-confirmed"
+        },
+        {
+          "heading": "Email field structure [confirmed]",
+          "anchor": "email-field-structure-confirmed"
+        },
+        {
+          "heading": "Funding Report Frequency field structure [confirmed]",
+          "anchor": "funding-report-frequency-field-structure-confirmed"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Logic and Exceptions",
+          "anchor": "logic-and-exceptions"
+        },
+        {
+          "heading": "Connections with What Was Already Known",
+          "anchor": "connections-with-what-was-already-known"
+        },
+        {
+          "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "merchants-config-columns-export.md",
+      "path": "docs/knowledge-base/merchants-config-columns-export.md",
+      "title": "Merchants Page — Config Columns & Export",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "volatile",
+      "last_verified": "2026-06-15",
+      "covers": [
+        "merchant-management",
+        "merchant-config",
+        "csv-export",
+        "merchant-config"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "qa1"
+        },
+        {
+          "type": "gitlab",
+          "value": "task-1309"
+        },
+        {
+          "type": "db",
+          "value": "uown_merchant"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Available Operations",
+          "anchor": "available-operations"
+        },
+        {
+          "heading": "Config Columns Panel — DOM Structure",
+          "anchor": "config-columns-panel-dom-structure"
+        },
+        {
+          "heading": "Trigger",
+          "anchor": "trigger"
+        },
+        {
+          "heading": "Panel Container",
+          "anchor": "panel-container"
+        },
+        {
+          "heading": "Checkbox Structure (critical for selectors)",
+          "anchor": "checkbox-structure-critical-for-selectors"
+        },
+        {
+          "heading": "Default Checked Columns (21)",
+          "anchor": "default-checked-columns-21"
+        },
+        {
+          "heading": "Additional Available Columns (unchecked by default) — partial list",
+          "anchor": "additional-available-columns-unchecked-by-default-partial-list"
+        },
+        {
+          "heading": "Active Filter",
+          "anchor": "active-filter"
+        },
+        {
+          "heading": "Export Flow",
+          "anchor": "export-flow"
+        },
+        {
+          "heading": "Download CSV",
+          "anchor": "download-csv"
+        },
+        {
+          "heading": "Email CSV",
+          "anchor": "email-csv"
+        },
+        {
+          "heading": "CSV Column Ordering",
+          "anchor": "csv-column-ordering"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Connections with What Was Already Known",
+          "anchor": "connections-with-what-was-already-known"
+        },
+        {
+          "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "modification-report-agent-name-bug.md",
+      "path": "docs/knowledge-base/modification-report-agent-name-bug.md",
+      "title": "Modification Report — Agent Name Bug (Issue #1315)",
+      "domain": "knowledge-base",
+      "status": "stable",
+      "volatility": "stable",
+      "last_verified": "2026-06-18",
+      "covers": [
+        "modification-report",
+        "agent-attribution",
+        "lead-status",
+        "agent-attribution",
+        "agent-attribution"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "qa2"
+        },
+        {
+          "type": "db",
+          "value": "uown_lead_modifications"
+        },
+        "svc-source: ChangeLeadStatusService.java",
+        "svc-source: ThreadAttributes.java",
+        "svc-source: RequestFilter.java"
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Available Operations",
+          "anchor": "available-operations"
+        },
+        {
+          "heading": "Filters",
+          "anchor": "filters"
+        },
+        {
+          "heading": "Table Columns",
+          "anchor": "table-columns"
+        },
+        {
+          "heading": "Status Display Mapping (UI → DB)",
+          "anchor": "status-display-mapping-ui-db"
+        },
+        {
+          "heading": "All Distinct LEAD_STATUS_CHANGE Transitions (confirmed in QA2 DB)",
+          "anchor": "all-distinct-lead_status_change-transitions-confirmed-in-qa2-db"
+        },
+        {
+          "heading": "Agent-Triggered Actions per Lead Status (UI buttons)",
+          "anchor": "agent-triggered-actions-per-lead-status-ui-buttons"
+        },
+        {
+          "heading": "Status: UW_APPROVED (Approved)",
+          "anchor": "status-uw_approved-approved"
+        },
+        {
+          "heading": "Status: SIGNED (Signed)",
+          "anchor": "status-signed-signed"
+        },
+        {
+          "heading": "SYSTEM Bug Analysis (evidence-based)",
+          "anchor": "system-bug-analysis-evidence-based"
+        },
+        {
+          "heading": "Fix timeline",
+          "anchor": "fix-timeline"
+        },
+        {
+          "heading": "Pre-fix behavior (< 2026-06-16)",
+          "anchor": "pre-fix-behavior-2026-06-16"
+        },
+        {
+          "heading": "Post-fix behavior (>= 2026-06-16) — manually validated 2026-06-18",
+          "anchor": "post-fix-behavior-2026-06-16-manually-validated-2026-06-18"
+        },
+        {
+          "heading": "Legitimately SYSTEM (system-triggered, no human actor)",
+          "anchor": "legitimately-system-system-triggered-no-human-actor"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Backend Root Cause Analysis (confirmed via source code — 2026-06-18)",
+          "anchor": "backend-root-cause-analysis-confirmed-via-source-code-2026-06-18"
+        },
+        {
+          "heading": "Username propagation mechanism",
+          "anchor": "username-propagation-mechanism"
+        },
+        {
+          "heading": "Pre-fix bug mechanism",
+          "anchor": "pre-fix-bug-mechanism"
+        },
+        {
+          "heading": "The fix (MR svc!1464 + svc!1470)",
+          "anchor": "the-fix-mr-svc1464-svc1470"
+        },
+        {
+          "heading": "Why BLACKLIST_APPROVED → SIGNED still shows SYSTEM after fix",
+          "anchor": "why-blacklist_approved-signed-still-shows-system-after-fix"
+        },
+        {
+          "heading": "Legitimately SYSTEM (no fix needed)",
+          "anchor": "legitimately-system-no-fix-needed"
+        },
+        {
+          "heading": "Key source files",
+          "anchor": "key-source-files"
+        },
+        {
+          "heading": "Connections with What Was Already Known",
+          "anchor": "connections-with-what-was-already-known"
+        },
+        {
+          "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "multi-select-filters-mmh-modreport-funding.md",
+      "path": "docs/knowledge-base/multi-select-filters-mmh-modreport-funding.md",
+      "title": "Multi-Select Filters — MMH, Modification Report, Funding Queue",
+      "domain": "knowledge-base",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-18",
+      "covers": [
+        "multi-select-filters",
+        "multi-select-filters",
+        "modification-report",
+        "modification-report",
+        "funding-queue",
+        "csv-export"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "qa2"
+        },
+        {
+          "type": "gitlab",
+          "value": "task-1319"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "OQ Resolutions (all confirmed via live DOM inspection, qa2 2026-06-18)",
+          "anchor": "oq-resolutions-all-confirmed-via-live-dom-inspection-qa2-2026-06-18"
+        },
+        {
+          "heading": "Filter Map por Página",
+          "anchor": "filter-map-por-página"
+        },
+        {
+          "heading": "MMH (/merchantModificationHistory)",
+          "anchor": "mmh-merchantmodificationhistory"
+        },
+        {
+          "heading": "Modification Report (/modificationReport)",
+          "anchor": "modification-report-modificationreport"
+        },
+        {
+          "heading": "Funding Queue (/funding)",
+          "anchor": "funding-queue-funding"
+        },
+        {
+          "heading": "Status Filter — Opções Confirmadas (OQ-06)",
+          "anchor": "status-filter-opções-confirmadas-oq-06"
+        },
+        {
+          "heading": "Componente Compartilhado — Estrutura DOM",
+          "anchor": "componente-compartilhado-estrutura-dom"
+        },
+        {
+          "heading": "Classes CSS (consistentes nas 3 páginas)",
+          "anchor": "classes-css-consistentes-nas-3-páginas"
+        },
+        {
+          "heading": "Estrutura de cada opção",
+          "anchor": "estrutura-de-cada-opção"
+        },
+        {
+          "heading": "\"Select All\" — comportamento divergente por filtro",
+          "anchor": "select-all-comportamento-divergente-por-filtro"
+        },
+        {
+          "heading": "CSV Export (Funding Queue — OQ-05)",
+          "anchor": "csv-export-funding-queue-oq-05"
+        },
+        {
+          "heading": "On-Demand Report (OQ-03)",
+          "anchor": "on-demand-report-oq-03"
+        },
+        {
+          "heading": "Diferenças entre páginas (para implementação)",
+          "anchor": "diferenças-entre-páginas-para-implementação"
+        },
+        {
+          "heading": "Business Rules (domain rules)",
+          "anchor": "business-rules-domain-rules"
+        },
+        {
+          "heading": "Logic and Exceptions",
+          "anchor": "logic-and-exceptions"
+        },
+        {
+          "heading": "Connections with What Was Already Known",
+          "anchor": "connections-with-what-was-already-known"
+        },
+        {
+          "heading": "Hipóteses resolvidas — confirmadas via discovery 2026-06-18",
+          "anchor": "hipóteses-resolvidas-confirmadas-via-discovery-2026-06-18"
+        },
+        {
+          "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "new-york-gowsign-template.md",
+      "path": "docs/knowledge-base/new-york-gowsign-template.md",
+      "title": "New York (NY) GowSign Lease/Rental-Purchase Template",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "volatile",
+      "last_verified": "2026-06-18",
+      "covers": [
+        "gowsign-routing",
+        "esign",
+        "template-rendering",
+        "epo",
+        "template-rendering"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "qa2"
+        },
+        {
+          "type": "lead",
+          "value": "16651"
+        },
+        {
+          "type": "code",
+          "value": "src/data/state-merchant-matrix.ts#expectedProvider"
+        },
+        {
+          "type": "db",
+          "value": "uown_esign_document"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Available Operations",
+          "anchor": "available-operations"
+        },
+        {
+          "heading": "Provider routing for NY — GowSign 13m (refutes the stale matrix)",
+          "anchor": "provider-routing-for-ny-gowsign-13m-refutes-the-stale-matrix"
+        },
+        {
+          "heading": "Flow and States (step by step in the UI)",
+          "anchor": "flow-and-states-step-by-step-in-the-ui"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "🔴 BR-06 / Defect — `epoDays` token blank in the NY contract (customer-visible)",
+          "anchor": "-br-06-defect-epodays-token-blank-in-the-ny-contract-customer-visible"
+        },
+        {
+          "heading": "Logic and Exceptions — dynamic values (source of truth = `uown_esign_document.request` pk13851)",
+          "anchor": "logic-and-exceptions-dynamic-values-source-of-truth-uown_esign_documentrequest-pk13851"
+        },
+        {
+          "heading": "Signwell vs GowSign — Content Parity (AC-02 / Scenario 3 / Testing Steps)",
+          "anchor": "signwell-vs-gowsign-content-parity-ac-02-scenario-3-testing-steps"
+        },
+        {
+          "heading": "Signing completion (AC-01 / Scenario 1-2 \"signing completion\") — CONFIRMED",
+          "anchor": "signing-completion-ac-01-scenario-1-2-signing-completion-confirmed"
+        },
+        {
+          "heading": "Connections with What Was Already Known",
+          "anchor": "connections-with-what-was-already-known"
+        },
+        {
+          "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        },
+        {
+          "heading": "Evidence / Artifacts",
+          "anchor": "evidence-artifacts"
+        }
+      ]
+    },
+    {
+      "file": "overview-csv-export-merchant-support.md",
+      "path": "docs/knowledge-base/overview-csv-export-merchant-support.md",
+      "title": "Overview Page — CSV Export & Merchant Support Filter",
+      "domain": "knowledge-base",
+      "status": "stable",
+      "volatility": "stable",
+      "last_verified": "2026-06-17",
+      "covers": [
+        "csv-export",
+        "multi-select-filters",
+        "csv-export"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "qa1"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Page Architecture — TWO independent filter mechanisms `[confirmed]`",
+          "anchor": "page-architecture-two-independent-filter-mechanisms-confirmed"
+        },
+        {
+          "heading": "The Merchant Support filter `[confirmed]`",
+          "anchor": "the-merchant-support-filter-confirmed"
+        },
+        {
+          "heading": "CSV Export Flow `[confirmed]`",
+          "anchor": "csv-export-flow-confirmed"
+        },
+        {
+          "heading": "Root Cause `[confirmed]`",
+          "anchor": "root-cause-confirmed"
+        },
+        {
+          "heading": "Why \"count matches but content differs\"",
+          "anchor": "why-count-matches-but-content-differs"
+        },
+        {
+          "heading": "Control / Regression observations `[confirmed]`",
+          "anchor": "control-regression-observations-confirmed"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Connections with What Was Already Known",
+          "anchor": "connections-with-what-was-already-known"
+        },
+        {
+          "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "overview-leads-csv-export-size-limit.md",
+      "path": "docs/knowledge-base/overview-leads-csv-export-size-limit.md",
+      "title": "Overview & Leads — CSV Export Size-Limit Guard (#1321)",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "stable",
+      "last_verified": "2026-06-18",
+      "covers": [
+        "csv-export",
+        "csv-export",
+        "csv-export",
+        "csv-export",
+        "csv-export"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "qa2"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Available Operations",
+          "anchor": "available-operations"
+        },
+        {
+          "heading": "Threshold — value, unit, and algorithm `[confirmed — decoded from deployed bundle]`",
+          "anchor": "threshold-value-unit-and-algorithm-confirmed-decoded-from-deployed-bundle"
+        },
+        {
+          "heading": "Empirical scale `[confirmed]`",
+          "anchor": "empirical-scale-confirmed"
+        },
+        {
+          "heading": "Messages (exact copy) `[confirmed]`",
+          "anchor": "messages-exact-copy-confirmed"
+        },
+        {
+          "heading": "Size-based vs row-count `[confirmed]`",
+          "anchor": "size-based-vs-row-count-confirmed"
+        },
+        {
+          "heading": "Overview vs Leads — export differences `[confirmed]`",
+          "anchor": "overview-vs-leads-export-differences-confirmed"
+        },
+        {
+          "heading": "Component behaviour `[confirmed — live React props]`",
+          "anchor": "component-behaviour-confirmed-live-react-props"
+        },
+        {
+          "heading": "Automation traps `[confirmed — MCP + CT-01..CT-07 runtime, QA2 2026-06-18]`",
+          "anchor": "automation-traps-confirmed-mcp-ct-01ct-07-runtime-qa2-2026-06-18"
+        },
+        {
+          "heading": "Sandbox high-volume repro + three more traps `[confirmed — CT-08 PASS, sandbox 2026-06-18/19, 79,605 rows]`",
+          "anchor": "sandbox-high-volume-repro-three-more-traps-confirmed-ct-08-pass-sandbox-2026-06-1819-79605-rows"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Connections with What Was Already Known",
+          "anchor": "connections-with-what-was-already-known"
+        },
+        {
+          "heading": "Download-CSV permission gate — AMS role mapping `[confirmed — dom-snapshot:sandbox 2026-06-18]`",
+          "anchor": "download-csv-permission-gate-ams-role-mapping-confirmed-dom-snapshotsandbox-2026-06-18"
+        },
+        {
+          "heading": "Sandbox login note `[confirmed — test-execution:sandbox 2026-06-18]`",
+          "anchor": "sandbox-login-note-confirmed-test-executionsandbox-2026-06-18"
+        },
+        {
+          "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "underwriting-and-funding-test-data-paths.md",
+      "path": "docs/knowledge-base/underwriting-and-funding-test-data-paths.md",
+      "title": "Underwriting Decision & Funding — Test-Data Setup Paths",
+      "domain": "knowledge-base",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-16",
+      "covers": [
+        "underwriting",
+        "merchant-snapshot",
+        "merchant-snapshot",
+        "risk-scenarios"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "qa2"
+        },
+        {
+          "type": "db",
+          "value": "uown_los_lead_merchant_settings_snapshot"
+        },
+        {
+          "type": "db",
+          "value": "uown_sv_account_merchant_settings_snapshot"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Available Operations (admin affordances in the Origination portal)",
+          "anchor": "available-operations-admin-affordances-in-the-origination-portal"
+        },
+        {
+          "heading": "Flow and States",
+          "anchor": "flow-and-states"
+        },
+        {
+          "heading": "Business Rules / Findings",
+          "anchor": "business-rules-findings"
+        },
+        {
+          "heading": "Producing a `UW_DENIED` lead — environment-specific",
+          "anchor": "producing-a-uw_denied-lead-environment-specific"
+        },
+        {
+          "heading": "Producing a lead at FUNDING with no UW snapshot",
+          "anchor": "producing-a-lead-at-funding-with-no-uw-snapshot"
+        },
+        {
+          "heading": "Logic and Exceptions",
+          "anchor": "logic-and-exceptions"
+        },
+        {
+          "heading": "qa2 caveats (from `docs/claude/environments.md` \"qa2 Known Issues\")",
+          "anchor": "qa2-caveats-from-docsclaudeenvironmentsmd-qa2-known-issues"
+        },
+        {
+          "heading": "Merchant Settings Snapshot — confirmed schema (deployed)",
+          "anchor": "merchant-settings-snapshot-confirmed-schema-deployed"
+        },
+        {
+          "heading": "Connections with What Was Already Known",
+          "anchor": "connections-with-what-was-already-known"
+        },
+        {
+          "heading": "Open items",
+          "anchor": "open-items"
+        },
+        {
+          "heading": "Cross-references",
+          "anchor": "cross-references"
+        }
+      ]
+    }
+  ]
+}

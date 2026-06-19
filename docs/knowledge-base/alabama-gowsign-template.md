@@ -1,3 +1,19 @@
+---
+title: Alabama (AL) GowSign Lease-Purchase Template
+domain: knowledge-base
+status: snapshot
+volatility: volatile
+last_verified: 2026-06-17
+sources:
+  - env: qa2
+  - lead: 16649
+  - code: src/data/state-merchant-matrix.ts#expectedProvider
+  - db: uown_gow_sign_template
+  - db: uown_esign_document
+covers: [alabama-gowsign-template, al-2025-sac, epo-section, 13m-render-defect, state-scoping]
+promoted_to: []
+---
+
 # Alabama (AL) GowSign Lease-Purchase Template
 
 > Charter: Explore the Alabama GowSign lease-purchase contract signing in qa2 with Playwright MCP to discover the rendered contract's title (Alabama vs Texas leak), EPO-section parity with the Texas reference, dynamic-variable resolution, and AL-specific clauses — for both 13m and 16m.

@@ -1,3 +1,17 @@
+---
+title: Contratos e Assinatura Eletrônica
+domain: business-rules
+status: stable
+volatility: volatile
+last_verified: 2026-06-18
+sources:
+  - code: src/data/state-merchant-matrix.ts#STATE_MATRIX
+  - code: src/data/state-merchant-matrix.ts#SigningProvider
+  - code: src/helpers/esign-db.helpers.ts#EsignDocument
+  - env: qa2
+covers: [esign, signwell, gowsign, pandadoc, contracts, signing-fee, state-routing]
+---
+
 # Contratos e Assinatura Eletronica
 ## UOwn Leasing - SVC Platform
 

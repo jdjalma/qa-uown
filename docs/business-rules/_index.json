@@ -1,0 +1,3988 @@
+{
+  "generated_by": "scripts/docs-tooling.mjs",
+  "domain": "business-rules",
+  "docs": [
+    {
+      "file": "01-fundamentos.md",
+      "path": "docs/business-rules/01-fundamentos.md",
+      "title": "Fundamentos e Visão Geral",
+      "domain": "business-rules",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-18",
+      "covers": [
+        "business-overview",
+        "merchant-management",
+        "merchant-programs",
+        "merchant-config",
+        "kornerstone",
+        "epo"
+      ],
+      "sources": [
+        {
+          "type": "code",
+          "value": "src/data/merchant-config-contract.ts#REQUIRED_MERCHANT_CONFIG"
+        },
+        {
+          "type": "code",
+          "value": "src/data/merchants.ts#MERCHANTS"
+        },
+        {
+          "type": "env",
+          "value": "qa2"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "UOwn Leasing - SVC Platform",
+          "anchor": "uown-leasing---svc-platform"
+        },
+        {
+          "heading": "1. Visao Geral do Negocio",
+          "anchor": "1-visao-geral-do-negocio"
+        },
+        {
+          "heading": "O Que e a UOwn Leasing",
+          "anchor": "o-que-e-a-uown-leasing"
+        },
+        {
+          "heading": "Como o Modelo de Negocio Funciona",
+          "anchor": "como-o-modelo-de-negocio-funciona"
+        },
+        {
+          "heading": "Empresas Operadas",
+          "anchor": "empresas-operadas"
+        },
+        {
+          "heading": "Tipos de Merchant",
+          "anchor": "tipos-de-merchant"
+        },
+        {
+          "heading": "Fluxo Completo do Ciclo de Vida",
+          "anchor": "fluxo-completo-do-ciclo-de-vida"
+        },
+        {
+          "heading": "2. Conceitos Financeiros Fundamentais",
+          "anchor": "2-conceitos-financeiros-fundamentais"
+        },
+        {
+          "heading": "2.1 Money Factor (Fator de Multiplicacao)",
+          "anchor": "21-money-factor-fator-de-multiplicacao"
+        },
+        {
+          "heading": "2.2 Security Deposit (Deposito de Seguranca)",
+          "anchor": "22-security-deposit-deposito-de-seguranca"
+        },
+        {
+          "heading": "2.3 Processing Fee (Taxa de Processamento)",
+          "anchor": "23-processing-fee-taxa-de-processamento"
+        },
+        {
+          "heading": "2.4 Buyout Fee (Taxa de Compra Antecipada)",
+          "anchor": "24-buyout-fee-taxa-de-compra-antecipada"
+        },
+        {
+          "heading": "3. Programas de Merchant (Termos do Lease)",
+          "anchor": "3-programas-de-merchant-termos-do-lease"
+        },
+        {
+          "heading": "O Que e um Programa",
+          "anchor": "o-que-e-um-programa"
+        },
+        {
+          "heading": "Campos Principais do Programa",
+          "anchor": "campos-principais-do-programa"
+        },
+        {
+          "heading": "SAME_AS_CASH vs QUICK_PAY",
+          "anchor": "same_as_cash-vs-quick_pay"
+        },
+        {
+          "heading": "Como o Programa e Selecionado",
+          "anchor": "como-o-programa-e-selecionado"
+        },
+        {
+          "heading": "Roteamento de Programa por Fluxo (Task #439)",
+          "anchor": "roteamento-de-programa-por-fluxo-task-439"
+        },
+        {
+          "heading": "Identificacao por planId (Task #439)",
+          "anchor": "identificacao-por-planid-task-439"
+        },
+        {
+          "heading": "Valor Minimo do Lease (Minimum Lease Amount)",
+          "anchor": "valor-minimo-do-lease-minimum-lease-amount"
+        },
+        {
+          "heading": "33. Gestao de Configuracoes e Ativacao de Funcionalidades",
+          "anchor": "33-gestao-de-configuracoes-e-ativacao-de-funcionalidades"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Arquitetura de Configuracao",
+          "anchor": "arquitetura-de-configuracao"
+        },
+        {
+          "heading": "Como Alterar Configuracoes em Tempo Real",
+          "anchor": "como-alterar-configuracoes-em-tempo-real"
+        },
+        {
+          "heading": "Padrao de Nomes de Configuracoes",
+          "anchor": "padrao-de-nomes-de-configuracoes"
+        },
+        {
+          "heading": "Mapas Distribuidos Hazelcast",
+          "anchor": "mapas-distribuidos-hazelcast"
+        },
+        {
+          "heading": "Gestao de Scheduled Tasks (Sweeps)",
+          "anchor": "gestao-de-scheduled-tasks-sweeps"
+        },
+        {
+          "heading": "Via Banco de Dados (Tabela `uown_scheduled_task`)",
+          "anchor": "via-banco-de-dados-tabela-uown_scheduled_task"
+        },
+        {
+          "heading": "Como Verificar se um Sweep Executou",
+          "anchor": "como-verificar-se-um-sweep-executou"
+        },
+        {
+          "heading": "Cobertura Geografica",
+          "anchor": "cobertura-geografica"
+        },
+        {
+          "heading": "Estados e Territorios Suportados",
+          "anchor": "estados-e-territorios-suportados"
+        },
+        {
+          "heading": "Estados Bloqueados (No Business)",
+          "anchor": "estados-bloqueados-no-business"
+        },
+        {
+          "heading": "Contatos por Marca",
+          "anchor": "contatos-por-marca"
+        }
+      ]
+    },
+    {
+      "file": "02-originacao-pipeline.md",
+      "path": "docs/business-rules/02-originacao-pipeline.md",
+      "title": "Originação e Pipeline de Aplicação",
+      "domain": "business-rules",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-18",
+      "covers": [
+        "originacao",
+        "underwriting",
+        "fraud-vendors",
+        "fraud-vendors",
+        "fraud-vendors",
+        "state-rules",
+        "fraud-vendors"
+      ],
+      "sources": [
+        {
+          "type": "code",
+          "value": "src/config/constants.ts#generateTestSSN"
+        },
+        {
+          "type": "db",
+          "value": "uown_los_lead"
+        },
+        {
+          "type": "db",
+          "value": "uown_los_uw_info"
+        },
+        {
+          "type": "env",
+          "value": "qa2"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "UOwn Leasing - SVC Platform",
+          "anchor": "uown-leasing---svc-platform"
+        },
+        {
+          "heading": "4. Pipeline de Aplicacao (17 Steps)",
+          "anchor": "4-pipeline-de-aplicacao-17-steps"
+        },
+        {
+          "heading": "Visao Geral",
+          "anchor": "visao-geral"
+        },
+        {
+          "heading": "Controle de Concorrencia",
+          "anchor": "controle-de-concorrencia"
+        },
+        {
+          "heading": "Ordem Configuravel por Client Type",
+          "anchor": "ordem-configuravel-por-client-type"
+        },
+        {
+          "heading": "Toggles Individuais por Step",
+          "anchor": "toggles-individuais-por-step"
+        },
+        {
+          "heading": "Step 1: State Check (Verificacao de Estado)",
+          "anchor": "step-1-state-check-verificacao-de-estado"
+        },
+        {
+          "heading": "Step 2: Merchant Auto Deny",
+          "anchor": "step-2-merchant-auto-deny"
+        },
+        {
+          "heading": "Step 3: Source Check (Verificacao de Fonte de Trafego)",
+          "anchor": "step-3-source-check-verificacao-de-fonte-de-trafego"
+        },
+        {
+          "heading": "Step 4: Blacklist Check (Verificacao de Lista Negra)",
+          "anchor": "step-4-blacklist-check-verificacao-de-lista-negra"
+        },
+        {
+          "heading": "Step 5: Data Mismatch Check (Verificacao de Divergencia de Dados)",
+          "anchor": "step-5-data-mismatch-check-verificacao-de-divergencia-de-dados"
+        },
+        {
+          "heading": "Step 6: Previous Leads (Busca de Leads Anteriores)",
+          "anchor": "step-6-previous-leads-busca-de-leads-anteriores"
+        },
+        {
+          "heading": "Step 7: Previous UW Denied (UW Anterior Negado)",
+          "anchor": "step-7-previous-uw-denied-uw-anterior-negado"
+        },
+        {
+          "heading": "Step 8: Future FPD Check (Lease Assinado com Pagamento Futuro)",
+          "anchor": "step-8-future-fpd-check-lease-assinado-com-pagamento-futuro"
+        },
+        {
+          "heading": "Step 9: Duplicate Check (Verificacao de Duplicidade)",
+          "anchor": "step-9-duplicate-check-verificacao-de-duplicidade"
+        },
+        {
+          "heading": "Step 10: Eligible for Reapproval (Elegibilidade para Re-aprovacao)",
+          "anchor": "step-10-eligible-for-reapproval-elegibilidade-para-re-aprovacao"
+        },
+        {
+          "heading": "Step 11: NeuroID Check (Biometria Comportamental)",
+          "anchor": "step-11-neuroid-check-biometria-comportamental"
+        },
+        {
+          "heading": "Step 12: Underwriting (Analise de Credito)",
+          "anchor": "step-12-underwriting-analise-de-credito"
+        },
+        {
+          "heading": "Step 13: Invoice Placeholder",
+          "anchor": "step-13-invoice-placeholder"
+        },
+        {
+          "heading": "Step 14: Calculate Max Approval (Calculo de Valor Maximo)",
+          "anchor": "step-14-calculate-max-approval-calculo-de-valor-maximo"
+        },
+        {
+          "heading": "Step 15: Compare Cost Check (Comparacao Custo vs Aprovacao)",
+          "anchor": "step-15-compare-cost-check-comparacao-custo-vs-aprovacao"
+        },
+        {
+          "heading": "Step 16: Item Split (Divisao de Carrinho)",
+          "anchor": "step-16-item-split-divisao-de-carrinho"
+        },
+        {
+          "heading": "Step 17: Calculator (Calculadora de Pagamentos)",
+          "anchor": "step-17-calculator-calculadora-de-pagamentos"
+        },
+        {
+          "heading": "5. Sistema de Verificacao de Fraude e Identidade",
+          "anchor": "5-sistema-de-verificacao-de-fraude-e-identidade"
+        },
+        {
+          "heading": "Visao Geral da Estrategia de Defesa",
+          "anchor": "visao-geral-da-estrategia-de-defesa"
+        },
+        {
+          "heading": "5.1 Sentilink (Deteccao de Identidade Sintetica)",
+          "anchor": "51-sentilink-deteccao-de-identidade-sintetica"
+        },
+        {
+          "heading": "5.2 Neustar (Verificacao de Dados de Contato)",
+          "anchor": "52-neustar-verificacao-de-dados-de-contato"
+        },
+        {
+          "heading": "5.3 LexisNexis (Risco de Identidade e Registros Publicos)",
+          "anchor": "53-lexisnexis-risco-de-identidade-e-registros-publicos"
+        },
+        {
+          "heading": "5.4 SEON (Motor de Fraude Digital)",
+          "anchor": "54-seon-motor-de-fraude-digital"
+        },
+        {
+          "heading": "5.5 NeuroID (Biometria Comportamental)",
+          "anchor": "55-neuroid-biometria-comportamental"
+        },
+        {
+          "heading": "5.6 Intellicheck (Autenticacao de Documento de Identidade)",
+          "anchor": "56-intellicheck-autenticacao-de-documento-de-identidade"
+        },
+        {
+          "heading": "5.7 SEON ID (Verificacao de ID via SEON)",
+          "anchor": "57-seon-id-verificacao-de-id-via-seon"
+        },
+        {
+          "heading": "5.8 Kount (Fraude de Cartao de Credito)",
+          "anchor": "58-kount-fraude-de-cartao-de-credito"
+        },
+        {
+          "heading": "5.9 Plaid (Verificacao Bancaria e de Renda)",
+          "anchor": "59-plaid-verificacao-bancaria-e-de-renda"
+        },
+        {
+          "heading": "Ordem de Execucao Completa",
+          "anchor": "ordem-de-execucao-completa"
+        },
+        {
+          "heading": "6. Underwriting (Analise de Credito)",
+          "anchor": "6-underwriting-analise-de-credito"
+        },
+        {
+          "heading": "O Que e Underwriting",
+          "anchor": "o-que-e-underwriting"
+        },
+        {
+          "heading": "Decisao de Rodar vs Reusar UW",
+          "anchor": "decisao-de-rodar-vs-reusar-uw"
+        },
+        {
+          "heading": "Skip UW (Bypass para Merchants Especificos)",
+          "anchor": "skip-uw-bypass-para-merchants-especificos"
+        },
+        {
+          "heading": "Expiracao da Aprovacao",
+          "anchor": "expiracao-da-aprovacao"
+        },
+        {
+          "heading": "Flag isEligibleForExtraInfo — Migration V20260313160247",
+          "anchor": "flag-iseligibleforextrainfo-migration-v20260313160247"
+        },
+        {
+          "heading": "Campo internal_decision — Migration V20260212152410",
+          "anchor": "campo-internal_decision-migration-v20260212152410"
+        },
+        {
+          "heading": "Selecao de Programa e Roteamento (13 vs 16 Meses) — Task #439",
+          "anchor": "selecao-de-programa-e-roteamento-13-vs-16-meses-task-439"
+        },
+        {
+          "heading": "Campanhas Peak/Off-Peak",
+          "anchor": "campanhas-peakoff-peak"
+        },
+        {
+          "heading": "39. Validacao Pre-Assinatura (Missing Required Fields)",
+          "anchor": "39-validacao-pre-assinatura-missing-required-fields"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Campos Validados",
+          "anchor": "campos-validados"
+        },
+        {
+          "heading": "Como e Acionado",
+          "anchor": "como-e-acionado"
+        },
+        {
+          "heading": "O Que Retorna",
+          "anchor": "o-que-retorna"
+        },
+        {
+          "heading": "40. Valores Aprovados por Segmento de Risco",
+          "anchor": "40-valores-aprovados-por-segmento-de-risco"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Como Funciona",
+          "anchor": "como-funciona"
+        },
+        {
+          "heading": "Como Atualizar",
+          "anchor": "como-atualizar"
+        },
+        {
+          "heading": "Impacto",
+          "anchor": "impacto"
+        },
+        {
+          "heading": "62. Continuacao e Finalizacao de Aplicacao",
+          "anchor": "62-continuacao-e-finalizacao-de-aplicacao"
+        },
+        {
+          "heading": "62.1 Continuacao de Aplicacao (Can Continue)",
+          "anchor": "621-continuacao-de-aplicacao-can-continue"
+        },
+        {
+          "heading": "62.2 Finalizacao de Aplicacao",
+          "anchor": "622-finalizacao-de-aplicacao"
+        },
+        {
+          "heading": "64. Verificacao de Endereco (Melissa Data)",
+          "anchor": "64-verificacao-de-endereco-melissa-data"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Mecanismo de Cache",
+          "anchor": "mecanismo-de-cache"
+        },
+        {
+          "heading": "Correspondencia de Endereco",
+          "anchor": "correspondencia-de-endereco"
+        },
+        {
+          "heading": "65. Geolocalizacao por CEP",
+          "anchor": "65-geolocalizacao-por-cep"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Como Funciona",
+          "anchor": "como-funciona"
+        }
+      ]
+    },
+    {
+      "file": "03-contratos-esign.md",
+      "path": "docs/business-rules/03-contratos-esign.md",
+      "title": "Contratos e Assinatura Eletrônica",
+      "domain": "business-rules",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-18",
+      "covers": [
+        "esign",
+        "gowsign-routing",
+        "gowsign-routing",
+        "gowsign-routing",
+        "esign",
+        "signing-fee",
+        "gowsign-routing"
+      ],
+      "sources": [
+        {
+          "type": "code",
+          "value": "src/data/state-merchant-matrix.ts#STATE_MATRIX"
+        },
+        {
+          "type": "code",
+          "value": "src/data/state-merchant-matrix.ts#SigningProvider"
+        },
+        {
+          "type": "code",
+          "value": "src/helpers/esign-db.helpers.ts#EsignDocument"
+        },
+        {
+          "type": "env",
+          "value": "qa2"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "UOwn Leasing - SVC Platform",
+          "anchor": "uown-leasing---svc-platform"
+        },
+        {
+          "heading": "8. Contratos e Assinatura Eletronica (E-sign)",
+          "anchor": "8-contratos-e-assinatura-eletronica-e-sign"
+        },
+        {
+          "heading": "Fluxo de Contrato",
+          "anchor": "fluxo-de-contrato"
+        },
+        {
+          "heading": "Mapeamento Status E-sign -> Status Contrato",
+          "anchor": "mapeamento-status-e-sign---status-contrato"
+        },
+        {
+          "heading": "Auto-Move para Funding",
+          "anchor": "auto-move-para-funding"
+        },
+        {
+          "heading": "55. Taxa de Assinatura (Signing Fee)",
+          "anchor": "55-taxa-de-assinatura-signing-fee"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Calculo do Valor",
+          "anchor": "calculo-do-valor"
+        },
+        {
+          "heading": "Pre-requisitos para Cobranca",
+          "anchor": "pre-requisitos-para-cobranca"
+        },
+        {
+          "heading": "Fluxo de Cobranca",
+          "anchor": "fluxo-de-cobranca"
+        },
+        {
+          "heading": "Recibo de Pagamento",
+          "anchor": "recibo-de-pagamento"
+        },
+        {
+          "heading": "Configuracoes",
+          "anchor": "configuracoes"
+        },
+        {
+          "heading": "63. Redirect de E-sign e Pos-Assinatura",
+          "anchor": "63-redirect-de-e-sign-e-pos-assinatura"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Mapeamento de Eventos",
+          "anchor": "mapeamento-de-eventos"
+        },
+        {
+          "heading": "Construcao da URL de Redirect",
+          "anchor": "construcao-da-url-de-redirect"
+        },
+        {
+          "heading": "Fluxo Pos-Assinatura",
+          "anchor": "fluxo-pos-assinatura"
+        },
+        {
+          "heading": "Fluxo de Plano de Protecao (TireAgent / BW13)",
+          "anchor": "fluxo-de-plano-de-protecao-tireagent-bw13"
+        },
+        {
+          "heading": "Tela de Conclusao Pos-Assinatura (Confetes)",
+          "anchor": "tela-de-conclusao-pos-assinatura-confetes"
+        },
+        {
+          "heading": "Tela de Selecao de Programa de Pagamento (MissingPaymentProgram)",
+          "anchor": "tela-de-selecao-de-programa-de-pagamento-missingpaymentprogram"
+        }
+      ]
+    },
+    {
+      "file": "04-calculos-financeiros.md",
+      "path": "docs/business-rules/04-calculos-financeiros.md",
+      "title": "Cálculos e Fórmulas Financeiras",
+      "domain": "business-rules",
+      "status": "stable",
+      "volatility": "stable",
+      "last_verified": "2026-06-18",
+      "covers": [
+        "payment-calculator",
+        "epo",
+        "payoff",
+        "money-factor",
+        "payment-calculator",
+        "state-rules"
+      ],
+      "sources": [
+        {
+          "type": "code",
+          "value": "src/helpers/svc-payoff.helpers.ts#parseEpoBreakdown"
+        },
+        {
+          "type": "code",
+          "value": "src/data/sixteenMonthEpoForCa531.testData.ts#ISSUE531_DATA"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "UOwn Leasing - SVC Platform",
+          "anchor": "uown-leasing---svc-platform"
+        },
+        {
+          "heading": "7. Calculadora de Pagamentos",
+          "anchor": "7-calculadora-de-pagamentos"
+        },
+        {
+          "heading": "O Que Faz",
+          "anchor": "o-que-faz"
+        },
+        {
+          "heading": "Formulas Principais",
+          "anchor": "formulas-principais"
+        },
+        {
+          "heading": "Numero de Parcelas por Frequencia",
+          "anchor": "numero-de-parcelas-por-frequencia"
+        },
+        {
+          "heading": "planId no Calculo (Task #439)",
+          "anchor": "planid-no-calculo-task-439"
+        },
+        {
+          "heading": "Calculo do EPO",
+          "anchor": "calculo-do-epo"
+        },
+        {
+          "heading": "Pagamento Minimo Final (Especifico por Estado)",
+          "anchor": "pagamento-minimo-final-especifico-por-estado"
+        },
+        {
+          "heading": "15. EPO - Early Pay Off (Quitacao Antecipada em 90 Dias)",
+          "anchor": "15-epo---early-pay-off-quitacao-antecipada-em-90-dias"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve (Beneficio ao Cliente)",
+          "anchor": "para-que-serve-beneficio-ao-cliente"
+        },
+        {
+          "heading": "Elegibilidade para EPO de 90 Dias",
+          "anchor": "elegibilidade-para-epo-de-90-dias"
+        },
+        {
+          "heading": "Calculo do EPO (Cascata por Estado)",
+          "anchor": "calculo-do-epo-cascata-por-estado"
+        },
+        {
+          "heading": "EPO Kornerstone (Formula Especial)",
+          "anchor": "epo-kornerstone-formula-especial"
+        },
+        {
+          "heading": "O Que Acontece Quando EPO e Quitado",
+          "anchor": "o-que-acontece-quando-epo-e-quitado"
+        },
+        {
+          "heading": "56. Calculo de Payoff (Payoff Amount)",
+          "anchor": "56-calculo-de-payoff-payoff-amount"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Formula Kornerstone (KW Buyout)",
+          "anchor": "formula-kornerstone-kw-buyout"
+        },
+        {
+          "heading": "Calculo Padrao (UOwn)",
+          "anchor": "calculo-padrao-uown"
+        },
+        {
+          "heading": "Validacao contra Saldo do Contrato",
+          "anchor": "validacao-contra-saldo-do-contrato"
+        },
+        {
+          "heading": "Como Consultar",
+          "anchor": "como-consultar"
+        },
+        {
+          "heading": "70. Regras Detalhadas de Calculo EPO por Estado",
+          "anchor": "70-regras-detalhadas-de-calculo-epo-por-estado"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Cascata de Prioridade (verificada no codigo)",
+          "anchor": "cascata-de-prioridade-verificada-no-codigo"
+        },
+        {
+          "heading": "Regras Especiais por Estado",
+          "anchor": "regras-especiais-por-estado"
+        },
+        {
+          "heading": "Desativacao de Recebiveis",
+          "anchor": "desativacao-de-recebiveis"
+        }
+      ]
+    },
+    {
+      "file": "05-pagamentos.md",
+      "path": "docs/business-rules/05-pagamentos.md",
+      "title": "Processamento de Pagamentos",
+      "domain": "business-rules",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-18",
+      "covers": [
+        "cc-payments",
+        "ach-payments",
+        "cc-payments",
+        "refund",
+        "payment-arrangement",
+        "nsf-fee",
+        "sweeps"
+      ],
+      "sources": [
+        {
+          "type": "code",
+          "value": "src/api/clients/tms-payment.client.ts#TmsPaymentClient"
+        },
+        {
+          "type": "code",
+          "value": "src/data/test-cards.ts#TEST_CARDS"
+        },
+        {
+          "type": "db",
+          "value": "uown_sv_credit_card_transaction"
+        },
+        {
+          "type": "db",
+          "value": "uown_sv_achpayment"
+        },
+        {
+          "type": "db",
+          "value": "uown_sv_payment_arrangement"
+        },
+        {
+          "type": "env",
+          "value": "qa2"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "UOwn Leasing - SVC Platform",
+          "anchor": "uown-leasing---svc-platform"
+        },
+        {
+          "heading": "11. Pagamentos com Cartao de Credito",
+          "anchor": "11-pagamentos-com-cartao-de-credito"
+        },
+        {
+          "heading": "Fluxo de Autorizacao",
+          "anchor": "fluxo-de-autorizacao"
+        },
+        {
+          "heading": "Deteccao de NSF (Fundos Insuficientes)",
+          "anchor": "deteccao-de-nsf-fundos-insuficientes"
+        },
+        {
+          "heading": "Rerun de CC (Retentativa)",
+          "anchor": "rerun-de-cc-retentativa"
+        },
+        {
+          "heading": "Daily Denied Rerun (Retentativa Automatica Diaria)",
+          "anchor": "daily-denied-rerun-retentativa-automatica-diaria"
+        },
+        {
+          "heading": "12. CC Peek (Captura Parcial de Cartao)",
+          "anchor": "12-cc-peek-captura-parcial-de-cartao"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Como o Consentimento e Capturado",
+          "anchor": "como-o-consentimento-e-capturado"
+        },
+        {
+          "heading": "Quando CC Peek e Ativado",
+          "anchor": "quando-cc-peek-e-ativado"
+        },
+        {
+          "heading": "Impacto na Retentativa",
+          "anchor": "impacto-na-retentativa"
+        },
+        {
+          "heading": "Como Modificar o Consentimento",
+          "anchor": "como-modificar-o-consentimento"
+        },
+        {
+          "heading": "Gestao de Consentimento CC Peek por Portal",
+          "anchor": "gestao-de-consentimento-cc-peek-por-portal"
+        },
+        {
+          "heading": "13a. Pagamentos por Cheque (Check Payment)",
+          "anchor": "13a-pagamentos-por-cheque-check-payment"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Campos Obrigatorios",
+          "anchor": "campos-obrigatorios"
+        },
+        {
+          "heading": "Status do Cheque",
+          "anchor": "status-do-cheque"
+        },
+        {
+          "heading": "Estrategia de Alocacao",
+          "anchor": "estrategia-de-alocacao"
+        },
+        {
+          "heading": "Restricao de Estorno/Reembolso",
+          "anchor": "restricao-de-estornoreembolso"
+        },
+        {
+          "heading": "13. Pagamentos ACH (Debito Bancario)",
+          "anchor": "13-pagamentos-ach-debito-bancario"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Criacao de Pagamento ACH",
+          "anchor": "criacao-de-pagamento-ach"
+        },
+        {
+          "heading": "Rating Letter via Customer Portal",
+          "anchor": "rating-letter-via-customer-portal"
+        },
+        {
+          "heading": "NSF Fee no ACH",
+          "anchor": "nsf-fee-no-ach"
+        },
+        {
+          "heading": "Reembolso ACH",
+          "anchor": "reembolso-ach"
+        },
+        {
+          "heading": "14. Pos-Pagamento e Alocacao de Recebiveis",
+          "anchor": "14-pos-pagamento-e-alocacao-de-recebiveis"
+        },
+        {
+          "heading": "Estrategias de Alocacao",
+          "anchor": "estrategias-de-alocacao"
+        },
+        {
+          "heading": "Pagamento Sem Recebivel",
+          "anchor": "pagamento-sem-recebivel"
+        },
+        {
+          "heading": "37. PayWallet (Pagamentos via Folha de Pagamento)",
+          "anchor": "37-paywallet-pagamentos-via-folha-de-pagamento"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Como Funciona",
+          "anchor": "como-funciona"
+        },
+        {
+          "heading": "Como Ativar",
+          "anchor": "como-ativar"
+        },
+        {
+          "heading": "O Que Verificar",
+          "anchor": "o-que-verificar"
+        },
+        {
+          "heading": "47. CC Idempotent (Retentativa de CC Timeout)",
+          "anchor": "47-cc-idempotent-retentativa-de-cc-timeout"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Como Funciona",
+          "anchor": "como-funciona"
+        },
+        {
+          "heading": "Como Ativar",
+          "anchor": "como-ativar"
+        },
+        {
+          "heading": "53. Reembolso de Pagamentos (Refund Payment)",
+          "anchor": "53-reembolso-de-pagamentos-refund-payment"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Tipos de Reembolso",
+          "anchor": "tipos-de-reembolso"
+        },
+        {
+          "heading": "Logica de Reembolso CC",
+          "anchor": "logica-de-reembolso-cc"
+        },
+        {
+          "heading": "Logica de Reembolso Parcial",
+          "anchor": "logica-de-reembolso-parcial"
+        },
+        {
+          "heading": "Reembolso em Lote",
+          "anchor": "reembolso-em-lote"
+        },
+        {
+          "heading": "Como Disparar",
+          "anchor": "como-disparar"
+        },
+        {
+          "heading": "54. Arranjo de Pagamentos (Payment Arrangement)",
+          "anchor": "54-arranjo-de-pagamentos-payment-arrangement"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Entidade: uown_sv_payment_arrangement (Task #446)",
+          "anchor": "entidade-uown_sv_payment_arrangement-task-446"
+        },
+        {
+          "heading": "FK nas Tabelas de Transacao (Task #446)",
+          "anchor": "fk-nas-tabelas-de-transacao-task-446"
+        },
+        {
+          "heading": "Tipos de Arranjo (ArrangementType)",
+          "anchor": "tipos-de-arranjo-arrangementtype"
+        },
+        {
+          "heading": "Maquina de Estados do Arranjo (PaymentArrangementStatus)",
+          "anchor": "maquina-de-estados-do-arranjo-paymentarrangementstatus"
+        },
+        {
+          "heading": "Logica de Transicao de Status (Task #446)",
+          "anchor": "logica-de-transicao-de-status-task-446"
+        },
+        {
+          "heading": "Processamento Sincrono (CC) vs Assincrono (ACH)",
+          "anchor": "processamento-sincrono-cc-vs-assincrono-ach"
+        },
+        {
+          "heading": "Como Funciona",
+          "anchor": "como-funciona"
+        },
+        {
+          "heading": "Sweeps de Pagamento e Arranjos (Task #446)",
+          "anchor": "sweeps-de-pagamento-e-arranjos-task-446"
+        },
+        {
+          "heading": "Impacto no Rating",
+          "anchor": "impacto-no-rating"
+        },
+        {
+          "heading": "Como Disparar",
+          "anchor": "como-disparar"
+        },
+        {
+          "heading": "71. Validacao de Saldo Devedor (Overpayment Prevention)",
+          "anchor": "71-validacao-de-saldo-devedor-overpayment-prevention"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Regra",
+          "anchor": "regra"
+        },
+        {
+          "heading": "Impacto",
+          "anchor": "impacto"
+        },
+        {
+          "heading": "57. Taxa NSF por Estado (NSF Fee)",
+          "anchor": "57-taxa-nsf-por-estado-nsf-fee"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Logica de Determinacao",
+          "anchor": "logica-de-determinacao"
+        }
+      ]
+    },
+    {
+      "file": "06-conta-ciclo-vida.md",
+      "path": "docs/business-rules/06-conta-ciclo-vida.md",
+      "title": "Gestão do Ciclo de Vida da Conta",
+      "domain": "business-rules",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-18",
+      "covers": [
+        "receivables",
+        "auto-pay",
+        "rating-letters",
+        "delinquency",
+        "account-status",
+        "cancellation",
+        "paid-out",
+        "sweeps"
+      ],
+      "sources": [
+        {
+          "type": "code",
+          "value": "src/helpers/account-aging.helpers.ts#SEED_DELINQUENCY_DAYS"
+        },
+        {
+          "type": "code",
+          "value": "src/helpers/settled-in-full.helpers.ts#getSweepWindowDate"
+        },
+        {
+          "type": "db",
+          "value": "uown_sv_account"
+        },
+        {
+          "type": "env",
+          "value": "qa2"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "UOwn Leasing - SVC Platform",
+          "anchor": "uown-leasing---svc-platform"
+        },
+        {
+          "heading": "16. Recebiveis e Cronograma de Pagamentos",
+          "anchor": "16-recebiveis-e-cronograma-de-pagamentos"
+        },
+        {
+          "heading": "Tipos de Recebiveis",
+          "anchor": "tipos-de-recebiveis"
+        },
+        {
+          "heading": "Calculo de Imposto nos Recebiveis",
+          "anchor": "calculo-de-imposto-nos-recebiveis"
+        },
+        {
+          "heading": "Next Due Amount (Proximo Vencimento)",
+          "anchor": "next-due-amount-proximo-vencimento"
+        },
+        {
+          "heading": "Past Due Amount (Valor em Atraso)",
+          "anchor": "past-due-amount-valor-em-atraso"
+        },
+        {
+          "heading": "18. Auto-Pay (Pagamento Automatico)",
+          "anchor": "18-auto-pay-pagamento-automatico"
+        },
+        {
+          "heading": "Tipos Suportados",
+          "anchor": "tipos-suportados"
+        },
+        {
+          "heading": "Validacoes",
+          "anchor": "validacoes"
+        },
+        {
+          "heading": "Remocao Automatica por Rating",
+          "anchor": "remocao-automatica-por-rating"
+        },
+        {
+          "heading": "19. Rating Letters (Classificacao de Risco da Conta)",
+          "anchor": "19-rating-letters-classificacao-de-risco-da-conta"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Significado de Cada Rating",
+          "anchor": "significado-de-cada-rating"
+        },
+        {
+          "heading": "Como o Rating Muda",
+          "anchor": "como-o-rating-muda"
+        },
+        {
+          "heading": "20. Inadimplencia e Cobranca",
+          "anchor": "20-inadimplencia-e-cobranca"
+        },
+        {
+          "heading": "Como a Inadimplencia e Rastreada",
+          "anchor": "como-a-inadimplencia-e-rastreada"
+        },
+        {
+          "heading": "Faixas de Inadimplencia e Acoes",
+          "anchor": "faixas-de-inadimplencia-e-acoes"
+        },
+        {
+          "heading": "Lembretes Adicionais",
+          "anchor": "lembretes-adicionais"
+        },
+        {
+          "heading": "21. Status de Conta (Account Status)",
+          "anchor": "21-status-de-conta-account-status"
+        },
+        {
+          "heading": "ACTIVE",
+          "anchor": "active"
+        },
+        {
+          "heading": "PAID_OUT",
+          "anchor": "paid_out"
+        },
+        {
+          "heading": "PAID_OUT_EARLY",
+          "anchor": "paid_out_early"
+        },
+        {
+          "heading": "PAID_OUT_EARLY_EPO",
+          "anchor": "paid_out_early_epo"
+        },
+        {
+          "heading": "CANCELLED",
+          "anchor": "cancelled"
+        },
+        {
+          "heading": "SETTLED_IN_FULL",
+          "anchor": "settled_in_full"
+        },
+        {
+          "heading": "CHARGED_OFF",
+          "anchor": "charged_off"
+        },
+        {
+          "heading": "SOLD",
+          "anchor": "sold"
+        },
+        {
+          "heading": "CLOSED",
+          "anchor": "closed"
+        },
+        {
+          "heading": "22. Status de Lead (Lead Status)",
+          "anchor": "22-status-de-lead-lead-status"
+        },
+        {
+          "heading": "Fase de Aplicacao/Underwriting",
+          "anchor": "fase-de-aplicacaounderwriting"
+        },
+        {
+          "heading": "Fase de Contrato/Assinatura",
+          "anchor": "fase-de-contratoassinatura"
+        },
+        {
+          "heading": "Fase de Funding",
+          "anchor": "fase-de-funding"
+        },
+        {
+          "heading": "Status Terminais",
+          "anchor": "status-terminais"
+        },
+        {
+          "heading": "Status Internos de Fraude (internalStatus)",
+          "anchor": "status-internos-de-fraude-internalstatus"
+        },
+        {
+          "heading": "52. Cancelamento de Conta (Account Cancellation)",
+          "anchor": "52-cancelamento-de-conta-account-cancellation"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Como Funciona",
+          "anchor": "como-funciona"
+        },
+        {
+          "heading": "Cancelamento de Conta via Lead",
+          "anchor": "cancelamento-de-conta-via-lead"
+        },
+        {
+          "heading": "Como Disparar",
+          "anchor": "como-disparar"
+        },
+        {
+          "heading": "58. Gestao de AutoPay e Instrumentos Financeiros",
+          "anchor": "58-gestao-de-autopay-e-instrumentos-financeiros"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Regras de Sincronizacao",
+          "anchor": "regras-de-sincronizacao"
+        },
+        {
+          "heading": "Impacto do Rating Letter",
+          "anchor": "impacto-do-rating-letter"
+        },
+        {
+          "heading": "Auditoria",
+          "anchor": "auditoria"
+        },
+        {
+          "heading": "69. Elegibilidade para Auto Paid-Out",
+          "anchor": "69-elegibilidade-para-auto-paid-out"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Criterios de Elegibilidade",
+          "anchor": "criterios-de-elegibilidade"
+        },
+        {
+          "heading": "Tipos de Taxa Elegiveis",
+          "anchor": "tipos-de-taxa-elegiveis"
+        },
+        {
+          "heading": "Resultado",
+          "anchor": "resultado"
+        }
+      ]
+    },
+    {
+      "file": "07-modificacoes-conta.md",
+      "path": "docs/business-rules/07-modificacoes-conta.md",
+      "title": "Modificações e Ajustes de Conta",
+      "domain": "business-rules",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-18",
+      "covers": [
+        "rewind-replay",
+        "settlement",
+        "invoice-modification",
+        "frequency-change",
+        "due-date-move",
+        "fpd",
+        "additional-lease",
+        "sweeps",
+        "agent-attribution"
+      ],
+      "sources": [
+        {
+          "type": "code",
+          "value": "src/helpers/settlement.helpers.ts#calculateSettlement"
+        },
+        {
+          "type": "db",
+          "value": "uown_frequency_mods"
+        },
+        {
+          "type": "db",
+          "value": "uown_lead_modifications"
+        },
+        "svc-source: ChangeLeadStatusService.java",
+        "svc-source: ThreadAttributes.java",
+        {
+          "type": "env",
+          "value": "qa2"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "UOwn Leasing - SVC Platform",
+          "anchor": "uown-leasing---svc-platform"
+        },
+        {
+          "heading": "17. Rewind/Replay (Motor de Correcao de Pagamentos)",
+          "anchor": "17-rewindreplay-motor-de-correcao-de-pagamentos"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Como Funciona",
+          "anchor": "como-funciona"
+        },
+        {
+          "heading": "Quando e Usado",
+          "anchor": "quando-e-usado"
+        },
+        {
+          "heading": "35. Settlement (Acordo de Quitacao)",
+          "anchor": "35-settlement-acordo-de-quitacao"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Como Funciona",
+          "anchor": "como-funciona"
+        },
+        {
+          "heading": "Como Ativar/Disparar",
+          "anchor": "como-ativardisparar"
+        },
+        {
+          "heading": "Pre-Condicoes para Settlement via `settleApplication`",
+          "anchor": "pre-condicoes-para-settlement-via-settleapplication"
+        },
+        {
+          "heading": "Controle de Concorrencia",
+          "anchor": "controle-de-concorrencia"
+        },
+        {
+          "heading": "O Que Verificar",
+          "anchor": "o-que-verificar"
+        },
+        {
+          "heading": "36. Modificacao de Invoice",
+          "anchor": "36-modificacao-de-invoice"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Como Funciona",
+          "anchor": "como-funciona"
+        },
+        {
+          "heading": "Como Disparar",
+          "anchor": "como-disparar"
+        },
+        {
+          "heading": "O Que Verificar",
+          "anchor": "o-que-verificar"
+        },
+        {
+          "heading": "41. Modificacao de Frequencia de Pagamento",
+          "anchor": "41-modificacao-de-frequencia-de-pagamento"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Dados Registrados",
+          "anchor": "dados-registrados"
+        },
+        {
+          "heading": "Como Disparar",
+          "anchor": "como-disparar"
+        },
+        {
+          "heading": "Impacto",
+          "anchor": "impacto"
+        },
+        {
+          "heading": "42. Movimentacao de Data de Vencimento (Due Date Move)",
+          "anchor": "42-movimentacao-de-data-de-vencimento-due-date-move"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Como Disparar",
+          "anchor": "como-disparar"
+        },
+        {
+          "heading": "Dados Registrados",
+          "anchor": "dados-registrados"
+        },
+        {
+          "heading": "Restricoes",
+          "anchor": "restricoes"
+        },
+        {
+          "heading": "O Que Verificar",
+          "anchor": "o-que-verificar"
+        },
+        {
+          "heading": "59. Alteracao de Valor de Aprovacao (Approval Amount Override)",
+          "anchor": "59-alteracao-de-valor-de-aprovacao-approval-amount-override"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Pre-requisitos",
+          "anchor": "pre-requisitos"
+        },
+        {
+          "heading": "Limite Maximo por Client Type",
+          "anchor": "limite-maximo-por-client-type"
+        },
+        {
+          "heading": "O Que Acontece na Alteracao",
+          "anchor": "o-que-acontece-na-alteracao"
+        },
+        {
+          "heading": "Como Disparar",
+          "anchor": "como-disparar"
+        },
+        {
+          "heading": "60. Lease Adicional (Add Lease)",
+          "anchor": "60-lease-adicional-add-lease"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Pre-requisitos",
+          "anchor": "pre-requisitos"
+        },
+        {
+          "heading": "Como Funciona",
+          "anchor": "como-funciona"
+        },
+        {
+          "heading": "Como Disparar",
+          "anchor": "como-disparar"
+        },
+        {
+          "heading": "68. Ajuste de Data do Primeiro Pagamento (First Payment Due Date)",
+          "anchor": "68-ajuste-de-data-do-primeiro-pagamento-first-payment-due-date"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Regra de Ajuste",
+          "anchor": "regra-de-ajuste"
+        },
+        {
+          "heading": "Impacto",
+          "anchor": "impacto"
+        },
+        {
+          "heading": "70. Realocacao de Pagamento (Payment Reallocation)",
+          "anchor": "70-realocacao-de-pagamento-payment-reallocation"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Regras de Validacao",
+          "anchor": "regras-de-validacao"
+        },
+        {
+          "heading": "Permissao",
+          "anchor": "permissao"
+        },
+        {
+          "heading": "71. Reset Default Schedule (KORNERSTONE)",
+          "anchor": "71-reset-default-schedule-kornerstone"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Disponibilidade",
+          "anchor": "disponibilidade"
+        },
+        {
+          "heading": "72. Atribuicao de Agente no Modification Report (`agent_username`)",
+          "anchor": "72-atribuicao-de-agente-no-modification-report-agent_username"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Regra",
+          "anchor": "regra"
+        },
+        {
+          "heading": "Implicacao para testes",
+          "anchor": "implicacao-para-testes"
+        },
+        {
+          "heading": "Historico do bug (#1315, corrigido R1.53.0)",
+          "anchor": "historico-do-bug-1315-corrigido-r1530"
+        }
+      ]
+    },
+    {
+      "file": "08-funding-merchants.md",
+      "path": "docs/business-rules/08-funding-merchants.md",
+      "title": "Funding e Gestão de Merchants",
+      "domain": "business-rules",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-18",
+      "covers": [
+        "funding-queue",
+        "merchant-management",
+        "webhooks",
+        "ssn",
+        "los-svc-import",
+        "integration-api"
+      ],
+      "sources": [
+        {
+          "type": "code",
+          "value": "src/data/merchant-config-contract.ts"
+        },
+        {
+          "type": "code",
+          "value": "src/config/constants.ts#generateTestSSN"
+        },
+        {
+          "type": "db",
+          "value": "uown_scheduled_task"
+        },
+        {
+          "type": "env",
+          "value": "qa2"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "UOwn Leasing - SVC Platform",
+          "anchor": "uown-leasing---svc-platform"
+        },
+        {
+          "heading": "9. Fila de Financiamento (Funding)",
+          "anchor": "9-fila-de-financiamento-funding"
+        },
+        {
+          "heading": "O Que e Funding",
+          "anchor": "o-que-e-funding"
+        },
+        {
+          "heading": "Como o Merchant e Pago",
+          "anchor": "como-o-merchant-e-pago"
+        },
+        {
+          "heading": "Transicoes de Status",
+          "anchor": "transicoes-de-status"
+        },
+        {
+          "heading": "Mudanca de Invoice Apos Funding",
+          "anchor": "mudanca-de-invoice-apos-funding"
+        },
+        {
+          "heading": "10. Importacao LOS para SVC",
+          "anchor": "10-importacao-los-para-svc"
+        },
+        {
+          "heading": "O Que Acontece",
+          "anchor": "o-que-acontece"
+        },
+        {
+          "heading": "Dados Importados",
+          "anchor": "dados-importados"
+        },
+        {
+          "heading": "Regras Especiais",
+          "anchor": "regras-especiais"
+        },
+        {
+          "heading": "28. Webhooks (Notificacoes para Merchants)",
+          "anchor": "28-webhooks-notificacoes-para-merchants"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Status que Disparam Webhook",
+          "anchor": "status-que-disparam-webhook"
+        },
+        {
+          "heading": "Como Funciona",
+          "anchor": "como-funciona"
+        },
+        {
+          "heading": "Impacto no Merchant",
+          "anchor": "impacto-no-merchant"
+        },
+        {
+          "heading": "48. Gestao de Merchants (Lojistas)",
+          "anchor": "48-gestao-de-merchants-lojistas"
+        },
+        {
+          "heading": "Criacao",
+          "anchor": "criacao"
+        },
+        {
+          "heading": "Ativacao/Desativacao",
+          "anchor": "ativacaodesativacao"
+        },
+        {
+          "heading": "Clone",
+          "anchor": "clone"
+        },
+        {
+          "heading": "Como Disparar",
+          "anchor": "como-disparar"
+        },
+        {
+          "heading": "49. Gestao de Leads",
+          "anchor": "49-gestao-de-leads"
+        },
+        {
+          "heading": "Transicoes Permitidas via ChangeLeadStatus",
+          "anchor": "transicoes-permitidas-via-changeleadstatus"
+        },
+        {
+          "heading": "Regras Especiais",
+          "anchor": "regras-especiais"
+        },
+        {
+          "heading": "Como Disparar",
+          "anchor": "como-disparar"
+        },
+        {
+          "heading": "51. API de Integracao para Merchants (Full API)",
+          "anchor": "51-api-de-integracao-para-merchants-full-api"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Autenticacao",
+          "anchor": "autenticacao"
+        },
+        {
+          "heading": "Fluxos de Integracao",
+          "anchor": "fluxos-de-integracao"
+        },
+        {
+          "heading": "Finalizacao do Lease (Assinatura)",
+          "anchor": "finalizacao-do-lease-assinatura"
+        },
+        {
+          "heading": "Notificacoes de Finalizacao",
+          "anchor": "notificacoes-de-finalizacao"
+        },
+        {
+          "heading": "Endpoints da API",
+          "anchor": "endpoints-da-api"
+        },
+        {
+          "heading": "Requisito de IP Whitelisting",
+          "anchor": "requisito-de-ip-whitelisting"
+        },
+        {
+          "heading": "Regras do Sandbox e QA1 para Testes",
+          "anchor": "regras-do-sandbox-e-qa1-para-testes"
+        },
+        {
+          "heading": "Resumo de Endpoints",
+          "anchor": "resumo-de-endpoints"
+        },
+        {
+          "heading": "Codigos de Status da Resposta",
+          "anchor": "codigos-de-status-da-resposta"
+        },
+        {
+          "heading": "67. Auditoria de Modificacoes de Funding",
+          "anchor": "67-auditoria-de-modificacoes-de-funding"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Dados Registrados",
+          "anchor": "dados-registrados"
+        },
+        {
+          "heading": "Transicoes Validas de Funding",
+          "anchor": "transicoes-validas-de-funding"
+        },
+        {
+          "heading": "Como Consultar",
+          "anchor": "como-consultar"
+        }
+      ]
+    },
+    {
+      "file": "09-integracoes-externas.md",
+      "path": "docs/business-rules/09-integracoes-externas.md",
+      "title": "Integracoes com Terceiros",
+      "domain": "business-rules",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-18",
+      "covers": [
+        "buddy-insurance",
+        "tax-calculation",
+        "tax-calculation",
+        "five9",
+        "kornerstone",
+        "proget",
+        "skit-ai",
+        "fraud-vendors"
+      ],
+      "sources": [
+        {
+          "type": "code",
+          "value": "src/data/merchant-config-contract.ts#offerInsurance"
+        },
+        {
+          "type": "db",
+          "value": "uown_sv_protection_plan"
+        },
+        {
+          "type": "env",
+          "value": "qa2"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "UOwn Leasing - SVC Platform",
+          "anchor": "uown-leasing---svc-platform"
+        },
+        {
+          "heading": "23. Plano de Protecao (Buddy Insurance)",
+          "anchor": "23-plano-de-protecao-buddy-insurance"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Preco",
+          "anchor": "preco"
+        },
+        {
+          "heading": "Como o Cliente Seleciona",
+          "anchor": "como-o-cliente-seleciona"
+        },
+        {
+          "heading": "Verificacao de Elegibilidade (Portal)",
+          "anchor": "verificacao-de-elegibilidade-portal"
+        },
+        {
+          "heading": "Fluxo de Inscricao (Opt-In)",
+          "anchor": "fluxo-de-inscricao-opt-in"
+        },
+        {
+          "heading": "Cross-Coverage (Cobertura Cruzada)",
+          "anchor": "cross-coverage-cobertura-cruzada"
+        },
+        {
+          "heading": "Impacto nos Pagamentos e Financeiro",
+          "anchor": "impacto-nos-pagamentos-e-financeiro"
+        },
+        {
+          "heading": "Cancelamento",
+          "anchor": "cancelamento"
+        },
+        {
+          "heading": "Configuracoes Principais",
+          "anchor": "configuracoes-principais"
+        },
+        {
+          "heading": "24. Taxas e Impostos (TaxCloud / TaxJar)",
+          "anchor": "24-taxas-e-impostos-taxcloud-taxjar"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Como o Roteamento Funciona",
+          "anchor": "como-o-roteamento-funciona"
+        },
+        {
+          "heading": "TaxCloud (Provedor Principal)",
+          "anchor": "taxcloud-provedor-principal"
+        },
+        {
+          "heading": "TaxJar (Provedor Alternativo/Legado)",
+          "anchor": "taxjar-provedor-alternativolegado"
+        },
+        {
+          "heading": "25. Five9 (Call Center e IVR)",
+          "anchor": "25-five9-call-center-e-ivr"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Como o Cliente Interage",
+          "anchor": "como-o-cliente-interage"
+        },
+        {
+          "heading": "Como Funciona Tecnicamente",
+          "anchor": "como-funciona-tecnicamente"
+        },
+        {
+          "heading": "Impacto",
+          "anchor": "impacto"
+        },
+        {
+          "heading": "43. RTR (Real Time Reporting / Migracao Kornerstone)",
+          "anchor": "43-rtr-real-time-reporting-migracao-kornerstone"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Como Funciona",
+          "anchor": "como-funciona"
+        },
+        {
+          "heading": "Como Disparar",
+          "anchor": "como-disparar"
+        },
+        {
+          "heading": "44. Proget (Bloqueio de Dispositivos)",
+          "anchor": "44-proget-bloqueio-de-dispositivos"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Como Funciona",
+          "anchor": "como-funciona"
+        },
+        {
+          "heading": "Como Ativar",
+          "anchor": "como-ativar"
+        },
+        {
+          "heading": "45. Skit.ai (Bot de Cobranca Automatizado)",
+          "anchor": "45-skitai-bot-de-cobranca-automatizado"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Como Funciona",
+          "anchor": "como-funciona"
+        },
+        {
+          "heading": "Como Ativar",
+          "anchor": "como-ativar"
+        },
+        {
+          "heading": "46. PayPair (Portal de Merchant Externo)",
+          "anchor": "46-paypair-portal-de-merchant-externo"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Como Funciona",
+          "anchor": "como-funciona"
+        },
+        {
+          "heading": "Fluxo do Cliente no Widget",
+          "anchor": "fluxo-do-cliente-no-widget"
+        },
+        {
+          "heading": "Arquitetura de Iframes",
+          "anchor": "arquitetura-de-iframes"
+        },
+        {
+          "heading": "Merchants Integrados via PayPair",
+          "anchor": "merchants-integrados-via-paypair"
+        },
+        {
+          "heading": "Diferenciais em Relacao ao PayTomorrow",
+          "anchor": "diferenciais-em-relacao-ao-paytomorrow"
+        },
+        {
+          "heading": "47. Podium (Gestao de Avaliacoes de Clientes)",
+          "anchor": "47-podium-gestao-de-avaliacoes-de-clientes"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Como o Agente Usa",
+          "anchor": "como-o-agente-usa"
+        },
+        {
+          "heading": "Como Funciona Tecnicamente",
+          "anchor": "como-funciona-tecnicamente"
+        },
+        {
+          "heading": "Controle de Acesso",
+          "anchor": "controle-de-acesso"
+        },
+        {
+          "heading": "Estrutura de Banco de Dados",
+          "anchor": "estrutura-de-banco-de-dados"
+        },
+        {
+          "heading": "Tratamento de Erros",
+          "anchor": "tratamento-de-erros"
+        },
+        {
+          "heading": "Milestone",
+          "anchor": "milestone"
+        }
+      ]
+    },
+    {
+      "file": "10-portal-comunicacoes.md",
+      "path": "docs/business-rules/10-portal-comunicacoes.md",
+      "title": "Portal, Comunicacoes e Atendimento",
+      "domain": "business-rules",
+      "status": "stable",
+      "volatility": "stable",
+      "last_verified": "2026-06-18",
+      "covers": [
+        "tms",
+        "customer-portal",
+        "correspondence",
+        "correspondence",
+        "correspondence",
+        "consent",
+        "contact-preferences"
+      ],
+      "sources": [
+        {
+          "type": "db",
+          "value": "uown_email_queue"
+        },
+        {
+          "type": "db",
+          "value": "uown_sms_queue"
+        },
+        {
+          "type": "env",
+          "value": "qa2"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "UOwn Leasing - SVC Platform",
+          "anchor": "uown-leasing---svc-platform"
+        },
+        {
+          "heading": "26. TMS (Sistema para Agentes Telefonicos)",
+          "anchor": "26-tms-sistema-para-agentes-telefonicos"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "O Que um Agente Pode Fazer via TMS",
+          "anchor": "o-que-um-agente-pode-fazer-via-tms"
+        },
+        {
+          "heading": "Como o Cliente e Impactado",
+          "anchor": "como-o-cliente-e-impactado"
+        },
+        {
+          "heading": "27. Portal do Cliente",
+          "anchor": "27-portal-do-cliente"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Autenticacao",
+          "anchor": "autenticacao"
+        },
+        {
+          "heading": "O Que o Cliente Pode Fazer",
+          "anchor": "o-que-o-cliente-pode-fazer"
+        },
+        {
+          "heading": "Branding por Empresa",
+          "anchor": "branding-por-empresa"
+        },
+        {
+          "heading": "Ticket de Suporte (Contact Routing via Zendesk)",
+          "anchor": "ticket-de-suporte-contact-routing-via-zendesk"
+        },
+        {
+          "heading": "29. Correspondencia (Email/SMS)",
+          "anchor": "29-correspondencia-emailsms"
+        },
+        {
+          "heading": "Templates por Empresa",
+          "anchor": "templates-por-empresa"
+        },
+        {
+          "heading": "Tipos de Correspondencia Observados",
+          "anchor": "tipos-de-correspondencia-observados"
+        },
+        {
+          "heading": "Envio",
+          "anchor": "envio"
+        },
+        {
+          "heading": "61. Gestao de Consentimento (Consent Management)",
+          "anchor": "61-gestao-de-consentimento-consent-management"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Como Funciona",
+          "anchor": "como-funciona"
+        },
+        {
+          "heading": "Como Alterar",
+          "anchor": "como-alterar"
+        },
+        {
+          "heading": "72. Preferencias de Contato (Do Not Call / Do Not Email / Do Not Text)",
+          "anchor": "72-preferencias-de-contato-do-not-call-do-not-email-do-not-text"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Campos de Preferencia",
+          "anchor": "campos-de-preferencia"
+        },
+        {
+          "heading": "Regras de Comportamento",
+          "anchor": "regras-de-comportamento"
+        },
+        {
+          "heading": "Integracao com Five9 (IVR)",
+          "anchor": "integracao-com-five9-ivr"
+        },
+        {
+          "heading": "Impacto no Sistema",
+          "anchor": "impacto-no-sistema"
+        },
+        {
+          "heading": "66. Convite para Portal do Cliente",
+          "anchor": "66-convite-para-portal-do-cliente"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Logica de Envio",
+          "anchor": "logica-de-envio"
+        },
+        {
+          "heading": "Respeito ao Opt-Out",
+          "anchor": "respeito-ao-opt-out"
+        },
+        {
+          "heading": "Mensagens de Resposta",
+          "anchor": "mensagens-de-resposta"
+        }
+      ]
+    },
+    {
+      "file": "11-administracao.md",
+      "path": "docs/business-rules/11-administracao.md",
+      "title": "Administracao e Operacoes",
+      "domain": "business-rules",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-18",
+      "covers": [
+        "blacklist",
+        "item-split",
+        "second-opportunity",
+        "sweeps",
+        "cleanup",
+        "api-auth",
+        "admin-panel"
+      ],
+      "sources": [
+        {
+          "type": "code",
+          "value": "src/api/clients/scheduled-task.client.ts#triggerScheduledTask"
+        },
+        {
+          "type": "db",
+          "value": "uown_scheduled_task"
+        },
+        {
+          "type": "env",
+          "value": "qa2"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "UOwn Leasing - SVC Platform",
+          "anchor": "uown-leasing---svc-platform"
+        },
+        {
+          "heading": "30. Blacklist (Lista Negra)",
+          "anchor": "30-blacklist-lista-negra"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Campos Verificados",
+          "anchor": "campos-verificados"
+        },
+        {
+          "heading": "Como Usar (Usuario Interno)",
+          "anchor": "como-usar-usuario-interno"
+        },
+        {
+          "heading": "Validacoes",
+          "anchor": "validacoes"
+        },
+        {
+          "heading": "31. Item Split (Divisao de Carrinho)",
+          "anchor": "31-item-split-divisao-de-carrinho"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Elegibilidade",
+          "anchor": "elegibilidade"
+        },
+        {
+          "heading": "Como Funciona",
+          "anchor": "como-funciona"
+        },
+        {
+          "heading": "32. Second Opportunity (Segunda Chance)",
+          "anchor": "32-second-opportunity-segunda-chance"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Como Funciona",
+          "anchor": "como-funciona"
+        },
+        {
+          "heading": "34. Processamento em Lote (Sweeps) - Guia Completo",
+          "anchor": "34-processamento-em-lote-sweeps---guia-completo"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Infraestrutura Tecnica",
+          "anchor": "infraestrutura-tecnica"
+        },
+        {
+          "heading": "Como Disparar Qualquer Sweep Manualmente",
+          "anchor": "como-disparar-qualquer-sweep-manualmente"
+        },
+        {
+          "heading": "Como Pausar/Resumir Qualquer Sweep",
+          "anchor": "como-pausarresumir-qualquer-sweep"
+        },
+        {
+          "heading": "O Que Verificar Apos Disparar",
+          "anchor": "o-que-verificar-apos-disparar"
+        },
+        {
+          "heading": "CATEGORIA: PAGAMENTOS CC (Cartao de Credito)",
+          "anchor": "categoria-pagamentos-cc-cartao-de-credito"
+        },
+        {
+          "heading": "CATEGORIA: PAGAMENTOS ACH (Debito Bancario)",
+          "anchor": "categoria-pagamentos-ach-debito-bancario"
+        },
+        {
+          "heading": "CATEGORIA: PAGAMENTOS - COBRANCA DE TAXAS",
+          "anchor": "categoria-pagamentos---cobranca-de-taxas"
+        },
+        {
+          "heading": "CATEGORIA: STATUS DE CONTA",
+          "anchor": "categoria-status-de-conta"
+        },
+        {
+          "heading": "CATEGORIA: CORRESPONDENCIA (Email/SMS)",
+          "anchor": "categoria-correspondencia-emailsms"
+        },
+        {
+          "heading": "CATEGORIA: DOCUMENTOS E E-SIGN",
+          "anchor": "categoria-documentos-e-e-sign"
+        },
+        {
+          "heading": "CATEGORIA: IMPOSTOS",
+          "anchor": "categoria-impostos"
+        },
+        {
+          "heading": "CATEGORIA: PLANO DE PROTECAO",
+          "anchor": "categoria-plano-de-protecao"
+        },
+        {
+          "heading": "CATEGORIA: INADIMPLENCIA E COBRANCA",
+          "anchor": "categoria-inadimplencia-e-cobranca"
+        },
+        {
+          "heading": "CATEGORIA: RELATORIOS FINANCEIROS",
+          "anchor": "categoria-relatorios-financeiros"
+        },
+        {
+          "heading": "CATEGORIA: RELATORIOS PARA PARCEIROS ESPECIFICOS",
+          "anchor": "categoria-relatorios-para-parceiros-especificos"
+        },
+        {
+          "heading": "CATEGORIA: INTEGRACOES EXTERNAS",
+          "anchor": "categoria-integracoes-externas"
+        },
+        {
+          "heading": "CATEGORIA: MONITORAMENTO E MANUTENCAO",
+          "anchor": "categoria-monitoramento-e-manutencao"
+        },
+        {
+          "heading": "38. Limpeza de Dados (Cleanup)",
+          "anchor": "38-limpeza-de-dados-cleanup"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Dados Removidos",
+          "anchor": "dados-removidos"
+        },
+        {
+          "heading": "Como Disparar",
+          "anchor": "como-disparar"
+        },
+        {
+          "heading": "O Que Verificar",
+          "anchor": "o-que-verificar"
+        },
+        {
+          "heading": "46. Autenticacao de API",
+          "anchor": "46-autenticacao-de-api"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Como Funciona",
+          "anchor": "como-funciona"
+        },
+        {
+          "heading": "Autenticacao por Servico",
+          "anchor": "autenticacao-por-servico"
+        },
+        {
+          "heading": "49. Modelo de Permissoes (Portal Servicing)",
+          "anchor": "49-modelo-de-permissoes-portal-servicing"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Permissoes de Visualizacao Restrita",
+          "anchor": "permissoes-de-visualizacao-restrita"
+        },
+        {
+          "heading": "Permissoes de Modificacao por Feature",
+          "anchor": "permissoes-de-modificacao-por-feature"
+        },
+        {
+          "heading": "Permissoes do Portal Origination",
+          "anchor": "permissoes-do-portal-origination"
+        },
+        {
+          "heading": "Permissoes Especiais (Restricted Modify)",
+          "anchor": "permissoes-especiais-restricted-modify"
+        },
+        {
+          "heading": "Permissoes de Visualizacao Especiais",
+          "anchor": "permissoes-de-visualizacao-especiais"
+        },
+        {
+          "heading": "Tracking de Login (Segurança)",
+          "anchor": "tracking-de-login-segurança"
+        },
+        {
+          "heading": "50. Painel Administrativo",
+          "anchor": "50-painel-administrativo"
+        },
+        {
+          "heading": "Capacidades Principais",
+          "anchor": "capacidades-principais"
+        },
+        {
+          "heading": "51. Portal AMS — Associacao de Merchants a Usuarios (Task #74, R1.51.0)",
+          "anchor": "51-portal-ams-associacao-de-merchants-a-usuarios-task-74-r1510"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Endpoints Envolvidos",
+          "anchor": "endpoints-envolvidos"
+        },
+        {
+          "heading": "Regra de Negocio: Log Activity",
+          "anchor": "regra-de-negocio-log-activity"
+        },
+        {
+          "heading": "Regra de Negocio: Edit User Merchants (UI)",
+          "anchor": "regra-de-negocio-edit-user-merchants-ui"
+        },
+        {
+          "heading": "Fluxo de Associacao em Lote (UI — `/associate-users-to-merchants`)",
+          "anchor": "fluxo-de-associacao-em-lote-ui-associate-users-to-merchants"
+        },
+        {
+          "heading": "Observacoes Tecnicas",
+          "anchor": "observacoes-tecnicas"
+        }
+      ]
+    },
+    {
+      "file": "12-produto-lease-deep-dive.md",
+      "path": "docs/business-rules/12-produto-lease-deep-dive.md",
+      "title": "Produto Lease — Deep Dive Tecnico",
+      "domain": "business-rules",
+      "status": "stable",
+      "volatility": "stable",
+      "last_verified": "2026-03-20",
+      "covers": [
+        "payment-calculator",
+        "payment-calculator",
+        "esign",
+        "payment-calculator",
+        "money-factor",
+        "tax-calculation",
+        "epo"
+      ],
+      "sources": [
+        {
+          "type": "gitlab",
+          "value": "CalculatorService.java"
+        },
+        {
+          "type": "env",
+          "value": "qa2"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "UOwn Leasing - Regras Extraidas do Codigo-Fonte",
+          "anchor": "uown-leasing---regras-extraidas-do-codigo-fonte"
+        },
+        {
+          "heading": "1. Formulas Financeiras com Precisao Decimal",
+          "anchor": "1-formulas-financeiras-com-precisao-decimal"
+        },
+        {
+          "heading": "1.1 Contrato — Calculo Completo",
+          "anchor": "11-contrato-calculo-completo"
+        },
+        {
+          "heading": "1.2 Parcela Regular.",
+          "anchor": "12-parcela-regular"
+        },
+        {
+          "heading": "1.3 Numero de Parcelas",
+          "anchor": "13-numero-de-parcelas"
+        },
+        {
+          "heading": "1.4 Prorate Amount (Valor Proporcional)",
+          "anchor": "14-prorate-amount-valor-proporcional"
+        },
+        {
+          "heading": "2. EPO — Cascata Completa de Calculo por Estado",
+          "anchor": "2-epo-cascata-completa-de-calculo-por-estado"
+        },
+        {
+          "heading": "2.1 Dispatch (PayOffAmountService.getPayOffAmount)",
+          "anchor": "21-dispatch-payoffamountservicegetpayoffamount"
+        },
+        {
+          "heading": "2.2 EPO Padrao — Prioridades no SQL",
+          "anchor": "22-epo-padrao-prioridades-no-sql"
+        },
+        {
+          "heading": "2.3 EPO Kornerstone (PayOffAmountService linhas 105-143)",
+          "anchor": "23-epo-kornerstone-payoffamountservice-linhas-105-143"
+        },
+        {
+          "heading": "2.4 Anytime Buyout 16 Meses (AnytimeBuyOutService linhas 41-58)",
+          "anchor": "24-anytime-buyout-16-meses-anytimebuyoutservice-linhas-41-58"
+        },
+        {
+          "heading": "2.5 Data de Expiracao do EPO",
+          "anchor": "25-data-de-expiracao-do-epo"
+        },
+        {
+          "heading": "3. Hierarquia de Taxas Pre-Assinatura",
+          "anchor": "3-hierarquia-de-taxas-pre-assinatura"
+        },
+        {
+          "heading": "3.1 Processing Fee (CalculatorService linhas 932-960)",
+          "anchor": "31-processing-fee-calculatorservice-linhas-932-960"
+        },
+        {
+          "heading": "3.2 Signing Fee (CalculatorService linhas 1008-1037)",
+          "anchor": "32-signing-fee-calculatorservice-linhas-1008-1037"
+        },
+        {
+          "heading": "3.3 Security Deposit (CalculatorService linhas 966-1001)",
+          "anchor": "33-security-deposit-calculatorservice-linhas-966-1001"
+        },
+        {
+          "heading": "3.4 NSF Fee (AccountFeeService linhas 27-37)",
+          "anchor": "34-nsf-fee-accountfeeservice-linhas-27-37"
+        },
+        {
+          "heading": "3.5 Buyout Fee",
+          "anchor": "35-buyout-fee"
+        },
+        {
+          "heading": "3.6 EPO Fee (percentual)",
+          "anchor": "36-epo-fee-percentual"
+        },
+        {
+          "heading": "4. Importacao LOS para SVC — 16 Entidades",
+          "anchor": "4-importacao-los-para-svc-16-entidades"
+        },
+        {
+          "heading": "5. Estrategias de Alocacao de Pagamento",
+          "anchor": "5-estrategias-de-alocacao-de-pagamento"
+        },
+        {
+          "heading": "5.1 AllocationStrategy enum",
+          "anchor": "51-allocationstrategy-enum"
+        },
+        {
+          "heading": "5.2 Ordem de Alocacao Dentro de um Pagamento",
+          "anchor": "52-ordem-de-alocacao-dentro-de-um-pagamento"
+        },
+        {
+          "heading": "5.3 ReceivableAllocationStatus",
+          "anchor": "53-receivableallocationstatus"
+        },
+        {
+          "heading": "5.4 Realocacao",
+          "anchor": "54-realocacao"
+        },
+        {
+          "heading": "5.5 Auto PAID_OUT",
+          "anchor": "55-auto-paid_out"
+        },
+        {
+          "heading": "5.6 Tipo DEPOSIT",
+          "anchor": "56-tipo-deposit"
+        },
+        {
+          "heading": "6. Rewind/Replay — Mecanica Detalhada",
+          "anchor": "6-rewindreplay-mecanica-detalhada"
+        },
+        {
+          "heading": "6.1 Tres Pontos de Entrada",
+          "anchor": "61-tres-pontos-de-entrada"
+        },
+        {
+          "heading": "6.2 Rewind",
+          "anchor": "62-rewind"
+        },
+        {
+          "heading": "6.3 Replay",
+          "anchor": "63-replay"
+        },
+        {
+          "heading": "6.4 Status Revertiveis",
+          "anchor": "64-status-revertiveis"
+        },
+        {
+          "heading": "7. Invoice Modification (Lease Mod)",
+          "anchor": "7-invoice-modification-lease-mod"
+        },
+        {
+          "heading": "7.1 Pre-condicoes",
+          "anchor": "71-pre-condicoes"
+        },
+        {
+          "heading": "7.2 Fluxo",
+          "anchor": "72-fluxo"
+        },
+        {
+          "heading": "7.3 Restricoes (SendInvoiceService linhas 243-252)",
+          "anchor": "73-restricoes-sendinvoiceservice-linhas-243-252"
+        },
+        {
+          "heading": "8. Funding Lifecycle Completo",
+          "anchor": "8-funding-lifecycle-completo"
+        },
+        {
+          "heading": "8.1 Status",
+          "anchor": "81-status"
+        },
+        {
+          "heading": "8.2 Transicoes",
+          "anchor": "82-transicoes"
+        },
+        {
+          "heading": "8.3 Calculo do Valor Fundado",
+          "anchor": "83-calculo-do-valor-fundado"
+        },
+        {
+          "heading": "8.4 Merchant Funding Exceptions",
+          "anchor": "84-merchant-funding-exceptions"
+        },
+        {
+          "heading": "9. Sweep Processing — Catalogo Completo",
+          "anchor": "9-sweep-processing-catalogo-completo"
+        },
+        {
+          "heading": "9.1 ACH Sweeps",
+          "anchor": "91-ach-sweeps"
+        },
+        {
+          "heading": "9.2 CC Sweeps",
+          "anchor": "92-cc-sweeps"
+        },
+        {
+          "heading": "9.3 Delinquency CC Rerun — Logica de Valor",
+          "anchor": "93-delinquency-cc-rerun-logica-de-valor"
+        },
+        {
+          "heading": "9.4 Outros Sweeps",
+          "anchor": "94-outros-sweeps"
+        },
+        {
+          "heading": "10. CC Transaction Lifecycle",
+          "anchor": "10-cc-transaction-lifecycle"
+        },
+        {
+          "heading": "10.1 CCTransactionStatus",
+          "anchor": "101-cctransactionstatus"
+        },
+        {
+          "heading": "10.2 Fluxo CC",
+          "anchor": "102-fluxo-cc"
+        },
+        {
+          "heading": "10.3 NSF CC (CCNsfFeeService)",
+          "anchor": "103-nsf-cc-ccnsffeeservice"
+        },
+        {
+          "heading": "10.4 Refund CC",
+          "anchor": "104-refund-cc"
+        },
+        {
+          "heading": "11. ACH Lifecycle",
+          "anchor": "11-ach-lifecycle"
+        },
+        {
+          "heading": "11.1 ACHStatus (todos)",
+          "anchor": "111-achstatus-todos"
+        },
+        {
+          "heading": "11.2 ACHProcessType",
+          "anchor": "112-achprocesstype"
+        },
+        {
+          "heading": "11.3 Fluxo Assincrono",
+          "anchor": "113-fluxo-assincrono"
+        },
+        {
+          "heading": "11.4 NSF ACH — Condicoes para Criacao de Fee",
+          "anchor": "114-nsf-ach-condicoes-para-criacao-de-fee"
+        },
+        {
+          "heading": "11.5 Rerun ACH (apos NSF)",
+          "anchor": "115-rerun-ach-apos-nsf"
+        },
+        {
+          "heading": "11.6 R08 Stop Payment",
+          "anchor": "116-r08-stop-payment"
+        },
+        {
+          "heading": "12. SMS — Regras de Opt-In/Opt-Out",
+          "anchor": "12-sms-regras-de-opt-inopt-out"
+        },
+        {
+          "heading": "12.1 Opt-In Automatico",
+          "anchor": "121-opt-in-automatico"
+        },
+        {
+          "heading": "12.2 Opt-Out Automatico por Erro",
+          "anchor": "122-opt-out-automatico-por-erro"
+        },
+        {
+          "heading": "12.3 Vendors",
+          "anchor": "123-vendors"
+        },
+        {
+          "heading": "12.4 KORNERSTONE Template Routing",
+          "anchor": "124-kornerstone-template-routing"
+        },
+        {
+          "heading": "12.5 Janela de SMS para Delinquencia",
+          "anchor": "125-janela-de-sms-para-delinquencia"
+        },
+        {
+          "heading": "13. Customer Portal",
+          "anchor": "13-customer-portal"
+        },
+        {
+          "heading": "13.1 Capabilities",
+          "anchor": "131-capabilities"
+        },
+        {
+          "heading": "13.2 Rating P no Portal",
+          "anchor": "132-rating-p-no-portal"
+        },
+        {
+          "heading": "14. Merchant Config — Flags Completas",
+          "anchor": "14-merchant-config-flags-completas"
+        },
+        {
+          "heading": "14.1 Flags de Verificacao",
+          "anchor": "141-flags-de-verificacao"
+        },
+        {
+          "heading": "14.2 Flags de Pagamento",
+          "anchor": "142-flags-de-pagamento"
+        },
+        {
+          "heading": "14.3 Flags de Aplicacao",
+          "anchor": "143-flags-de-aplicacao"
+        },
+        {
+          "heading": "14.4 Flags de E-Sign e UI",
+          "anchor": "144-flags-de-e-sign-e-ui"
+        },
+        {
+          "heading": "14.5 Configuracoes Financeiras",
+          "anchor": "145-configuracoes-financeiras"
+        },
+        {
+          "heading": "14.6 Program Fields (ProgramInfo)",
+          "anchor": "146-program-fields-programinfo"
+        },
+        {
+          "heading": "15. Application Pipeline — 18 Steps Detalhados",
+          "anchor": "15-application-pipeline-18-steps-detalhados"
+        },
+        {
+          "heading": "Steps Criticos com Regras Novas",
+          "anchor": "steps-criticos-com-regras-novas"
+        },
+        {
+          "heading": "Second Opportunity (isEligibleForExtraInfo)",
+          "anchor": "second-opportunity-iseligibleforextrainfo"
+        },
+        {
+          "heading": "Missing Required Fields (Campos Faltantes)",
+          "anchor": "missing-required-fields-campos-faltantes"
+        },
+        {
+          "heading": "Add Lease",
+          "anchor": "add-lease"
+        },
+        {
+          "heading": "16. Blacklist — Detalhamento",
+          "anchor": "16-blacklist-detalhamento"
+        },
+        {
+          "heading": "16.1 Campos Verificados na Blacklist",
+          "anchor": "161-campos-verificados-na-blacklist"
+        },
+        {
+          "heading": "16.2 O Que Dispara Blacklisting",
+          "anchor": "162-o-que-dispara-blacklisting"
+        },
+        {
+          "heading": "16.3 O Que a Blacklist Bloqueia",
+          "anchor": "163-o-que-a-blacklist-bloqueia"
+        },
+        {
+          "heading": "16.4 Export",
+          "anchor": "164-export"
+        },
+        {
+          "heading": "17. State Configurations — Campos Financeiros",
+          "anchor": "17-state-configurations-campos-financeiros"
+        },
+        {
+          "heading": "18. Tax Calculation",
+          "anchor": "18-tax-calculation"
+        },
+        {
+          "heading": "18.1 Fluxo",
+          "anchor": "181-fluxo"
+        },
+        {
+          "heading": "18.2 Determinacao de Endereco",
+          "anchor": "182-determinacao-de-endereco"
+        },
+        {
+          "heading": "18.3 O Que e Taxado",
+          "anchor": "183-o-que-e-taxado"
+        },
+        {
+          "heading": "18.4 O Que NAO e Taxado",
+          "anchor": "184-o-que-nao-e-taxado"
+        },
+        {
+          "heading": "19. Frequencia de Pagamento — Detalhamento",
+          "anchor": "19-frequencia-de-pagamento-detalhamento"
+        },
+        {
+          "heading": "19.1 Valores Validos",
+          "anchor": "191-valores-validos"
+        },
+        {
+          "heading": "19.2 Mudanca de Frequencia",
+          "anchor": "192-mudanca-de-frequencia"
+        },
+        {
+          "heading": "19.3 Due Date Move",
+          "anchor": "193-due-date-move"
+        },
+        {
+          "heading": "20. Enums de Referencia Completos",
+          "anchor": "20-enums-de-referencia-completos"
+        },
+        {
+          "heading": "PaymentType",
+          "anchor": "paymenttype"
+        },
+        {
+          "heading": "PaymentStatus",
+          "anchor": "paymentstatus"
+        },
+        {
+          "heading": "CustomerPaymentStatus (portal)",
+          "anchor": "customerpaymentstatus-portal"
+        },
+        {
+          "heading": "AutoPayType",
+          "anchor": "autopaytype"
+        },
+        {
+          "heading": "LogType (Activity Log)",
+          "anchor": "logtype-activity-log"
+        },
+        {
+          "heading": "FundingQueueStatus",
+          "anchor": "fundingqueuestatus"
+        }
+      ]
+    },
+    {
+      "file": "appendix-a-integracoes.md",
+      "path": "docs/business-rules/appendix-a-integracoes.md",
+      "title": "Apendice A: Integracoes com Terceiros",
+      "domain": "business-rules",
+      "status": "stable",
+      "volatility": "stable",
+      "last_verified": "2026-06-18",
+      "covers": [
+        "integrations",
+        "fraud-vendors",
+        "fraud-vendors",
+        "fraud-vendors",
+        "fraud-vendors",
+        "fraud-vendors",
+        "fraud-vendors",
+        "tax-calculation",
+        "sweeps"
+      ],
+      "sources": [
+        {
+          "type": "code",
+          "value": "src/data/merchant-config-contract.ts#offerInsurance"
+        },
+        {
+          "type": "env",
+          "value": "qa2"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "UOwn Leasing - SVC Platform",
+          "anchor": "uown-leasing---svc-platform"
+        },
+        {
+          "heading": "Apendice A: Integracoes com Terceiros",
+          "anchor": "apendice-a-integracoes-com-terceiros"
+        }
+      ]
+    },
+    {
+      "file": "appendix-b-endpoints.md",
+      "path": "docs/business-rules/appendix-b-endpoints.md",
+      "title": "Apendice B: Referencia Rapida de Endpoints",
+      "domain": "business-rules",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-18",
+      "covers": [
+        "integration-api",
+        "sweeps",
+        "payments",
+        "account-status",
+        "admin-panel",
+        "merchant-config"
+      ],
+      "sources": [
+        {
+          "type": "code",
+          "value": "src/api/clients/scheduled-task.client.ts#triggerScheduledTask"
+        },
+        {
+          "type": "env",
+          "value": "qa2"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "UOwn Leasing - SVC Platform",
+          "anchor": "uown-leasing---svc-platform"
+        },
+        {
+          "heading": "Apendice B: Referencia Rapida de Endpoints para Ativacao",
+          "anchor": "apendice-b-referencia-rapida-de-endpoints-para-ativacao"
+        },
+        {
+          "heading": "Configuracoes",
+          "anchor": "configuracoes"
+        },
+        {
+          "heading": "Sweeps",
+          "anchor": "sweeps"
+        },
+        {
+          "heading": "Pagamentos",
+          "anchor": "pagamentos"
+        },
+        {
+          "heading": "Contas",
+          "anchor": "contas"
+        },
+        {
+          "heading": "Administracao",
+          "anchor": "administracao"
+        }
+      ]
+    },
+    {
+      "file": "appendix-c-tabelas-banco.md",
+      "path": "docs/business-rules/appendix-c-tabelas-banco.md",
+      "title": "Apendice C: Tabelas de Banco Importantes",
+      "domain": "business-rules",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-18",
+      "covers": [
+        "db-tables",
+        "db-tables",
+        "db-tables",
+        "db-tables",
+        "troubleshooting",
+        "merchant-snapshot"
+      ],
+      "sources": [
+        {
+          "type": "db",
+          "value": "uown_los_lead"
+        },
+        {
+          "type": "db",
+          "value": "uown_sv_account"
+        },
+        {
+          "type": "db",
+          "value": "uown_scheduled_task"
+        },
+        {
+          "type": "env",
+          "value": "qa2"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "UOwn Leasing - SVC Platform",
+          "anchor": "uown-leasing---svc-platform"
+        },
+        {
+          "heading": "Apendice C: Tabelas de Banco Importantes para Verificacao",
+          "anchor": "apendice-c-tabelas-de-banco-importantes-para-verificacao"
+        },
+        {
+          "heading": "Indexes de Performance — SmsOptInConfirmationResponse (Task #455)",
+          "anchor": "indexes-de-performance-smsoptinconfirmationresponse-task-455"
+        },
+        {
+          "heading": "Indexes de Performance — getDataMismatchForLead (Task #449)",
+          "anchor": "indexes-de-performance-getdatamismatchforlead-task-449"
+        },
+        {
+          "heading": "Indexes de Performance — getLosActivityLog (Task #457)",
+          "anchor": "indexes-de-performance-getlosactivitylog-task-457"
+        },
+        {
+          "heading": "Indexes de Performance — getLeadSummaryResults (Task #461)",
+          "anchor": "indexes-de-performance-getleadsummaryresults-task-461"
+        },
+        {
+          "heading": "Indexes de Performance — getLosSimpleSearchResults (Task #463)",
+          "anchor": "indexes-de-performance-getlossimplesearchresults-task-463"
+        },
+        {
+          "heading": "Indexes de Performance — Login e Account Status",
+          "anchor": "indexes-de-performance-login-e-account-status"
+        },
+        {
+          "heading": "Indexes de Performance — getLeadSummaryResults (V20260309065837)",
+          "anchor": "indexes-de-performance-getleadsummaryresults-v20260309065837"
+        },
+        {
+          "heading": "uown_los_sched_summary — Term Month Display (Task #1242)",
+          "anchor": "uown_los_sched_summary-term-month-display-task-1242"
+        },
+        {
+          "heading": "uown_lead_approval_terms (Task #1239)",
+          "anchor": "uown_lead_approval_terms-task-1239"
+        },
+        {
+          "heading": "Merchant Settings Snapshot (R1.53.0 — Flyway 20260609155406)",
+          "anchor": "merchant-settings-snapshot-r1530-flyway-20260609155406"
+        }
+      ]
+    },
+    {
+      "file": "appendix-d-constantes-enums.md",
+      "path": "docs/business-rules/appendix-d-constantes-enums.md",
+      "title": "Apendice D: Constantes de Negocio e Enumeracoes",
+      "domain": "business-rules",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-18",
+      "covers": [
+        "enums",
+        "enums",
+        "status",
+        "funding-queue",
+        "lead-status",
+        "enums"
+      ],
+      "sources": [
+        {
+          "type": "code",
+          "value": "src/types/enums.ts#FundingQueueStatus"
+        },
+        {
+          "type": "code",
+          "value": "src/types/enums.ts#LeadStatus"
+        },
+        {
+          "type": "env",
+          "value": "qa2"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "UOwn Leasing - SVC Platform",
+          "anchor": "uown-leasing---svc-platform"
+        },
+        {
+          "heading": "Apendice D: Constantes de Negocio e Enumeracoes",
+          "anchor": "apendice-d-constantes-de-negocio-e-enumeracoes"
+        },
+        {
+          "heading": "D.1 Status de Aprovacao de Aplicacao (AppApprovalStatus)",
+          "anchor": "d1-status-de-aprovacao-de-aplicacao-appapprovalstatus"
+        },
+        {
+          "heading": "D.2 Status de Autorizacao (AuthApprovalStatus)",
+          "anchor": "d2-status-de-autorizacao-authapprovalstatus"
+        },
+        {
+          "heading": "D.3 Status de Pagamento do Cliente (CustomerPaymentStatus)",
+          "anchor": "d3-status-de-pagamento-do-cliente-customerpaymentstatus"
+        },
+        {
+          "heading": "D.4 Status da Fila de Funding (FundingQueueStatus)",
+          "anchor": "d4-status-da-fila-de-funding-fundingqueuestatus"
+        },
+        {
+          "heading": "D.5 Status de Transacao de Funding (FundingTransactionStatus)",
+          "anchor": "d5-status-de-transacao-de-funding-fundingtransactionstatus"
+        },
+        {
+          "heading": "D.6 Tipos de Programa do Merchant (MerchantProgramType)",
+          "anchor": "d6-tipos-de-programa-do-merchant-merchantprogramtype"
+        },
+        {
+          "heading": "D.7 Tipo de Merchant (MerchantType)",
+          "anchor": "d7-tipo-de-merchant-merchanttype"
+        },
+        {
+          "heading": "D.8 Tipo de Ordem (OrderType)",
+          "anchor": "d8-tipo-de-ordem-ordertype"
+        },
+        {
+          "heading": "D.9 Tipo de Item de Linha (LineItemType)",
+          "anchor": "d9-tipo-de-item-de-linha-lineitemtype"
+        },
+        {
+          "heading": "D.10 Status de Verificacao Bancaria (BvStatus)",
+          "anchor": "d10-status-de-verificacao-bancaria-bvstatus"
+        },
+        {
+          "heading": "D.11 Status do NeuroID (NeuroIdStatus)",
+          "anchor": "d11-status-do-neuroid-neuroidstatus"
+        },
+        {
+          "heading": "D.12 Status de Settlement (SettlementTransactionStatus)",
+          "anchor": "d12-status-de-settlement-settlementtransactionstatus"
+        },
+        {
+          "heading": "D.13 Tipos de Contato (ContactType)",
+          "anchor": "d13-tipos-de-contato-contacttype"
+        },
+        {
+          "heading": "D.14 Categorias de Produto (Category)",
+          "anchor": "d14-categorias-de-produto-category"
+        },
+        {
+          "heading": "D.15 Tipo de Modificacao (ModType)",
+          "anchor": "d15-tipo-de-modificacao-modtype"
+        },
+        {
+          "heading": "D.16 Tipo de Rebate do Dealer (DealerRebateType)",
+          "anchor": "d16-tipo-de-rebate-do-dealer-dealerrebatetype"
+        },
+        {
+          "heading": "D.17 Tipo de Taxa de Plataforma (PlatformFeeType)",
+          "anchor": "d17-tipo-de-taxa-de-plataforma-platformfeetype"
+        },
+        {
+          "heading": "D.18 Abreviacoes de Frequencia de Pagamento (PaymentFrequency) — Task #439",
+          "anchor": "d18-abreviacoes-de-frequencia-de-pagamento-paymentfrequency-task-439"
+        },
+        {
+          "heading": "D.19 Formato do planId — Task #439",
+          "anchor": "d19-formato-do-planid-task-439"
+        },
+        {
+          "heading": "D.20 Tipo de Arranjo de Pagamento (ArrangementType) -- Task #446",
+          "anchor": "d20-tipo-de-arranjo-de-pagamento-arrangementtype----task-446"
+        },
+        {
+          "heading": "D.21 Status do Arranjo de Pagamento (PaymentArrangementStatus) -- Task #446",
+          "anchor": "d21-status-do-arranjo-de-pagamento-paymentarrangementstatus----task-446"
+        },
+        {
+          "heading": "D.22 Origem de Importacao (ImportSource)",
+          "anchor": "d22-origem-de-importacao-importsource"
+        },
+        {
+          "heading": "D.23 Tipo de Integracao (IntegrationType)",
+          "anchor": "d23-tipo-de-integracao-integrationtype"
+        },
+        {
+          "heading": "D.24 ZIP Codes em Fronteiras Estaduais",
+          "anchor": "d24-zip-codes-em-fronteiras-estaduais"
+        },
+        {
+          "heading": "D.25 Categorias de Antiguidade de Conta Bancaria (BankAccountAges)",
+          "anchor": "d25-categorias-de-antiguidade-de-conta-bancaria-bankaccountages"
+        },
+        {
+          "heading": "D.26 Grupos de Documento (DocumentGroup)",
+          "anchor": "d26-grupos-de-documento-documentgroup"
+        },
+        {
+          "heading": "D.27 Tipos de Cliente Integrados (ClientType)",
+          "anchor": "d27-tipos-de-cliente-integrados-clienttype"
+        },
+        {
+          "heading": "D.28 Status de Item de Invoice (ItemStatus)",
+          "anchor": "d28-status-de-item-de-invoice-itemstatus"
+        },
+        {
+          "heading": "D.29 Tipo de Invoice (InvoiceType)",
+          "anchor": "d29-tipo-de-invoice-invoicetype"
+        },
+        {
+          "heading": "D.30 Tipo de Conta Bancaria do Merchant (BankTypeEnum)",
+          "anchor": "d30-tipo-de-conta-bancaria-do-merchant-banktypeenum"
+        },
+        {
+          "heading": "D.31 Categorias de Produto do Merchant (MerchantCategory)",
+          "anchor": "d31-categorias-de-produto-do-merchant-merchantcategory"
+        },
+        {
+          "heading": "D.32 Tipo de Cartao de Credito (CcOptions)",
+          "anchor": "d32-tipo-de-cartao-de-credito-ccoptions"
+        },
+        {
+          "heading": "D.33 Categoria de Emprestimo (LendingCategoryType)",
+          "anchor": "d33-categoria-de-emprestimo-lendingcategorytype"
+        },
+        {
+          "heading": "D.34 Tipo de Taxa Cobravel (FeeType) — Visao Completa",
+          "anchor": "d34-tipo-de-taxa-cobravel-feetype-visao-completa"
+        }
+      ]
+    },
+    {
+      "file": "appendix-e-campanhas-uw.md",
+      "path": "docs/business-rules/appendix-e-campanhas-uw.md",
+      "title": "Apendice E: Referencia de Campanhas de Underwriting",
+      "domain": "business-rules",
+      "status": "stable",
+      "volatility": "stable",
+      "last_verified": "2026-06-18",
+      "covers": [
+        "underwriting",
+        "underwriting",
+        "merchant-management",
+        "underwriting",
+        "underwriting",
+        "underwriting"
+      ],
+      "sources": [
+        {
+          "type": "code",
+          "value": "src/api/bodies/program-info.body.ts#peakCampaignId"
+        },
+        {
+          "type": "env",
+          "value": "qa2"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "UOwn Leasing - SVC Platform",
+          "anchor": "uown-leasing---svc-platform"
+        },
+        {
+          "heading": "Apendice E: Referencia de Campanhas de Underwriting",
+          "anchor": "apendice-e-referencia-de-campanhas-de-underwriting"
+        }
+      ]
+    },
+    {
+      "file": "appendix-f-sql-reference.md",
+      "path": "docs/business-rules/appendix-f-sql-reference.md",
+      "title": "Apendice F: Referencia de Consultas SQL Operacionais",
+      "domain": "business-rules",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-18",
+      "covers": [
+        "sql-reference",
+        "sql-reference",
+        "troubleshooting",
+        "originacao",
+        "svc",
+        "sweeps",
+        "fraud-vendors",
+        "ams"
+      ],
+      "sources": [
+        {
+          "type": "db",
+          "value": "uown_los_lead"
+        },
+        {
+          "type": "db",
+          "value": "uown_sv_account"
+        },
+        {
+          "type": "db",
+          "value": "uown_scheduled_task"
+        },
+        {
+          "type": "env",
+          "value": "qa2"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "UOwn Leasing - SVC Platform",
+          "anchor": "uown-leasing---svc-platform"
+        },
+        {
+          "heading": "Indice",
+          "anchor": "indice"
+        },
+        {
+          "heading": "1. LOS - Leads e Aplicacoes",
+          "anchor": "1-los---leads-e-aplicacoes"
+        },
+        {
+          "heading": "Consultar lead por PK",
+          "anchor": "consultar-lead-por-pk"
+        },
+        {
+          "heading": "Consultar lead por short code (tabela nova: uown_los_lead_short_code)",
+          "anchor": "consultar-lead-por-short-code-tabela-nova-uown_los_lead_short_code"
+        },
+        {
+          "heading": "Consultar lead por short code (lookup reverso)",
+          "anchor": "consultar-lead-por-short-code-lookup-reverso"
+        },
+        {
+          "heading": "Consultar lead por periodo",
+          "anchor": "consultar-lead-por-periodo"
+        },
+        {
+          "heading": "Consultar opcoes de pagamento do lead",
+          "anchor": "consultar-opcoes-de-pagamento-do-lead"
+        },
+        {
+          "heading": "Consultar notas do lead",
+          "anchor": "consultar-notas-do-lead"
+        },
+        {
+          "heading": "2. LOS - Dados do Cliente",
+          "anchor": "2-los---dados-do-cliente"
+        },
+        {
+          "heading": "Consulta completa de dados do cliente (todos os dados de um lead)",
+          "anchor": "consulta-completa-de-dados-do-cliente-todos-os-dados-de-um-lead"
+        },
+        {
+          "heading": "Emails duplicados (top 5 mais usados)",
+          "anchor": "emails-duplicados-top-5-mais-usados"
+        },
+        {
+          "heading": "3. LOS - Contratos e Invoices",
+          "anchor": "3-los---contratos-e-invoices"
+        },
+        {
+          "heading": "Consultar contratos de um lead",
+          "anchor": "consultar-contratos-de-um-lead"
+        },
+        {
+          "heading": "Historico de contratos",
+          "anchor": "historico-de-contratos"
+        },
+        {
+          "heading": "Invoice e itens de um lead",
+          "anchor": "invoice-e-itens-de-um-lead"
+        },
+        {
+          "heading": "Historico de invoice",
+          "anchor": "historico-de-invoice"
+        },
+        {
+          "heading": "Schedule summary do lead",
+          "anchor": "schedule-summary-do-lead"
+        },
+        {
+          "heading": "Recebiveis do lead (LOS)",
+          "anchor": "recebiveis-do-lead-los"
+        },
+        {
+          "heading": "4. LOS - Underwriting e Fraude",
+          "anchor": "4-los---underwriting-e-fraude"
+        },
+        {
+          "heading": "Dados de underwriting",
+          "anchor": "dados-de-underwriting"
+        },
+        {
+          "heading": "UW filtrado por engine (GDS, Taktile, ABB)",
+          "anchor": "uw-filtrado-por-engine-gds-taktile-abb"
+        },
+        {
+          "heading": "Alertas do lead",
+          "anchor": "alertas-do-lead"
+        },
+        {
+          "heading": "5. SVC - Contas de Servicing",
+          "anchor": "5-svc---contas-de-servicing"
+        },
+        {
+          "heading": "Consultar conta por PK",
+          "anchor": "consultar-conta-por-pk"
+        },
+        {
+          "heading": "Buscar conta pelo merchant associado ao lead",
+          "anchor": "buscar-conta-pelo-merchant-associado-ao-lead"
+        },
+        {
+          "heading": "Notas da conta",
+          "anchor": "notas-da-conta"
+        },
+        {
+          "heading": "Alertas da conta",
+          "anchor": "alertas-da-conta"
+        },
+        {
+          "heading": "6. SVC - Dados do Cliente",
+          "anchor": "6-svc---dados-do-cliente"
+        },
+        {
+          "heading": "Dados completos do cliente na conta",
+          "anchor": "dados-completos-do-cliente-na-conta"
+        },
+        {
+          "heading": "Cartoes de credito da conta",
+          "anchor": "cartoes-de-credito-da-conta"
+        },
+        {
+          "heading": "7. SVC - Recebiveis e Cronograma",
+          "anchor": "7-svc---recebiveis-e-cronograma"
+        },
+        {
+          "heading": "Recebiveis de uma conta (cronograma completo)",
+          "anchor": "recebiveis-de-uma-conta-cronograma-completo"
+        },
+        {
+          "heading": "Recebiveis com saldo pendente (outstanding)",
+          "anchor": "recebiveis-com-saldo-pendente-outstanding"
+        },
+        {
+          "heading": "Recebiveis por tipo (ex: NSF_FEE)",
+          "anchor": "recebiveis-por-tipo-ex-nsf_fee"
+        },
+        {
+          "heading": "Schedule summary da conta",
+          "anchor": "schedule-summary-da-conta"
+        },
+        {
+          "heading": "7b. SVC - Arranjos de Pagamento (Task #446)",
+          "anchor": "7b-svc---arranjos-de-pagamento-task-446"
+        },
+        {
+          "heading": "Consultar arranjo de pagamento por conta",
+          "anchor": "consultar-arranjo-de-pagamento-por-conta"
+        },
+        {
+          "heading": "Consultar transacoes CC vinculadas a um arranjo",
+          "anchor": "consultar-transacoes-cc-vinculadas-a-um-arranjo"
+        },
+        {
+          "heading": "Consultar pagamentos ACH vinculados a um arranjo",
+          "anchor": "consultar-pagamentos-ach-vinculados-a-um-arranjo"
+        },
+        {
+          "heading": "Verificar status do arranjo com resumo de transacoes",
+          "anchor": "verificar-status-do-arranjo-com-resumo-de-transacoes"
+        },
+        {
+          "heading": "8. SVC - Pagamentos CC",
+          "anchor": "8-svc---pagamentos-cc"
+        },
+        {
+          "heading": "Transacoes CC de uma conta",
+          "anchor": "transacoes-cc-de-uma-conta"
+        },
+        {
+          "heading": "Transacoes CC negadas (para troubleshooting de reruns)",
+          "anchor": "transacoes-cc-negadas-para-troubleshooting-de-reruns"
+        },
+        {
+          "heading": "9. SVC - Pagamentos ACH",
+          "anchor": "9-svc---pagamentos-ach"
+        },
+        {
+          "heading": "Pagamentos ACH de uma conta",
+          "anchor": "pagamentos-ach-de-uma-conta"
+        },
+        {
+          "heading": "10. SVC - Pagamentos Gerais",
+          "anchor": "10-svc---pagamentos-gerais"
+        },
+        {
+          "heading": "Pagamentos de uma conta",
+          "anchor": "pagamentos-de-uma-conta"
+        },
+        {
+          "heading": "11. Merchants e Programas",
+          "anchor": "11-merchants-e-programas"
+        },
+        {
+          "heading": "Consultar merchant por codigo ou nome",
+          "anchor": "consultar-merchant-por-codigo-ou-nome"
+        },
+        {
+          "heading": "Flags booleanas do merchant (verificacao rapida)",
+          "anchor": "flags-booleanas-do-merchant-verificacao-rapida"
+        },
+        {
+          "heading": "Contagem de flags nulas no merchant (auditoria de dados)",
+          "anchor": "contagem-de-flags-nulas-no-merchant-auditoria-de-dados"
+        },
+        {
+          "heading": "Listar client types distintos",
+          "anchor": "listar-client-types-distintos"
+        },
+        {
+          "heading": "Programas de um merchant",
+          "anchor": "programas-de-um-merchant"
+        },
+        {
+          "heading": "Consultar programa por PK ou termo",
+          "anchor": "consultar-programa-por-pk-ou-termo"
+        },
+        {
+          "heading": "Historico de alteracoes do merchant",
+          "anchor": "historico-de-alteracoes-do-merchant"
+        },
+        {
+          "heading": "Activity log do merchant (alteracoes de programa)",
+          "anchor": "activity-log-do-merchant-alteracoes-de-programa"
+        },
+        {
+          "heading": "Merchant Settings Snapshot por lead (R1.53.0)",
+          "anchor": "merchant-settings-snapshot-por-lead-r1530"
+        },
+        {
+          "heading": "Merchant Settings Snapshot por conta SVC (R1.53.0)",
+          "anchor": "merchant-settings-snapshot-por-conta-svc-r1530"
+        },
+        {
+          "heading": "Verificar existencia de snapshot (Path A vs Path B)",
+          "anchor": "verificar-existencia-de-snapshot-path-a-vs-path-b"
+        },
+        {
+          "heading": "12. Correspondencia (Email/SMS)",
+          "anchor": "12-correspondencia-emailsms"
+        },
+        {
+          "heading": "Fila de emails (recentes ou por conta)",
+          "anchor": "fila-de-emails-recentes-ou-por-conta"
+        },
+        {
+          "heading": "Fila de SMS",
+          "anchor": "fila-de-sms"
+        },
+        {
+          "heading": "13. Sweeps e Tarefas Agendadas",
+          "anchor": "13-sweeps-e-tarefas-agendadas"
+        },
+        {
+          "heading": "Listar todos os sweeps",
+          "anchor": "listar-todos-os-sweeps"
+        },
+        {
+          "heading": "Buscar sweep por nome",
+          "anchor": "buscar-sweep-por-nome"
+        },
+        {
+          "heading": "Verificar status ativo/inativo dos sweeps",
+          "anchor": "verificar-status-ativoinativo-dos-sweeps"
+        },
+        {
+          "heading": "Logs de execucao dos sweeps",
+          "anchor": "logs-de-execucao-dos-sweeps"
+        },
+        {
+          "heading": "14. SQL dos Sweeps (Criterios de Selecao)",
+          "anchor": "14-sql-dos-sweeps-criterios-de-selecao"
+        },
+        {
+          "heading": "rerunCCPaymentsSweep - Retentativa de CC negados",
+          "anchor": "rerunccpaymentssweep---retentativa-de-cc-negados"
+        },
+        {
+          "heading": "delinquencyRerunCCPaymentsSweep - Rerun CC em contas inadimplentes 100+ dias",
+          "anchor": "delinquencyrerunccpaymentssweep---rerun-cc-em-contas-inadimplentes-100-dias"
+        },
+        {
+          "heading": "updateTaxRatesSweep - Contas que precisam atualizar taxa de imposto",
+          "anchor": "updatetaxratessweep---contas-que-precisam-atualizar-taxa-de-imposto"
+        },
+        {
+          "heading": "FirstPaymentReminderSweep - Lembretes de primeiro pagamento",
+          "anchor": "firstpaymentremindersweep---lembretes-de-primeiro-pagamento"
+        },
+        {
+          "heading": "customerPortalReminderSweep - Convites para portal do cliente",
+          "anchor": "customerportalremindersweep---convites-para-portal-do-cliente"
+        },
+        {
+          "heading": "RecurringPaymentReminderSweep - Lembrete de pagamento recorrente",
+          "anchor": "recurringpaymentremindersweep---lembrete-de-pagamento-recorrente"
+        },
+        {
+          "heading": "delinquencyOfferEmailSweep - Ofertas de negociacao por faixa de atraso",
+          "anchor": "delinquencyofferemailsweep---ofertas-de-negociacao-por-faixa-de-atraso"
+        },
+        {
+          "heading": "paidInFullAccountEmailSweep - Contas quitadas (para email de confirmacao)",
+          "anchor": "paidinfullaccountemailsweep---contas-quitadas-para-email-de-confirmacao"
+        },
+        {
+          "heading": "sendCreditCardPaymentsSql - Envio de transacoes CC pendentes (inclui arranjos, Task #446)",
+          "anchor": "sendcreditcardpaymentssql---envio-de-transacoes-cc-pendentes-inclui-arranjos-task-446"
+        },
+        {
+          "heading": "sendACHPaymentsSql - Envio de pagamentos ACH pendentes (inclui arranjos, Task #446)",
+          "anchor": "sendachpaymentssql---envio-de-pagamentos-ach-pendentes-inclui-arranjos-task-446"
+        },
+        {
+          "heading": "settledInFullAccountEmailSweep - Contas liquidadas por acordo",
+          "anchor": "settledinfullaccountemailsweep---contas-liquidadas-por-acordo"
+        },
+        {
+          "heading": "15. Inadimplencia e Cobranca",
+          "anchor": "15-inadimplencia-e-cobranca"
+        },
+        {
+          "heading": "Contas inadimplentes 150+ dias (com rating J ou P)",
+          "anchor": "contas-inadimplentes-150-dias-com-rating-j-ou-p"
+        },
+        {
+          "heading": "Calculo de past due e valor de settlement",
+          "anchor": "calculo-de-past-due-e-valor-de-settlement"
+        },
+        {
+          "heading": "Oferta de desconto por faixa de inadimplencia (Delinquency 150 Day Offer)",
+          "anchor": "oferta-de-desconto-por-faixa-de-inadimplencia-delinquency-150-day-offer"
+        },
+        {
+          "heading": "EPO pool em contas inadimplentes (days past due com pool)",
+          "anchor": "epo-pool-em-contas-inadimplentes-days-past-due-com-pool"
+        },
+        {
+          "heading": "16. Logs e Auditoria",
+          "anchor": "16-logs-e-auditoria"
+        },
+        {
+          "heading": "Activity log do LOS",
+          "anchor": "activity-log-do-los"
+        },
+        {
+          "heading": "Activity log do SVC",
+          "anchor": "activity-log-do-svc"
+        },
+        {
+          "heading": "Leads com mais atividade INTERNAL do SYSTEM",
+          "anchor": "leads-com-mais-atividade-internal-do-system"
+        },
+        {
+          "heading": "Inbound API logs (requisicoes recebidas)",
+          "anchor": "inbound-api-logs-requisicoes-recebidas"
+        },
+        {
+          "heading": "Outbound API logs (requisicoes enviadas)",
+          "anchor": "outbound-api-logs-requisicoes-enviadas"
+        },
+        {
+          "heading": "Documentos armazenados",
+          "anchor": "documentos-armazenados"
+        },
+        {
+          "heading": "Gravacoes de lead (signing flow)",
+          "anchor": "gravacoes-de-lead-signing-flow"
+        },
+        {
+          "heading": "E-sign documents",
+          "anchor": "e-sign-documents"
+        },
+        {
+          "heading": "17. Verificacoes de Fraude",
+          "anchor": "17-verificacoes-de-fraude"
+        },
+        {
+          "heading": "SEON (fraude digital)",
+          "anchor": "seon-fraude-digital"
+        },
+        {
+          "heading": "Intellicheck (verificacao de documento de ID)",
+          "anchor": "intellicheck-verificacao-de-documento-de-id"
+        },
+        {
+          "heading": "Kount (fraude de cartao de credito)",
+          "anchor": "kount-fraude-de-cartao-de-credito"
+        },
+        {
+          "heading": "Kount token (validade)",
+          "anchor": "kount-token-validade"
+        },
+        {
+          "heading": "Plaid (verificacao bancaria)",
+          "anchor": "plaid-verificacao-bancaria"
+        },
+        {
+          "heading": "Fraud verification (geral)",
+          "anchor": "fraud-verification-geral"
+        },
+        {
+          "heading": "18. Configuracoes e Templates",
+          "anchor": "18-configuracoes-e-templates"
+        },
+        {
+          "heading": "State configurations",
+          "anchor": "state-configurations"
+        },
+        {
+          "heading": "Historico de alteracoes de state config",
+          "anchor": "historico-de-alteracoes-de-state-config"
+        },
+        {
+          "heading": "Templates de email/contrato",
+          "anchor": "templates-de-emailcontrato"
+        },
+        {
+          "heading": "GDS token (underwriting)",
+          "anchor": "gds-token-underwriting"
+        },
+        {
+          "heading": "Third party contacts",
+          "anchor": "third-party-contacts"
+        },
+        {
+          "heading": "19. AMS - Usuarios e Permissoes",
+          "anchor": "19-ams---usuarios-e-permissoes"
+        },
+        {
+          "heading": "Consultar usuario",
+          "anchor": "consultar-usuario"
+        },
+        {
+          "heading": "Log de usuarios",
+          "anchor": "log-de-usuarios"
+        },
+        {
+          "heading": "Permissoes",
+          "anchor": "permissoes"
+        },
+        {
+          "heading": "Roles",
+          "anchor": "roles"
+        },
+        {
+          "heading": "Dicas de Uso",
+          "anchor": "dicas-de-uso"
+        },
+        {
+          "heading": "Parametros comuns",
+          "anchor": "parametros-comuns"
+        },
+        {
+          "heading": "Investigacao completa de um lead (passo a passo)",
+          "anchor": "investigacao-completa-de-um-lead-passo-a-passo"
+        },
+        {
+          "heading": "Investigacao completa de uma conta (passo a passo)",
+          "anchor": "investigacao-completa-de-uma-conta-passo-a-passo"
+        }
+      ]
+    },
+    {
+      "file": "appendix-g-cenarios-risco.md",
+      "path": "docs/business-rules/appendix-g-cenarios-risco.md",
+      "title": "Apêndice G: Cenários de Risco de Lease",
+      "domain": "business-rules",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-18",
+      "covers": [
+        "risk-scenarios",
+        "business-overview",
+        "business-overview",
+        "state-rules",
+        "gowsign-routing",
+        "merchant-management",
+        "merchant-management",
+        "state-rules",
+        "ssn"
+      ],
+      "sources": [
+        {
+          "type": "code",
+          "value": "src/data/state-merchant-matrix.ts"
+        },
+        {
+          "type": "env",
+          "value": "qa2"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "UOwn Leasing - SVC Platform",
+          "anchor": "uown-leasing---svc-platform"
+        },
+        {
+          "heading": "Visão Geral: Mercado Real ↔ Implementação UOWN",
+          "anchor": "visão-geral-mercado-real-implementação-uown"
+        },
+        {
+          "heading": "1. Dimensão Estadual no UOWN",
+          "anchor": "1-dimensão-estadual-no-uown"
+        },
+        {
+          "heading": "1.1 Como o Estado é Determinado",
+          "anchor": "11-como-o-estado-é-determinado"
+        },
+        {
+          "heading": "1.2 Estados Bloqueados (No Business)",
+          "anchor": "12-estados-bloqueados-no-business"
+        },
+        {
+          "heading": "1.3 Tributação por Estado — Comportamento no Sistema",
+          "anchor": "13-tributação-por-estado-comportamento-no-sistema"
+        },
+        {
+          "heading": "1.4 Regras EPO por Estado (Cascata de Prioridade)",
+          "anchor": "14-regras-epo-por-estado-cascata-de-prioridade"
+        },
+        {
+          "heading": "1.5 Security Deposit por Estado",
+          "anchor": "15-security-deposit-por-estado"
+        },
+        {
+          "heading": "2. Cenários de Risco — Mapeamento Completo",
+          "anchor": "2-cenários-de-risco-mapeamento-completo"
+        },
+        {
+          "heading": "Cenário 1: Risco Baixo (Prime/Super-prime)",
+          "anchor": "cenário-1-risco-baixo-primesuper-prime"
+        },
+        {
+          "heading": "Cenário 2: Risco Médio (Near-prime)",
+          "anchor": "cenário-2-risco-médio-near-prime"
+        },
+        {
+          "heading": "Cenário 3: Risco Alto / Negação (Subprime/Denied)",
+          "anchor": "cenário-3-risco-alto-negação-subprimedenied"
+        },
+        {
+          "heading": "3. Matriz de Decisão: Risco × Estado × Merchant",
+          "anchor": "3-matriz-de-decisão-risco-×-estado-×-merchant"
+        },
+        {
+          "heading": "4. Roteamento de Programa (13 vs 16 Meses)",
+          "anchor": "4-roteamento-de-programa-13-vs-16-meses"
+        },
+        {
+          "heading": "5. Camadas de Detecção de Fraude (Cenários Específicos)",
+          "anchor": "5-camadas-de-detecção-de-fraude-cenários-específicos"
+        },
+        {
+          "heading": "6. Impacto da Tributação nos Cálculos dos Testes",
+          "anchor": "6-impacto-da-tributação-nos-cálculos-dos-testes"
+        },
+        {
+          "heading": "7. Referência Rápida de Merchants para Cada Cenário de Risco",
+          "anchor": "7-referência-rápida-de-merchants-para-cada-cenário-de-risco"
+        },
+        {
+          "heading": "8. Campos Críticos no `sendApplication` por Cenário",
+          "anchor": "8-campos-críticos-no-sendapplication-por-cenário"
+        },
+        {
+          "heading": "9. Fontes e Referências Cruzadas",
+          "anchor": "9-fontes-e-referências-cruzadas"
+        }
+      ]
+    }
+  ]
+}

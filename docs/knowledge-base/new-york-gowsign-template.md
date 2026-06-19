@@ -1,3 +1,18 @@
+---
+title: New York (NY) GowSign Lease/Rental-Purchase Template
+domain: knowledge-base
+status: snapshot
+volatility: volatile
+last_verified: 2026-06-18
+sources:
+  - env: qa2
+  - lead: 16651
+  - code: src/data/state-merchant-matrix.ts#expectedProvider
+  - db: uown_esign_document
+covers: [gowsign, esign, new-york, epo, template-rendering]
+promoted_to: []
+---
+
 # New York (NY) GowSign Lease/Rental-Purchase Template
 
 > Charter: Explore the New York GowSign contract signing in qa2 with Playwright MCP to discover provider routing, the rendered contract title (NY vs other-state leak), dynamic-variable resolution, and the EPO clauses — for the 13-month term (NY has no 16m template).

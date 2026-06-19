@@ -1,3 +1,15 @@
+---
+title: Cálculos e Fórmulas Financeiras
+domain: business-rules
+status: stable
+volatility: stable
+last_verified: 2026-06-18
+sources:
+  - code: src/helpers/svc-payoff.helpers.ts#parseEpoBreakdown
+  - code: src/data/sixteenMonthEpoForCa531.testData.ts#ISSUE531_DATA
+covers: [payment-calculator, epo, payoff, money-factor, payment-frequency, state-rules]
+---
+
 # Calculos e Formulas Financeiras
 ## UOwn Leasing - SVC Platform
 

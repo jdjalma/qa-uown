@@ -82,8 +82,9 @@ export const TEST_BANK = {
 // ── SSN Generation ──────────────────────────────────────────────────
 
 /**
- * Generates a unique test SSN.
- * SSN not ending in 9 = APPROVED, ending in 9 = DENIED.
+ * Generates a unique test SSN (sandbox/qa1 only).
+ * SSN not ending in 9 = APPROVED, ending in 9 = DENIED — sandbox/qa1 mock UW only.
+ * In qa2, the live BlackBox/ABB engine ignores the SSN suffix; all leads are evaluated normally.
  */
 export function generateTestSSN(approved: boolean): string {
   if (approved) {

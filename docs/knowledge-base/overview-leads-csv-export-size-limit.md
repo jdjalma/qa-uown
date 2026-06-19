@@ -1,3 +1,15 @@
+---
+title: Overview & Leads — CSV Export Size-Limit Guard (#1321)
+domain: knowledge-base
+status: snapshot
+volatility: stable
+last_verified: 2026-06-18
+sources:
+  - env: qa2
+covers: [csv-export-size-limit, filtered-csv-download, email-csv, overview-leads-export, err-string-too-long]
+promoted_to: []
+---
+
 # Overview & Leads — CSV Export Size-Limit Guard (#1321)
 
 > Charter: Explore Origination Overview (`/overview`) and Leads (`/leads`) CSV export with Playwright MCP to discover the #1321 size-limit guard — exact threshold/unit, the disabled-button + Email CSV messages, whether the guard is size- or row-count-based, and the Leads export file/columns.
@@ -80,6 +92,15 @@ Discovered + root-caused during #1321 test implementation; recorded as [[applica
 - **Table-filter panel re-collapses after toggle (pitfall #117).** `verifyDashboardLoaded` resolves (Promise.race) when the Filters button appears, BEFORE the table finishes loading on QA2; a late re-render re-collapses the width-collapse-animated panel. Expanding it needs a **retry loop** (`expandTableFilters`), not a single click.
 - **Email CSV vs Download CSV share a class (pitfall #118).** Both buttons share `filtered-csv-download_csvButton` and **Email CSV is first in the DOM**; a bare class selector + `.first()` resolves to Email CSV → a "download" click opens the email modal. Disambiguate the Download button by `:has-text('Download CSV')`.
 
+### Sandbox high-volume repro + three more traps `[confirmed — CT-08 PASS, sandbox 2026-06-18/19, 79,605 rows]`
+
+Discovered + root-caused during CT-08 (the visual disabled-state repro that QA2/G1 could not reach). Recorded as [[application-lifecycle]] pitfall #123.
+
+- **Visual disabled-state IS reproducible on sandbox** with account `jmendes.gow` and the **table-panel** date range **01/01/2022 → 12/31/2026**, which returns **79,605 Overview leads** in one filtered set. Estimate **55.4 MB > 48 MB limit** → **Download CSV DISABLED**, **Email CSV enabled**, tooltip shows the exact `"This export is too large to download directly. Please use Email CSV instead. Estimated size: 55.4 MB (limit: 48 MB)."`. This closes gap **G1** (now confirmed in the live UI, not only at source level). NOTE: the earlier KB note that "sandbox 01/01/2022→12/31/2026 returns only 36 rows" was on a different/sparse account; `jmendes.gow` carries the high-volume dataset.
+- **`fill()` does NOT update the table-panel date inputs — use `setFormikDate()`.** `#fromDate`/`#toDate` are `type="search"` inputs controlled by Formik. `fill()` writes the DOM value but does NOT fire Formik's `onChange`, so the submitted query keeps the previous range. Fix (in `overview.page.ts`): private `setFormikDate(selector, value)` reaches `element.__reactProps.onChange` via `page.evaluate` and invokes the React-fiber handler directly, with a `setTimeout(150ms)` BETWEEN fromDate and toDate (the fromDate re-render recreates the toDate node, invalidating the reference). Same root cause as the Servicing DatePicker (`application-wizard.page.ts`) trap.
+- **Large datasets fool `submitFilters()`'s row-visible wait.** With 79k rows the spinner `<tr>` counts as a visible row before data arrives. The CT-08 spec waits with `page.waitForFunction` for real pagination (`parseInt(match[3]) > 1000`, 120s timeout) before asserting button state.
+- **The disabled tooltip is a Bootstrap portal, not span-internal text.** It is NOT text inside `<span id="overview-csv-download-...">`; it renders OUTSIDE the span wrapper as `<div role="tooltip" class="tooltip show bs-tooltip-auto">`. The `FilteredCsvDownloadControls.getDownloadDisabledTooltip` method + selector `csvDownloadTooltipPortal: "div[role='tooltip'].tooltip.show, div.tooltip.show"` read the portal. DOM confirmed sandbox 2026-06-18.
+
 ## Business Rules
 
 - **BR-01**: Direct Download CSV is allowed only when the **estimated CSV size ≤ 48 MiB**; above it the button is disabled. `[confirmed]`
@@ -93,8 +114,34 @@ Discovered + root-caused during #1321 test implementation; recorded as [[applica
 - **Confirms** [[overview-csv-export-merchant-support]]: Overview export = `all-filtered-leads.csv`, 27 columns, single-page `maxResults=totalRows`. Adds the new pre-download size guard on top of that flow.
 - **New**: the Leads page (`/leads`) export = `leads-results.csv`, 17 columns (incl. SSN), `searchResults/count` shape.
 
+## Download-CSV permission gate — AMS role mapping `[confirmed — dom-snapshot:sandbox 2026-06-18]`
+
+*Resolves CT-09 / former gap "which permission controls Download CSV". Evidence: AMS `ams-website-sandbox` → Roles ("Manage Roles & Permissions", left-nav "Roles") → tab **Origination**; clicking a role row populates the right-hand "Edit Role Permissions" panel with that role's GRANTED permissions as tag chips (`index-module_tagContainer__`). The panel lists ONLY granted permissions, not a full checklist — so "permission absent from the chips ⇒ role lacks it".*
+
+- The `FilteredCsvDownload` `hasDownloadPermission` prop (Download CSV renders only when `hasDownloadPermission && headers>0`) is driven by these AMS permissions, **Origination** tab:
+  - **Overview Download CSV** ← permission **`overview download csv`**
+  - **Leads Download CSV** ← permission **`leads download csv`**
+- ⚠️ A DIFFERENT permission **`overview csv [modify]`** exists and is **NOT** the download gate — it governs the filter/column config, not the Download CSV button. Do not confuse the two.
+- **Role → has download perm (Origination tab):**
+
+  | Role | `overview download csv` | `leads download csv` | Notes |
+  |---|---|---|---|
+  | admin | ✅ | ✅ | all 22 CSV perms granted |
+  | manager | ✅ | ✅ | all 22 CSV perms granted |
+  | agent | ❌ | ❌ | only `overview csv [modify]`, `funding csv [modify]` |
+  | isr | ❌ | ❌ | only `overview csv [modify]` |
+  | auditor | ❌ | ❌ | only `overview csv [modify]`, `funding csv [modify]` |
+
+- ⇒ A user whose **only** Origination role is `agent` / `isr` / `auditor` will NOT see the Download CSV button (Email CSV still renders — it is not permission-gated). On sandbox, `evedovatto.gow_clone` (Manage Users, single role `agent`) is such an account, but its password is unknown.
+- **CT-09 execution recipe (fresh-data, rule #9):** AMS → Users → **Add User** (set a known password) → Users → `<user>` → **Change User Role** → tab Origination → assign ONLY `agent` (or `isr`) → log into Origination as that user → assert Download CSV absent, Email CSV present. Provisioning is an AMS write/side-effect and needs an AMS user/role page-object that does not yet exist.
+
+### Sandbox login note `[confirmed — test-execution:sandbox 2026-06-18]`
+
+On **sandbox**, the framework's `admin` role resolves to `DEFAULT_ADMIN_USERNAME=manager` / `DEFAULT_ADMIN_PASSWORD=admin`, but **password `admin` returns HTTP 401**. The working sandbox login is `manager` / **`P@ssw0rdu0wn`** (the `DEFAULT_MANAGER`/`SANDBOX_MERCHANT` password). Both Origination and AMS accept it. (There is no `SANDBOX_ADMIN_*` override in `.env`.)
+
 ## Gaps / To Investigate
 
-- **G1**: Disabled-state could **not be visually reproduced** on QA2 (needs ~66k Overview leads / proportionally more narrow Leads rows in one filtered set). Behaviour confirmed from the deployed bundle + CSS + live props, not from a rendered disabled button. A visual repro would need a high-volume env or a seeded large date range.
+- ~~**G1**: Disabled-state could **not be visually reproduced** on QA2 or sandbox.~~ **RESOLVED (CT-08 PASS, sandbox 2026-06-18/19).** Reproduced visually with account `jmendes.gow` + table-panel range 01/01/2022→12/31/2026 (**79,605 rows**, est. 55.4 MB > 48 MB): Download CSV disabled, exact tooltip rendered, Email CSV enabled. See "Sandbox high-volume repro" section above.
 - **G2**: **Email CSV success toast** text not captured (separate chunk; observing it sends a real email — side effect avoided).
 - **G3**: Not verified which estimator variant the Leads page invokes at runtime (`searchResults/count` inferred from its listing shape); both variants are bundled. Threshold/message are identical regardless.
+- **G4 (CT-09)**: No ready-to-use no-download-permission account with a **known password** exists on QA2/sandbox. The permission name + role mapping are now confirmed (above); execution still needs a provisioned account (recipe above) and an AMS user/role page-object.

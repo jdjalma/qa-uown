@@ -1,3 +1,15 @@
+---
+title: Overview Page — CSV Export & Merchant Support Filter
+domain: knowledge-base
+status: stable
+volatility: stable
+last_verified: 2026-06-17
+sources:
+  - env: qa1
+covers: [overview-csv-export, merchant-support-filter, getLeadsInDateRange]
+promoted_to: []
+---
+
 # Overview Page — CSV Export & Merchant Support Filter
 
 > Charter: Explore Origination Overview CSV Export with Playwright MCP to discover how the Merchant Support filter behaves in on-screen results vs the exported CSV

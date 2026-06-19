@@ -1,3 +1,16 @@
+---
+title: Portal, Comunicacoes e Atendimento
+domain: business-rules
+status: stable
+volatility: stable
+last_verified: 2026-06-18
+sources:
+  - db: uown_email_queue
+  - db: uown_sms_queue
+  - env: qa2
+covers: [tms, portal-cliente, correspondencia, email, sms, consentimento, contato]
+---
+
 # Portal, Comunicacoes e Atendimento
 ## UOwn Leasing - SVC Platform
 

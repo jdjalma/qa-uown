@@ -1,3 +1,15 @@
+---
+title: "Apendice B: Referencia Rapida de Endpoints"
+domain: business-rules
+status: stable
+volatility: volatile
+last_verified: 2026-06-18
+sources:
+  - code: src/api/clients/scheduled-task.client.ts#triggerScheduledTask
+  - env: qa2
+covers: [endpoints, sweeps, pagamentos, contas, administracao, config]
+---
+
 # Apendice B: Referencia Rapida de Endpoints
 ## UOwn Leasing - SVC Platform
 

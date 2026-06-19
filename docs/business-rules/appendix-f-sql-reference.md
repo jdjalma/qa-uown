@@ -1,3 +1,17 @@
+---
+title: "Apendice F: Referencia de Consultas SQL Operacionais"
+domain: business-rules
+status: stable
+volatility: volatile
+last_verified: 2026-06-18
+sources:
+  - db: uown_los_lead
+  - db: uown_sv_account
+  - db: uown_scheduled_task
+  - env: qa2
+covers: [sql, queries, troubleshooting, los, svc, sweeps, fraude, ams]
+---
+
 # Apendice F: Referencia de Consultas SQL Operacionais
 ## UOwn Leasing - SVC Platform
 
@@ -652,6 +666,32 @@ WHERE umal.notes LIKE '%UPDATED: PROGRAM[payoffDiscount cha%'
 -- WHERE umal.notes ILIKE '%moneyFactor chaged from%'
 -- WHERE umal.merchant_ref_code IN (:refCode)
 ORDER BY umal.pk DESC;
+```
+
+### Merchant Settings Snapshot por lead (R1.53.0)
+```sql
+-- Snapshot de configuracao do merchant gravado no UW_APPROVED
+-- Ausencia de linha = lead anterior a R1.53.0 (Path A: sem snapshot)
+SELECT *
+FROM uown_los_lead_merchant_settings_snapshot
+WHERE lead_pk = :leadPk;
+```
+
+### Merchant Settings Snapshot por conta SVC (R1.53.0)
+```sql
+-- Snapshot herdado do lead, gravado na criacao da conta SVC
+SELECT *
+FROM uown_sv_account_merchant_settings_snapshot
+WHERE account_pk = :accountPk;
+```
+
+### Verificar existencia de snapshot (Path A vs Path B)
+```sql
+-- Path A (sem snapshot): COUNT = 0 — lead/conta pre-R1.53.0 ou sem UW_APPROVED
+-- Path B (com snapshot): COUNT > 0 — config congelada no momento do UW_APPROVED
+SELECT COUNT(*) AS has_snapshot
+FROM uown_los_lead_merchant_settings_snapshot
+WHERE lead_pk = :leadPk;
 ```
 
 ---

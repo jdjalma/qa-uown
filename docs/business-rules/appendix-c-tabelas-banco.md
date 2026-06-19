@@ -1,3 +1,17 @@
+---
+title: "Apendice C: Tabelas de Banco Importantes"
+domain: business-rules
+status: stable
+volatility: volatile
+last_verified: 2026-06-18
+sources:
+  - db: uown_los_lead
+  - db: uown_sv_account
+  - db: uown_scheduled_task
+  - env: qa2
+covers: [tabelas, schema, postgres, indexes, troubleshooting, merchant-snapshot]
+---
+
 # Apendice C: Tabelas de Banco Importantes
 ## UOwn Leasing - SVC Platform
 
@@ -182,6 +196,25 @@ FROM uown_lead_approval_terms
 WHERE lead_pk = :leadPk
 ORDER BY row_created_timestamp DESC;
 ```
+
+---
+
+## Merchant Settings Snapshot (R1.53.0 — Flyway 20260609155406)
+
+Tabelas criadas pela release 1.53.0 (deploy qa2 2026-06-15) para preservar a configuracao do merchant no momento da aprovacao UW. Garante que mudancas posteriores no merchant nao afetam contas ja criadas.
+
+| Tabela | Propósito |
+|--------|-----------|
+| `uown_los_lead_merchant_settings_snapshot` | Snapshot das configuracoes do merchant gravado no momento de `UW_APPROVED` (LOS) |
+| `uown_sv_account_merchant_settings_snapshot` | Snapshot herdado do lead, gravado na criacao da conta SVC (Servicing) |
+
+**Ciclo de vida:**
+- Snapshot LOS criado quando `lead_status` transiciona para `UW_APPROVED`
+- Snapshot SVC herdado diretamente do lead — NAO consulta o merchant live no momento do funding
+- Leads/contas anteriores a R1.53.0 (pre-2026-06-15) NAO possuem snapshot (Path A para testes de ausencia)
+- Mudancas de config do merchant apos UW_APPROVED NAO retroagem para o snapshot existente
+
+**Verificar DDL completo:** `\d uown_los_lead_merchant_settings_snapshot` e `\d uown_sv_account_merchant_settings_snapshot` (colunas exatas dependem da implementacao — verificar via pg no env alvo).
 
 ---
 

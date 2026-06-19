@@ -1,3 +1,15 @@
+---
+title: "Apendice A: Integracoes com Terceiros"
+domain: business-rules
+status: stable
+volatility: stable
+last_verified: 2026-06-18
+sources:
+  - code: src/data/merchant-config-contract.ts#offerInsurance
+  - env: qa2
+covers: [integracoes, vendors, sentilink, neustar, lexisnexis, seon, plaid, taxcloud, sweeps]
+---
+
 # Apendice A: Integracoes com Terceiros
 ## UOwn Leasing - SVC Platform
 

@@ -1,3 +1,21 @@
+---
+title: Modificações e Ajustes de Conta
+domain: business-rules
+status: stable
+volatility: volatile
+last_verified: 2026-06-18
+sources:
+  - code: src/helpers/settlement.helpers.ts#calculateSettlement
+  - db: uown_frequency_mods
+  - db: uown_lead_modifications
+  - svc-source: ChangeLeadStatusService.java
+  - svc-source: ThreadAttributes.java
+  - env: qa2
+derived_from:
+  - knowledge-base/modification-report-agent-name-bug
+covers: [rewind-replay, settlement, invoice-modification, frequency-change, due-date, fpd-adjustment, additional-lease, sweeps, modification-report-agent-attribution]
+---
+
 # Modificacoes e Ajustes de Conta
 ## UOwn Leasing - SVC Platform
 
@@ -331,6 +349,33 @@ Restaura os parametros padrao do cronograma quando modificacoes anteriores (muda
 ### Disponibilidade
 
 Aparece no portal Servicing apenas quando `company === 'KORNERSTONE'` — completamente oculto para contas UOWN.
+
+---
+
+## 72. Atribuicao de Agente no Modification Report (`agent_username`)
+
+### O Que e
+
+Toda mudanca de status de lead (`LEAD_STATUS_CHANGE`) e registrada em `uown_lead_modifications`. A coluna `agent_username` (UI "Agent Name" em `/modificationReport`, endpoint `POST /uown/los/getModifiedLeads`) deve identificar o agente humano que disparou a acao — ou `SYSTEM` **exclusivamente** quando a acao foi disparada por automacao de backend sem ator humano.
+
+### Regra
+
+| Caso | `agent_username` esperado |
+|------|---------------------------|
+| Agente humano clica acao no portal (ex: "Set to Expired", "Change to Signed") | username real do agente (ex: `jmendes.gow`) |
+| Callback de webhook GowSign/SignWell (`CONTRACT_CREATED → SIGNED`, `SIGNED → SIGNED` re-sign) | `SYSTEM` (correto — sem sessao de usuario no contexto HTTP) |
+| Sweep/scheduler | `SYSTEM` (correto) |
+
+- A identidade do agente vem de um **header HTTP `username`** (NAO de JWT), lido por `RequestFilter.java`. `ChangeLeadStatusService` e o **unico** criador de registros `LEAD_STATUS_CHANGE`.
+- `ThreadAttributes.getUsername()` retorna `"SYSTEM"` quando o header esta em branco. Chamada de API direta a `changeLeadStatus` **sem** o header `username` grava `SYSTEM` — isto e gap de simulacao de teste, NAO bug de backend.
+
+### Implicacao para testes
+
+Acao de status humana DEVE ser exercida via browser (regra inviolavel #14): a SPA do portal envia o header `username`. Assercao: `agent_username === '<agente>'` E `!== 'SYSTEM'`, com guard negativo (nenhuma row SYSTEM para o lead fresh).
+
+### Historico do bug (#1315, corrigido R1.53.0)
+
+Pre-fix, um webhook outbound corrompia o `ThreadLocal` ANTES de `agent_username` ser lido → username em branco → `SYSTEM` gravado para acoes humanas reais. Fix (MR svc!1464 captura `agentName` no inicio do metodo; svc!1470 faz save/restore do `ThreadAttributes` ao redor do webhook). Confirmado em qa2 + codigo-fonte 2026-06-18.
 
 ---
 

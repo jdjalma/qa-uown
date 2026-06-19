@@ -1,3 +1,16 @@
+---
+title: Administracao e Operacoes
+domain: business-rules
+status: stable
+volatility: volatile
+last_verified: 2026-06-18
+sources:
+  - code: src/api/clients/scheduled-task.client.ts#triggerScheduledTask
+  - db: uown_scheduled_task
+  - env: qa2
+covers: [blacklist, item-split, second-opportunity, sweeps, data-cleanup, api-auth, admin-panel]
+---
+
 # Administracao e Operacoes
 ## UOwn Leasing - SVC Platform
 

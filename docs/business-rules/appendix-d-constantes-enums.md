@@ -1,3 +1,16 @@
+---
+title: "Apendice D: Constantes de Negocio e Enumeracoes"
+domain: business-rules
+status: stable
+volatility: volatile
+last_verified: 2026-06-18
+sources:
+  - code: src/types/enums.ts#FundingQueueStatus
+  - code: src/types/enums.ts#LeadStatus
+  - env: qa2
+covers: [enums, constantes, status, funding-queue, lead-status, approval-status]
+---
+
 # Apendice D: Constantes de Negocio e Enumeracoes
 ## UOwn Leasing - SVC Platform
 
@@ -16,6 +29,8 @@ Todos os enums, constantes e valores de referencia do sistema.
 | `EDIT_ERROR` | E2 | Erro nos dados da aplicacao requerendo correcao |
 | `SYSTEM_ERROR` | E3 | Erro de sistema durante processamento |
 | `DECLINED` | E4 | Aplicacao negada |
+
+> **Atencao — E0/E1 em campos distintos:** No campo `AppApprovalStatus`, `E0` = APROVADO e `E1` = aprovacao atrasada. No campo `transactionStatus` (mesmo response JSON), `E0` = "recebida, nao aprovada para transacao" e `E1` = "aprovada para transacao". Sao campos distintos com semanticas opostas para o mesmo codigo — nunca usar `E0` como sinonimo de "aprovado" ao inspecionar `transactionStatus`.
 
 **Mapeamento de UnderwritingStatus:**
 - APPROVED -> AppApprovalStatus.APPROVED

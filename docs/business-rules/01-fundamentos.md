@@ -1,3 +1,16 @@
+---
+title: Fundamentos e Visão Geral
+domain: business-rules
+status: stable
+volatility: volatile
+last_verified: 2026-06-18
+sources:
+  - code: src/data/merchant-config-contract.ts#REQUIRED_MERCHANT_CONFIG
+  - code: src/data/merchants.ts#MERCHANTS
+  - env: qa2
+covers: [business-model, merchant-types, programs, merchant-config, kornerstone, epo]
+---
+
 # Fundamentos e Visao Geral
 ## UOwn Leasing - SVC Platform
 

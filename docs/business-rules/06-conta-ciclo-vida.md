@@ -1,3 +1,17 @@
+---
+title: Gestão do Ciclo de Vida da Conta
+domain: business-rules
+status: stable
+volatility: volatile
+last_verified: 2026-06-18
+sources:
+  - code: src/helpers/account-aging.helpers.ts#SEED_DELINQUENCY_DAYS
+  - code: src/helpers/settled-in-full.helpers.ts#getSweepWindowDate
+  - db: uown_sv_account
+  - env: qa2
+covers: [receivables, auto-pay, rating-letters, delinquency, account-status, cancellation, paid-out, sweeps]
+---
+
 # Gestao do Ciclo de Vida da Conta
 ## UOwn Leasing - SVC Platform
 

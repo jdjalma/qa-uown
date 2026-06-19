@@ -1,3 +1,15 @@
+---
+title: "Apêndice G: Cenários de Risco de Lease"
+domain: business-rules
+status: stable
+volatility: volatile
+last_verified: 2026-06-18
+sources:
+  - code: src/data/state-merchant-matrix.ts
+  - env: qa2
+covers: [risco, lease, rto, estados, merchant-routing, online, instore, blocked-states, ssn]
+---
+
 # Apêndice G: Cenários de Risco de Lease — Base de Conhecimento para Testes
 ## UOwn Leasing - SVC Platform
 

@@ -1,3 +1,18 @@
+---
+title: Creating a 16-Month Lease & Controlling GowSign vs Signwell Routing (qa2)
+domain: knowledge-base
+status: snapshot
+volatility: volatile
+last_verified: 2026-06-17
+sources:
+  - env: qa2
+  - code: src/data/state-merchant-matrix.ts#expectedProvider
+  - db: uown_gow_sign_template
+  - db: uown_esign_document
+covers: [16m-lease, gowsign-routing, signwell-routing, abb-eligibility, esign-provider]
+promoted_to: []
+---
+
 # Creating a 16-Month Lease & Controlling GowSign vs Signwell Routing (qa2)
 
 > Charter: Explore application creation + e-sign routing with Playwright MCP + read-only DB to discover **how to deterministically create a 16-month lease** and **which provider (GowSign / Signwell) it routes to**, with a reproducible recipe (merchant, state, program, income, term).

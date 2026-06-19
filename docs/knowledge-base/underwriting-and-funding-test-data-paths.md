@@ -1,3 +1,17 @@
+---
+title: Underwriting Decision & Funding — Test-Data Setup Paths
+domain: knowledge-base
+status: stable
+volatility: volatile
+last_verified: 2026-06-16
+sources:
+  - env: qa2
+  - db: uown_los_lead_merchant_settings_snapshot
+  - db: uown_sv_account_merchant_settings_snapshot
+covers: [uw-denied, funding-without-snapshot, merchant-settings-snapshot, test-data-paths]
+promoted_to: [appendix-c-tabelas-banco, appendix-f-sql-reference]
+---
+
 # Underwriting Decision & Funding — Test-Data Setup Paths
 
 > Scope: how the Origination underwriting + funding flow behaves, and how to produce two hard-to-reach test-data states — (1) a lead **denied by underwriting** (`UW_DENIED`), and (2) a lead that reaches **FUNDING without ever having a UW-config snapshot**. Covers the **Merchant Settings Snapshot** feature (immutable snapshots of merchant UW config at lead approval + account funding).

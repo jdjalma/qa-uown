@@ -9,8 +9,10 @@
  *     As of 2026-06-17 the live qa2 map has GowSign templates for AL, CA, FL, GA, LA, NC, NY,
  *     OH, PA (see docs/knowledge-base/16m-lease-and-gowsign-signwell-routing-qa2.md). Only the
  *     CA, AL and TX rows below have been re-verified against the live DB (2026-06-18). The
- *     remaining states (FL/GA/LA/NC/NY/OH/PA still marked SIGNWELL here) are UNVERIFIED and
+ *     remaining states (FL/GA/LA/NC/PA still marked SIGNWELL here) are UNVERIFIED and
  *     likely stale — re-confirm with getGowSignTemplatesForState() before trusting them.
+ *     NY confirmed GOWSIGN 2026-06-18 (lead 16651, template NY_2025_SAC 13m).
+ *     OH: 13m=SIGNWELL (no template), 16m=GOWSIGN via Kornerstone (OH_2025_16_MONTHS).
  *
  * Env-specific overrides (PROVIDER_ENV_OVERRIDES):
  *   - In stg the GoSign template for CA is NOT yet deployed (2026-04-29).
@@ -274,10 +276,13 @@ export const STATE_MATRIX: readonly StateMatrixRow[] = [
     validMerchant: 'TerraceFinance',
   },
   {
-    // NY: EPO state-specific — not asserted in this SPEC.
     state: 'NY',
     allowed: true,
-    expectedProvider: 'SIGNWELL',
+    // GOWSIGN (qa2): NY template NY_2025_SAC (13m) deployed 2026-05-28 in qa2.
+    // Live DB + UI confirmed 2026-06-18 (lead 16651 → uown_esign_document.client='GOWSIGN').
+    // EPO state-specific wording not asserted in this SPEC.
+    // stg lags → SIGNWELL via override below.
+    expectedProvider: 'GOWSIGN',
     lessor: 'Mollie, LLC, dba Uown',
     validMerchant: 'TerraceFinance',
   },
@@ -299,6 +304,9 @@ export const STATE_MATRIX: readonly StateMatrixRow[] = [
   {
     state: 'OH',
     allowed: true,
+    // SIGNWELL for 13m (no 13m GowSign template in qa2 as of 2026-06-18).
+    // 16m via Kornerstone merchant → GOWSIGN (template OH_2025_16_MONTHS confirmed qa2).
+    // This row covers the 13m/default path; 16m GowSign tests use a separate Kornerstone fixture.
     expectedProvider: 'SIGNWELL',
     lessor: 'Mollie, LLC, dba Uown',
     validMerchant: 'TerraceFinance',
@@ -501,6 +509,9 @@ const PROVIDER_ENV_OVERRIDES: Readonly<
     stg: 'SIGNWELL',
   },
   AL: {
+    stg: 'SIGNWELL',
+  },
+  NY: {
     stg: 'SIGNWELL',
   },
 };

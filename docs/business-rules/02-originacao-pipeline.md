@@ -1,3 +1,17 @@
+---
+title: Originação e Pipeline de Aplicação
+domain: business-rules
+status: stable
+volatility: volatile
+last_verified: 2026-06-18
+sources:
+  - code: src/config/constants.ts#generateTestSSN
+  - db: uown_los_lead
+  - db: uown_los_uw_info
+  - env: qa2
+covers: [pipeline, underwriting, fraud-vendors, neuroid, kount, state-check, geolocation]
+---
+
 # Originacao e Pipeline de Aplicacao
 ## UOwn Leasing - SVC Platform
 

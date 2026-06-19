@@ -1,3 +1,19 @@
+---
+title: Processamento de Pagamentos
+domain: business-rules
+status: stable
+volatility: volatile
+last_verified: 2026-06-18
+sources:
+  - code: src/api/clients/tms-payment.client.ts#TmsPaymentClient
+  - code: src/data/test-cards.ts#TEST_CARDS
+  - db: uown_sv_credit_card_transaction
+  - db: uown_sv_achpayment
+  - db: uown_sv_payment_arrangement
+  - env: qa2
+covers: [credit-card, ach, cc-peek, refunds, payment-arrangements, nsf, sweeps]
+---
+
 # Processamento de Pagamentos
 ## UOwn Leasing - SVC Platform
 

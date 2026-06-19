@@ -1,3 +1,15 @@
+---
+title: Produto Lease — Deep Dive Tecnico
+domain: business-rules
+status: stable
+volatility: stable
+last_verified: 2026-03-20
+sources:
+  - gitlab: CalculatorService.java
+  - env: qa2
+covers: [formulas-financeiras, calculator, contrato, parcelas, money-factor, tax, epo]
+---
+
 # Produto Lease — Deep Dive Tecnico
 ## UOwn Leasing - Regras Extraidas do Codigo-Fonte
 

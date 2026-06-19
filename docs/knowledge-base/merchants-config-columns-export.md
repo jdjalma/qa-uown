@@ -1,3 +1,17 @@
+---
+title: Merchants Page — Config Columns & Export
+domain: knowledge-base
+status: snapshot
+volatility: volatile
+last_verified: 2026-06-15
+sources:
+  - env: qa1
+  - gitlab: task-1309
+  - db: uown_merchant
+covers: [merchants, config-columns, csv-export, gds-fields]
+promoted_to: []
+---
+
 # Merchants Page — Config Columns & Export
 
 > Charter: Explore Merchants page (`/merchant`) with Playwright MCP to discover Config Columns structure, export flow, and Active filter behavior

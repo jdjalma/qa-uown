@@ -1,3 +1,15 @@
+---
+title: "Apendice E: Referencia de Campanhas de Underwriting"
+domain: business-rules
+status: stable
+volatility: stable
+last_verified: 2026-06-18
+sources:
+  - code: src/api/bodies/program-info.body.ts#peakCampaignId
+  - env: qa2
+covers: [campanhas, underwriting, client-type, peak, off-peak, campaign-id]
+---
+
 # Apendice E: Referencia de Campanhas de Underwriting
 ## UOwn Leasing - SVC Platform
 

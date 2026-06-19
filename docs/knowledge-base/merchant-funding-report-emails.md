@@ -1,3 +1,17 @@
+---
+title: Merchant Edit — Funding Report Emails
+domain: knowledge-base
+status: stable
+volatility: stable
+last_verified: 2026-06-15
+sources:
+  - env: qa2
+  - gitlab: task-1301
+  - db: uown_merchant
+covers: [merchants, funding-report, email-validation]
+promoted_to: []
+---
+
 # Merchant Edit — Send Automated Funding Report / Funding Report Emails
 
 > Charter: Explore the "Funding Report Emails" field in Merchant Edit via Playwright MCP to discover toggle behavior, field type, validation rules, and multi-email support.

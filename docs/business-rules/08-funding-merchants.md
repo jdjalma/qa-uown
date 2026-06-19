@@ -1,3 +1,18 @@
+---
+title: Funding e Gestão de Merchants
+domain: business-rules
+status: stable
+volatility: volatile
+last_verified: 2026-06-18
+sources:
+  - code: src/data/merchant-config-contract.ts
+  - code: src/config/constants.ts#generateTestSSN
+  - db: uown_scheduled_task
+  - env: qa2
+covers: [funding, merchants, webhooks, ssn, los-svc-import, integration-api]
+derived_from: [underwriting-and-funding-test-data-paths]
+---
+
 # Funding e Gestao de Merchants
 ## UOwn Leasing - SVC Platform
 
@@ -1029,13 +1044,16 @@ Os IPs de saida (egress) do sistema do merchant devem ser registrados e liberado
 
 ---
 
-### Regras do Sandbox para Testes
+### Regras do Sandbox e QA1 para Testes
 
-| Regra | Descricao |
-|-------|-----------|
-| **SSN terminando em 9** | Aplicacao sera **negada** (simula falha) |
-| **SSN terminando em 0-8** | Aplicacao sera **aprovada** (simula sucesso) |
-| **Valor minimo do lease** | **$250** - aplicacoes abaixo deste valor nao serao aprovadas |
+> **Importante:** As regras de SSN abaixo se aplicam apenas a **sandbox e qa1**, onde a engine de underwriting e mockada. Em **qa2**, a engine BlackBox/ABB e real e ignora o sufixo do SSN — o resultado depende da avaliacao live do lead.
+
+| Regra | Ambientes | Descricao |
+|-------|-----------|-----------|
+| **SSN terminando em 9** | sandbox, qa1 | Aplicacao sera **negada** (simula falha via mock UW) |
+| **SSN terminando em 0-8** | sandbox, qa1 | Aplicacao sera **aprovada** (simula sucesso via mock UW) |
+| **SSN qualquer sufixo** | qa2 | Resultado determinado pela engine real (nao ha trigger confiavel para negacao sem autorizacao de DevOps/PO) |
+| **Valor minimo do lease** | todos os envs | **$250** - aplicacoes abaixo deste valor nao serao aprovadas |
 
 ### Resumo de Endpoints
 
