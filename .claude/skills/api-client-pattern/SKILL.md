@@ -112,6 +112,20 @@ Canonical example: `src/api/clients/los-partner-application.client.ts` (WI-525).
 4. **Missing builder** — every non-trivial body must have a `build*Body(overrides)` function
 5. **Capital letter drift** — some Java DTOs use `PK` (capital): `phonePK`, `customerPK`, `emailPK`. Check the backend DTO before typing.
 
+## Clients ainda não detalhados aqui (existem — NÃO recriar)
+
+Listados para fechar o gap da Regra #2 (auditoria 2026-06-18). Leia `src/api/clients/<arquivo>.client.ts` antes de usar:
+
+| Client | Propósito |
+|--------|-----------|
+| `credit-card.client.ts` | Transações de cartão de crédito (SVC) |
+| `invoice.client.ts` | Invoices (sendInvoice / modificação) |
+| `los-partner-auth.client.ts` | Auth de partner LOS (`postWithOverride` vive aqui) |
+| `payment-arrangement.client.ts` | Arranjos de pagamento (Task #446) |
+| `scheduled-task.client.ts` | `triggerScheduledTask`/resume — sweeps admin |
+| `seon.client.ts` | Fraud vendor SEON |
+| `sticky-recover.client.ts` | Sticky recovery (webhooks/retry) |
+
 ## Cross-links
 
 - [[application-lifecycle]] — pitfall #31 (LosExternalMerchantController auth model)

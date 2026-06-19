@@ -133,6 +133,22 @@ const ppCart    = randomPayPairCart({ category: 'Tires', total: 800 });
 **When NOT to use:** a test that must pin a deterministic SSN/address for a routing
 assertion (use a literal `SsnStrategy` / static `STATE_ADDRESSES`).
 
+## Helpers ainda não detalhados aqui (existem — NÃO recriar)
+
+Listados para fechar o gap da Regra #2 (auditoria 2026-06-18). Leia o `src/helpers/<arquivo>` para a assinatura antes de usar:
+
+| Helper | Propósito |
+|--------|-----------|
+| `contract-pdf.helper.ts` | Extração/validação de conteúdo do PDF de contrato |
+| `esign-db.helpers.ts` | Queries de `uown_esign_document` (status, client GOWSIGN/SIGNWELL) — 22 imports |
+| `gowsign-signing.helper.ts` | `signGowSignInFrame` — assinatura no iframe GowSign — 19 imports |
+| `merchant-config.helper.ts` | Leitura/preflight de config de merchant |
+| `merchant-location-report.helper.ts` | `MerchantLocationReportControls` — filtro Merchant/Location + paginação + leitura de coluna compartilhados (#1319, composição) |
+| `merchant-program-toggle.helpers.ts` | Toggle de programas 13m/16m do merchant |
+| `svc-payoff.helpers.ts` | Cálculo/parse de EPO/payoff (`parseEpoBreakdown`) |
+| `svc-servicing-info.helpers.ts` | Leitura de info da conta no Servicing |
+| `sweep-fixture.helpers.ts` | Finders de registros idle + restores + `sweepLogBaseline`/`triggerAndWaitSweepLog` |
+
 ## When to Create a New Helper
 
 1. Check this catalog — does an equivalent already exist?
