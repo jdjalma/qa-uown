@@ -23,10 +23,12 @@ Ao criar ou modificar API clients em `src/api/clients/`. NAO aplicar para page o
 ## BaseClient pattern
 
 Every client extends `BaseClient` which provides:
-- `get<T>(path)`, `post<T>(path, body)`, `put<T>(path, body)`, `patch<T>(path, body)`, `delete<T>(path)`
-- Host resolution (`los`, `svc`, `tms`) via constructor
-- Auth headers (API key / bearer token) injected automatically
-- `postWithOverride<T>(path, body, extraHeaders)` for header-versioned endpoints
+- `get<T>(path)`, `post<T>(path, body)`, `put<T>(path, body)`, `patch<T>(path, body)`, `delete<T>(path)` (+ `*Raw` variants que retornam `APIResponse` para inspeção de não-2xx)
+- Host resolution (`svc`, `origination`) via `resolveUrl(url, host)`
+- Auth headers (API key / bearer token) injected automatically pelo construtor
+- **TMS (FIVE9 key):** `tmsHeaders(extra)`, `postTms<T>(path, body, extra)`, `postRawTms(...)` — para endpoints `/uown/tms/*` que autenticam com `env.tmsApiKey`. Clients TMS estendem com `{ injectAuth: false, injectApiKey: false }`. (Consolidado em BaseClient 2026-06-18 — antes replicado em account/customers/tms-payment/tms-audit.)
+
+> `postWithOverride<T>` NÃO é da BaseClient — é um helper local de `los-partner-application.client.ts`. Para override de header pontual use `withHeader(name, value)` (BaseClient) ou os helpers TMS acima.
 
 ## Typed bodies + responses convention
 

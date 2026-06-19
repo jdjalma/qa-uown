@@ -17,7 +17,7 @@ Investigates a feature or business rule by **navigating the product UI with Play
 Iterative loop — repeat until the key questions are answered or explicitly turned into gaps:
 
 1. **Define the charter.** Record the focus in the format `Explore <target> with Playwright MCP to discover <information>` (e.g.: *"Explore coupon registration via Playwright MCP to discover uniqueness and validity rules"*). Tie it to the origin (the demand or question that motivated the discovery).
-2. **Review what is already known.** Read `docs/business-rules/` first (general product base — consolidated project knowledge) and then `docs/knowledge-base/` (specific investigations from previous discovery runs), both via Glob/Grep. Do not re-discover what is already documented — start from what is missing.
+2. **Review what is already known.** Follow the shared load protocol in [`docs/_docs-conventions.md`](../../../docs/_docs-conventions.md) §5: read the folder `_index.md` first (generated manifest — locate the canonical file per topic + see `last_verified`/`volatility` without reading everything), then `docs/business-rules/` (consolidated base), then `docs/knowledge-base/` (prior discovery runs). Do not re-discover what is already documented — start from what is missing. The file you produce in step 8 MUST carry the frontmatter defined in the conventions (§2).
 3. **Observe.** Navigate the flow with Playwright MCP. The default observation is the **text snapshot** (`browser_snapshot`); screenshots are only supplementary visual evidence — mechanics in [references/playwright-mcp.md](references/playwright-mcp.md). Record **what was observed**, without interpreting yet.
 4. **Form hypotheses.** From the [questioning guide](#questioning-guide), formulate assumptions. If stuck, use the **tours** from [references/taticas-exploracao.md](references/taticas-exploracao.md).
 5. **Test in the UI.** Each question from the guide is an experiment: trigger invalid operations to reveal validations, limits, and permissions. Use the **field-type provocation catalog** in [references/taticas-exploracao.md](references/taticas-exploracao.md) and the reliable action mechanics in [references/playwright-mcp.md](references/playwright-mcp.md).
@@ -66,9 +66,23 @@ Run this checklist before saving the `.md`:
 
 Save (or update) **one file per feature/entity** in `docs/knowledge-base/<topic>.md` (kebab-case). Check with Glob if a file for the topic already exists and **update it** instead of duplicating. Report the path at the end.
 
-File structure:
+File structure (frontmatter per [`docs/_docs-conventions.md`](../../../docs/_docs-conventions.md) §2 is **mandatory** — `domain: knowledge-base`, `status` from your confidence, `sources` from the leads/code/DB you touched, `last_verified` = today):
 
 ````markdown
+---
+title: <Feature / Entity>
+domain: knowledge-base
+status: snapshot            # snapshot | hypothesis | stable
+volatility: stable          # stable | volatile
+last_verified: <YYYY-MM-DD>
+sources:
+  - env: <qa2 | qa1 | sandbox>
+  - lead: <leadPk driven this run>
+  - code: <path#token if a claim mirrors code>
+covers: [<topic-slugs>]
+promoted_to: []             # filled by qa-doc-keeper when graduated to business-rules
+---
+
 # <Feature / Entity>
 
 > Charter: Explore <target> with Playwright MCP to discover <information>

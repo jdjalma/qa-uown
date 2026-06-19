@@ -91,6 +91,7 @@ if (!agent) {
 // ---- 2. Collect SKILL.md Reads + final assistant text ----
 const readSkills = new Set();
 let lastText = "";
+let consultedCanonical = false; // leu business-rules OU rodou `resolve` OU leu _index
 for (const entry of scope) {
   const msg = entry.message;
   if (!msg) continue;
@@ -100,6 +101,11 @@ for (const entry of scope) {
       const fp = String(block.input?.file_path ?? "");
       const m = fp.match(/\.claude\/skills\/([a-z0-9-]+)\/SKILL\.md$/);
       if (m) readSkills.add(m[1]);
+      if (/docs\/business-rules\/|docs\/.*_index\./.test(fp)) consultedCanonical = true;
+    }
+    if (block.type === "tool_use" && block.name === "Bash") {
+      const cmd = String(block.input?.command ?? "");
+      if (/docs-tooling\.mjs\s+resolve/.test(cmd)) consultedCanonical = true;
     }
     if (msg.role === "assistant" && block.type === "text" && block.text?.trim()) {
       lastText = block.text;
@@ -108,6 +114,16 @@ for (const entry of scope) {
 }
 
 const declared = /\*{0,2}skills loaded:?\*{0,2}/i.test(lastText);
+
+// ---- Advisory (NÃO bloqueia): claim [CONFIRMADO] sem consulta à fonte canônica ----
+// Sinaliza no log quando o agente afirma [CONFIRMADO]/[CONFIRMED] mas não leu
+// business-rules nem rodou `resolve`. Pura auditoria — control flow inalterado.
+if (/\[CONFIRMAD[OA]\]|\[CONFIRMED\]/i.test(lastText) && !consultedCanonical) {
+  log(
+    `ADVISORY — agent=${agent} fez claim [CONFIRMADO] sem consultar fonte canônica ` +
+    `(nenhum docs/business-rules lido, nenhum 'resolve' rodado). Regra #16: cross-check contra source primária.`
+  );
+}
 
 // ---- 3. Verdict ----
 if (readSkills.size > 0 && declared) {

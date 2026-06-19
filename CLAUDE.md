@@ -64,6 +64,22 @@ When you receive a task, classify the **signal** and dispatch to agents. No slas
 
 **Real parallelization**: when scope allows, invoke multiple `qa-implementer` instances in parallel for independent artifacts (page object + API client + test file). The orchestrator decides parallelization, not the agents.
 
+### Signal → docs canônicos (injetar no prompt da Task)
+
+Além das skills (`[[slug]]`), o orquestrador resolve os **docs canônicos** do sinal e injeta no prompt da Task — o agente começa na fonte certa em vez de redescobrir relevância. Use `node scripts/docs-tooling.mjs resolve <tópico>` para obter arquivo + seção + frescor (protocolo em [`docs/_docs-conventions.md`](docs/_docs-conventions.md) §5–§7).
+
+| Sinal da task | `resolve <tópico>` sugeridos |
+|---------------|------------------------------|
+| Signing / contrato / GowSign / SignWell | `gowsign-routing` · `esign` · `template-rendering` |
+| Funding / merchant / webhook | `funding-queue` · `merchant-config` · `webhooks` · `merchant-snapshot` |
+| Pagamento / CC / ACH / sweep | `cc-payments` · `ach-payments` · `nsf-fee` · `sweeps` |
+| Underwriting / fraude / SSN | `underwriting` · `fraud-vendors` · `ssn` |
+| EPO / payoff / cálculo | `epo` · `payoff` · `payment-calculator` |
+| Modificação de conta | `settlement` · `due-date-move` · `additional-lease` |
+| Rating / auto-pay / inadimplência | `rating-letters` · `auto-pay` · `delinquency` |
+
+Regra: pergunta de **comportamento** → `resolve` (business-rules canônico); "**como dirijo o teste**" → skill; "**gotcha recente**" → knowledge-base.
+
 ### Parallel execution limits
 
 - **Max 3 agents simultaneos.** Alem disso, context switching e conflito de arquivo superam o ganho.

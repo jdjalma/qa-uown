@@ -280,3 +280,36 @@ Formato de entrada:
 - Regra #16 (reports = history): memórias e reports são history — fonte primária é skill/código/DB
 - Skill [[test-report-standard]] seção 9: taxonomia de tags
 - Memória `feedback_consult_svc_when_unsure`: princípio geral aplicado aqui
+
+---
+
+<!-- BEGIN generated:volatile-docs -->
+
+## Docs marcados `volatility: volatile` (gerado)
+
+> Gerado por `scripts/docs-tooling.mjs index` a partir do frontmatter. Estes docs caem em categorias drift-prone — cross-check contra a `source` primária antes de afirmar.
+
+| Doc | Verificado | Fontes primárias |
+|-----|------------|------------------|
+| `docs/business-rules/01-fundamentos.md` | 2026-06-18 | code:src/data/merchant-config-contract.ts#REQUIRED_MERCHANT_CONFIG; code:src/data/merchants.ts#MERCHANTS; env:qa2 |
+| `docs/business-rules/02-originacao-pipeline.md` | 2026-06-18 | code:src/config/constants.ts#generateTestSSN; db:uown_los_lead; db:uown_los_uw_info; env:qa2 |
+| `docs/business-rules/03-contratos-esign.md` | 2026-06-18 | code:src/data/state-merchant-matrix.ts#STATE_MATRIX; code:src/data/state-merchant-matrix.ts#SigningProvider; code:src/helpers/esign-db.helpers.ts#EsignDocument; env:qa2 |
+| `docs/business-rules/05-pagamentos.md` | 2026-06-18 | code:src/api/clients/tms-payment.client.ts#TmsPaymentClient; code:src/data/test-cards.ts#TEST_CARDS; db:uown_sv_credit_card_transaction; db:uown_sv_achpayment; db:uown_sv_payment_arrangement; env:qa2 |
+| `docs/business-rules/06-conta-ciclo-vida.md` | 2026-06-18 | code:src/helpers/account-aging.helpers.ts#SEED_DELINQUENCY_DAYS; code:src/helpers/settled-in-full.helpers.ts#getSweepWindowDate; db:uown_sv_account; env:qa2 |
+| `docs/business-rules/07-modificacoes-conta.md` | 2026-06-18 | code:src/helpers/settlement.helpers.ts#calculateSettlement; db:uown_frequency_mods; db:uown_lead_modifications; svc-source: ChangeLeadStatusService.java; svc-source: ThreadAttributes.java; env:qa2 |
+| `docs/business-rules/08-funding-merchants.md` | 2026-06-18 | code:src/data/merchant-config-contract.ts; code:src/config/constants.ts#generateTestSSN; db:uown_scheduled_task; env:qa2 |
+| `docs/business-rules/09-integracoes-externas.md` | 2026-06-18 | code:src/data/merchant-config-contract.ts#offerInsurance; db:uown_sv_protection_plan; env:qa2 |
+| `docs/business-rules/11-administracao.md` | 2026-06-18 | code:src/api/clients/scheduled-task.client.ts#triggerScheduledTask; db:uown_scheduled_task; env:qa2 |
+| `docs/business-rules/appendix-b-endpoints.md` | 2026-06-18 | code:src/api/clients/scheduled-task.client.ts#triggerScheduledTask; env:qa2 |
+| `docs/business-rules/appendix-c-tabelas-banco.md` | 2026-06-18 | db:uown_los_lead; db:uown_sv_account; db:uown_scheduled_task; env:qa2 |
+| `docs/business-rules/appendix-d-constantes-enums.md` | 2026-06-18 | code:src/types/enums.ts#FundingQueueStatus; code:src/types/enums.ts#LeadStatus; env:qa2 |
+| `docs/business-rules/appendix-f-sql-reference.md` | 2026-06-18 | db:uown_los_lead; db:uown_sv_account; db:uown_scheduled_task; env:qa2 |
+| `docs/business-rules/appendix-g-cenarios-risco.md` | 2026-06-18 | code:src/data/state-merchant-matrix.ts; env:qa2 |
+| `docs/knowledge-base/16m-lease-and-gowsign-signwell-routing-qa2.md` | 2026-06-17 | env:qa2; code:src/data/state-merchant-matrix.ts#expectedProvider; db:uown_gow_sign_template; db:uown_esign_document |
+| `docs/knowledge-base/alabama-gowsign-template.md` | 2026-06-17 | env:qa2; lead:16649; code:src/data/state-merchant-matrix.ts#expectedProvider; db:uown_gow_sign_template; db:uown_esign_document |
+| `docs/knowledge-base/merchants-config-columns-export.md` | 2026-06-15 | env:qa1; gitlab:task-1309; db:uown_merchant |
+| `docs/knowledge-base/multi-select-filters-mmh-modreport-funding.md` | 2026-06-18 | env:qa2; gitlab:task-1319 |
+| `docs/knowledge-base/new-york-gowsign-template.md` | 2026-06-18 | env:qa2; lead:16651; code:src/data/state-merchant-matrix.ts#expectedProvider; db:uown_esign_document |
+| `docs/knowledge-base/underwriting-and-funding-test-data-paths.md` | 2026-06-16 | env:qa2; db:uown_los_lead_merchant_settings_snapshot; db:uown_sv_account_merchant_settings_snapshot |
+
+<!-- END generated:volatile-docs -->

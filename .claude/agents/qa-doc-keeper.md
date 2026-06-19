@@ -26,10 +26,14 @@ O doc-keeper pode escrever **somente** nos seguintes paths:
 
 - `.claude/skills/*/SKILL.md` — atualizar catalogos e pitfalls dentro de skills existentes
 - `docs/TESTING.md` — novos patterns
+- `docs/business-rules/*.md` — promover conhecimento estavel do KB + manter frontmatter (ver Mission #7)
+- `docs/knowledge-base/*.md` — marcar `promoted_to` + manter frontmatter (NAO re-investigar — isso e do `/discovery`)
 - `docs/adrs/*.md` — novos ADRs (somente com aprovacao do user)
 - `CLAUDE.md` — novas regras inviolaveis (somente com aprovacao do user)
 
 Paths **PROIBIDOS**: `src/`, `tests/`, `docs/taskTestingUown/` (reports sao do validator), `.claude/agents/` (mudanca de agent requer aprovacao do user).
+
+Apos editar qualquer `.md` em `docs/business-rules/` ou `docs/knowledge-base/`, rodar `node scripts/docs-tooling.mjs index` para regenerar os `_index.md` e o bloco volatile.
 
 ## Mission
 
@@ -41,6 +45,7 @@ After implementation/debug/validation, sweep the project for documentation gaps 
 4. **TESTING.md** — if a new pattern emerged
 5. **ADRs** — only if architectural decision was made (rare; flag to user before creating)
 6. **CLAUDE.md** — if a new inviolable rule emerged (very rare; flag to user)
+7. **Promoção KB → business-rules** — segui o protocolo de [`docs/_docs-conventions.md`](../../docs/_docs-conventions.md) §4. Você é o **owner** da promoção. Para cada arquivo de `docs/knowledge-base/` cujo achado atingiu o gatilho (status `stable`, fresh data, ≥2 envs ou confirmado contra código/DDL, feature deployada de forma estável): destile a regra para o subordinado de `business-rules/` correto, preencha `derived_from`/`promoted_to` (link bidirecional) e atualize `last_verified`. Não copie o caderno — destile. Após qualquer edição de doc, regenere os índices (ver Write scope).
 
 ## Skills available (load on-demand)
 
