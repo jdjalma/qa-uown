@@ -49,35 +49,8 @@ export class TmsPaymentClient extends BaseClient {
     super(request, env, { injectAuth: false, injectApiKey: false });
   }
 
-  /** Resolve TMS headers (Bearer key + Accept), merging optional caller overrides. */
-  private tmsHeaders(extra: Record<string, string> = {}): Record<string, string> {
-    return {
-      ...this.headers,
-      Accept: 'application/json',
-      Authorization: this.env.tmsApiKey,
-      'Content-Type': 'application/json',
-      ...extra,
-    };
-  }
-
-  /**
-   * Raw POST helper — any JSON-serializable body (including intentionally
-   * malformed / legacy shapes for CT-7..CT-10). Returns the underlying
-   * `APIResponse` so callers can inspect both 2xx and non-2xx without
-   * triggering JSON parsing for plain-text error bodies.
-   */
-  private async postRawTms(
-    path: string,
-    body: unknown,
-    extraHeaders: Record<string, string> = {},
-  ): Promise<APIResponse> {
-    const url = this.resolveUrl(path);
-    return this.request.post(url, {
-      headers: this.tmsHeaders(extraHeaders),
-      data: body as Record<string, unknown>,
-      timeout: 120_000,
-    });
-  }
+  // tmsHeaders/postRawTms herdados de BaseClient (FIVE9 key) — CT-7..CT-10 usam
+  // postRawTms para inspecionar 2xx/não-2xx sem parsear bodies texto.
 
   // ── Credit-card payment ──────────────────────────────────────────
 

@@ -29,18 +29,5 @@ export class CustomersClient extends BaseClient {
     return this.postTms<FindCustomerResponse>('/uown/tms/v2/customers/search', body);
   }
 
-  /** Shared TMS POST helper — injects FIVE9 API key as Authorization override. */
-  private async postTms<T>(path: string, body: unknown): Promise<ApiResponse<T>> {
-    const url = this.resolveUrl(path);
-    const response = await this.request.post(url, {
-      headers: {
-        ...this.headers,
-        'Content-Type': 'application/json',
-        'Authorization': this.env.tmsApiKey,
-      },
-      data: body,
-      timeout: 120_000,
-    });
-    return parseResponse<T>(response);
-  }
+  // postTms herdado de BaseClient (FIVE9 key).
 }

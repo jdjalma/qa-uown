@@ -97,4 +97,69 @@ export class BaseClient {
     });
     return parseResponse<T>(response);
   }
+
+  // ── PATCH / DELETE ──────────────────────────────────────────────
+
+  protected async patchRaw(url: string, body?: object | string, host?: ApiHost): Promise<APIResponse> {
+    const resolvedUrl = this.resolveUrl(url, host);
+    const data = typeof body === 'string' ? JSON.parse(body) : body;
+    return this.request.patch(resolvedUrl, {
+      headers: { ...this.headers, 'Content-Type': 'application/json' },
+      data,
+      timeout: 120_000,
+    });
+  }
+
+  protected async patch<T>(url: string, body?: object | string, host?: ApiHost): Promise<ApiResponse<T>> {
+    return parseResponse<T>(await this.patchRaw(url, body, host));
+  }
+
+  protected async deleteRaw(url: string, host?: ApiHost): Promise<APIResponse> {
+    const resolvedUrl = this.resolveUrl(url, host);
+    return this.request.delete(resolvedUrl, { headers: this.headers, timeout: 120_000 });
+  }
+
+  protected async delete<T>(url: string, host?: ApiHost): Promise<ApiResponse<T>> {
+    return parseResponse<T>(await this.deleteRaw(url, host));
+  }
+
+  // ── TMS (FIVE9 key) ─────────────────────────────────────────────
+  // TMS endpoints autenticam com uma chave FIVE9 separada (env.tmsApiKey) como
+  // Authorization, não com o api auth padrão. Clients TMS estendem BaseClient com
+  // { injectAuth: false, injectApiKey: false } e usam estes helpers.
+
+  /** Resolve headers TMS (Bearer key FIVE9 + Accept), mesclando overrides do caller. */
+  protected tmsHeaders(extra: Record<string, string> = {}): Record<string, string> {
+    return {
+      ...this.headers,
+      Accept: 'application/json',
+      Authorization: this.env.tmsApiKey,
+      ...extra,
+    };
+  }
+
+  /** POST TMS cru — retorna o APIResponse para inspeção de 2xx e não-2xx (bodies texto). */
+  protected async postRawTms(
+    path: string,
+    body: unknown,
+    extra: Record<string, string> = {},
+    host?: ApiHost,
+  ): Promise<APIResponse> {
+    const url = this.resolveUrl(path, host);
+    return this.request.post(url, {
+      headers: this.tmsHeaders({ 'Content-Type': 'application/json', ...extra }),
+      data: body as Record<string, unknown>,
+      timeout: 120_000,
+    });
+  }
+
+  /** POST TMS tipado (parseia o envelope). */
+  protected async postTms<T>(
+    path: string,
+    body: unknown,
+    extra: Record<string, string> = {},
+    host?: ApiHost,
+  ): Promise<ApiResponse<T>> {
+    return parseResponse<T>(await this.postRawTms(path, body, extra, host));
+  }
 }

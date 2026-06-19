@@ -36,17 +36,7 @@ export class TmsAuditClient extends BaseClient {
     super(request, env, { injectAuth: false, injectApiKey: false });
   }
 
-  // ── Header helpers ───────────────────────────────────────────────
-
-  /** Resolve TMS headers, merging optional caller overrides (e.g. `X-Run-Id`). */
-  private tmsHeaders(extra: Record<string, string> = {}): Record<string, string> {
-    return {
-      ...this.headers,
-      Accept: 'application/json',
-      Authorization: this.env.tmsApiKey,
-      ...extra,
-    };
-  }
+  // tmsHeaders herdado de BaseClient (FIVE9 key + Accept) — usado nos GETs abaixo.
 
   // ── S2: TmsAccountController ────────────────────────────────────
 

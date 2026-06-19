@@ -69,18 +69,11 @@ export class AccountClient extends BaseClient {
     accountPk: string | number,
     body: NextDueDateAdjustmentBody,
   ): Promise<ApiResponse<DueDateAdjustmentResponse>> {
-    // TMS endpoints require a separate API key (FIVE9_TMS_API_KEY)
-    const url = this.resolveUrl(`/uown/tms/v1/accounts/${accountPk}/next-due-date/adjustments`);
-    const response = await this.request.post(url, {
-      headers: {
-        ...this.headers,
-        'Content-Type': 'application/json',
-        'Authorization': this.env.tmsApiKey,
-      },
-      data: body,
-      timeout: 120_000,
-    });
-    return parseResponse<DueDateAdjustmentResponse>(response);
+    // TMS endpoints require a separate API key (FIVE9_TMS_API_KEY) — postTms injeta.
+    return this.postTms<DueDateAdjustmentResponse>(
+      `/uown/tms/v1/accounts/${accountPk}/next-due-date/adjustments`,
+      body,
+    );
   }
 
   /** Sends a Podium review invite to the primary customer of the account (Task #442). */

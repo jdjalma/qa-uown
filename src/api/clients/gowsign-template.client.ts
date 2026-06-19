@@ -50,22 +50,14 @@ export class GowSignTemplateClient extends BaseClient {
     templateId: string,
     body: GowSignTemplatePatchBody,
   ): Promise<ApiResponse<GowSignTemplate>> {
-    const url = this.resolveUrl(`/uown/svc/gowsign-templates/${encodeURIComponent(templateId)}`);
-    const response = await this.request.patch(url, {
-      headers: { ...this.headers, 'Content-Type': 'application/json' },
-      data: body,
-      timeout: 120_000,
-    });
-    return parseResponse<GowSignTemplate>(response);
+    return this.patch<GowSignTemplate>(
+      `/uown/svc/gowsign-templates/${encodeURIComponent(templateId)}`,
+      body,
+    );
   }
 
   /** DELETE /uown/svc/gowsign-templates/{templateId} — used in CT-08 afterAll cleanup. */
   async deleteTemplate(templateId: string): Promise<ApiResponse<void>> {
-    const url = this.resolveUrl(`/uown/svc/gowsign-templates/${encodeURIComponent(templateId)}`);
-    const response = await this.request.delete(url, {
-      headers: this.headers,
-      timeout: 120_000,
-    });
-    return parseResponse<void>(response);
+    return this.delete<void>(`/uown/svc/gowsign-templates/${encodeURIComponent(templateId)}`);
   }
 }
