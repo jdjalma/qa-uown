@@ -52,11 +52,17 @@ export class FilteredCsvDownloadControls {
   }
 
   /** True when the Email CSV button is enabled (it is disabled only when the
-   *  table is empty — NOT gated by download permission or the size limit). */
+   *  table is empty — NOT gated by download permission or the size limit).
+   *
+   *  The app disables via CSS class `disabledButton` + `pointer-events: none`,
+   *  NOT via the HTML `disabled` attribute. `isEnabled()` always returns true;
+   *  we check for the CSS class instead (SELECTORS.csvEmailButtonDisabled). */
   async isEmailCsvEnabled(): Promise<boolean> {
     const btn = this.page.locator(SELECTORS.csvEmailButton).first();
     if (!(await btn.isVisible({ timeout: 5_000 }).catch(() => false))) return false;
-    return btn.isEnabled({ timeout: 1_000 }).catch(() => false);
+    const cssDisabled = await this.page.locator(SELECTORS.csvEmailButtonDisabled).first()
+      .isVisible({ timeout: 1_000 }).catch(() => false);
+    return !cssDisabled;
   }
 
   // ── Directing tooltip (size-limit case only) ──────────────────────────
@@ -130,6 +136,15 @@ export class FilteredCsvDownloadControls {
     await this.page.locator(SELECTORS.csvEmailModalCancelButton).first().click({ timeout: 5_000 });
     await this.page.locator(SELECTORS.csvEmailModal).first()
       .waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
+  }
+
+  /** Clicks the Send button inside the Email CSV modal.
+   *  Waits for the modal to close (success clears the dialog).
+   *  Call after `fillEmailCsvAddress` and checking `isEmailCsvSendEnabled`. */
+  async sendEmailCsv(): Promise<void> {
+    await this.page.locator(SELECTORS.csvEmailModalSendButton).first().click({ timeout: 5_000 });
+    await this.page.locator(SELECTORS.csvEmailModal).first()
+      .waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {});
   }
 
   // ── Row-count reconciliation ──────────────────────────────────────────

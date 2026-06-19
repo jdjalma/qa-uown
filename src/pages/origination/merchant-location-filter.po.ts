@@ -190,10 +190,19 @@ export class MerchantLocationFilterPO extends OriginationBasePage {
     // rendered as `<label>Location*</label>` (required-field marker), while
     // every other page uses plain `<label>Location</label>`. Match on
     // `starts-with(...,$label)` so the same call works on both variants.
+    //
+    // MMH pitfall (qa2 2026-06-19): MMH has a "Merchant Ref Code" text-input
+    // label BEFORE "Merchant" in document order. The old ancestor walk
+    // (`ancestor-or-self::*[.//*[contains(@class,'filter__control')]][1]`)
+    // evaluated the "Merchant Ref Code" label path first — its first ancestor
+    // with a filter__control was the whole filter row wrapper, returning Log
+    // Type as the first result. Fixed by using `..` (parent of the matching
+    // label) instead of the ancestor walk: each filter label's direct parent
+    // wraps exactly that filter's control, so the parent scope is unambiguous
+    // even when multiple labels share the same `starts-with` prefix.
     return this.container().locator(
       `xpath=.//label[starts-with(normalize-space(.),'${label}')]` +
-      `/ancestor-or-self::*[.//*[contains(@class,'filter__control')]][1]` +
-      `//*[contains(@class,'filter__control')]`,
+      `/..//*[contains(@class,'filter__control')]`,
     ).first();
   }
 
@@ -227,10 +236,15 @@ export class MerchantLocationFilterPO extends OriginationBasePage {
 
   /** Closes any open dropdown via Escape. */
   async closeDropdown(): Promise<void> {
+    const portal = this.page.locator(SELECTORS.filterMenuPortal);
+    if (!(await portal.isVisible({ timeout: 200 }).catch(() => false))) return;
+    // After clicking a checkbox option, keyboard focus moves to the option element
+    // in the portal — Escape from there does not reach react-select's close handler.
+    // Focus the expanded combobox input (scoped to container() to avoid matching
+    // unrelated expanded elements elsewhere on the page) so Escape closes correctly.
+    await this.container().locator('[aria-expanded="true"]').first().focus().catch(() => {});
     await this.page.keyboard.press('Escape').catch(() => {});
-    await this.page.locator(SELECTORS.filterMenuPortal)
-      .waitFor({ state: 'hidden', timeout: 3_000 })
-      .catch(() => {});
+    await portal.waitFor({ state: 'hidden', timeout: 2_000 }).catch(() => {});
   }
 
   // ── Selecting options ────────────────────────────────────────────────
@@ -260,10 +274,11 @@ export class MerchantLocationFilterPO extends OriginationBasePage {
     await optionLocator.waitFor({ state: 'visible', timeout: 5_000 });
     await optionLocator.click({ force: true });
 
-    // Dropdown closes on pick — wait for the close to settle.
+    // Dropdown may close automatically on pick. Wait up to 3s, then force-close via Escape
+    // (some react-select configs keep the menu open on checkbox pick).
     await this.page.locator(SELECTORS.filterMenuPortal)
       .waitFor({ state: 'hidden', timeout: 3_000 })
-      .catch(() => {});
+      .catch(() => this.closeDropdown());
 
     // Wait for the selected-count text to reflect the new pick. Some pages
     // (notably Overview-bottom) re-render the value container slightly after
@@ -430,6 +445,9 @@ export class MerchantLocationFilterPO extends OriginationBasePage {
    * Use to pick options that actually exist in the current page's roster.
    */
   async listAvailableOptions(label: string): Promise<string[]> {
+    // Ensure the filter panel is expanded before opening the dropdown — the panel
+    // starts collapsed after page navigation on some pages (e.g. ModReport).
+    await this.openFilterPanel();
     await this.openDropdown(label);
     const rows = this.page.locator(
       `${SELECTORS.filterMenuPortal} ${SELECTORS.filterOption}`,

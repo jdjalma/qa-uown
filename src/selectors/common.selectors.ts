@@ -683,6 +683,7 @@ export const SELECTORS: AppSelectors = {
   csvDownloadButtonEnabled: "button[class*='filtered-csv-download_csvButton'][class*='enabledButton']",
   csvDownloadButtonDisabled: "button[class*='filtered-csv-download_csvButton'][class*='disabledButton']",
   csvEmailButton: "button:has-text('Email CSV')",
+  csvEmailButtonDisabled: "button[class*='disabledButton']:has-text('Email CSV')",
   // The Download CSV button is wrapped in <span id="{tooltipIdPrefix}-{random}">.
   // On hover, React-Bootstrap renders the directing message as a portal:
   // <div role="tooltip" class="tooltip show bs-tooltip-auto"> outside the span.

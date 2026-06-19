@@ -14,9 +14,9 @@
  - `getDashboardMetric(metricName)` - returns text of a named metric card
  - `verifyDashboardLoaded` - waits for spinner, then races between filters button and table
  - `getRowDataByReferenceId(leadPk)` - paginates the leads table, returns row matching `Reference #`
- - `searchTable(value)` (added 2026-06-18, #1321) - types into the **table-panel** "Search table" free-text box (`SELECTORS.overviewTableSearch`). Use a non-matching value to drive the table to an **empty set** — this is the reliable empty-set lever (the table-panel `#fromDate` resets to today on render, so a future-only date window does NOT reliably empty the table — pitfall #115)
- - `expandTableFilters` (added 2026-06-18, #1321) - expands the **table-panel** filter form via `multiSelectFilterButton` with a **retry loop**. NOT a single click: `verifyDashboardLoaded` returns when the Filters button appears (Promise.race) BEFORE the table finishes loading on QA2, so a re-render can re-collapse the width-collapse-animated panel right after a toggle click (pitfall #116)
- - `csv: FilteredCsvDownloadControls` field (added 2026-06-18, #1321) - composed CSV controls (see component below), constructed with `tooltipIdPrefix='overview-csv-download'`
+ - `searchTable(value)` (2026-06-18) - types into the **table-panel** "Search table" free-text box (`SELECTORS.overviewTableSearch`). Use a non-matching value to drive the table to an **empty set** — this is the reliable empty-set lever (the table-panel `#fromDate` resets to today on render, so a future-only date window does NOT reliably empty the table — pitfall #115)
+ - `expandTableFilters` (2026-06-18) - expands the **table-panel** filter form via `multiSelectFilterButton` with a **retry loop**. NOT a single click: `verifyDashboardLoaded` returns when the Filters button appears (Promise.race) BEFORE the table finishes loading on QA2, so a re-render can re-collapse the width-collapse-animated panel right after a toggle click (pitfall #116)
+ - `csv: FilteredCsvDownloadControls` field (2026-06-18) - composed CSV controls (see component below), constructed with `tooltipIdPrefix='overview-csv-download'`
 
 - **Selector:** `SELECTORS.dashboardCard = "[class*='summaryBox__']"` (added in). CSS module prefix anchor — hash suffix changes per webpack build. Do NOT hardcode the full hash class.
 
@@ -31,14 +31,15 @@
 
 ---
 
-## FilteredCsvDownloadControls - shared CSV export component (added 2026-06-18, #1321)
+## FilteredCsvDownloadControls - shared CSV export component (2026-06-18)
 
 - **Location:** `src/pages/origination/filtered-csv-download.controls.ts`
 - **Extends:** none — plain composed controls class (`constructor(page, tooltipIdPrefix)`), NOT a page object. Composed into `OverviewPage` and `LeadsPage` via a `csv` field; mirrors the app's single reusable `FilteredCsvDownload` component (MR !1481) so the tooltip/modal/state logic is not duplicated across the two screens (rule #2).
 - **`tooltipIdPrefix`:** `overview-csv-download` (Overview) | `leads-csv-download` (Leads) — the ONLY per-screen difference besides the download filename (`all-filtered-leads.csv` vs `leads-results.csv`).
 - **Methods (all return data/Locators — no `expect` inside, assertions live in tests):**
  - `isDownloadCsvVisible` / `isDownloadCsvEnabled` - Download CSV gated by `hasDownloadPermission && headers.length>0`; enabled = `enabledButton` class present AND `disabledButton` absent
- - `isEmailCsvVisible` / `isEmailCsvEnabled` - Email CSV always rendered; disabled ONLY on empty table (NOT gated by download permission or size limit)
+ - `isEmailCsvVisible` / `isEmailCsvEnabled` - Email CSV always rendered; disabled ONLY on empty table (NOT gated by download permission or size limit). **`isEmailCsvEnabled` checks the CSS `disabledButton` class (`SELECTORS.csvEmailButtonDisabled`), NOT Playwright `isEnabled()`** — the button is disabled via CSS (`pointer-events:none` + class) with NO HTML `disabled` attr, so `isEnabled()` always returns `true` and a click gets intercepted by the parent div → timeout (see [[selector-hardening]] CSS-disabled rule)
+ - `fillEmailCsvAddress(address)` / `isEmailCsvSendEnabled` / `sendEmailCsv` - Email CSV modal send leg. `sendEmailCsv` clicks the modal Send button (`SELECTORS.csvEmailModalSendButton`) and waits for the modal to close (`state:'hidden'`, 10s). Call AFTER `fillEmailCsvAddress` + asserting `isEmailCsvSendEnabled` (Send stays disabled until an address is typed)
  - `hoverDownloadCsv` / `getDownloadDisabledTooltip` - hover surfaces the **directing** tooltip ("This export is too large to download directly. Please use Email CSV instead. …") rendered ONLY in the size-exceeded case. `getDownloadDisabledTooltip` matches the directing PHRASE scoped to the wrapper span, NOT the wrapper's raw text (the `<span>` wrapper's `textContent` is just the button label "Download CSV" — treating it as a tooltip is a false positive; the enabled case correctly returns null)
  - `downloadCsv` - clicks Download CSV, returns captured `Download` (happy path), via `waitForDownload`
  - `openEmailCsvModal` / `emailCsvModalTitle` / `isEmailCsvSendEnabled` / `fillEmailCsvAddress` / `cancelEmailCsvModal` - Email CSV modal flow ("Which email should we send this CSV file to?"; Send disabled until address typed; CANCEL closes without sending)
@@ -50,11 +51,11 @@
 
 ---
 
-## LeadsPage - Origination leads list (CSV additions 2026-06-18, #1321)
+## LeadsPage - Origination leads list
 
 - **Location:** `src/pages/origination/leads.page.ts`
 - **Extends:** `OriginationBasePage`
-- **CSV methods (added #1321):** delegate to a composed `csv: FilteredCsvDownloadControls` field constructed with `tooltipIdPrefix='leads-csv-download'` — same public surface as Overview's `csv`. Leads CSV exports 17 columns incl. SSN; downloaded artifacts must be deleted via `deleteDownloadedFile` (PII hygiene).
+- **CSV methods:** delegate to a composed `csv: FilteredCsvDownloadControls` field constructed with `tooltipIdPrefix='leads-csv-download'` — same public surface as Overview's `csv`. Leads CSV exports 17 columns incl. SSN; downloaded artifacts must be deleted via `deleteDownloadedFile` (PII hygiene).
 
 ---
 
@@ -522,16 +523,16 @@ SIM: resolucao dinamica de columnIndex via header role=columnheader
  - `#isActive` react-select has only `Active`/`Inactive` (no "All" option — clear the selection to show all). Default page state is `Active`. NOT applied on change — requires the Search button click (BR-06).
 - **Knowledge-base source:** `docs/knowledge-base/merchants-config-columns-export.md`.
 
-## Multi-Select Merchant/Location filter pages — MMH / ModReport / Funding (added 2026-06-18, #1319)
+## Multi-Select Merchant/Location filter pages — MMH / ModReport / Funding
 
-> Task #1319 extends the shared multi-select Merchant/Location filter component (originally shipped to 7 pages in #1292) to three remaining Origination pages. The component DOM is identical across pages (`filter__value-container--is-multi`, `index-module_customOptionStyles__CSG9m` checkbox options) but the inter-page BEHAVIOR diverges — see the divergence table below and KB `docs/knowledge-base/multi-select-filters-mmh-modreport-funding.md`. Legacy single-select `filterByMerchant`/`filterByLocation` methods are kept (deprecated, backward compat) — prefer the array `filterByMerchants`/`filterByLocations`.
+> The shared multi-select Merchant/Location filter component (originally shipped to 7 pages in #1292) was extended to MMH, ModReport, and Funding Queue. The component DOM is identical across pages (`filter__value-container--is-multi`, `index-module_customOptionStyles__CSG9m` checkbox options) but the inter-page BEHAVIOR diverges — see the divergence table below and KB `docs/knowledge-base/multi-select-filters-mmh-modreport-funding.md`. Legacy single-select `filterByMerchant`/`filterByLocation` methods are kept (deprecated, backward compat) — prefer the array `filterByMerchants`/`filterByLocations`.
 
-### `MerchantLocationFilterPO` — shared multi-select filter PO (extended #1319)
+### `MerchantLocationFilterPO` — shared multi-select filter PO
 - **Location:** `src/pages/origination/merchant-location-filter.po.ts`. Extends `OriginationBasePage`.
-- **#1319 change:** `applySearch` regex extended with 3 new Search endpoints so it waits for the right network response per page: `getMerchantDataChangeResults` (MMH), `getModifiedLeads` (Modification Report), `getLeadsForFundingQueue` (Funding Queue, also matched via `funding` token).
+- **`applySearch` regex** covers 3 Search endpoints per page: `getMerchantDataChangeResults` (MMH), `getModifiedLeads` (Modification Report), `getLeadsForFundingQueue` (Funding Queue, also matched via `funding` token).
 - **[HIPÓTESE]** the `getLeadsForFundingQueue` endpoint name is NOT confirmed via MCP (inferred from older reports); confirm via `browser_network_requests` in qa2 before treating as `[CONFIRMADO]`.
 
-### `MerchantModHistoryPage` — MMH `/merchantModificationHistory` (#1319)
+### `MerchantModHistoryPage` — MMH `/merchantModificationHistory`
 - **Location:** `src/pages/origination/merchant-mod-history.page.ts`. Extends `OriginationBasePage`.
 
 | Method | Description |
@@ -545,10 +546,10 @@ SIM: resolucao dinamica de columnIndex via header role=columnheader
 | `getVisiblePageInfo` / `goToNextPage` / `goToPreviousPage` | Pagination |
 | `filterByMerchant` / `filterByLocation` *(deprecated)* | Legacy single-select, kept for backward compat |
 
-### `ModificationReportPage` — `/modificationReport` (#1319, agent/date/type filters #1315)
+### `ModificationReportPage` — `/modificationReport`
 - **Location:** `src/pages/origination/modification-report.page.ts`. Extends `OriginationBasePage`.
-- **Multi-select surface (#1319), same as MMH:** `filterByMerchants`, `filterByLocations`, `applyFilters`, `getMerchantSelectedCount`, `getLocationSelectedCount`, `getCheckedMerchants`, `listAvailableMerchants`, `getMerchantColumnValues`, `getVisiblePageInfo`, `goToNextPage`, `goToPreviousPage`. Location DISABLED until a Merchant is selected (BR-01).
-- **Agent / Date / Modification-Type filters + row reads (added 2026-06-18, #1315 — CT-03/CT-04):**
+- **Multi-select surface (same as MMH):** `filterByMerchants`, `filterByLocations`, `applyFilters`, `getMerchantSelectedCount`, `getLocationSelectedCount`, `getCheckedMerchants`, `listAvailableMerchants`, `getMerchantColumnValues`, `getVisiblePageInfo`, `goToNextPage`, `goToPreviousPage`. Location DISABLED until a Merchant is selected (BR-01).
+- **Agent / Date / Modification-Type filters + row reads:**
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
@@ -565,9 +566,10 @@ SIM: resolucao dinamica de columnIndex via header role=columnheader
 - **DOM source:** LIVE qa2 2026-06-18 (`jmendes.gow`, headless chromium 1440×900). Date placeholder `MM/DD/YYYY` confirmed; the 3 ids are stable Formik names (`agentName`/`from`/`to`).
 - **Test:** `tests/e2e/origination/R1.53.0_fixSystemAgentUsernameInModificationReport_1315.spec.ts` — CT-03 asserts the rendered "Agent Name" cell = real agent (not SYSTEM) for a fresh `UW_APPROVED → EXPIRED`; CT-04 asserts a legitimate-SYSTEM `CONTRACT_CREATED → SIGNED` webhook record renders SYSTEM (read-only reuse + `test.skip` guard).
 
-### `FundingPage` — Funding Queue `/funding` (#1319)
+### `FundingPage` — Funding Queue `/funding`
 - **Location:** `src/pages/origination/funding.page.ts`. Extends `OriginationBasePage`.
 - **Behavioral divergences vs MMH/ModReport (do NOT copy assumptions across pages):** Location is INDEPENDENT (NOT disabled by Merchant — BR-02); Status filter has "Funding" PRE-SELECTED on load (BR-03) and is the only filter with "Select All".
+- **SCOPE BOUNDARY (qa2 2026-06-19):** the FQ filter form is a CUSTOM component — labels are `<div>` (not `<label>`) and react-selects have stable IDs (`#statuses`/`#merchantName`/`#merchantLocation`). It does NOT consume the shared `MerchantLocationFilters` React component. Do NOT drive FQ filters via `MerchantLocationFilterPO` — its `<label>`-anchored XPath matches nothing here and throws `scrollIntoViewIfNeeded` timeout. Use `FundingPage`'s own `fq*`-backed methods (`listAvailableLocations`, `filterByLocations`, `filterByStatuses`, …).
 
 | Method | Description |
 |--------|-------------|
@@ -578,9 +580,16 @@ SIM: resolucao dinamica de columnIndex via header role=columnheader
 | `filterByMerchants(merchants[])` / `filterByLocations(locations[])` | Merchant + INDEPENDENT Location (BR-02) |
 | `getMerchantSelectedCount` / `getLocationSelectedCount` | Selection counts |
 | `listAvailableMerchants` | Merchant option labels |
+| `listAvailableLocations` | Location option labels — delegates to `fqListOptions('merchantLocation')` against the stable `#merchantLocation` react-select. **Use this instead of `MerchantLocationFilterPO.listAvailableOptions('Location')`** — the shared PO's `<label>`-based XPath does NOT match the FQ custom DOM and times out (see scope boundary below). |
 | `applyFiltersMulti` | Distinct name from the pre-existing `searchWithCurrentFilters` — applies the multi-select set |
 | `getMerchantColumnValues` / `getStatusColumnValues` | Result table column reads |
 | `getVisiblePageInfo` / `getTotalRowCount` / `goToNextPage` | Pagination |
+| `isEmailCsvEnabled` | Delegates to `this.csv.isEmailCsvEnabled()`. False when the table is empty (CSS-disabled, NOT `isEnabled()` — see component note above) |
+| `fillEmailCsvAddress(address)` | Delegates to `this.csv.fillEmailCsvAddress()` |
+| `isEmailCsvSendEnabled` | Delegates to `this.csv.isEmailCsvSendEnabled()` — Send disabled until an address is typed |
+| `sendEmailCsv` | Delegates to `this.csv.sendEmailCsv()` — clicks modal Send, waits for modal to close |
+
+- **Email CSV flow pattern:** filter with ALL statuses (`['Funded','Refunded','Funding','Request Refund']`) to maximise the chance of a non-empty table → `isEmailCsvEnabled()`; if `false`, annotate and `return` (guard — empty table) → `openEmailCsvModal()` → `fillEmailCsvAddress(email)` → assert `isEmailCsvSendEnabled()` → `sendEmailCsv()`. The Email CSV button on Funding Queue is CSS-disabled on an empty table (`isEnabled()` would lie — see [[selector-hardening]]).
 
 ### Inter-page divergence (implementation reference)
 | Behavior | MMH | ModReport | Funding |
@@ -590,7 +599,7 @@ SIM: resolucao dinamica de columnIndex via header role=columnheader
 | "Select All" available | Merchant ❌ | Merchant ❌ | Status ✅ (Merchant ❌) |
 | Apply method name | `applyFilters` | `applyFilters` | `applyFiltersMulti` |
 
-### Selector added (#1319)
+### Selector added
 - `paginationPrevious: '#pagination-previous-page'` — added to `PaginationSelectors` (`common.selectors.ts` + typed in `selector.types.ts`). Pairs with the existing next-page selector for the `goToPreviousPage` methods above.
 
 ---

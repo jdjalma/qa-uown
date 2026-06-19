@@ -75,7 +75,7 @@ page.getByRole('button', { name: /^E[-\s]?Sign$/i })
 
 Quando dois botões na mesma página são renderizados pelo MESMO componente e compartilham a classe CSS (ex: `filtered-csv-download_csvButton` para Email CSV E Download CSV), um seletor de classe nua + `.first()` casa com o PRIMEIRO no DOM — que pode NÃO ser o que você quer.
 
-**Caso canônico (#1321, 2026-06-18, MCP em QA2):** Email CSV e Download CSV compartilham `filtered-csv-download_csvButton`; **Email CSV é primeiro no DOM**. Um seletor `button[class*='filtered-csv-download_csvButton']` + `.first()` resolve para Email CSV → um clique de "download" abre o modal de email (sintoma silencioso: o teste de download passa pelo caminho errado).
+**Caso canônico (2026-06-18, MCP em QA2):** Email CSV e Download CSV compartilham `filtered-csv-download_csvButton`; **Email CSV é primeiro no DOM**. Um seletor `button[class*='filtered-csv-download_csvButton']` + `.first()` resolve para Email CSV → um clique de "download" abre o modal de email (sintoma silencioso: o teste de download passa pelo caminho errado).
 
 ```ts
 // ❌ Resolve para Email CSV (primeiro no DOM) — clica o botão errado
@@ -87,11 +87,35 @@ csvDownloadButton: "button[class*='filtered-csv-download_csvButton']:has-text('D
 
 **Como detectar:** `browser_evaluate` listando todos os elementos com a classe compartilhada → se N > 1, desambiguar por `:has-text(...)`, `getByRole({ name })` ou um atributo único. Ver [[application-lifecycle]] pitfall #117 e [[page-object-pattern]] FilteredCsvDownloadControls.
 
+## Regra — botão desabilitado via CSS (`pointer-events:none` + classe), NÃO via atributo `disabled`: `isEnabled()` mente
+
+Playwright `locator.isEnabled()` checa apenas o atributo HTML `disabled`/`aria-disabled`. Um botão desabilitado **só** por CSS (classe `disabledButton` + `pointer-events: none`, com o atributo `disabled` AUSENTE) é reportado como ENABLED por `isEnabled()` → o teste tenta clicar, o clique é interceptado pelo `<div>` pai (pointer-events) e estoura `TimeoutError` "element intercepts pointer events" / "not clickable".
+
+**Fix obrigatório:** não confiar em `isEnabled()` para esses botões. Checar a presença da classe-de-disabled via selector dedicado e retornar `false` se ela estiver visível.
+
+```ts
+// ❌ Email CSV é desabilitado por CSS (disabledButton + pointer-events:none), SEM atributo disabled
+//    isEnabled() retorna SEMPRE true → clique intercept → timeout
+const enabled = await btn.isEnabled();
+
+// ✅ checar a classe-de-disabled diretamente
+csvEmailButtonDisabled: "button[class*='disabledButton']:has-text('Email CSV')",
+async isEmailCsvEnabled() {
+  const cssDisabled = await page.locator(SELECTORS.csvEmailButtonDisabled).first()
+    .isVisible().catch(() => false);
+  return !cssDisabled;
+}
+```
+
+**Caso canônico (2026-06-18, qa2 — Funding Queue Email CSV):** o botão Email CSV em `/funding` é desabilitado em tabela vazia via classe `disabledButton` + `pointer-events:none`, SEM atributo `disabled`. `isEnabled()` retornava `true`, o teste tentava clicar e o clique era interceptado pelo parent div → timeout. Fix em `src/pages/origination/filtered-csv-download.controls.ts` (`isEmailCsvEnabled`) usando `SELECTORS.csvEmailButtonDisabled`.
+
+**Como detectar:** `TimeoutError` "intercepts pointer events" ao clicar um botão que `isEnabled()` jurou estar habilitado. Confirmar via `browser_evaluate` que o elemento NÃO tem `disabled` no DOM mas tem `getComputedStyle(el).pointerEvents === 'none'` (ou classe `disabledButton`). Ver [[page-object-pattern]] `FilteredCsvDownloadControls`.
+
 ## Regra — múltiplos forms com inputs idênticos na mesma página: alvejar por id, nunca por posição
 
 Quando uma tela tem DOIS forms com campos do mesmo tipo/placeholder (ex: Overview tem um form KPI no topo e um form de tabela embaixo, AMBOS com inputs de data MM/DD/YYYY), um seletor posicional (`nth()`) é frágil e tende a casar o form errado.
 
-**Caso canônico (#1321, 2026-06-18):** Overview top-bar KPI form usa ids `#from`/`#to` (toggle `overview_filterButton__`, drives metric cards) vs. table panel `#fromDate`/`#toDate` (toggle `index-module_filterButton__`, drives table + CSV). `nth()` posicional acerta o KPI form. Alvejar os inputs do table panel por id e expandir via o toggle do próprio painel. Ver [[application-lifecycle]] pitfall #114.
+**Caso canônico (2026-06-18):** Overview top-bar KPI form usa ids `#from`/`#to` (toggle `overview_filterButton__`, drives metric cards) vs. table panel `#fromDate`/`#toDate` (toggle `index-module_filterButton__`, drives table + CSV). `nth()` posicional acerta o KPI form. Alvejar os inputs do table panel por id e expandir via o toggle do próprio painel. Ver [[application-lifecycle]] pitfall #114.
 
 ## Regra — dois modais de confirmação "parecidos" na MESMA página: não reusar o selector de confirm de um no outro
 
@@ -114,6 +138,26 @@ setToExpiredConfirm: "[role='dialog'] button[type='submit'], .modal.show button[
 ```
 
 **Como detectar:** o método "passa" mas o estado não transiciona (status não muda, XHR `changeLeadStatus` nunca dispara). Remover o `.catch` swallow da espera de visibilidade do confirm faz a falha real aparecer. Inspecionar AMBOS os modais via `browser_snapshot` — não assumir que são iguais. Ver [[application-lifecycle]] pitfall #124 e [[page-object-pattern]] OriginationCustomerPage status-action modals.
+
+## Regra — `controlByLabel` com labels de prefixo idêntico: ancorar no PARENT da label, NUNCA `starts-with` + ancestor walk
+
+Quando um page object resolve um controle por XPath ancorado na `<label>` adjacente, usando `starts-with(normalize-space(.), 'X')` + um *ancestor walk* (`ancestor-or-self::*[.//*[contains(@class,'filter__control')]][1]`), ele quebra silenciosamente numa página com **>2 filtros react-select E labels que compartilham prefixo** (ex.: `"Merchant"` e `"Merchant Ref Code"`). `starts-with(...,'Merchant')` casa AMBAS as labels. Para a label "errada" (ex.: "Merchant Ref Code", que é text input e NÃO tem `filter__control`), o ancestor walk sobe até o container raiz da filter row — que contém TODOS os `filter__control` — e retorna o PRIMEIRO controle do DOM (não o alvo). Sintoma silencioso: `getMerchantSelectedCount()` retorna sempre 0; `filterByMerchants()` abre o dropdown errado (o primeiro filtro da row).
+
+**Caso canônico (2026-06-19, MCP em qa2 — MMH):** A Merchant Modification History tem 7 filtros na mesma container row (Log Type, Start/End Date, Merchant Ref Code, Merchant, Location, User Name). "Merchant Ref Code" aparece ANTES de "Merchant" no DOM. O ancestor walk a partir de "Merchant Ref Code" retornava Log Type (primeiro `filter__control` do container raiz).
+
+```ts
+// ❌ starts-with + ancestor walk — casa "Merchant" E "Merchant Ref Code";
+//    para a label errada o walk sobe ao container raiz → retorna Log Type
+`.//label[starts-with(normalize-space(.),'${label}')]` +
+`/ancestor-or-self::*[.//*[contains(@class,'filter__control')]][1]//*[contains(@class,'filter__control')]`
+
+// ✅ parent direto da label — cada label vive em um <div class="w-100"> que
+//    contém EXATAMENTE o controle daquele filtro; escopo não-ambíguo mesmo
+//    com prefixo compartilhado
+`.//label[starts-with(normalize-space(.),'${label}')]/..//*[contains(@class,'filter__control')]`
+```
+
+**Como detectar:** o filtro "passa" mas a contagem de selecionados é sempre 0, OU o dropdown que abre é de outro filtro. Listar via `browser_evaluate` todas as labels da filter row → se duas compartilham prefixo (`startsWith`), o `controlByLabel` baseado em `starts-with` está comprometido. Fix: trocar o ancestor walk por `..` (parent direto da label). Ver [[application-lifecycle]] e [[page-object-pattern]] `MerchantLocationFilterPO`.
 
 ## Regra — input React-controlled (Formik): `fill()` é no-op silencioso, usar native-setter
 

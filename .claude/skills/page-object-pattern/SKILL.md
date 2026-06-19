@@ -77,8 +77,15 @@ BasePage
 | `goto(base)` during SPA navigation | Races with router.push | `page.reload` or wait for stabilization |
 | Guard by `*Store$` key in localStorage | Stale storageState satisfies trivially | JWT exp decode check (ensureAuthenticated v8) |
 | Bootstrap `.modal-body` assumption | Servicing modals use custom wrapper | MCP `browser_snapshot` before declaring selector |
+| `MerchantLocationFilterPO` on Funding Queue | FQ uses `<div>` labels + stable IDs (`#merchantLocation`), not the `<label>`-based `MerchantLocationFilters` React component → `scrollIntoViewIfNeeded` timeout | Use `FundingPage` own filter methods (`listAvailableLocations`, `filterByLocations`, …) |
 
 ---
+
+## 5b. `MerchantLocationFilterPO` — escopo de uso
+
+`MerchantLocationFilterPO` (`src/pages/origination/merchant-location-filter.po.ts`) é EXCLUSIVO para páginas que consomem o componente React compartilhado `MerchantLocationFilters` — que renderiza filtros via `<label>` elements (Overview-bottom, Open To Buy, Rebate, Leads, Merchant list, Merchant Setting, New Application, MMH, Modification Report). Seu lookup (`controlByLabel`) ancora no `<label>` adjacente.
+
+**NÃO usar no Funding Queue.** O Funding Queue (`/funding`) tem DOM custom: labels são `<div>` (não `<label>`) e os react-select têm IDs estáveis (`#statuses`, `#merchantName`, `#merchantLocation`). Aplicar o `MerchantLocationFilterPO` lá faz o XPath baseado em `<label>` não casar nada → `scrollIntoViewIfNeeded` timeout. Use os métodos próprios da `FundingPage` (`listAvailableLocations()`, `filterByLocations()`, `filterByStatuses()`, etc.), que delegam para os helpers `fq*` ancorados nos IDs estáveis.
 
 ## 6. Key patterns
 

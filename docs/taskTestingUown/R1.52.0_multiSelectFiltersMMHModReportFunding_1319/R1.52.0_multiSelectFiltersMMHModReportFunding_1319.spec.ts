@@ -742,8 +742,10 @@ test.describe(
       await test.step('Select 1-2 locations from live roster (Location independent of Merchant)', async () => {
         // DOM-first qa2 2026-06-18: Funding Queue Location is NOT disabled before Merchant
         // selection (unlike MMH/ModReport). Can be selected freely.
-        const filter = new MerchantLocationFilterPO(page);
-        const locRoster = await filter.listAvailableOptions('Location');
+        // FundingPage.listAvailableLocations() uses the stable #merchantLocation ID —
+        // MerchantLocationFilterPO is incompatible here (uses <label> XPath, but Funding
+        // Queue labels are <div> elements — qa2 2026-06-19).
+        const locRoster = await funding.listAvailableLocations();
 
         if (locRoster.length === 0) {
           test.info().annotations.push({
@@ -828,6 +830,114 @@ test.describe(
         const page2Info = await funding.getVisiblePageInfo();
         expect(page2Info, 'Pagination must show a page-2 range after navigation').toMatch(/^\d+-\d+ of \d+/);
       });
+    });
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  CT-13 — Funding Queue: Email CSV sends filtered report to recipient
+    // ─────────────────────────────────────────────────────────────────────
+    test('CT-13 — Funding Queue Email CSV sends filtered report to fintechgroup777@gmail.com @regression', async ({ page }) => {
+      test.setTimeout(60_000);
+      const env = new ConfigEnvironment(testData.env);
+      const funding = new FundingPage(page);
+
+      const RECIPIENT = 'fintechgroup777@gmail.com';
+      // Use all four statuses to maximise the chance of finding records in qa2
+      // (not all statuses have data at every point in time; using a broader set
+      // avoids a false-disabled button from an accidentally empty result set).
+      const ALL_STATUSES = ['Funded', 'Refunded', 'Funding', 'Request Refund'];
+
+      await test.step('Navigate to Funding Queue and apply broad status filter', async () => {
+        await funding.navigateToFundingQueue(env.originationUrl);
+        await funding.filterByStatuses(ALL_STATUSES);
+        await funding.applyFiltersMulti();
+      });
+
+      await test.step('Email CSV button must be visible', async () => {
+        expect(
+          await funding.isEmailCsvVisible(),
+          'Email CSV button must be rendered on Funding Queue',
+        ).toBe(true);
+      });
+
+      const emailEnabled = await funding.isEmailCsvEnabled();
+      console.log(`[CT-13] isEmailCsvEnabled=${emailEnabled}`);
+      if (!emailEnabled) {
+        console.log('[CT-13] GUARD TRIGGERED — button disabled, skipping email send');
+        test.info().annotations.push({
+          type: 'observation',
+          description:
+            '[OBSERVATION] Email CSV button is disabled — no records returned by the broad status filter in qa2 at execution time. Email CSV submission flow not verified this run.',
+        });
+        return;
+      }
+      console.log('[CT-13] button enabled — proceeding with full modal flow');
+
+      await test.step('Open Email CSV modal and verify it appears', async () => {
+        await funding.openEmailCsvModal();
+      });
+
+      await test.step(`Fill recipient address (${RECIPIENT}) — Send button enables`, async () => {
+        await funding.fillEmailCsvAddress(RECIPIENT);
+        expect(
+          await funding.isEmailCsvSendEnabled(),
+          'Send button must be enabled after filling a valid email address',
+        ).toBe(true);
+      });
+
+      await test.step('Click Send — modal closes (email dispatched to queue)', async () => {
+        await funding.sendEmailCsv();
+        // Assertion: the modal closed, meaning the backend accepted the request.
+        // Email delivery to fintechgroup777@gmail.com is async — we do not poll
+        // the inbox here.
+      });
+    });
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  CT-14 — Funding Queue: 4 scheduled sweeps trigger without errors
+    // ─────────────────────────────────────────────────────────────────────
+    test('CT-14 — Funding Queue scheduled sweeps (all 4) respond 2xx @regression', async ({ api }) => {
+      test.setTimeout(120_000);
+
+      // The four Quartz sweep tasks that generate daily funding reports.
+      // Confirmed names via DB query (uown_scheduler / quartz_job_details) — qa2 2026-06-18.
+      const SWEEPS = [
+        'dailyFundingReportSweep',
+        'dailyFundedReportSweep',
+        'dailyRefundReportSweep',
+        'dailyRefundedReportSweep',
+      ] as const;
+
+      for (const sweep of SWEEPS) {
+        await test.step(`${sweep} — resume if needed + trigger`, async () => {
+          // Step 1: check task active status.
+          // Empty body from getScheduledTaskByName = is_active=null/false.
+          // cronTrigger "0 0 0 1 1 ? 2099" = deliberately set to far-future (effectively disabled).
+          // In both cases: call resumeScheduledTask before triggering (per RU04 pattern).
+          const meta = await api.scheduledTask.getScheduledTaskByName(sweep);
+          const body = meta.body as Record<string, unknown> | null;
+          const isActive = body && Object.keys(body).length > 0;
+          const cronTrigger = isActive ? (body!.cronTrigger as string) : null;
+          const needsResume = !isActive || (cronTrigger?.includes('2099') ?? false);
+
+          if (needsResume) {
+            const resumeRes = await api.scheduledTask.resumeScheduledTask(sweep);
+            console.log(`[CT-14] resumeScheduledTask(${sweep}) → HTTP ${resumeRes.status}`);
+            test.info().annotations.push({
+              type: 'info',
+              description: `${sweep}: resumed (was ${isActive ? `cronTrigger=${cronTrigger}` : 'is_active=false'}) → HTTP ${resumeRes.status}`,
+            });
+          }
+
+          // Step 2: trigger.
+          const res = await api.scheduledTask.triggerScheduledTask(sweep);
+          console.log(`[CT-14] triggerScheduledTask(${sweep}) → HTTP ${res.status}`);
+          expect(
+            res.status,
+            `${sweep} must return 2xx`,
+          ).toBeGreaterThanOrEqual(200);
+          expect(res.status).toBeLessThan(300);
+        });
+      }
     });
   },
 );

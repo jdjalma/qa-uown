@@ -277,24 +277,31 @@ export class FundingPage extends OriginationBasePage {
   /** Opens the dropdown for the given control ID.
    *  Guards against toggling it closed when already open (react-select auto-opens
    *  the dropdown after the clear-X is clicked — checking aria-expanded prevents
-   *  the control click from closing it). */
+   *  the control click from closing it).
+   *  After aria-expanded fires, waits for the portal/menu element to appear —
+   *  React renders the menu asynchronously and options are not in DOM until then. */
   private async fqOpenDropdown(id: string): Promise<void> {
     const expanded = this.fqExpanded(id);
     if (await expanded.isVisible({ timeout: 300 }).catch(() => false)) return;
     await this.fqCtrl(id).click({ force: true });
     await expanded.waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {});
+    // Wait for the menu/portal container to appear — options may not be in DOM
+    // until the React render cycle after aria-expanded becomes true.
+    await this.page.locator('.filter__menu-portal, .filter__menu')
+      .first()
+      .waitFor({ state: 'visible', timeout: 3_000 })
+      .catch(() => {});
   }
 
   /** Closes the dropdown for the given control ID.
-   *  Escape does not commit a focused option (safe for multi-select checkboxes).
-   *  After Escape, aria-expanded becomes false synchronously but the portaled menu
-   *  element stays in DOM during the CSS close animation. The portal wait ensures
-   *  the menu is fully gone before any subsequent action. */
+   *  Focuses the combobox input first so that Escape is captured by react-select's
+   *  keyboard handler (after a checkbox option click, focus moves to the option
+   *  element in the portal, preventing Escape from reaching the close handler). */
   private async fqCloseDropdown(id: string): Promise<void> {
     if (!(await this.fqExpanded(id).isVisible({ timeout: 200 }).catch(() => false))) return;
+    await this.page.locator(`#${id} input`).first().focus().catch(() => {});
     await this.page.keyboard.press('Escape').catch(() => {});
     await this.fqExpanded(id).waitFor({ state: 'hidden', timeout: 2_000 }).catch(() => {});
-    // Wait for the portaled menu overlay to be hidden (CSS animation complete).
     await this.page.locator('.filter__menu-portal')
       .waitFor({ state: 'hidden', timeout: 2_000 })
       .catch(() => {});
@@ -395,7 +402,8 @@ export class FundingPage extends OriginationBasePage {
       this.page.waitForResponse(
         r => /\/uown\//.test(r.url()) && r.status() < 400,
       ).catch(() => {}),
-      search.click(),
+      // Use el.click() to bypass any remaining portal overlay that intercepts events.
+      search.evaluate((el: HTMLElement) => el.click()),
     ]);
     await this.waitForSpinner();
   }
@@ -425,6 +433,12 @@ export class FundingPage extends OriginationBasePage {
   async listAvailableMerchants(): Promise<string[]> {
     await this.openFundingFilterPanel();
     return this.fqListOptions('merchantName');
+  }
+
+  /** All location options available in the Location dropdown roster. */
+  async listAvailableLocations(): Promise<string[]> {
+    await this.openFundingFilterPanel();
+    return this.fqListOptions('merchantLocation');
   }
 
   /** Clears the Status filter selection (clicks the "×" clear-all indicator). */
@@ -575,6 +589,15 @@ export class FundingPage extends OriginationBasePage {
 
   /** Clicks Email CSV and waits for the email-address modal to open. */
   openEmailCsvModal(): Promise<void> { return this.csv.openEmailCsvModal(); }
+
+  /** Types an email address into the Email CSV modal input. */
+  fillEmailCsvAddress(address: string): Promise<void> { return this.csv.fillEmailCsvAddress(address); }
+
+  /** True when the modal's Send button is enabled (gated on a non-empty address). */
+  isEmailCsvSendEnabled(): Promise<boolean> { return this.csv.isEmailCsvSendEnabled(); }
+
+  /** Clicks Send inside the Email CSV modal and waits for the modal to close. */
+  sendEmailCsv(): Promise<void> { return this.csv.sendEmailCsv(); }
 
   /** Filtered total from the rdt pagination footer ("X-Y of N" → N), or null. */
   getTotalCsvRowCount(): Promise<number | null> { return this.csv.getTotalRowCount(); }

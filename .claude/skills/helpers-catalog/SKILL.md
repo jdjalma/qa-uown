@@ -48,7 +48,7 @@ disable-model-invocation: true
 | `datetime.helpers.ts` | `src/helpers/` | TZ-tolerant assertion for Java LocalDateTime vs DB timestamptz |
 | `search-sql-explain.helpers.ts` | `src/helpers/` | EXPLAIN ANALYZE runner for SQLs in `uown_sv_sql_config` |
 
-## CSV export helpers — `downloads.helpers.ts` (added 2026-06-18, #1321)
+## CSV export helpers — `downloads.helpers.ts`
 
 For asserting a downloaded CSV's column SET and row count against the portal total ([[check-points]] consequence oracle) — not just "a file arrived".
 
@@ -143,7 +143,7 @@ Listados para fechar o gap da Regra #2 (auditoria 2026-06-18). Leia o `src/helpe
 | `esign-db.helpers.ts` | Queries de `uown_esign_document` (status, client GOWSIGN/SIGNWELL) — 22 imports |
 | `gowsign-signing.helper.ts` | `signGowSignInFrame` — assinatura no iframe GowSign — 19 imports |
 | `merchant-config.helper.ts` | Leitura/preflight de config de merchant |
-| `merchant-location-report.helper.ts` | `MerchantLocationReportControls` — filtro Merchant/Location + paginação + leitura de coluna compartilhados (#1319, composição) |
+| `merchant-location-report.helper.ts` | `MerchantLocationReportControls` — filtro Merchant/Location + paginação + leitura de coluna compartilhados (composição). NOTA: a página `FundingPage` (`src/pages/origination/funding.page.ts`) NÃO usa o componente compartilhado `MerchantLocationFilters` — tem DOM custom (labels `<div>` + IDs estáveis). Sua API pública de filtro (`listAvailableLocations()`, `filterByLocations`, `filterByStatuses`, …) vive no page object, catalogada em [[page-object-pattern]] `FundingPage`. NÃO usar `MerchantLocationFilterPO` no Funding Queue. |
 | `merchant-program-toggle.helpers.ts` | Toggle de programas 13m/16m do merchant |
 | `svc-payoff.helpers.ts` | Cálculo/parse de EPO/payoff (`parseEpoBreakdown`) |
 | `svc-servicing-info.helpers.ts` | Leitura de info da conta no Servicing |

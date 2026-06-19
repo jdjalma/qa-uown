@@ -610,6 +610,8 @@ export interface ColumnOrderSelectors {
   csvDownloadButtonDisabled: string;
   /** Precise Email CSV button (the `<button>` with text "Email CSV"). */
   csvEmailButton: string;
+  /** Email CSV button in its CSS-disabled state (class*="disabledButton"). */
+  csvEmailButtonDisabled: string;
   /** Directing tooltip wrapper for the Download CSV control, by tooltipIdPrefix.
    *  Overview = `overview-csv-download`, Leads = `leads-csv-download`. */
   /** Email CSV modal dialog (title "Which email should we send this CSV file to?"). */
