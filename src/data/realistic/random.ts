@@ -19,17 +19,6 @@ export function pick<T>(arr: readonly T[]): T {
   return arr[randomInt(arr.length)] as T;
 }
 
-/** Pick `n` DISTINCT elements (or the whole array shuffled if n >= length). */
-export function pickMany<T>(arr: readonly T[], n: number): T[] {
-  const pool = [...arr];
-  const out: T[] = [];
-  const take = Math.min(n, pool.length);
-  for (let i = 0; i < take; i++) {
-    out.push(pool.splice(randomInt(pool.length), 1)[0] as T);
-  }
-  return out;
-}
-
 /** True with probability `p` (0..1). */
 export function chance(p: number): boolean {
   return randomInt(10_000) < Math.round(p * 10_000);

@@ -325,11 +325,6 @@ export const TEST_CARDS: Record<string, TestCardWithLegacy> = Object.fromEntries
 
 // ── Convenience accessors ───────────────────────────────────────────
 
-/** All cards the test gateway approves */
-export function getApprovedCards(): TestCard[] {
-  return Object.values(ALL_TEST_CARDS).filter((c) => c.approved);
-}
-
 /** All cards the test gateway declines */
 export function getDeclinedCards(): TestCard[] {
   return Object.values(ALL_TEST_CARDS).filter((c) => !c.approved);

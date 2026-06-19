@@ -27,14 +27,6 @@ export async function downloadAndReadContent(page: Page, triggerAction: () => Pr
   return fs.readFileSync(filePath, 'utf-8');
 }
 
-export function getLastDownloadedFile(): string | null {
-  if (!fs.existsSync(DOWNLOAD_DIR)) return null;
-  const files = fs.readdirSync(DOWNLOAD_DIR)
-    .map(f => ({ name: f, time: fs.statSync(path.join(DOWNLOAD_DIR, f)).mtimeMs }))
-    .sort((a, b) => b.time - a.time);
-  return files[0] ? path.join(DOWNLOAD_DIR, files[0].name) : null;
-}
-
 // ── CSV parsing (task #1321 — Overview/Leads export validation) ──────────
 
 export interface ParsedCsv {
