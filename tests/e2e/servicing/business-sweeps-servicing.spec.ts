@@ -39,8 +39,8 @@
  *        tests/e2e/servicing/business-sweeps-servicing.spec.ts --reporter=list --timeout=300000
  */
 import { test, expect } from '@support/base-test.js';
-import type { ApiClients } from '@support/base-test.js';
 import type { DatabaseHelpers } from '@helpers/database.helpers.js';
+import { sweepLogBaseline, triggerAndWaitSweepLog } from '@helpers/sweep-fixture.helpers.js';
 import { TestTag, buildTags, splitTags } from '@ptypes/enums.js';
 
 // ── Sweep / template contract (case-sensitive — confirmed on dev3) ──────────
@@ -59,43 +59,7 @@ const SWEEP = {
   eSignDocumentStatus: { task: 'eSignDocumentStatusSweep' },
 } as const;
 
-// ── Shared helpers (inline — single-file reuse only) ─────────────────────────
-
-/**
- * Triggers a sweep, waits for a new uown_sweep_logs row (monotonic pk > baseline),
- * and returns the recorded processed count. The count may be 0 even on a successful
- * sweep (written async after processing) — callers MUST NOT assert `>= 1` on it.
- */
-async function triggerAndWaitSweepLog(
-  api: ApiClients,
-  db: DatabaseHelpers,
-  sweepName: string,
-  prevSweepLogPk: number,
-): Promise<number> {
-  const resp = await api.scheduledTask.triggerScheduledTask(sweepName);
-  expect(resp.status, `triggerScheduledTask ${sweepName}`).toBe(200);
-  const newLog = await db.waitForRecord(
-    'uown_sweep_logs',
-    'sweep_name = $1 AND pk > $2',
-    [sweepName, prevSweepLogPk],
-    30_000,
-  );
-  expect(newLog, `new uown_sweep_logs row for ${sweepName}`).toBeTruthy();
-  // COALESCE so a NULL processed column doesn't blow up getSingleNumber.
-  return db.getSingleNumber(
-    `SELECT COALESCE(MAX(number_of_records_processed), 0) FROM uown_sweep_logs
-     WHERE sweep_name = $1 AND pk > $2`,
-    [sweepName, prevSweepLogPk],
-  );
-}
-
-/** MAX(pk) baseline for a sweep's log rows (0 when none). */
-async function sweepLogBaseline(db: DatabaseHelpers, sweepName: string): Promise<number> {
-  return db.getSingleNumber(
-    `SELECT COALESCE(MAX(pk), 0) FROM uown_sweep_logs WHERE sweep_name = $1`,
-    [sweepName],
-  );
-}
+// sweepLogBaseline + triggerAndWaitSweepLog importados de @helpers/sweep-fixture.
 
 /** Reads the `error` text of the newest sweep_log row above `prevPk` (empty string if none). */
 async function getSweepError(db: DatabaseHelpers, sweepName: string, prevPk: number): Promise<string> {

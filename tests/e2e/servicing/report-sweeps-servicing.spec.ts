@@ -17,12 +17,13 @@
  * shared window (report sweeps are slow — file/email generation — so a per-sweep serial
  * wait would be needlessly long).
  *
- * Sweeps covered (15):
- *   dailyFundingReportSweep, dailyFundedReportSweep, weeklyFundingReportSweep,
- *   monthlyFundingReportSweep, monthlyConsolidatedFundingReportSweep, generateMerchantLeaseReport,
- *   generateDueDateMovesReport, generateExportBlacklistReport, danielJewelersLeadReportSweep,
- *   sendDailyPaymentsSharepointSweep, rerunACHWeeklyReport, pastDueEpoPoolAmountReportSweep,
- *   monitorSweep, monthlyTaxReportSweep, generateVerventOnBoardingFileSweep
+ * Sweeps covered (17):
+ *   dailyFundingReportSweep, dailyFundedReportSweep, dailyRefundReportSweep, dailyRefundedReportSweep,
+ *   weeklyFundingReportSweep, monthlyFundingReportSweep, monthlyConsolidatedFundingReportSweep,
+ *   generateMerchantLeaseReport, generateDueDateMovesReport, generateExportBlacklistReport,
+ *   danielJewelersLeadReportSweep, sendDailyPaymentsSharepointSweep, rerunACHWeeklyReport,
+ *   pastDueEpoPoolAmountReportSweep, monitorSweep, monthlyTaxReportSweep,
+ *   generateVerventOnBoardingFileSweep
  *
  * API-only (admin/ops sweeps, no UI affordance — rule #14 exception (a)).
  * Env: dev3 (DB 127.0.0.1:5445, SVC API svc-dev3).
@@ -32,11 +33,14 @@
  */
 import { test, expect } from '@support/base-test.js';
 import type { DatabaseHelpers } from '@helpers/database.helpers.js';
+import { sweepLogBaseline } from '@helpers/sweep-fixture.helpers.js';
 import { TestTag, buildTags, splitTags } from '@ptypes/enums.js';
 
 const REPORT_SWEEPS = [
   'dailyFundingReportSweep',
   'dailyFundedReportSweep',
+  'dailyRefundReportSweep',
+  'dailyRefundedReportSweep',
   'weeklyFundingReportSweep',
   'monthlyFundingReportSweep',
   'monthlyConsolidatedFundingReportSweep',
@@ -52,12 +56,7 @@ const REPORT_SWEEPS = [
   'generateVerventOnBoardingFileSweep',
 ] as const;
 
-async function sweepLogBaseline(db: DatabaseHelpers, sweepName: string): Promise<number> {
-  return db.getSingleNumber(
-    `SELECT COALESCE(MAX(pk), 0) FROM uown_sweep_logs WHERE sweep_name = $1`,
-    [sweepName],
-  );
-}
+// sweepLogBaseline importado de @helpers/sweep-fixture.
 
 const TAGS = buildTags(TestTag.REGRESSION);
 

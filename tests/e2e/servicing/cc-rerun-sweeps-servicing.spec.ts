@@ -36,50 +36,17 @@
  *        tests/e2e/servicing/cc-rerun-sweeps-servicing.spec.ts --reporter=list --timeout=300000
  */
 import { test, expect } from '@support/base-test.js';
-import type { ApiClients } from '@support/base-test.js';
 import type { DatabaseHelpers } from '@helpers/database.helpers.js';
+import { sweepLogBaseline, triggerAndWaitSweepLog } from '@helpers/sweep-fixture.helpers.js';
 import { TestTag, buildTags, splitTags } from '@ptypes/enums.js';
 
 // Tokenized MASTERCARD on file for account 219 (card pk=291) — reused across the seeded
 // transactions so the rerun has a chargeable token (dev3 fixture, captured 2026-06-03).
 const CARD_TOKEN = '545f5afc-1e51-4960-99a5-5fd173cefbe0';
 
-// ── Shared helpers (inline — single-file reuse) ─────────────────────────────
-
-/** MAX(pk) baseline for a sweep's log rows (0 when none). */
-async function sweepLogBaseline(db: DatabaseHelpers, sweepName: string): Promise<number> {
-  return db.getSingleNumber(
-    `SELECT COALESCE(MAX(pk), 0) FROM uown_sweep_logs WHERE sweep_name = $1`,
-    [sweepName],
-  );
-}
-
-/**
- * Triggers a sweep, waits for a new uown_sweep_logs row, returns the recorded processed
- * count. The count may be 0 even on a successful selection (the re-charge is async and the
- * count is written after processing) — callers MUST NOT gate on `>= 1`.
- */
-async function triggerAndWaitSweepLog(
-  api: ApiClients,
-  db: DatabaseHelpers,
-  sweepName: string,
-  prevSweepLogPk: number,
-): Promise<number> {
-  const resp = await api.scheduledTask.triggerScheduledTask(sweepName);
-  expect(resp.status, `triggerScheduledTask ${sweepName}`).toBe(200);
-  const newLog = await db.waitForRecord(
-    'uown_sweep_logs',
-    'sweep_name = $1 AND pk > $2',
-    [sweepName, prevSweepLogPk],
-    30_000,
-  );
-  expect(newLog, `new uown_sweep_logs row for ${sweepName}`).toBeTruthy();
-  return db.getSingleNumber(
-    `SELECT COALESCE(MAX(number_of_records_processed), 0) FROM uown_sweep_logs
-     WHERE sweep_name = $1 AND pk > $2`,
-    [sweepName, prevSweepLogPk],
-  );
-}
+// ── Shared helpers ──────────────────────────────────────────────────────────
+// sweepLogBaseline + triggerAndWaitSweepLog importados de @helpers/sweep-fixture.
+// sweepSelectsAccount abaixo é específico deste spec (self-validation via selection SQL).
 
 /**
  * Runs the sweep's EXACT selection SQL (read live from uown_scheduled_task) and returns

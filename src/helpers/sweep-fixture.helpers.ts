@@ -29,6 +29,7 @@
  * uown_sv_payment_arrangement[status IN IN_PROGRESS/NOT_STARTED], uown_sv_activity_log,
  * uown_los_lead, uown_los_uwdata, uown_los_email).
  */
+import { expect } from '@playwright/test';
 import type { DatabaseHelpers } from './database.helpers.js';
 import type { ApiClients } from '../support/base-test.js';
 
@@ -37,6 +38,46 @@ const IDLE_WINDOW = "30 days";
 
 /** Active payment-arrangement statuses (qa1 enum: NOT_STARTED, IN_PROGRESS, SUCCESS, FAILED). */
 const ACTIVE_ARRANGEMENT_STATUSES = "('IN_PROGRESS','NOT_STARTED')";
+
+// ── Sweep log helpers (compartilhados pelos *-sweeps-servicing specs) ─────────
+// Antes copy-pasted inline em 5 specs (sweepLogBaseline) / 4 specs
+// (triggerAndWaitSweepLog) — corpos idênticos, consolidados aqui 2026-06-18.
+
+/** MAX(pk) baseline para os logs de um sweep (0 quando não há nenhum). */
+export async function sweepLogBaseline(db: DatabaseHelpers, sweepName: string): Promise<number> {
+  return db.getSingleNumber(
+    `SELECT COALESCE(MAX(pk), 0) FROM uown_sweep_logs WHERE sweep_name = $1`,
+    [sweepName],
+  );
+}
+
+/**
+ * Dispara um sweep, aguarda uma nova row em uown_sweep_logs (pk monotônico > baseline)
+ * e retorna o processed count registrado. O count pode ser 0 mesmo num sweep bem-sucedido
+ * (escrito async após o processamento) — callers NÃO devem assertar `>= 1`.
+ */
+export async function triggerAndWaitSweepLog(
+  api: ApiClients,
+  db: DatabaseHelpers,
+  sweepName: string,
+  prevSweepLogPk: number,
+): Promise<number> {
+  const resp = await api.scheduledTask.triggerScheduledTask(sweepName);
+  expect(resp.status, `triggerScheduledTask ${sweepName}`).toBe(200);
+  const newLog = await db.waitForRecord(
+    'uown_sweep_logs',
+    'sweep_name = $1 AND pk > $2',
+    [sweepName, prevSweepLogPk],
+    30_000,
+  );
+  expect(newLog, `new uown_sweep_logs row for ${sweepName}`).toBeTruthy();
+  // COALESCE para coluna processed NULL não quebrar getSingleNumber.
+  return db.getSingleNumber(
+    `SELECT COALESCE(MAX(number_of_records_processed), 0) FROM uown_sweep_logs
+     WHERE sweep_name = $1 AND pk > $2`,
+    [sweepName, prevSweepLogPk],
+  );
+}
 
 // ── Return shapes ───────────────────────────────────────────────────────────
 

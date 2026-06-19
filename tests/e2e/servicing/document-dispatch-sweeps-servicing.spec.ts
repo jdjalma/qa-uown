@@ -29,38 +29,11 @@
  *        tests/e2e/servicing/document-dispatch-sweeps-servicing.spec.ts --reporter=list --timeout=300000
  */
 import { test, expect } from '@support/base-test.js';
-import type { ApiClients } from '@support/base-test.js';
 import type { DatabaseHelpers } from '@helpers/database.helpers.js';
+import { sweepLogBaseline, triggerAndWaitSweepLog } from '@helpers/sweep-fixture.helpers.js';
 import { TestTag, buildTags, splitTags } from '@ptypes/enums.js';
 
-async function sweepLogBaseline(db: DatabaseHelpers, sweepName: string): Promise<number> {
-  return db.getSingleNumber(
-    `SELECT COALESCE(MAX(pk), 0) FROM uown_sweep_logs WHERE sweep_name = $1`,
-    [sweepName],
-  );
-}
-
-async function triggerAndWaitSweepLog(
-  api: ApiClients,
-  db: DatabaseHelpers,
-  sweepName: string,
-  prevSweepLogPk: number,
-): Promise<number> {
-  const resp = await api.scheduledTask.triggerScheduledTask(sweepName);
-  expect(resp.status, `triggerScheduledTask ${sweepName}`).toBe(200);
-  const newLog = await db.waitForRecord(
-    'uown_sweep_logs',
-    'sweep_name = $1 AND pk > $2',
-    [sweepName, prevSweepLogPk],
-    30_000,
-  );
-  expect(newLog, `new uown_sweep_logs row for ${sweepName}`).toBeTruthy();
-  return db.getSingleNumber(
-    `SELECT COALESCE(MAX(number_of_records_processed), 0) FROM uown_sweep_logs
-     WHERE sweep_name = $1 AND pk > $2`,
-    [sweepName, prevSweepLogPk],
-  );
-}
+// sweepLogBaseline + triggerAndWaitSweepLog importados de @helpers/sweep-fixture.
 
 async function sweepSelects(db: DatabaseHelpers, sweepName: string, value: string): Promise<boolean> {
   const rows = await db.query<{ sql_to_pick_accounts: string }>(

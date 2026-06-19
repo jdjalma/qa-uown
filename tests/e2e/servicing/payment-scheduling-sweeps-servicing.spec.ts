@@ -31,42 +31,13 @@
  *        tests/e2e/servicing/payment-scheduling-sweeps-servicing.spec.ts --reporter=list --timeout=300000
  */
 import { test, expect } from '@support/base-test.js';
-import type { ApiClients } from '@support/base-test.js';
 import type { DatabaseHelpers } from '@helpers/database.helpers.js';
+import { sweepLogBaseline, triggerAndWaitSweepLog } from '@helpers/sweep-fixture.helpers.js';
 import { TestTag, buildTags, splitTags } from '@ptypes/enums.js';
 
 const CARD_TOKEN = '545f5afc-1e51-4960-99a5-5fd173cefbe0';
 
-// ── Shared helpers (inline) ─────────────────────────────────────────────────
-
-async function sweepLogBaseline(db: DatabaseHelpers, sweepName: string): Promise<number> {
-  return db.getSingleNumber(
-    `SELECT COALESCE(MAX(pk), 0) FROM uown_sweep_logs WHERE sweep_name = $1`,
-    [sweepName],
-  );
-}
-
-async function triggerAndWaitSweepLog(
-  api: ApiClients,
-  db: DatabaseHelpers,
-  sweepName: string,
-  prevSweepLogPk: number,
-): Promise<number> {
-  const resp = await api.scheduledTask.triggerScheduledTask(sweepName);
-  expect(resp.status, `triggerScheduledTask ${sweepName}`).toBe(200);
-  const newLog = await db.waitForRecord(
-    'uown_sweep_logs',
-    'sweep_name = $1 AND pk > $2',
-    [sweepName, prevSweepLogPk],
-    30_000,
-  );
-  expect(newLog, `new uown_sweep_logs row for ${sweepName}`).toBeTruthy();
-  return db.getSingleNumber(
-    `SELECT COALESCE(MAX(number_of_records_processed), 0) FROM uown_sweep_logs
-     WHERE sweep_name = $1 AND pk > $2`,
-    [sweepName, prevSweepLogPk],
-  );
-}
+// sweepLogBaseline + triggerAndWaitSweepLog importados de @helpers/sweep-fixture.
 
 /** Runs the sweep's EXACT selection SQL (live) and returns true if `value` appears in any row. */
 async function sweepSelects(
