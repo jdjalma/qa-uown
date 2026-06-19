@@ -91,6 +91,26 @@ export async function getNormalizedHeaders(page: Page): Promise<string[]> {
   return raw.map(normalizeHeader);
 }
 
+/**
+ * Reads the value of column `header` for every visible row, in order.
+ * Pure column extraction (não checa empty-state — o caller decide). Retorna []
+ * quando o header não existe na tabela. Usado pelas report pages de Origination
+ * (antes reimplementado inline em ≥4 page objects).
+ */
+export async function getColumnValues(page: Page, header: string): Promise<string[]> {
+  const headers = await getNormalizedHeaders(page);
+  const colIdx = getColumnIndexByHeaderText(headers, header);
+  if (colIdx === -1) return [];
+  const rows = page.locator(SELECTORS.tableRow);
+  const rowCount = await rows.count();
+  const values: string[] = [];
+  for (let i = 0; i < rowCount; i++) {
+    const cells = await rows.nth(i).locator(SELECTORS.tableCell).allTextContents();
+    values.push((cells[colIdx] ?? '').trim());
+  }
+  return values;
+}
+
 export async function getRowDataByIndex(page: Page, rowIndex: number): Promise<Record<string, string>> {
   const headers = await getTableHeaders(page);
   const row = page.locator(`${SELECTORS.tableRow}:nth-child(${rowIndex + 1})`);
