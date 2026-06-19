@@ -80,6 +80,33 @@ You decide which skills to load based on context signals. Each skill's `descript
 - [[fraud-vendors-knowledge]] — Kount, SEON, DV360
 - [[regression-suites-map]] — when to expand to dual-brand, signing-regression, etc.
 
+### Read business rules and knowledge-base files (mandatory when domain matches)
+
+**Protocol:** `Read` the matching files in full — same rule as skills. Do NOT skip because a skill covers the area; business rules contain enum values, state-machine transitions, endpoint names, SQL, and pitfalls that skills do not duplicate.
+
+**`docs/business-rules/` — read when task touches:**
+
+| File | When to read |
+|---|---|
+| `01-fundamentos.md` | general platform concepts, onboarding |
+| `02-originacao-pipeline.md` | application pipeline, UW decision, lead lifecycle |
+| `03-contratos-esign.md` | contracts, e-sign, GowSign/SignWell |
+| `04-calculos-financeiros.md` | financial calculations, EPO, payment schedules |
+| `05-pagamentos.md` | payments, ACH, CC, NSF |
+| `06-conta-ciclo-vida.md` | account lifecycle, status transitions |
+| `07-modificacoes-conta.md` | Modification Reports, invoice modification, frequency change, due-date move |
+| `08-funding-merchants.md` | Funding Queue, funding state machine, sweeps (34.46–34.51), merchant management |
+| `09-integracoes-externas.md` | external vendor integrations (Kount, SEON, TaxCloud) |
+| `10-portal-comunicacoes.md` | portal communications, email templates |
+| `11-administracao.md` | MMH (Merchant Modification History), full sweeps catalog (all 74), admin panel |
+| `12-produto-lease-deep-dive.md` | deep lease product rules |
+| `appendix-d-constantes-enums.md` | enums and constants (FundingQueueStatus, LeadStatus, PaymentStatus, etc.) — **always read when scenarios reference status values** |
+| `appendix-f-sql-reference.md` | DB validation queries — read when SPEC needs DB assertion examples |
+
+**`docs/knowledge-base/`** — run `ls docs/knowledge-base/` and read ALL files that match the feature area. Knowledge-base documents live-portal discoveries and confirmed rules not yet in the formal business-rules folder.
+
+**These files must appear in the final `Skills loaded:` declaration** alongside SKILL.md files.
+
 ## Workflow
 
 1. **Ingest** — read input. If GitLab URL, load `fetch-gitlab-task` first.
@@ -90,7 +117,7 @@ You decide which skills to load based on context signals. Each skill's `descript
 6. **Design scenarios** — load `test-design-techniques`. Apply equivalence/BVA/decision-table per scenario.
 7. **Domain reflexes** — load `qa-domain-reflexes` + `activity-log-validation`. Add validation steps per scenario.
 8. **User perspective** — load `user-journey-perspective`. Add persona/journey notes.
-9. **Pitfalls** — load relevant domain skills. Reference known pitfalls (lifecycle, merchant config, etc.).
+9. **Pitfalls** — load relevant domain skills. Reference known pitfalls (lifecycle, merchant config, etc.). Read matching `docs/business-rules/` files and `docs/knowledge-base/` entries (see table above) — enum values, state-machine transitions, endpoint names, and sweep oracle rules are authoritative in those files and not duplicated in skills.
 10. **Write SPEC** — load `test-plan-template`. Produce final document.
 
 ## Output

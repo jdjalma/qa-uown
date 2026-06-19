@@ -54,6 +54,7 @@ A feature tem fluxo no portal Origination/Servicing/Website/AMS?
 | Status badge transitions | CSS, timing, race condition de re-render |
 | Form validation messages | Mensagens ao usuário, locale, layout |
 | Responsive / mobile | Apenas browser detecta |
+| Telas de auditoria / report (Modification Report, Activity Log display) | A célula renderizada é o que o auditor vê — mapeamento DB→UI (status display, friendly name vs id, atribuição de agent) só é validável lendo a tabela na tela, não a row do DB |
 
 ## Procedimento
 
@@ -86,6 +87,7 @@ expect(log).toBeDefined;
 1. **Tentação de skip browser pra deixar suite mais rápida** — funciona até descobrir BUG-01 de rendering em produção.
 2. **API mascara fluxo real do email** — clicar no link do email (memory `feedback_email_imap_click_link`) é diferente de chamar a URL do payload da API. Bypass API esconde bug de template.
 3. **Setup via API quando feature é Origination** — memory `feedback_setup_via_ui_new_application`: criar lead via UI new-application em vez de `createPreQualifiedApplication` quando feature **é** o Origination flow. Mascara bugs do caminho real.
+4. **Asserir só a row do DB num bug de display de auditoria** (#1315, 2026-06-18) — o fix do "SYSTEM no Modification Report" muda o que o **auditor vê** na coluna "Agent Name". CT-03 dirige a transição pelo portal (header `username`) E **lê a célula renderizada** no `/modificationReport` (`getAgentNameByLeadPk` / `getRowByLeadPk`), com a row do DB apenas como guard cross-cutting. Validar só `uown_lead_modifications.agent_username` no DB não cobriria um bug de mapeamento DB→UI (ex.: a coluna renderizar o id errado). Telas de report/auditoria são UI-first.
 
 ## Anti-patterns
 

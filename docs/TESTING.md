@@ -567,6 +567,33 @@ Validates the Servicing portal bank account management flow and rating letter ge
 
 ---
 
+### Multi-Select Filters — MMH / Modification Report / Funding Queue (Task #1319)
+
+**E2E (`docs/taskTestingUown/R1.52.0_multiSelectFiltersMMHModReportFunding_1319/R1.52.0_multiSelectFiltersMMHModReportFunding_1319.spec.ts`):**
+Validates the multi-select Merchant/Location filter component (originally shipped in #1292) extended in R1.52.0 to three remaining Origination pages: Merchant Modification History (`/merchantModificationHistory`), Modification Report (`/modificationReport`), and Funding Queue (`/funding`). The component DOM is shared across pages but behavior diverges per page (see divergence notes below). Environment: QA2. Project: `task-testing`.
+
+> **Status:** spec criada; ainda NÃO validada pelo `qa-validator` (sem report). Dois itens permanecem `[HIPÓTESE]` (ver KB) — o endpoint da Funding Queue (`getLeadsForFundingQueue`) e os sweep names `dailyRefundReportSweep`/`dailyRefundedReportSweep`.
+
+| CT | Page | Flow | Key Assertions |
+|----|------|------|----------------|
+| CT-01 | MMH | Multi-merchant filter | Result table Merchant column ⊆ selected merchants |
+| CT-02 | MMH | Location (dependent on Merchant) | Location disabled until a Merchant is selected (BR-01); then filterable |
+| CT-03 | Modification Report | Multi-merchant filter | Result table Merchant column ⊆ selected merchants |
+| CT-04 | Funding Queue | Multi-status (Funded + Refunded) | Default "Funding" cleared first; rows reflect the selected statuses |
+| CT-05 | Funding Queue | Multi-merchant | Merchant column ⊆ selected merchants (Location independent — BR-02) |
+| CT-06 | Funding Queue | Status "Select All" | All 4 statuses (Funding/Funded/Request Refund/Refunded) selected |
+
+**Key patterns used:**
+- `MerchantModHistoryPage` / `ModificationReportPage` / `FundingPage` — `filterByMerchants([])` + `applyFilters` (MMH/ModReport) / `applyFiltersMulti` (Funding); legacy single-select `filterByMerchant`/`filterByLocation` kept (deprecated)
+- `MerchantLocationFilterPO.applySearch` — regex extended to the 3 new Search endpoints (`getMerchantDataChangeResults`, `getModifiedLeads`, `getLeadsForFundingQueue`)
+- `FundingPage.filterByStatuses([])` — clears the default pre-selected "Funding" status before applying (pitfall #122); `selectAllStatuses` / `statusFilterHasSelectAll` for the Status-only "Select All"
+- `paginationPrevious` selector (`#pagination-previous-page`) added to `PaginationSelectors` for `goToPreviousPage`
+- 2 report sweeps added to `tests/e2e/servicing/report-sweeps-servicing.spec.ts` `REPORT_SWEEPS` (`dailyRefundReportSweep`, `dailyRefundedReportSweep`; 15 → 17)
+
+**Page-specific divergences (do NOT copy assumptions across pages):** MMH/ModReport disable Location until a Merchant is selected (BR-01); Funding Location is independent (BR-02); Funding Status pre-selects "Funding" on load (BR-03) and is the only filter with "Select All". See application-lifecycle pitfalls #121/#122 and KB `docs/knowledge-base/multi-select-filters-mmh-modreport-funding.md`.
+
+---
+
 ### Canonical Full-Lifecycle Regression Tests
 
 Two E2E tests serve as the primary regression suite for the full account lifecycle. Both use the `cross-portal` Playwright project and cover origination, contract, servicing, and website portals end-to-end.

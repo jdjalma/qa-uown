@@ -93,6 +93,54 @@ Quando uma tela tem DOIS forms com campos do mesmo tipo/placeholder (ex: Overvie
 
 **Caso canônico (#1321, 2026-06-18):** Overview top-bar KPI form usa ids `#from`/`#to` (toggle `overview_filterButton__`, drives metric cards) vs. table panel `#fromDate`/`#toDate` (toggle `index-module_filterButton__`, drives table + CSV). `nth()` posicional acerta o KPI form. Alvejar os inputs do table panel por id e expandir via o toggle do próprio painel. Ver [[application-lifecycle]] pitfall #114.
 
+## Regra — dois modais de confirmação "parecidos" na MESMA página: não reusar o selector de confirm de um no outro
+
+Quando uma tela tem DUAS ações que abrem modais de confirmação visualmente parecidos (ex: "Set to Expired" e "Change to Signed" no summary bar do customer page), é tentador reusar um único selector de botão de confirm para ambos. Os modais divergem no DOM: label do botão, classe e obrigatoriedade do campo comment podem ser diferentes. Um selector que casa um modal retorna **0 elementos** no outro — e se a espera de visibilidade tem `.catch(() => false)`, a falha some e o método retorna SEM clicar (a ação nunca dispara, sintoma silencioso).
+
+**Caso canônico (#1315, 2026-06-18, DOM live qa2 lead 16728):**
+
+| Aspecto | `Set to Expired` | `Change to Signed` |
+|---------|------------------|--------------------|
+| Modal | "Add a Comment" (`.modal.fade.show`) | "Move Contract to Signed" |
+| Comment | OPCIONAL (`input[name='comment']`, "Type here...") | OBRIGATÓRIO ("Add a comment (required)") |
+| Botão confirm | **"Save"** (`button[type='submit']`, SEM `.submit-button`) | **"CONFIRM"** (`button.submit-button`) |
+
+```ts
+// ❌ Reusar o selector CONFIRM/.submit-button no "Set to Expired" → 0 elementos → no-op silencioso
+setToExpiredConfirm: "button.submit-button, button:has-text('CONFIRM')",
+
+// ✅ Ancorar cada modal no seu próprio botão real
+setToExpiredConfirm: "[role='dialog'] button[type='submit'], .modal.show button[type='submit'], [role='dialog'] button:has-text('Save'), .modal.show button:has-text('Save')",
+```
+
+**Como detectar:** o método "passa" mas o estado não transiciona (status não muda, XHR `changeLeadStatus` nunca dispara). Remover o `.catch` swallow da espera de visibilidade do confirm faz a falha real aparecer. Inspecionar AMBOS os modais via `browser_snapshot` — não assumir que são iguais. Ver [[application-lifecycle]] pitfall #124 e [[page-object-pattern]] OriginationCustomerPage status-action modals.
+
+## Regra — input React-controlled (Formik): `fill()` é no-op silencioso, usar native-setter
+
+Inputs cujo `value` é controlado pelo React/Formik (o componente reescreve o valor a cada render) **não** aceitam `page.fill()` — a chamada parece passar mas o React sobrescreve o valor no próximo render, e o `onChange` do app nunca dispara com o valor digitado. Sintoma: o filtro/campo aparenta estar preenchido por um instante mas a busca roda com o campo vazio (ou com o valor antigo), sem erro.
+
+**Fix obrigatório:** setar via o **native value setter** do prototype + disparar os eventos sintéticos que o React escuta:
+
+```ts
+await page.evaluate(([sel, val]) => {
+  const input = document.querySelector(sel) as HTMLInputElement | null;
+  if (!input) return;
+  const setter = Object.getOwnPropertyDescriptor(
+    window.HTMLInputElement.prototype, 'value',
+  )?.set;
+  setter?.call(input, val);
+  input.dispatchEvent(new Event('input',  { bubbles: true }));
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+  input.dispatchEvent(new Event('blur',   { bubbles: true }));
+}, [selector, value] as const);
+```
+
+**Casos canônicos confirmados (DOM-first):**
+- `SearchPage` quick-search `#search-input` (`forceReactInputValue` / `searchByType`).
+- **`ModificationReportPage` (#1315, LIVE qa2 2026-06-18):** o painel de filtros expõe `input#agentName` (texto livre) e DUAS datas `input#from` / `input#to` (`MM/DD/YYYY`), **todas React-controlled**. `fill()` em qualquer uma é no-op; a busca roda sem filtro. `filterByAgentName` / `filterByDateRange` usam o native-setter via o `forceReactInputValue` privado do page object. Datas de calendário React (`input#from`/`input#to`) são o caso mais traiçoeiro — visualmente o valor "aparece", mas o range nunca é aplicado.
+
+**Como detectar:** o teste filtra e a tabela volta com o set inteiro (filtro ignorado) ou vazia (valor antigo) — sem `TimeoutError`. Confirmar via `browser_evaluate` que o input tem um React fiber (`__reactProps$`/`__reactFiber$`) e que `value` reverte após `fill`. Ver [[page-object-pattern]] anti-pattern `page.fill on React-controlled inputs` + catálogo `ModificationReportPage` / `SearchPage`.
+
 ## Caso histórico (2026-05-11)
 
 `unified-flow.spec.ts` "Items Purchased" — `TimeoutError`. Investigação inicial assumiu timing; fix proposto era aumentar timeout. **Causa real**: o elemento era `<a>` (link), não `<button>`. `getByRole('button', { name: 'Items Purchased' })` nunca casaria.

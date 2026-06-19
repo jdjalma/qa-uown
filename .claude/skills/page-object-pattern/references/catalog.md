@@ -356,6 +356,24 @@ Methods added to `ContractPage` (`src/pages/origination/contract.page.ts`) para 
 | `openDocumentInViewer` | `openDocumentInViewer(name: string)` | Opens document link in viewer |
 | `getDocumentRowsCount` | `getDocumentRowsCount: Promise<number>` | Returns total number of document rows visible |
 
+## OriginationCustomerPage - lead status-action modals (added 2026-06-18, #1315)
+
+- **Location:** `src/pages/origination/customer.page.ts`
+- **Purpose:** drive the human-agent status transitions from the customer page summary bar (`Set to Expired`, `Change to Signed`) THROUGH the browser, so the SPA sends the `username` HTTP header that the #1315 fix relies on to record the real `agent_username` (not "SYSTEM"). Driving these via direct API call drops the header and reproduces the SYSTEM artifact — see KB `docs/knowledge-base/modification-report-agent-name-bug.md` BR-05.
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `setToExpired` | `setToExpired(comment?)` | Clicks "Set to Expired" via `clickActionButton` (JS-dispatch click after scrollIntoView — button lives in the off-screen-prone horizontal summary bar), waits for the "Add a Comment" modal, fills the **optional** comment, confirms via **"Save"** (`button[type='submit']`). No `.catch` swallow on the modal/confirm waits — a missing confirm now throws (the pre-fix silent-miss left `changeLeadStatus` unfired). Default comment carries an automation marker into `uown_los_lead_notes` / `uown_lead_modifications`. |
+| `changeToSigned` | `changeToSigned(comment?)` | Hardened for the **"Move Contract to Signed"** modal: comment is **REQUIRED** (CONFIRM stays disabled until filled), confirms via `button.submit-button` / "CONFIRM". Falls back to a plain confirm dialog (no comment field) for the older path. |
+
+- **CRITICAL — the two confirm modals are NOT symmetric (pitfall #124, [[selector-hardening]]):**
+  - `Set to Expired` → "Add a Comment" modal, comment **OPTIONAL**, confirm label **"Save"** (`button[type='submit']`, NO `.submit-button` class).
+  - `Change to Signed` → "Move Contract to Signed" modal, comment **REQUIRED**, confirm label **"CONFIRM"** (`button.submit-button`).
+  - Do NOT reuse one modal's confirm selector for the other — the old `setToExpired` used the CONFIRM/`.submit-button` selector → 0 matches → silent no-op.
+- **Selectors (`common.selectors.ts`):** `moveContractToSignedModal` / `moveContractToSignedComment` / `moveContractToSignedConfirm`; `setToExpiredModal` / `setToExpiredComment` (`input[name='comment']`, placeholder "Type here...") / `setToExpiredConfirm` (`button[type='submit']` / "Save"). Both modal/confirm locators apply `.last()` to win against any stacked `.modal.show`.
+- **DOM source:** LIVE qa2 lead 16728, 2026-06-18, headless chromium 1440×900. Confirmed via XHR 200 + status UW_APPROVED→EXPIRED + `uown_lead_modifications.mod_type=LEAD_STATUS_CHANGE`.
+- **Test:** `tests/e2e/origination/R1.53.0_fixSystemAgentUsernameInModificationReport_1315.spec.ts` (CT-01 EXPIRED, CT-02 SIGNED — `@qa2 @regression @critical`).
+
 ## OriginationCustomerPage - `ensureAuthenticated` v8 auth-retry pattern
 
 **Location:** `src/pages/origination/customer.page.ts:225-385`
@@ -503,6 +521,79 @@ SIM: resolucao dinamica de columnIndex via header role=columnheader
 - **Active filter quirks (see [[application-lifecycle]] pitfall #107):**
  - `#isActive` react-select has only `Active`/`Inactive` (no "All" option — clear the selection to show all). Default page state is `Active`. NOT applied on change — requires the Search button click (BR-06).
 - **Knowledge-base source:** `docs/knowledge-base/merchants-config-columns-export.md`.
+
+## Multi-Select Merchant/Location filter pages — MMH / ModReport / Funding (added 2026-06-18, #1319)
+
+> Task #1319 extends the shared multi-select Merchant/Location filter component (originally shipped to 7 pages in #1292) to three remaining Origination pages. The component DOM is identical across pages (`filter__value-container--is-multi`, `index-module_customOptionStyles__CSG9m` checkbox options) but the inter-page BEHAVIOR diverges — see the divergence table below and KB `docs/knowledge-base/multi-select-filters-mmh-modreport-funding.md`. Legacy single-select `filterByMerchant`/`filterByLocation` methods are kept (deprecated, backward compat) — prefer the array `filterByMerchants`/`filterByLocations`.
+
+### `MerchantLocationFilterPO` — shared multi-select filter PO (extended #1319)
+- **Location:** `src/pages/origination/merchant-location-filter.po.ts`. Extends `OriginationBasePage`.
+- **#1319 change:** `applySearch` regex extended with 3 new Search endpoints so it waits for the right network response per page: `getMerchantDataChangeResults` (MMH), `getModifiedLeads` (Modification Report), `getLeadsForFundingQueue` (Funding Queue, also matched via `funding` token).
+- **[HIPÓTESE]** the `getLeadsForFundingQueue` endpoint name is NOT confirmed via MCP (inferred from older reports); confirm via `browser_network_requests` in qa2 before treating as `[CONFIRMADO]`.
+
+### `MerchantModHistoryPage` — MMH `/merchantModificationHistory` (#1319)
+- **Location:** `src/pages/origination/merchant-mod-history.page.ts`. Extends `OriginationBasePage`.
+
+| Method | Description |
+|--------|-------------|
+| `filterByMerchants(merchants[])` / `filterByLocations(locations[])` | Multi-select checkbox filters. Location is DISABLED until ≥1 Merchant selected (BR-01) |
+| `applyFilters` | Applies the current filter selection and waits for the MMH Search response |
+| `getMerchantSelectedCount` / `getLocationSelectedCount` | Count of currently selected chips |
+| `getCheckedMerchants` | Labels of checked Merchant options |
+| `listAvailableMerchants` / `listAvailableLocations` | Option labels in the open dropdown |
+| `getMerchantColumnValues` | Merchant column cell values of the result table |
+| `getVisiblePageInfo` / `goToNextPage` / `goToPreviousPage` | Pagination |
+| `filterByMerchant` / `filterByLocation` *(deprecated)* | Legacy single-select, kept for backward compat |
+
+### `ModificationReportPage` — `/modificationReport` (#1319, agent/date/type filters #1315)
+- **Location:** `src/pages/origination/modification-report.page.ts`. Extends `OriginationBasePage`.
+- **Multi-select surface (#1319), same as MMH:** `filterByMerchants`, `filterByLocations`, `applyFilters`, `getMerchantSelectedCount`, `getLocationSelectedCount`, `getCheckedMerchants`, `listAvailableMerchants`, `getMerchantColumnValues`, `getVisiblePageInfo`, `goToNextPage`, `goToPreviousPage`. Location DISABLED until a Merchant is selected (BR-01).
+- **Agent / Date / Modification-Type filters + row reads (added 2026-06-18, #1315 — CT-03/CT-04):**
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `filterByAgentName` | `filterByAgentName(agentName)` | Free-text agent search (partial match), e.g. `jmendes.gow` or `SYSTEM`. Expands the filter panel, then sets `SELECTORS.modReportAgentNameInput` (`input#agentName`) via the **native-setter** path. |
+| `filterByDateRange` | `filterByDateRange(startDate, endDate)` | Sets Start/End Date. Dates MUST be `MM/DD/YYYY` (DOM-confirmed placeholder, qa2 2026-06-18). Both `input#from`/`input#to` are React-controlled — set via native setter, NOT `fill()`. |
+| `filterByModificationType` | `filterByModificationType(type)` | Single-select react-select anchored on `label:has-text('Modification Type') ~ div .filter__control`. Options: `LEAD_STATUS_CHANGE` / `APPROVAL_AMOUNT_CHANGE` / `LEASE_MOD`. |
+| `search` | `search()` | Clicks Search; delegates to `submitFilters` (waits for table rows OR the "There are no records to display" empty-state). |
+| `getAllRows` | `getAllRows(): Promise<Record<string,string>[]>` | Every visible row keyed by sort-arrow-normalized header text. `[]` on empty-state. Columns: Lead, Date, Modification Type, Merchant Name, Location Name, Old/New Status, Old/New Internal Status, New/Old Amount, Agent Name. |
+| `getRowByLeadPk` | `getRowByLeadPk(leadPk)` | First row whose **`Lead`** column equals `leadPk`, or `null`. **Walks every result page** (rdt paginates at 10/page) via `goToNextPage` until found or Next is disabled — bounded by a 50-page guard. |
+| `getAgentNameByLeadPk` | `getAgentNameByLeadPk(leadPk)` | Convenience — the "Agent Name" cell of the matching row, or `null`. |
+
+- **`forceReactInputValue(selector, value)` (private):** sets a Formik/React-controlled input via the prototype native-value setter + dispatched `input`/`change`/`blur` events. `page.fill()` alone **silently no-ops** on `input#agentName`/`input#from`/`input#to` because React owns the value (same pattern as `SearchPage.forceReactInputValue` / `#search-input`). See [[selector-hardening]] "React-controlled date/text input" rule and the anti-pattern table in [[page-object-pattern]] (`page.fill on React-controlled inputs`).
+- **Pagination on `getRowByLeadPk` (rdt default 10 rows/page):** do NOT assume the target lead is on page 1 — a freshly-created lead can land below the fold once the date filter widens the set. The walk is mandatory; a single-page `getAllRows().find(...)` would silently miss page-2+ rows.
+- **DOM source:** LIVE qa2 2026-06-18 (`jmendes.gow`, headless chromium 1440×900). Date placeholder `MM/DD/YYYY` confirmed; the 3 ids are stable Formik names (`agentName`/`from`/`to`).
+- **Test:** `tests/e2e/origination/R1.53.0_fixSystemAgentUsernameInModificationReport_1315.spec.ts` — CT-03 asserts the rendered "Agent Name" cell = real agent (not SYSTEM) for a fresh `UW_APPROVED → EXPIRED`; CT-04 asserts a legitimate-SYSTEM `CONTRACT_CREATED → SIGNED` webhook record renders SYSTEM (read-only reuse + `test.skip` guard).
+
+### `FundingPage` — Funding Queue `/funding` (#1319)
+- **Location:** `src/pages/origination/funding.page.ts`. Extends `OriginationBasePage`.
+- **Behavioral divergences vs MMH/ModReport (do NOT copy assumptions across pages):** Location is INDEPENDENT (NOT disabled by Merchant — BR-02); Status filter has "Funding" PRE-SELECTED on load (BR-03) and is the only filter with "Select All".
+
+| Method | Description |
+|--------|-------------|
+| `filterByStatuses(statuses[])` | Multi-select Status; CLEARS the default "Funding" selection before applying (pitfall — see below) |
+| `clearStatusFilter` / `getCheckedStatuses` / `getStatusSelectedCount` | Status selection state |
+| `listAvailableStatuses` | `Funding`, `Funded`, `Request Refund`, `Refunded` (4 distinct values — Request Refund and Refunded both map to `LeadStatus.OTHER` but are independent checkboxes) |
+| `statusFilterHasSelectAll` / `selectAllStatuses` | Status is the only filter exposing "Select All" |
+| `filterByMerchants(merchants[])` / `filterByLocations(locations[])` | Merchant + INDEPENDENT Location (BR-02) |
+| `getMerchantSelectedCount` / `getLocationSelectedCount` | Selection counts |
+| `listAvailableMerchants` | Merchant option labels |
+| `applyFiltersMulti` | Distinct name from the pre-existing `searchWithCurrentFilters` — applies the multi-select set |
+| `getMerchantColumnValues` / `getStatusColumnValues` | Result table column reads |
+| `getVisiblePageInfo` / `getTotalRowCount` / `goToNextPage` | Pagination |
+
+### Inter-page divergence (implementation reference)
+| Behavior | MMH | ModReport | Funding |
+|----------|-----|-----------|---------|
+| Location disabled until Merchant selected | ✅ | ✅ | ❌ (independent) |
+| Status filter present | — | — | ✅ ("Funding" pre-selected) |
+| "Select All" available | Merchant ❌ | Merchant ❌ | Status ✅ (Merchant ❌) |
+| Apply method name | `applyFilters` | `applyFilters` | `applyFiltersMulti` |
+
+### Selector added (#1319)
+- `paginationPrevious: '#pagination-previous-page'` — added to `PaginationSelectors` (`common.selectors.ts` + typed in `selector.types.ts`). Pairs with the existing next-page selector for the `goToPreviousPage` methods above.
+
+---
 
 ## SearchPage - Origination quick-search
 

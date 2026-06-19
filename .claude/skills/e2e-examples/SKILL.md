@@ -184,6 +184,24 @@ await withAgedAccount(db, 4353, 91, async  => {
 - Do NOT use `withAgedAccount` on arbitrary active accounts — side effects on shared test data.
 - `SEED_DELINQUENCY_DAYS = 60` is the documented restore target — do not restore to 0 or NULL.
 
+## 5b. UI-mandatory action because the HTTP header carries the assertion target (#1315, 2026-06-18)
+
+Canonical example of **API setup + UI-only action + DB assert** where the UI step is NOT optional: the value under test (`uown_lead_modifications.agent_username`) is derived from the `username` HTTP header that ONLY the portal SPA sends. A direct API `changeLeadStatus` call drops the header → the row records "SYSTEM" → reproduces the artifact instead of the fix. Rule #14 (UI-first) is load-bearing here, not stylistic.
+
+**File:** `tests/e2e/origination/R1.53.0_fixSystemAgentUsernameInModificationReport_1315.spec.ts`
+
+Pattern shape:
+1. **Setup via API (fresh lead per CT, rule #9):** `createPreQualifiedApplication(api, merchant, applicant, ctx, { skipPaymentInfo: true })` → lead parks at UW_APPROVED (no CC submit). CT-02 uses `{ submitPaymentInfoViaApi: true }` to reach the INVOICE_CREATED/CC_AUTH_PASSED internal path. Merchant preflight runs automatically (rule #12).
+2. **Force a fresh portal session as a SPECIFIC agent:** `clearCookies` + `localStorage.clear`/`sessionStorage.clear` before `LoginPage.login('jmendes.gow', ...)` — the `origination-ui` project ships a default storageState; without the reset the recorded `agent_username` would be the storageState user, not the agent under test.
+3. **UI-only action:** `customerPage.setToExpired()` (CT-01) / `customerPage.changeToSigned(comment)` (CT-02) — sends the `username` header.
+4. **DB assert (deterministic):** poll `uown_lead_modifications WHERE mod_type='LEAD_STATUS_CHANGE' AND new_status=$2 ORDER BY pk DESC LIMIT 1` → assert `agent_username === 'jmendes.gow'` AND `!== 'SYSTEM'`, PLUS a **negative guard** (no SYSTEM-attributed row for this fresh lead).
+5. **Activity log (rule #13):** assert the matching `uown_los_lead_notes` note exists.
+
+Takeaways to copy:
+- Column is `mod_type`, NOT `modification_type` (silent-0-rows projection drift — see [[db-polling-pattern]]).
+- A fresh-session login as a named agent is the only way to assert per-agent attribution — default storageState pollutes the result.
+- Pair the positive assert with a negative guard (`agent_username = 'SYSTEM'` returns 0 rows) so a regression can't pass by also writing a SYSTEM row.
+
 ## 6. Worker-Scoped Unique IDs
 
 ```typescript

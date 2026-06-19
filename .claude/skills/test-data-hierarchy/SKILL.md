@@ -55,6 +55,22 @@ Cenários OK:
 - Validação de regressão histórica em conta legada
 - Smoke check de conta master (raro)
 
+Cenários OK (exemplo canônico — transição sem UI affordance):
+- **Reuso read-only de registro gerado por webhook/sistema, quando a transição NÃO é reproduzível deterministicamente via portal.** Caso `#1315 CT-04` (2026-06-18): a transição `CONTRACT_CREATED → SIGNED` só nasce de um webhook GowSign/SignWell quando um cliente real completa o self-signing — não há botão de agent que a dispare. O teste valida que ESSE registro renderiza `Agent Name = SYSTEM` (comportamento legítimo, BR-02). Reuso é justificado porque: (a) o registro é apenas **lido**, nunca mutado; (b) a asserção é sobre um *display* de registro pré-existente, não sobre uma transição que o teste provoca; (c) há **`test.skip` guard** quando o ambiente não tem o registro — o teste pula em vez de inventar dado. Padrão:
+
+```ts
+const record = await db.queryOne<SystemRecord>(
+  `SELECT lead_pk, ... FROM uown_lead_modifications
+    WHERE mod_type='LEAD_STATUS_CHANGE'
+      AND old_status='CONTRACT_CREATED' AND new_status='SIGNED'
+      AND agent_username='SYSTEM'
+    ORDER BY pk DESC LIMIT 1`);
+test.skip(record === null, 'No CONTRACT_CREATED → SIGNED SYSTEM record available in this env');
+// ...filtra o Modification Report pelo lead_pk e asserta Agent Name = SYSTEM (read-only)
+```
+
+  > A justificativa fica **inline no spec** (comentário do CT). Contraste com CT-01/CT-02/CT-03 do mesmo arquivo: essas exercem transições *agent-triggered* (Set to Expired / Change to Signed) e usam **fresh lead por CT** via `createPreQualifiedApplication` — fresh é o default; reuso é a exceção isolada à transição sem affordance.
+
 Cenários NÃO OK:
 - "Levou muito tempo pra criar fresh, vou reusar" → flag de design problemático
 - "Esse lead já está no estado certo, é mais rápido" → vai mascarar bug de transição
