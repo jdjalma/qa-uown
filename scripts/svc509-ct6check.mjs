@@ -1,7 +1,7 @@
 // Check CT-6 PA inbound log details (pks 74, 189 claimed by debugger) + recent
 import pg from 'pg';
 const { Client } = pg;
-const client = new Client({ host: '127.0.0.1', port: 5445, user: 'svc_user', password: 'F1ntech', database: 'svc' });
+const client = new Client({ host: '127.0.0.1', port: 5445, user: 'svc_user', password: process.env.PGPASSWORD, database: 'svc' });
 await client.connect();
 
 const r1 = await client.query(

@@ -123,7 +123,7 @@ async function snapshotDb(uownPk, ksPk) {
     host: '127.0.0.1',
     port: 5445,
     user: 'svc_user',
-    password: 'F1nTech',
+    password: process.env.PGPASSWORD,
     database: 'svc',
   });
   await c.connect();

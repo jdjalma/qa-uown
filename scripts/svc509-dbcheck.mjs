@@ -6,7 +6,7 @@ const client = new Client({
   host: '127.0.0.1',
   port: 5445,
   user: 'svc_user',
-  password: 'F1ntech',
+  password: process.env.PGPASSWORD,
   database: 'svc',
 });
 

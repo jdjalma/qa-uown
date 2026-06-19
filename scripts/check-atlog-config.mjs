@@ -1,6 +1,6 @@
 import pg from 'pg';
 const { Pool } = pg;
-const pool = new Pool({ host: '127.0.0.1', port: 5445, database: 'svc', user: 'svc_user', password: 'F1ntech' });
+const pool = new Pool({ host: '127.0.0.1', port: 5445, database: 'svc', user: 'svc_user', password: process.env.PGPASSWORD });
 
 try {
   console.log('=== Webhook disparou para pk=72396 (future date)? ===');

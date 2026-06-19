@@ -52,7 +52,12 @@ import {
   sleep,
 } from '@helpers/index.js';
 
-const PORTAL_AGENT = { username: 'jmendes.gow', password: 'Uown_gow' };
+// username é o sujeito do teste de atribuição (asserido abaixo) — não é segredo.
+// A senha vem do .env (MODREPORT_AGENT_PASSWORD) — nunca hardcoded.
+const PORTAL_AGENT = {
+  username: process.env.MODREPORT_AGENT_USERNAME ?? 'jmendes.gow',
+  password: process.env.MODREPORT_AGENT_PASSWORD ?? '',
+};
 
 const testData = {
   env: 'qa2',
