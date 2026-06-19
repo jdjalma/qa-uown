@@ -8,7 +8,7 @@
 import { ConfigEnvironment, type EnvName, generateRunId, generateTestSSN, generateTestPhone } from '@config/index.js';
 import {
   getAddressForState, type AddressData, getMerchant, type MerchantConfig,
-  randomFullName, randomAddress, randomAdultDob, resolveSsn, type SsnStrategy,
+  randomPerson, type SsnStrategy,
 } from '@data/index.js';
 import type { MerchantInfo, ApplicantInfo, OrderInfo } from '@api/bodies/index.js';
 
@@ -119,47 +119,58 @@ export function buildTestData(options: BuildTestDataOptions): TestData {
   const merchantConfig = getMerchant(merchantName, envName);
   const runId = generateRunId();
 
-  // Resolve the address. Realistic mode → real city/ZIP + random house number
-  // (already blacklist-immune). Legacy mode → static per-state fixture, with the
-  // optional `uniqueAddress` unit suffix to dodge stale blacklist entries.
-  let address: AddressData;
-  if (realistic) {
-    const ra = randomAddress(state);
-    address = { street: ra.street, city: ra.city, zipCode: ra.zip };
-  } else {
-    const baseAddress = getAddressForState(state);
-    address = uniqueAddress
-      ? { ...baseAddress, street: `${baseAddress.street} Unit ${runId.slice(-5)}` }
-      : baseAddress;
-  }
-
   const merchant: MerchantInfo = {
     username: merchantConfig.username,
     password: merchantConfig.password,
     number: merchantConfig.number,
   };
 
-  // Name: realistic pool, or the legacy alpha-only `TestFN<runId>` suffix
-  // (alpha-only is required by the application name fields).
-  const nameSuffix = runId.replace(/[^a-zA-Z]/g, '').slice(0, 8) || 'abcdef';
-  const { firstName, lastName } = realistic
-    ? randomFullName()
-    : { firstName: `TestFN${nameSuffix}`, lastName: `TestLN${nameSuffix}` };
-
-  const applicant: ApplicantInfo = {
-    firstName,
-    lastName,
-    email: emailOverride ?? env.uniqueEmailAlias,
-    ssn: realistic
-      ? resolveSsn(ssnStrategy ?? (approved ? 'approve' : 'deny'))
-      : generateTestSSN(approved),
-    phone: generateTestPhone(),
-    address: address.street,
-    city: address.city,
-    state,
-    zip: address.zipCode,
-    dob: dob ?? (realistic ? randomAdultDob() : '01/01/1984'),
-  };
+  // Pessoa + endereço. Realistic mode (default) delega ao `randomPerson` (nome
+  // real, cidade/ZIP reais blacklist-immune, SSN/phone/DOB válidos) em vez de
+  // reinlinar os primitivos. O email PRESERVA o comportamento atual
+  // (`emailOverride ?? env.uniqueEmailAlias`) via override — a geração de email
+  // NÃO muda. Legacy mode mantém o fixture estático + nomes alpha-only TestFN.
+  let address: AddressData;
+  let applicant: ApplicantInfo;
+  if (realistic) {
+    const person = randomPerson({
+      state,
+      ssn: ssnStrategy ?? (approved ? 'approve' : 'deny'),
+      dob,
+      email: emailOverride ?? env.uniqueEmailAlias,
+    });
+    address = { street: person.address, city: person.city, zipCode: person.zip };
+    applicant = {
+      firstName: person.firstName,
+      lastName: person.lastName,
+      email: person.email,
+      ssn: person.ssn,
+      phone: person.phone,
+      address: person.address,
+      city: person.city,
+      state,
+      zip: person.zip,
+      dob: person.dob,
+    };
+  } else {
+    const baseAddress = getAddressForState(state);
+    address = uniqueAddress
+      ? { ...baseAddress, street: `${baseAddress.street} Unit ${runId.slice(-5)}` }
+      : baseAddress;
+    const nameSuffix = runId.replace(/[^a-zA-Z]/g, '').slice(0, 8) || 'abcdef';
+    applicant = {
+      firstName: `TestFN${nameSuffix}`,
+      lastName: `TestLN${nameSuffix}`,
+      email: emailOverride ?? env.uniqueEmailAlias,
+      ssn: generateTestSSN(approved),
+      phone: generateTestPhone(),
+      address: address.street,
+      city: address.city,
+      state,
+      zip: address.zipCode,
+      dob: dob ?? '01/01/1984',
+    };
+  }
 
   const order: OrderInfo = {
     orderTotal,
