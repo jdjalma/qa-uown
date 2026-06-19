@@ -27,7 +27,6 @@ export const SELECTORS: AppSelectors = {
   rowsPerPageDropdown: "select[aria-label='Rows per page:']",
 
   // ── Sidebar ────────────────────────────────────────────────────────
-  sidebar: '.sidebar',
   sidebarItem: "div[class*='sidebar__menu-item']",
 
   // ── Filters ────────────────────────────────────────────────────────
@@ -79,7 +78,6 @@ export const SELECTORS: AppSelectors = {
   modalContent: '.modal-content',
   modalHeader: '.modal-header',
   modalBody: '.modal-body',
-  modalFooter: '.modal-footer',
   modalClose: '.modal-header .close, [data-dismiss="modal"]',
   modalShow: '.modal.show, .modal.fade.show',
   modalBackdrop: '.modal-backdrop',
@@ -149,8 +147,6 @@ export const SELECTORS: AppSelectors = {
   quickSearchForm: 'form.d-none.d-lg-block, form[class*="d-lg-block"]',
   quickSearchTypeToggle: 'a[class*="index-module_searchType__toggle"], a[class*="searchType__toggle"]',
   quickSearchTypeMenu: '[role="menu"].dropdown-menu, .dropdown-menu[role="menu"]',
-  quickSearchTypeMenuItem: '[role="menu"] [role="menuitem"]',
-  quickSearchAutocompleteList: '[class*="searchResults"], [class*="search-results"], .dropdown-menu.show:not([role="menu"])',
   quickSearchAutocompleteResult: 'a[href*="/customer-information/"], a[href*="/customers/"]',
 
   // ── Customer Summary ───────────────────────────────────────────────
@@ -216,8 +212,6 @@ export const SELECTORS: AppSelectors = {
   signwellIframe: '#SignWell-Embedded-Iframe',
   signwellStart: 'a.start, a:has-text("Click to Start")',
   signwellCallout: '.callout',
-  signwellSignatureCallout: '.callout.signature-callout, .callout[data-field-type="signature"]',
-  signwellInitialsCallout: '.callout.initials-callout, .callout[data-field-type="initials"]',
   signwellSignatureType: '.signature__type',
   signwellInitialsType: '.initials__type, .signature__type',
   signwellSignatureActions: '.signature-actions',
@@ -273,7 +267,6 @@ export const SELECTORS: AppSelectors = {
   // `.rdt_TableRow` first()/count() iteration raced the fetch and saw 0 data rows.
   paymentHistoryBodyRows: ".rdt_TableBody .rdt_TableRow",
   paymentHistoryReverseIcon: 'svg[data-icon="arrow-rotate-left"]',
-  paymentHistoryEditIcon: 'svg[data-icon="pen-to-square"]',
   // Reverse / Reallocate modal — "Reverse Reason" is a React Select (#reverseReason is a
   // DIV container, NOT a native <select>), so options are picked via the open menu, not selectOption().
   // Options observed: "Reverse", "Fully Refund", "Partially Refund".
@@ -295,7 +288,6 @@ export const SELECTORS: AppSelectors = {
   topBar: '.top-bar, .navbar, .account-header',
 
   // ── Menus ──────────────────────────────────────────────────────────
-  menuOverview: '#overview',
 
   // ── Contract Page ─────────────────────────────────────────────────
   contractViewDocumentLink: "[class*='appComplete_appComplete__link']",
@@ -310,7 +302,6 @@ export const SELECTORS: AppSelectors = {
   paymentCardTitle: "[class*='paymentCard__title']",
   paymentCardDescription: "[class*='paymentCard__description']",
   paymentCardPrice: "[class*='paymentCard__price']:not([class*='Container']):not([class*='Label'])",
-  paymentCardPriceLabel: "[class*='paymentCard__priceLabel']",
   paymentCardDetailRow: "[class*='paymentCard__detailRow']",
   paymentCardButton: "[class*='paymentCard__button']",
   termSelectionTab: "[class*='termSelection__tab']",
@@ -319,11 +310,6 @@ export const SELECTORS: AppSelectors = {
   paymentProgramFooterPhone: "[class*='paymentProgram__footerPhone']",
 
   // ── Completion Screen (Confetes/New Design) ──────────────────────
-  completionCheckIcon: "[class*='checkIcon']",
-  completionMainMessage: "[class*='mainMessage']",
-  completionPhoneNumber: "[class*='phoneNumber']",
-  completionFooterText: "[class*='footerText']",
-  completionContent: "[class*='content']",
 
   // ── PayTomorrow Portal ────────────────────────────────────────────
   ptKeycloakUsername: '#username',
@@ -355,12 +341,7 @@ export const SELECTORS: AppSelectors = {
   ptDiscount: "#discount, input[name='discount'], input[placeholder*='Discount']",
   ptAddButton: "button:has-text('Add'), button:has-text('ADD')",
   ptSendToCustomerButton: "button:has-text('Send to customer to complete electronically'), button:has-text('Send to Customer')",
-  ptRefundButton: "button[label='Refund'], button:has-text('Refund')",
-  ptRefundReason: "textarea[name='refundReason']",
   ptRefundCheckbox: "input#agreedToRefund",
-  ptRefundConfirm: "xpath=//span[contains(text(), 'Refund $')]",
-  ptViewRefund: "button:has-text('View'), a:has-text('View')",
-  ptOtpInput: "input[autocomplete='one-time-code'], input[name='otp'], input[placeholder*='code']",
   ptSsnInput: "input[name='ssn'], input[maxlength='9'], input[placeholder*='SSN'], input[placeholder*='Social Security']",
   ptDobMonth: "select[name='dobMonth'], input[name='dobMonth']",
   ptDobDay: "select[name='dobDay'], input[name='dobDay']",
@@ -372,24 +353,12 @@ export const SELECTORS: AppSelectors = {
   ptEmployerName: "input[name='employerName'], input[placeholder*='Employer']",
   ptAgreeTerms: "input[name='agreeTerms'], input[type='checkbox']",
   ptSubmitButton: "button[type='submit'], button:has-text('Submit'), button:has-text('Continue')",
-  ptEmploymentSubmit: "button[type='submit'], button:has-text('Submit'), button:has-text('Continue')",
   ptSelectOffer: "button:has-text('Select'), a:has-text('Select')",
   ptContractIframe: "iframe[src*='uownleasing.com'], iframe[src*='completeApplication'], iframe.col-12.p-0",
-  ptContractScrollBox: ".contract-box, .agreement-box, div[style*='border'][style*='scroll'], div[style*='overflow'][style*='auto']",
-  ptCardholderFirstName: "input[name='cardFirstName'], input[name='firstName'], input[placeholder*='First Name'], input[placeholder*='Cardholder']",
-  ptCardholderLastName: "input[name='cardLastName'], input[name='lastName'], input[placeholder*='Last Name']",
-  ptCardNumber: "input[name='cardNumber'], input[name='ccNumber'], input[placeholder*='Card Number'], input[placeholder*='card number'], input[type='tel'][maxlength='16']",
-  ptCardExpMonth: "select[name='expMonth'], input[name='expMonth'], select[name='cardExpMonth']",
-  ptCardExpYear: "select[name='expYear'], input[name='expYear'], select[name='cardExpYear']",
-  ptCardCvv: "input[name='cvv'], input[name='cvc'], input[name='securityCode'], input[placeholder*='CVV'], input[placeholder*='CVC'], input[maxlength='4'][type='tel']",
-  ptContractAgreeCheckbox: "input[type='checkbox'][name*='agree'], input[type='checkbox'][name*='terms'], input[type='checkbox']",
-  ptContractSubmitBtn: "button:has-text('Complete'), button:has-text('Sign'), button:has-text('Submit'), button[type='submit']",
   ptStreet: "#street, input[name='street'], input[name='address'], input[placeholder*='Street']",
   ptCity: "#city, input[name='city'], input[placeholder*='City']",
   ptZip: "#zip, input[name='zip'], input[name='zipCode'], input[placeholder*='Zip']",
   ptStateDropdown: "#state, div[class*='dropdown'] label, select[name='state']",
-  ptStateDropdownItem: "div[role='option'], li[role='option']",
-  ptConfirmDialog: "button:has-text('OK'), button:has-text('Confirm'), button:has-text('Accept')",
   ptButtonPrimary: "button.btn-primary, button[class*='primary'], a.btn-primary",
 
   // ── PayPair Portal (dw93bg.paypair.com) ──────────────────────────
@@ -425,7 +394,6 @@ export const SELECTORS: AppSelectors = {
   ppPtIframe: '#pt-iframe',
 
   // ── Modify Lease ─────────────────────────────────────────────────
-  modifyLeaseButton: "button:has-text('Modify Lease'), button >> span:has-text('Modify Lease')",
   // DOM-first (2026-06-12, MCP live lead 97502/97509): the modify-lease
   // confirmation dialog renders as both `.modal.show` and `[role="dialog"]`;
   // the action button label is exactly "Continue" (the uppercase "CONTINUE" in
@@ -433,23 +401,15 @@ export const SELECTORS: AppSelectors = {
   // and match the literal button text.
   modifyLeaseWarningContinue:
     ".modal.show button:has-text('Continue'), [role='dialog'] button:has-text('Continue')",
-  modifyLeaseWarningCancel: ".modal.show button:has-text('Cancel')",
   modifyLeaseSaveButton: ".modal.show button:has-text('SAVE'), .modal.show button:has-text('Save')",
-  activityLogCard: "xpath=//div[contains(@class,'card')]//div[contains(text(),'Activity') or contains(text(),'activity')]/..",
   activityLogEntry: "xpath=//div[contains(@class,'card')]//div[contains(text(),'Activity') or contains(text(),'activity')]/../..//div[contains(@class,'card-body')]//div[@role='row'] | //div[contains(@class,'card')]//div[contains(text(),'Activity')]/../..//tr",
 
   // ── Cancellation ─────────────────────────────────────────────────
-  cancelLeaseButton: "button:has-text('Cancel Lease'), button >> span:has-text('Cancel Lease')",
-  cancelLeaseCommentInput: ".modal.show #comment, .modal.show textarea[name='comment'], #cancelComment",
-  cancelLeaseRefundCheckbox: ".modal.show #refundAllPayments, .modal.show input[name='refundAllPayments'], .modal.show input[type='checkbox'][name*='refund']",
-  cancelLeaseConfirmButton: ".modal.show .btn-danger:has-text('Cancel'), .modal.show .btn-primary:last-child",
-  invoiceItemDeleteButton: "#deleteActionIcon, .fa-trash-can, .fa-trash, button[title='Delete'], button:has-text('Delete'), svg[data-icon='trash-can'], svg[data-icon='trash']",
   merchantOfferInsuranceCheckbox: "#checkbox-offerInsurance, #offerInsurance, input[name='offerInsurance']",
 
   // ── Insurance / Protection Plan ────────────────────────────────────
   purchaseInsuranceSubmitBtn: '#purchase-insurance-submit-btn',
   seeProtectionBenefitsBtn: 'button:has-text("See Protection Benefits")',
-  buddyOfferContainer: '[class*="buddyOfferContainer"]',
   insuranceOptInCheckbox: 'text=I agree to the Uown Protection Plus',
   insuranceOptOutCheckbox: 'text=No, continue unprotected',
 
@@ -460,7 +420,6 @@ export const SELECTORS: AppSelectors = {
 
   // Single input that accepts email OR 10-digit phone (no mask). Real DOM:
   // <input type="text" id="phoneOrEmail" name="phoneOrEmail" placeholder="Mobile number OR email address">
-  wsEmailInput: "#phoneOrEmail, input[name='phoneOrEmail'], input[type='email'], input[placeholder*='email' i]",
   wsEmailOrPhoneInput: "#phoneOrEmail, input[name='phoneOrEmail']",
   wsVerificationCodeInput: "input[name='code'], input[placeholder*='code' i], input[type='tel']",
   wsSubmitButton: "button[type='submit'], button:has-text('Submit'), button:has-text('Continue'), button:has-text('Verify')",
@@ -478,12 +437,10 @@ export const SELECTORS: AppSelectors = {
   wsPrimaryEmailField: '#primaryEmail, input[name="primaryEmail"], input[type="email"]',
 
   // Phone update — Update Contact Info page
-  wsPhoneAreaCodeInput: '#areaCode, input[name="areaCode"], input[placeholder*="Area" i]',
   wsPhoneNumberInput: '#phoneNumber, input[name="phoneNumber"], input[placeholder*="Phone" i]',
   wsSaveChangesButton: 'button:has-text("Save Changes"), button[type="submit"]:has-text("Save")',
   wsSuccessMessage: '.alert-success, .success-message, [class*="success"]:has-text("saved"), [class*="success"]:has-text("updated"), .toast-success',
   wsErrorMessage: '.alert-danger, .error-message, [class*="error"], .modal-body:has-text("could not find")',
-  wsUpdatePhoneSection: 'form[data-section="phone"], .phone-section, [class*="phone"]',
 
   wsOtherAmountRadio: '#other',
   wsPaymentAmountField: '#other, input[name="paymentAmount"], input[type="number"]',
@@ -503,8 +460,6 @@ export const SELECTORS: AppSelectors = {
   naSubmitNewApplicationBtn: '.btn-secondary',
   naEmailAddress: "input[name='custEmailAddress']",
   naPhone: "input[name='phone']",
-  naMerchantDropdown: '.form-control',
-  naLocationDropdown: '.form-control',
 
   // Consumer-facing application wizard - Page 1 (Personal Info)
   // Note: DOM uses uppercase SSN/DOB; do not lowercase
@@ -520,7 +475,6 @@ export const SELECTORS: AppSelectors = {
 
   // Consumer-facing application wizard - Page 2 (Employment)
   // EmployerName + EmploymentDuration removed in 2026-05 wizard refresh; left here only for legacy reference
-  naMainPayScheduleDropdown: "xpath=//*[contains(text(),'Your Pay Schedule')]/..//div[contains(@class,'react-select') or contains(@class,'dropdown')]",
   naMainLastPayDate: '#mainLastPayDate',
   naMainNextPayDate: '#mainNextPayDate',
   naMainMonthlyIncome: '#mainMonthlyIncome',
@@ -541,21 +495,16 @@ export const SELECTORS: AppSelectors = {
   naRightFootConsentError: '#rightFootConsentChecked-error',
   // Yup inline errors for bank routing and account fields. These elements have no stable id
   // — they are the immediate next sibling of the input (confirmed via DOM snapshot 2026-06-01).
-  naMainBankRoutingNumberError: '#mainBankRoutingNumber + *',
-  naMainBankAccountNumberError: '#mainBankAccountNumber + *',
 
   // Consumer-facing application wizard - Page 3 (Consent)
   naIsAgreedToStatements: '#isAgreedToStatements',
   naIsAgreedToPrivacyPolicy: '#isAgreedToPrivacyPolicy',
-  naBankruptcyDropdown: "xpath=//*[contains(text(),'bankruptcy')]/..//div[contains(@class,'react-select') or contains(@class,'dropdown')]",
 
   // Wizard footer buttons (data-nid-target is the only stable hook; .btn-primary is shared by Prev)
   naSendApplicationNextBtn: '[data-nid-target="sendApplication-nextBtn"]',
-  naSendApplicationPrevBtn: '[data-nid-target="sendApplication-PrevBtn"]',
   naSendApplicationSubmitBtn: '[data-nid-target="sendApplication-submitBtn"]',
 
   // Invoice / Lease creation on customer page
-  naLeaseAddNew: "xpath=//div[text()='Lease']/../div[text()='Add New'] | button:has-text('Add New')",
   naNumberOfItems: '#numberOfItems',
   naItemCode: '#itemCode',
   naItemDescription: '#itemDescription',
@@ -576,7 +525,6 @@ export const SELECTORS: AppSelectors = {
   // DOM-confirmed dev3 acct 138 (2026-06-01): explicit UI select, not backend-derived.
   arrangementTypeDropdown: "xpath=//label[@for='paymentArrangementType']/../div",
   arrangementInstallmentAmountInput: (index: number) => `[id="paymentInfo[${index}].paymentAmount"]`,
-  arrangementInstallmentDateInput: (index: number) => `[id="paymentInfo[${index}].paymentDate"]`,
 
   // ── Servicing Information Edit ─────────────────────────────────────
   svInfoEditButton: '#ServicingInformation-edit',
@@ -594,10 +542,8 @@ export const SELECTORS: AppSelectors = {
   // page object scopes via `getByText('Settlement Amount', { exact: true })`
   // and filters by clickable ancestor for robustness; this string is the
   // CSS fallback when scoping by parent locator is not available.
-  settlementAmountLabel: "div:has-text('Settlement Amount')",
   // Bootstrap modal anchored on its visible title.
   settlementBreakdownModal: ".modal.show:has-text('Settlement Breakdown')",
-  settlementBreakdownModalTitle: ".modal.show .modal-title, .modal.show h5",
   // Each line item — implementer iterates to extract { label, value }.
   // DOM real (validated via MCP qa1, 2026-05-22): modal does NOT use a
   // Bootstrap `.modal-body` wrapper — uses a custom `<div class="overflow-auto p-3">`
@@ -616,32 +562,16 @@ export const SELECTORS: AppSelectors = {
   moveDueDateNewDateInput: "input[name='numOfDaysToBeMoved']",
 
   // ── Origination - Leads Table Filters ──────────────────────────────
-  leadsFromDateInput: "input[placeholder='MM/DD/YYYY']:first-of-type, input[name='from']",
-  leadsToDateInput: "input[placeholder='MM/DD/YYYY']:last-of-type, input[name='to']",
-  leadsLeadPkInput: "input[placeholder*='LeadPk'], input[placeholder*='Lead PK'], input[placeholder*='leadPk']",
-  leadsEmailInput: "input[placeholder*='email' i]",
-  leadsSsnInput: "input[placeholder*='ssn' i]",
-  leadsAccountPkInput: "input[placeholder*='AccountPK'], input[placeholder*='Account PK']",
-  leadsPhoneInput: "input[placeholder*='Phone']",
-  leadsCustomerNameInput: "input[placeholder*='Customer Name']",
-  leadsStateDropdown: "input[placeholder*='state' i]",
-  leadsLeadStatusDropdown: "input[placeholder*='status' i], input[placeholder*='Lead Status' i]",
-  leadsInvoiceNumberInput: "input[placeholder='Search by Invoice Number']",
 
   // ── Error Log (Origination — /errorLog) ────────────────────────────
-  elTabSendApplication: "[eventkey='sendApplication'], button[data-rr-ui-event-key='sendApplication']",
-  elTabSubmitApplication: "[eventkey='submitApplication'], button[data-rr-ui-event-key='submitApplication']",
   elFilterFromDate: "input[name='from']",
   elFilterToDate: "input[name='to']",
   elFilterSearch: "input[name='search']",
-  elFilterSubmitButton: "button[type='submit'], button:has-text('Search'), button:has-text('Filter')",
 
   // ── Merchant Settings (Origination — /merchantSetting) ─────────────
   msDealerDiscountInput: "input[name='dealerDiscountOverride']",
   msDealerRebateTypeSelect: "select[name='dealerRebateType']",
   msDealerRebateOverrideInput: "input[name='dealerRebateOverride']",
-  msMerchantTableCheckbox: "input[type='checkbox']",
-  msSubmitButton: "button[type='submit']:has-text('Submit'), button:has-text('SUBMIT'), button:has-text('SAVE')",
   msBulkConfirmButton: ".modal.show button:has-text('Confirm'), .modal.show button:has-text('Yes')",
   msPeakCampaignIdInput: "input[name='peakCampaignId']",
   msOffPeakCampaignIdInput: "input[name='offPeakCampaignId']",
@@ -690,13 +620,9 @@ export const SELECTORS: AppSelectors = {
 
   // ── Contract page — missing employment info (planId empty in /complete URL) ──
   /** "Next paycheck" date input shown when planId is missing in the /complete URL */
-  completeNextPaycheckInput: 'input[type="search"]',
   /** React Select combobox for pay frequency ("How often do you get paid?") */
-  completePayFrequencyCombobox: '[class*="react-select__control"]',
   /** Plan selection heading shown after employment info is submitted */
-  completePlanSelectionHeading: 'h2, [class*="heading"]',
   /** "Choose Payment Program" button on the plan selection screen */
-  completeChooseProgramBtn: 'button:has-text("Choose Payment Program")',
 
   // ── Task #442 — Send Invite / Podium (Servicing — Account Summary) ────────
   invitationIcon: '#invitation',
@@ -710,7 +636,6 @@ export const SELECTORS: AppSelectors = {
   // so we anchor on the prefix portion via [class*=] attribute selectors. The
   // hash suffix (e.g. __5Th8A) changes on every webpack rebuild — the prefix stays.
   leasePanelHeader: '[class*="customer-info-panels_documentsItemHeader__"]',
-  leasePanelHeaderTitle: '[class*="customer-info-panels_documentsItemHeader__"] > div',
   // Row container: the `contractItem__` base class (without the inner element
   // variants `titleButton`, `subtitle1`, `subtitle2`, `timeStamp`). The :not()
   // chain rejects those nested elements while keeping the outer row.
@@ -721,13 +646,11 @@ export const SELECTORS: AppSelectors = {
   leasePanelContractTimestamp: '[class*="customer-info-panels_contractItem__timeStamp__"]',
 
   // ── Open to Buy (Origination) ──────────────────────────────────────────────
-  openToBuyNavLink: "a[href*='openToBuy'], a:has-text('Open to Buy'), #openToBuy",
   openToBuyExportCsvButton: "button:has-text('Export'), button:has-text('CSV'), a:has-text('Export CSV')",
 
   // ── Origination — Column-Order tests (task #1295) ─────────────────────────
   // SPEC § 0.5: Origination tables sit inside Bootstrap `<div class="table-responsive">`.
   // No data-testid available — anchor on the stable Bootstrap class.
-  tableResponsiveContainer: '.table-responsive',
   scrollableAncestor: '.table-responsive, [style*="overflow"], [class*="overflow-auto"], [class*="overflow-x"]',
   // Overview-only — Config Columns gear-icon trigger. Visible text "Config Columns" per SPEC § 0.5.
   configColumnsTrigger: "button:has-text('Config Columns'), a:has-text('Config Columns'), [aria-label='Config Columns']",
@@ -764,7 +687,6 @@ export const SELECTORS: AppSelectors = {
   // On hover, React-Bootstrap renders the directing message as a portal:
   // <div role="tooltip" class="tooltip show bs-tooltip-auto"> outside the span.
   // DOM-confirmed sandbox 2026-06-18 after applying 79k-row date filter (#1321).
-  csvDownloadTooltipById: (tooltipIdPrefix: string) => `span[id^=${JSON.stringify(tooltipIdPrefix + '-')}]`,
   csvDownloadTooltipPortal: "div[role='tooltip'].tooltip.show, div.tooltip.show",
   // Email CSV modal — a dialog with title "Which email should we send this CSV file to?".
   csvEmailModal: "[role='dialog']:has-text('Which email should we send this CSV file to?'), .modal:has-text('Which email should we send this CSV file to?')",
@@ -777,11 +699,8 @@ export const SELECTORS: AppSelectors = {
 
   // ── Task #505 — Opt Out AI (Servicing — Primary Contact / Mobile Phone) ──
   primaryContactEditButton: '#PrimaryContact-edit',
-  primaryContactSaveButton: "button[class*='collapsableEdit__button__primary']",
   optOutAiCheckbox: '#optOutAiMobile, label:has-text("Opt Out AI") input[type="checkbox"], input[name="optOutAiMobile"]',
   doNotCallCheckbox: '#doNotCallMobile, label:has-text("Do Not Call") input[type="checkbox"], input[name="doNotCallMobile"]',
-  primaryContactSection: '[data-section="primary-contact"], .primary-contact-panel, section:has-text("Primary Contact")',
-  mobilePhoneSection: '[data-section="mobile-phone"], section:has-text("Mobile Phone")',
   // Reason modal that appears when toggling Opt Out AI checkbox
   optOutAiReasonModal: 'dialog, [role="dialog"]',
   optOutAiReasonTextbox: 'dialog textarea, [role="dialog"] textarea',
@@ -842,8 +761,6 @@ export const SELECTORS: AppSelectors = {
   amsRdtTableBody: '.rdt_TableBody',
   amsRdtPagination: '.rdt_Pagination',
   amsPaginationNextButton: 'button[aria-label="Next Page"]',
-  amsPaginationPrevButton: 'button[aria-label="Previous Page"]',
-  amsUsersSearchInput: 'input[name="search"]',
 
   // ── AMS — User Details (/users/[username]) ────────────────────────
   // Edit triggers: pencil icon spans per card section
@@ -854,17 +771,12 @@ export const SELECTORS: AppSelectors = {
   amsUserPhoneInput: 'input[name="phoneNumber"]',
   amsSaveButton: 'button:has-text("SAVE")',
   amsCancelButton: 'button:has-text("CANCEL")',
-  amsEditUserCard: '#employmentForm',
 
   // ── AMS — Associate Merchants (/associate-users-to-merchants) ─────
   amsAssocPageSubmit: 'button:has-text("Submit")',
   amsUsersSelectionInfo: '[class*="selectable-users-table_selectionInfo"]',
   amsMerchantsSelectionInfo: '[class*="selectable-merchants-table_selectionInfo"]',
-  amsAssocUsersTableContainer: '.col-xl-6:first-child',
-  amsAssocMerchantsTableContainer: '.col-xl-6:last-child',
-  amsAssocSelectAllCheckbox: 'input[name="select-all-rows"]',
   amsAssocRowCheckbox: 'input[name="select-row-undefined"]',
-  amsAssocMerchantsSearch: 'input[placeholder*="merchant" i]',
 
   // ── AMS — Toast (reuse global toastSuccess) ───────────────────────
   amsSuccessToast: '.Toastify__toast--success, .toast-success, .alert-success',
@@ -892,25 +804,13 @@ export const SELECTORS: AppSelectors = {
   amsUserMerchantsSelectInput: '.filter__input',
   amsUserMerchantsSelectOption: '[class*="customOptionStyles"]',
   // Multi-value tags in React Select (modal)
-  amsUserMerchantsMultiValue: '[class*="multiValue"]',
-  amsUserMerchantsMultiValueRemove: '[class*="multiValue"] [role="button"], [class*="multiValue"] [class*="remove"]',
   // Clear all indicator in React Select
-  amsUserMerchantsClearIndicator: '[class*="clearIndicator"], [class*="clear-indicator"]',
   // Search for Current Merchants input (read-only mode)
   amsUserMerchantsSearchbox: 'input[placeholder="Search for Current Merchants"]',
   // Origination tab in the merchants card
-  amsUserMerchantsOriginationTab: '.nav-tabs .nav-link',
 
   // ── CC History / Edit Modal ────────────────────────────────────
   ccEditPencilIcon: 'svg[data-icon="pencil-alt"], svg[data-icon="pencil"], svg[data-icon="pen-to-square"]',
-  ccEditModal: '#editPendingCCForm, .modal:has(#editPendingCCForm)',
-  ccEditModalTitle: '.modal-title',
-  ccEditPostingDate: '#editPendingCCForm input[name="postingDate"], #editPendingCCForm [name="postingDate"]',
-  ccEditAmount: '#editPendingCCForm input[name="amount"], #editPendingCCForm [name="amount"]',
-  ccEditComment: '#editPendingCCForm textarea[name="comment"], #editPendingCCForm [name="comment"]',
-  ccEditSaveButton: '#editPendingCCForm button[type="submit"], .modal:has(#editPendingCCForm) button:has-text("SAVE")',
-  ccEditCancelButton: '.modal:has(#editPendingCCForm) button:has-text("Close"), .modal:has(#editPendingCCForm) button:has-text("Cancel"):not(:has-text("CANCEL"))',
-  ccEditRemoveButton: '.modal:has(#editPendingCCForm) .btn-danger, .modal:has(#editPendingCCForm) button:has-text("Cancel"):last-of-type',
 
   // ── Sticky Recover columns (svc#485 — CC History grid) ───────────
   // Accessible names of the 4 Servicing columns added for the Sticky recovery
@@ -930,22 +830,12 @@ export const SELECTORS: AppSelectors = {
 
   // ── Merchant Add/Edit (Origination — /merchant & /merchant/addMerchant) ──────
   // Task #1262 — Inventory Category mandatory
-  merchantListAddButton: "a[href*='addMerchant'], button:has-text('Add'), button:has-text('Add Merchant')",
   // Clone is a bootstrap DropdownButton with title="Clone" — toggle opens the menu
-  merchantCloneDropdownToggle: "button:has-text('Clone'), .dropdown-toggle:has-text('Clone')",
   // Search input inside the clone dropdown (InputField name="search")
-  merchantCloneDropdownInput: ".dropdown-menu input[name='search'], .show input[name='search']",
   // Each clonable merchant appears as a DropdownItem inside the opened dropdown menu
-  merchantCloneDropdownItem: ".dropdown-menu.show .dropdown-item, .show .dropdown-item",
   // Clone icon + tooltip shown in Merchant Information panel after a clone
   merchantClonedFromIcon: '#merchantClone',
   // Inventory Category — react-select creatable control rendered by InputField (label "Inventory Category")
-  inventoryCategoryControl: "label:has-text('Inventory Category') ~ div .filter__control, div:has(> label:has-text('Inventory Category')) .filter__control",
-  inventoryCategoryInput: "label:has-text('Inventory Category') ~ div input, div:has(> label:has-text('Inventory Category')) input",
-  inventoryCategoryClearIndicator: "label:has-text('Inventory Category') ~ div .filter__clear-indicator, div:has(> label:has-text('Inventory Category')) .filter__clear-indicator",
-  inventoryCategorySingleValue: "label:has-text('Inventory Category') ~ div [class*='filter__single-value'], div:has(> label:has-text('Inventory Category')) [class*='filter__single-value']",
-  inventoryCategoryLabel: "label:has-text('Inventory Category')",
-  inventoryCategoryErrorText: "div:has(> label:has-text('Inventory Category')) [class*='error'], div:has(> label:has-text('Inventory Category')) .text-danger, div:has(> label:has-text('Inventory Category')) + div:has-text('Required')",
   // Merchant identity fields on the add/edit form
   merchantRefCodeInput: "input[name='merchantCode'], input[name='refMerchantCode']",
   merchantNameInput: "input[name='merchantName']",
@@ -958,7 +848,6 @@ export const SELECTORS: AppSelectors = {
   pgGroupCountCell: "div[role='cell']:nth-child(2) span",
   pgGroupInfoIcon: "div[role='cell'] svg[data-icon='circle-info'], div[role='cell'] svg.fa-circle-info",
   pgGroupEditIcon: "div[role='cell'] svg[data-icon='pen-to-square'], div[role='cell'] svg.fa-pen-to-square, div[role='cell'] svg[data-icon='pencil']",
-  pgProgramLink: 'a[href*="/programs/"]',
 
   // ── Programs List (Origination — /programs — Schedule Activation/Deactivation Dates) ──
   plSectionHeader: '[class*="index-module_sectionHeader"]:has-text("PROGRAMS")',
@@ -999,8 +888,6 @@ export const SELECTORS: AppSelectors = {
   pdInlineError: 'div.inline-error, [class*="error"]:has-text("Activation"), [class*="error"]:has-text("Deactivation")',
   pdNotesCard: '.card:has(.card-header:has-text("Notes")), .card:has([class*="card-header"]:has-text("Notes"))',
   pdNotesFiltersButton: '.card:has([class*="card-header"]:has-text("Notes")) button:has-text("Filters")',
-  pdNotesSearchInput: '.card:has([class*="card-header"]:has-text("Notes")) input[name="search"], .card:has([class*="card-header"]:has-text("Notes")) input[placeholder*="Search" i]',
-  pdNotesUserIdInput: '.card:has([class*="card-header"]:has-text("Notes")) input[name="userId"], .card:has([class*="card-header"]:has-text("Notes")) input[placeholder*="User" i]',
   pdNotesLogActivityControl: '.card:has([class*="card-header"]:has-text("Notes")) label:has-text("Log Activity") ~ div .filter__control',
   // Scope to table BODY only — excludes the header row (which is also .rdt_TableRow).
   // Multiple fallbacks for role-based + class-based matching against react-data-table-component.
@@ -1040,7 +927,6 @@ export const SELECTORS: AppSelectors = {
   // (e.g., Last 3 Payments). Strict-mode matching must resolve to a single element.
   bankAccountsTable: '.modal.show .rdt_Table',
   bankAccountsTableBody: '.modal.show .rdt_TableBody',
-  bankAccountsTableRow: (index: number) => `#row-${index}`,
   bankAccountsRowCheckbox: 'input[name="select-row-undefined"]',
   bankAccountsSelectAllCheckbox: 'input[name="select-all-rows"]',
   bankAccountsDeleteButton: '.modal.show button:has-text("Delete")',
@@ -1055,22 +941,15 @@ export const SELECTORS: AppSelectors = {
   gsDownloadButton: 'button:has(svg.lucide-download)',
   gsCloseDocumentButton: 'button[aria-label="Close document"]',
   // Reading mode: Headless UI ID is dynamic, so anchor by aria-label/role (toggle is a switch)
-  gsReadingModeToggle: '[role="switch"][aria-label*="Reading" i], [role="switch"][aria-labelledby]:near(:text("Reading mode"))',
 
   // Pre-signature metadata table
-  gsSentByLabel: 'text=Document sent by',
-  gsCreatedOnLabel: 'text=Created on',
-  gsDocumentIdHeader: 'th:has-text("DOCUMENT ID"), :has(svg.lucide-file-digit)',
   gsDocumentIdValue: 'td:right-of(:text("DOCUMENT ID"))',
-  gsRecipientHeader: 'th:has-text("Recipient")',
   gsRecipientNameCell: 'td:right-of(:text("Recipient"))',
   gsRecipientEmailCell: 'td span.text-blue-600:has(svg.lucide-mail)',
   gsStatusBadge: 'span.rounded-md.text-white',
 
   // Document content
-  gsDocumentContainer: '.gowsign-document',
   gsPageNumber: '.styles_page-number__oHQFD',
-  gsPageBreak: '.gowsign-page-break',
 
   // Property Price Tag
   gsPriceTagTable: 'table.price-tag',
@@ -1107,7 +986,6 @@ export const SELECTORS: AppSelectors = {
   // EPO chart
   gsEpoChartTable: 'table:has(th:has-text("Payment Number")):has(th:has-text("EPO"))',
   gsEpoChartRows: 'table:has(th:has-text("Payment Number")):has(th:has-text("EPO")) tr:has(td)',
-  gsEpoChartRowAt: (n: number) => `table:has(th:has-text("Payment Number")):has(th:has-text("EPO")) tr:nth-child(${n + 1})`,
 
   // ACH grid
   gsAchGridTable: 'table:has(th:has-text("Number of payments")):has(th:has-text("Total Cost"))',
@@ -1120,18 +998,6 @@ export const SELECTORS: AppSelectors = {
   // Selectors anchor on the EXACT visible label text; page object resolves the
   // value via `locator(label).locator('xpath=following-sibling::div[1]')`.
   // DOM live-validated via MCP Playwright on qa1 account 4745 (2026-05-24).
-  svcEpoBalanceLabel: 'text="EPO Balance"',
-  svcNinetyDayTotalLabel: 'text="90-day Total"',
-  svcNinetyDayExpiryLabel: 'text="90-day Expiration Date"',
-  svcNinetyDayEligibleLabel: 'text="Eligible for 90-day Pay Off"',
-  svcEpoFeePctLabel: 'text="EPO Fee %"',
-  svcCostCashPriceLabel: 'text="Cost/Cash Price"',
-  svcProcessingFeeLabel: 'text="Processing Fee"',
-  svcBuyoutFeeLabel: 'text="Buyout Fee"',
-  svcTaxRateLabel: 'text="Tax Rate (%)"',
-  svcTotalContractAmountLabel: 'text="Total Contract Amount"',
-  svcContractBalanceLabel: 'text="Contract Balance"',
-  svcSettlementAmountFieldLabel: 'text="Settlement Amount"',
 
   // ── Customer Portal — Overview + Payment (svc#531 R1.52.0) ─────────
   // Customer-facing portal (Website portal in repo naming). Mobile-first
@@ -1140,13 +1006,11 @@ export const SELECTORS: AppSelectors = {
   // button is a `<button>` sibling of the value on the "Balance if Paid Off
   // Today" card. /payment shows the same balance inside a radio option
   // labelled "Balance if Paid Off Today:" (trailing colon).
-  wsBalanceIfPaidOffLabel: 'text="Balance if Paid Off Today"',
   wsPayOffButton: 'button:has-text("Pay Off")',
   wsContractBalanceLabel: 'text="Contract Balance"',
   wsPaymentDueLabel: 'text="Payment Due"',
   wsNextPaymentDueDateLabel: 'text="Next Payment Due Date"',
   wsPaymentPageBalancePaidOffRadioLabel: 'text="Balance if Paid Off Today:"',
-  wsMakeAPaymentButton: 'button:has-text("MAKE A PAYMENT")',
 
   // ── Servicing — Documents tab (/documents/{accountPk}) ─────────────
   // Source: servicing repo `components/document-information/index.tsx` and `pages/documents/[account].tsx`.

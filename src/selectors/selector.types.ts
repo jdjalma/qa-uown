@@ -26,7 +26,6 @@ export interface PaginationSelectors {
 }
 
 export interface SidebarSelectors {
-  sidebar: string;
   sidebarItem: string;
 }
 
@@ -58,7 +57,6 @@ export interface ModalSelectors {
   modalContent: string;
   modalHeader: string;
   modalBody: string;
-  modalFooter: string;
   modalClose: string;
   modalShow: string;
   modalBackdrop: string;
@@ -102,9 +100,7 @@ export interface SearchSelectors {
   /** Dropdown menu container that appears after clicking the toggle. */
   quickSearchTypeMenu: string;
   /** Menu items (the 9–10 searchType options) inside the dropdown. */
-  quickSearchTypeMenuItem: string;
   /** Autocomplete result list (rendered below the input after the BFF request resolves). */
-  quickSearchAutocompleteList: string;
   /** Each result inside the autocomplete list — anchor on the customer link prefix. */
   quickSearchAutocompleteResult: string;
 }
@@ -175,8 +171,6 @@ export interface SignwellSelectors {
   signwellIframe: string;
   signwellStart: string;
   signwellCallout: string;
-  signwellSignatureCallout: string;
-  signwellInitialsCallout: string;
   signwellSignatureType: string;
   signwellInitialsType: string;
   signwellSignatureActions: string;
@@ -231,7 +225,6 @@ export interface TopBarSelectors {
 }
 
 export interface MenuSelectors {
-  menuOverview: string;
 }
 
 export interface PayTomorrowPortalSelectors {
@@ -248,12 +241,7 @@ export interface PayTomorrowPortalSelectors {
   ptDiscount: string;
   ptAddButton: string;
   ptSendToCustomerButton: string;
-  ptRefundButton: string;
-  ptRefundReason: string;
   ptRefundCheckbox: string;
-  ptRefundConfirm: string;
-  ptViewRefund: string;
-  ptOtpInput: string;
   ptSsnInput: string;
   ptDobMonth: string;
   ptDobDay: string;
@@ -265,24 +253,12 @@ export interface PayTomorrowPortalSelectors {
   ptEmployerName: string;
   ptAgreeTerms: string;
   ptSubmitButton: string;
-  ptEmploymentSubmit: string;
   ptSelectOffer: string;
   ptContractIframe: string;
-  ptContractScrollBox: string;
-  ptCardholderFirstName: string;
-  ptCardholderLastName: string;
-  ptCardNumber: string;
-  ptCardExpMonth: string;
-  ptCardExpYear: string;
-  ptCardCvv: string;
-  ptContractAgreeCheckbox: string;
-  ptContractSubmitBtn: string;
   ptStreet: string;
   ptCity: string;
   ptZip: string;
   ptStateDropdown: string;
-  ptStateDropdownItem: string;
-  ptConfirmDialog: string;
   ptButtonPrimary: string;
   ptCustomerNotPresentBtn: string;
   ptInitiatePreApprovalBtn: string;
@@ -336,30 +312,18 @@ export interface PayPairPortalSelectors {
 }
 
 export interface CancellationSelectors {
-  cancelLeaseButton: string;
-  cancelLeaseCommentInput: string;
-  cancelLeaseRefundCheckbox: string;
-  cancelLeaseConfirmButton: string;
-  invoiceItemDeleteButton: string;
   merchantOfferInsuranceCheckbox: string;
 }
 
 export interface ModifyLeaseSelectors {
-  modifyLeaseButton: string;
   modifyLeaseWarningContinue: string;
-  modifyLeaseWarningCancel: string;
   modifyLeaseSaveButton: string;
-  activityLogCard: string;
   activityLogEntry: string;
 }
 
 export interface ContractSelectors {
   contractViewDocumentLink: string;
   contractCheckbox: string;
-  completeNextPaycheckInput: string;
-  completePayFrequencyCombobox: string;
-  completePlanSelectionHeading: string;
-  completeChooseProgramBtn: string;
 }
 
 export interface PaymentProgramSelectors {
@@ -371,7 +335,6 @@ export interface PaymentProgramSelectors {
   paymentCardTitle: string;
   paymentCardDescription: string;
   paymentCardPrice: string;
-  paymentCardPriceLabel: string;
   paymentCardDetailRow: string;
   paymentCardButton: string;
   termSelectionTab: string;
@@ -381,11 +344,6 @@ export interface PaymentProgramSelectors {
 }
 
 export interface CompletionScreenSelectors {
-  completionCheckIcon: string;
-  completionMainMessage: string;
-  completionPhoneNumber: string;
-  completionFooterText: string;
-  completionContent: string;
 }
 
 export interface NewApplicationSelectors {
@@ -394,8 +352,6 @@ export interface NewApplicationSelectors {
   naSubmitNewApplicationBtn: string;
   naEmailAddress: string;
   naPhone: string;
-  naMerchantDropdown: string;
-  naLocationDropdown: string;
 
   // Consumer-facing application wizard — Page 1 (Personal Info)
   naMainFirstName: string;
@@ -409,7 +365,6 @@ export interface NewApplicationSelectors {
   naMainCity: string;
 
   // Consumer-facing application wizard - Page 2 (Employment)
-  naMainPayScheduleDropdown: string;
   naMainLastPayDate: string;
   naMainNextPayDate: string;
   naMainMonthlyIncome: string;
@@ -417,15 +372,12 @@ export interface NewApplicationSelectors {
   // Consumer-facing application wizard - Page 3 (Consent)
   naIsAgreedToStatements: string;
   naIsAgreedToPrivacyPolicy: string;
-  naBankruptcyDropdown: string;
 
   // Wizard footer buttons
   naSendApplicationNextBtn: string;
-  naSendApplicationPrevBtn: string;
   naSendApplicationSubmitBtn: string;
 
   // Invoice / Lease creation on customer page
-  naLeaseAddNew: string;
   naNumberOfItems: string;
   naItemCode: string;
   naItemDescription: string;
@@ -441,7 +393,6 @@ export interface NewApplicationSelectors {
 export interface InsuranceSelectors {
   purchaseInsuranceSubmitBtn: string;
   seeProtectionBenefitsBtn: string;
-  buddyOfferContainer: string;
   insuranceOptInCheckbox: string;
   insuranceOptOutCheckbox: string;
 }
@@ -453,7 +404,6 @@ export interface WebsiteSelectors {
   wsContactSection: string;
 
   // Login elements
-  wsEmailInput: string;
   wsEmailOrPhoneInput: string;
   wsVerificationCodeInput: string;
   wsSubmitButton: string;
@@ -474,12 +424,10 @@ export interface WebsiteSelectors {
   wsPrimaryEmailField: string;
 
   // Phone update — Update Contact Info page
-  wsPhoneAreaCodeInput: string;
   wsPhoneNumberInput: string;
   wsSaveChangesButton: string;
   wsSuccessMessage: string;
   wsErrorMessage: string;
-  wsUpdatePhoneSection: string;
 
   // ACH payment
   wsOtherAmountRadio: string;
@@ -503,8 +451,6 @@ export interface MerchantSettingSelectors {
   msDealerDiscountInput: string;
   msDealerRebateTypeSelect: string;
   msDealerRebateOverrideInput: string;
-  msMerchantTableCheckbox: string;
-  msSubmitButton: string;
   msBulkConfirmButton: string;
   msPeakCampaignIdInput: string;
   msOffPeakCampaignIdInput: string;
@@ -554,11 +500,9 @@ export interface ServicingInformationSelectors {
 // `getByRole` does not match — we anchor on the exact text content.
 export interface SettlementAmountSelectors {
   /** Clickable "Settlement Amount" label in the Account & Contract Overview panel. */
-  settlementAmountLabel: string;
   /** Modal container — Bootstrap `.modal.show` whose body contains "Settlement Breakdown". */
   settlementBreakdownModal: string;
   /** Modal title `<h*>` text — used to confirm the modal opened. */
-  settlementBreakdownModalTitle: string;
   /** Each row inside the breakdown — `<tr>` or list item. Implementer iterates these. */
   settlementBreakdownRow: string;
   /** Close (X) button for the breakdown modal. */
@@ -571,16 +515,12 @@ export interface PaymentArrangementSelectors {
   arrangementEndDateInput: string;                              // #endDate
   arrangementPaymentFrequencyDropdown: string;                  // xpath for #paymentFrequency React Select
   arrangementInstallmentAmountInput: (index: number) => string; // paymentInfo[n].paymentAmount
-  arrangementInstallmentDateInput: (index: number) => string;   // paymentInfo[n].paymentDate
 }
 
 export interface ErrorLogSelectors {
-  elTabSendApplication: string;
-  elTabSubmitApplication: string;
   elFilterFromDate: string;
   elFilterToDate: string;
   elFilterSearch: string;
-  elFilterSubmitButton: string;
 }
 
 export interface MoveDueDateSelectors {
@@ -597,11 +537,8 @@ export interface InvitationSelectors {
 // ── Task #505 — Opt Out AI (Servicing — Primary Contact / Mobile Phone) ────
 export interface OptOutAiSelectors {
   primaryContactEditButton: string;
-  primaryContactSaveButton: string;
   optOutAiCheckbox: string;
   doNotCallCheckbox: string;
-  primaryContactSection: string;
-  mobilePhoneSection: string;
   optOutAiReasonModal: string;
   optOutAiReasonTextbox: string;
   optOutAiReasonSaveButton: string;
@@ -609,17 +546,6 @@ export interface OptOutAiSelectors {
 
 // ── Origination — Leads Table Filters ─────────────────────────────────────────
 export interface LeadsTableSelectors {
-  leadsFromDateInput: string;
-  leadsToDateInput: string;
-  leadsLeadPkInput: string;
-  leadsEmailInput: string;
-  leadsSsnInput: string;
-  leadsAccountPkInput: string;
-  leadsPhoneInput: string;
-  leadsCustomerNameInput: string;
-  leadsStateDropdown: string;
-  leadsLeadStatusDropdown: string;
-  leadsInvoiceNumberInput: string;
 }
 
 // ── Origination — Sales Rep / Merchant Info panel (Customer page) ──────────────
@@ -632,7 +558,6 @@ export interface SalesRepPanelSelectors {
 // CSS-module hash classes — use [class*=] prefix matchers (pitfall #26).
 export interface LeasePanelSelectors {
   leasePanelHeader: string;
-  leasePanelHeaderTitle: string;
   leasePanelContractItem: string;
   leasePanelContractTitleButton: string;
   leasePanelContractSubtitle1: string;
@@ -642,7 +567,6 @@ export interface LeasePanelSelectors {
 
 // ── Origination — Open to Buy page ────────────────────────────────────────────
 export interface OpenToBuySelectors {
-  openToBuyNavLink: string;         // Sidebar link to /openToBuy
   openToBuyExportCsvButton: string; // Export / CSV button on Open to Buy page
 }
 
@@ -658,7 +582,6 @@ export interface OpenToBuySelectors {
 export interface ColumnOrderSelectors {
   /** Bootstrap scrollable wrapper around the main agent table. Used by CT-04 to
    *  assert customer-name <th> bounding box is fully visible at scrollLeft=0. */
-  tableResponsiveContainer: string;
   /** Generic "scrollable ancestor" fallback when `.table-responsive` is absent. */
   scrollableAncestor: string;
   /** Overview-only — "Config Columns" trigger (gear icon link). */
@@ -689,7 +612,6 @@ export interface ColumnOrderSelectors {
   csvEmailButton: string;
   /** Directing tooltip wrapper for the Download CSV control, by tooltipIdPrefix.
    *  Overview = `overview-csv-download`, Leads = `leads-csv-download`. */
-  csvDownloadTooltipById: (tooltipIdPrefix: string) => string;
   /** Email CSV modal dialog (title "Which email should we send this CSV file to?"). */
   csvEmailModal: string;
   /** Email CSV modal title text. */
@@ -707,14 +629,6 @@ export interface ColumnOrderSelectors {
 // ── Servicing — CC History / Edit Pending CC Payment Modal ────────────────────
 export interface CcHistorySelectors {
   ccEditPencilIcon: string;
-  ccEditModal: string;
-  ccEditModalTitle: string;
-  ccEditPostingDate: string;
-  ccEditAmount: string;
-  ccEditComment: string;
-  ccEditSaveButton: string;
-  ccEditCancelButton: string;
-  ccEditRemoveButton: string;
   // Sticky Recover (svc#485)
   stickyStatusColumnName: string;
   stickyTxnIdColumnName: string;
@@ -735,7 +649,6 @@ export interface ProgramGroupsSelectors {
   pgGroupCountCell: string;
   pgGroupInfoIcon: string;
   pgGroupEditIcon: string;
-  pgProgramLink: string;
 }
 
 // ── Origination — Programs List page (/programs — Schedule Activation/Deactivation Dates) ──
@@ -777,8 +690,6 @@ export interface ProgramDetailsSelectors {
   pdInlineError: string;
   pdNotesCard: string;
   pdNotesFiltersButton: string;
-  pdNotesSearchInput: string;
-  pdNotesUserIdInput: string;
   pdNotesLogActivityControl: string;
   pdNotesRow: string;
   pdNotesCell: string;
@@ -800,31 +711,17 @@ export interface MerchantProgramsSectionSelectors {
 // /customer-information/{accountPk}. Each label `<div>` is followed by a
 // sibling `<div>` value — page object reads the pair via xpath sibling.
 export interface ServicingEpoPanelSelectors {
-  svcEpoBalanceLabel: string;
-  svcNinetyDayTotalLabel: string;
-  svcNinetyDayExpiryLabel: string;
-  svcNinetyDayEligibleLabel: string;
-  svcEpoFeePctLabel: string;
-  svcCostCashPriceLabel: string;
-  svcProcessingFeeLabel: string;
-  svcBuyoutFeeLabel: string;
-  svcTaxRateLabel: string;
-  svcTotalContractAmountLabel: string;
-  svcContractBalanceLabel: string;
-  svcSettlementAmountFieldLabel: string;
 }
 
 // ── Customer Portal — Overview + Payment (svc#531 R1.52.0) ───────────────────
 // Customer-facing portal cards and the /payment page Pay Off radio. Mobile
 // viewport 375x667 per CLAUDE.md regra #15.
 export interface CustomerPortalOverviewSelectors {
-  wsBalanceIfPaidOffLabel: string;
   wsPayOffButton: string;
   wsContractBalanceLabel: string;
   wsPaymentDueLabel: string;
   wsNextPaymentDueDateLabel: string;
   wsPaymentPageBalancePaidOffRadioLabel: string;
-  wsMakeAPaymentButton: string;
 }
 
 // ── Servicing — Customer Documents tab (/documents/{accountPk}) ─────────────
@@ -866,7 +763,6 @@ export interface BankAccountModalSelectors {
   allBankAccountsModalTitle: string;
   bankAccountsTable: string;
   bankAccountsTableBody: string;
-  bankAccountsTableRow: (index: number) => string;
   bankAccountsRowCheckbox: string;
   bankAccountsSelectAllCheckbox: string;
   bankAccountsDeleteButton: string;
@@ -875,17 +771,7 @@ export interface BankAccountModalSelectors {
 }
 
 export interface MerchantAddEditSelectors {
-  merchantListAddButton: string;
-  merchantCloneDropdownToggle: string;
-  merchantCloneDropdownInput: string;
-  merchantCloneDropdownItem: string;
   merchantClonedFromIcon: string;
-  inventoryCategoryControl: string;
-  inventoryCategoryInput: string;
-  inventoryCategoryClearIndicator: string;
-  inventoryCategorySingleValue: string;
-  inventoryCategoryLabel: string;
-  inventoryCategoryErrorText: string;
   merchantRefCodeInput: string;
   merchantNameInput: string;
   merchantLegalNameInput: string;
@@ -900,22 +786,15 @@ export interface GowSignDocumentViewerSelectors {
   gsStartSignatureButton: string;
   gsDownloadButton: string;
   gsCloseDocumentButton: string;
-  gsReadingModeToggle: string;
 
   // Pre-signature metadata table
-  gsSentByLabel: string;
-  gsCreatedOnLabel: string;
-  gsDocumentIdHeader: string;
   gsDocumentIdValue: string;
-  gsRecipientHeader: string;
   gsRecipientNameCell: string;
   gsRecipientEmailCell: string;
   gsStatusBadge: string;
 
   // Document content
-  gsDocumentContainer: string;
   gsPageNumber: string;
-  gsPageBreak: string;
 
   // Property Price Tag
   gsPriceTagTable: string;
@@ -952,7 +831,6 @@ export interface GowSignDocumentViewerSelectors {
   // EPO chart
   gsEpoChartTable: string;
   gsEpoChartRows: string;
-  gsEpoChartRowAt: (n: number) => string;
 
   // ACH grid
   gsAchGridTable: string;
@@ -992,8 +870,6 @@ export interface AmsUserSelectors {
   amsRdtTableBody: string;
   amsRdtPagination: string;
   amsPaginationNextButton: string;
-  amsPaginationPrevButton: string;
-  amsUsersSearchInput: string;
   // User Details (/users/[username])
   amsEditProfileButton: string;
   amsUserFirstNameInput: string;
@@ -1002,16 +878,11 @@ export interface AmsUserSelectors {
   amsUserPhoneInput: string;
   amsSaveButton: string;
   amsCancelButton: string;
-  amsEditUserCard: string;
   // Associate Merchants (/associate-users-to-merchants)
   amsAssocPageSubmit: string;
   amsUsersSelectionInfo: string;
   amsMerchantsSelectionInfo: string;
-  amsAssocUsersTableContainer: string;
-  amsAssocMerchantsTableContainer: string;
-  amsAssocSelectAllCheckbox: string;
   amsAssocRowCheckbox: string;
-  amsAssocMerchantsSearch: string;
   // Toast
   amsSuccessToast: string;
   // Confirmation modal
@@ -1031,11 +902,7 @@ export interface AmsUserSelectors {
   amsUserMerchantsSelectControl: string;
   amsUserMerchantsSelectInput: string;
   amsUserMerchantsSelectOption: string;
-  amsUserMerchantsMultiValue: string;
-  amsUserMerchantsMultiValueRemove: string;
-  amsUserMerchantsClearIndicator: string;
   amsUserMerchantsSearchbox: string;
-  amsUserMerchantsOriginationTab: string;
 }
 
 /** Composite type of all selectors */
@@ -1107,8 +974,6 @@ export interface AmsUserSelectors {
   amsRdtTableBody: string;
   amsRdtPagination: string;
   amsPaginationNextButton: string;
-  amsPaginationPrevButton: string;
-  amsUsersSearchInput: string;
   amsEditProfileButton: string;
   amsUserFirstNameInput: string;
   amsUserLastNameInput: string;
@@ -1116,14 +981,9 @@ export interface AmsUserSelectors {
   amsUserPhoneInput: string;
   amsSaveButton: string;
   amsCancelButton: string;
-  amsEditUserCard: string;
   amsAssocPageSubmit: string;
   amsUsersSelectionInfo: string;
   amsMerchantsSelectionInfo: string;
-  amsAssocUsersTableContainer: string;
-  amsAssocMerchantsTableContainer: string;
-  amsAssocSelectAllCheckbox: string;
   amsAssocRowCheckbox: string;
-  amsAssocMerchantsSearch: string;
   amsSuccessToast: string;
 }
