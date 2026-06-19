@@ -515,10 +515,14 @@ export class MerchantLocationFilterPO extends OriginationBasePage {
     //   - Rebate: rebate listing
     //   - Merchant Setting: getMerchantSetting(s)
     //   - New Application: getSendApplicationRequests(ByCriteria)
+    //   - Merchant Modification History (#1319): getMerchantDataChangeResults
+    //   - Modification Report (#1319): getModifiedLeads
+    //   - Funding Queue (#1319): POST /uown/los/getLeadsForFundingQueue [confirmed qa2 2026-06-18]
+    //     (generic `funding` token retained as fallback for any future funding endpoint)
     // Permissive matching so any new page wired to the same widget Just Works.
     const responsePromise = this.page.waitForResponse(
       (resp) =>
-        /getLeadsByCriteria|getMerchantList|getMerchantsByCriteria|getMerchantSetting|getSendApplicationRequests|openToBuy|rebate/i
+        /getLeadsByCriteria|getMerchantList|getMerchantsByCriteria|getMerchantSetting|getSendApplicationRequests|openToBuy|rebate|getMerchantDataChangeResults|getModifiedLeads|getLeadsForFundingQueue|funding/i
           .test(resp.url()) && resp.status() === 200,
       { timeout: 15_000 },
     ).catch(() => null);

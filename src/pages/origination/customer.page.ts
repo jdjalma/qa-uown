@@ -181,28 +181,105 @@ export class OriginationCustomerPage extends OriginationBasePage {
     }
   }
 
+  readonly moveContractToSignedModal = this.page.locator(SELECTORS.moveContractToSignedModal);
+  readonly moveContractToSignedComment = this.page.locator(SELECTORS.moveContractToSignedComment);
+  readonly moveContractToSignedConfirm = this.page.locator(SELECTORS.moveContractToSignedConfirm).last();
+  readonly setToExpiredModal = this.page.locator(SELECTORS.setToExpiredModal);
+  readonly setToExpiredComment = this.page.locator(SELECTORS.setToExpiredComment);
+  readonly setToExpiredConfirm = this.page.locator(SELECTORS.setToExpiredConfirm).last();
+
   /**
-   * Clicks "Change to Signed" button and confirms.
-   * The button can be obscured by the horizontal scrolling summary bar,
-   * so we first expand it by clicking the expand caret, then click the button.
+   * Clicks "Change to Signed" and completes the "Move Contract to Signed" modal.
+   *
+   * For a lead with a prior signing flow (internal status INVOICE_CREATED /
+   * CC_AUTH_PASSED / etc., BR-06 in the #1315 discovery KB), the "Change to
+   * Signed" button opens the "Move Contract to Signed" modal directly. That
+   * modal has a REQUIRED comment field (placeholder "Add a comment (required)")
+   * and a CONFIRM submit button. The XHR fired by CONFIRM carries the portal
+   * `username` HTTP header — which is exactly what the #1315 fix relies on to
+   * record the real agent in `uown_lead_modifications.agent_username`.
+   *
+   * The action button lives in the horizontally overflow-auto summary bar and
+   * can render off-screen, so we trigger it via the JS-dispatch path in
+   * {@link clickActionButton} (see its docstring for the off-screen rationale)
+   * rather than a plain `.click()`.
+   *
+   * @param comment text for the required comment field (defaults to a marker
+   *                so the modal CONFIRM stays enabled).
    */
-  async changeToSigned(): Promise<void> {
-    // Expand the action buttons area if the expand caret is present
-    const expandCaret = this.page.locator('svg[data-icon="caret-right"], svg[data-icon="caret-left"]').first();
-    if (await expandCaret.isVisible({ timeout: 2_000 }).catch(() => false)) {
-      await expandCaret.click({ force: true });
-      // Wait for the action buttons to become visible after expanding
-      await this.changeToSignedButton.waitFor({ state: 'visible', timeout: 3_000 }).catch(() => {});
+  async changeToSigned(comment = 'Automated - Change to Signed (#1315)'): Promise<void> {
+    await this.clickActionButton('Change to Signed');
+
+    // "Move Contract to Signed" modal — required comment + CONFIRM.
+    const modalVisible = await this.moveContractToSignedModal
+      .waitFor({ state: 'visible', timeout: 10_000 }).then(() => true).catch(() => false);
+
+    if (modalVisible) {
+      await this.moveContractToSignedComment.waitFor({ state: 'visible', timeout: 5_000 });
+      await this.moveContractToSignedComment.fill(comment);
+      await this.moveContractToSignedConfirm.waitFor({ state: 'visible', timeout: 5_000 });
+      await this.moveContractToSignedConfirm.click();
+    } else {
+      // Fallback: a plain confirm dialog (no comment field) — older path.
+      const confirmBtn = this.page.getByRole('button', { name: /confirm|yes|ok/i }).first();
+      if (await confirmBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        await confirmBtn.click();
+      }
     }
 
-    await this.changeToSignedButton.scrollIntoViewIfNeeded();
-    await this.changeToSignedButton.click({ force: true });
+    await this.page.locator(SELECTORS.modalShow).last()
+      .waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => {});
+    await this.captureAndDismissToast(15_000).catch(() => '');
+    await this.waitForSpinner();
+  }
 
-    // A confirmation dialog or modal may appear
-    const confirmBtn = this.page.getByRole('button', { name: /confirm|yes|ok/i }).first();
-    if (await confirmBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await confirmBtn.click();
+  /**
+   * Clicks "Set to Expired" and completes the resulting "Add a Comment" modal.
+   *
+   * Mirrors the JS-dispatch trigger used by {@link clickActionButton}: the
+   * "Set to Expired" button sits in the off-screen-prone horizontal summary
+   * bar, so a real React click is dispatched after scrollIntoView.
+   *
+   * DOM contract (LIVE qa2 lead 16728, 2026-06-18, headless chromium 1440×900):
+   * the action opens an "Add a Comment" modal rendered inside `.modal.fade.show`
+   * (role="dialog"). It carries:
+   *   - an OPTIONAL comment `<input name="comment">` (placeholder "Type here...",
+   *     NOT required — Save stays enabled when the field is empty), and
+   *   - a submit button whose label is "Save" (NOT "CONFIRM"/"Yes", and there is
+   *     NO `.submit-button` class).
+   * Clicking Save fires the `changeLeadStatus` XHR carrying the portal `username`
+   * header — exactly what the #1315 fix relies on to record the real agent.
+   *
+   * Failure history (this method, before fix): the confirm selector targeted
+   * `button.submit-button` / "CONFIRM" / "Yes" → 0 matches; the visibility wait
+   * was wrapped in `.catch(() => false)`, so the miss returned silently and
+   * `changeLeadStatus` never fired. The lead never transitioned. The mask is
+   * removed below — a missing confirm button now throws.
+   *
+   * @param comment optional text for the comment field. Passed through even
+   *                though the field is not required, so the activity log /
+   *                modification note carries an automation marker.
+   */
+  async setToExpired(comment = 'Automated - Set to Expired (#1315)'): Promise<void> {
+    await this.clickActionButton('Set to Expired');
+
+    // Wait for the modal; no .catch swallow — a miss must surface as a failure.
+    await this.setToExpiredModal.waitFor({ state: 'visible', timeout: 10_000 });
+
+    // Comment field is optional but present — fill it when rendered so the note
+    // carries the automation marker. Do not fail the flow if it is absent.
+    if (await this.setToExpiredComment.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await this.setToExpiredComment.fill(comment);
     }
+
+    // Confirm via the "Save" submit button. No swallow: if it never becomes
+    // visible, the wait throws and the test reports the real failure.
+    await this.setToExpiredConfirm.waitFor({ state: 'visible', timeout: 10_000 });
+    await this.setToExpiredConfirm.click();
+
+    await this.page.locator(SELECTORS.modalShow).last()
+      .waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => {});
+    await this.captureAndDismissToast(15_000).catch(() => '');
     await this.waitForSpinner();
   }
 

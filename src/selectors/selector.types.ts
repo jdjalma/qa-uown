@@ -21,6 +21,7 @@ export interface ToastSelectors {
 
 export interface PaginationSelectors {
   paginationNext: string;
+  paginationPrevious: string;
   rowsPerPageDropdown: string;
 }
 
@@ -40,6 +41,11 @@ export interface FilterSelectors {
   filterSingleValue: string;
   filterClearIndicator: string;
   filterMultiValueLabel: string;
+  // Modification Report filter panel (Origination, #1315 — CT-03/CT-04).
+  // DOM-first (LIVE qa2 2026-06-18, 1440×900): Formik inputs with stable ids.
+  modReportAgentNameInput: string;
+  modReportStartDateInput: string;
+  modReportEndDateInput: string;
   // Task #1292 — multi-select rollout (Origination)
   // Bottom filter container button (leads-style block with Filters + Search button).
   // The class is a CSS-module hash; anchor on the stable prefix `index-module_filterButton__`.

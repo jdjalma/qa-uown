@@ -73,22 +73,19 @@ export class FilteredCsvDownloadControls {
    * tooltip is rendered (e.g. the enabled case and the empty-table case show NO
    * directing tooltip).
    *
-   * NOTE on the DOM: the `<span id="{tooltipIdPrefix}-{random}">` is the WRAPPER
-   * around the button — its `textContent` is just the button label
-   * ("Download CSV"), not a tooltip. The directing message ("This export is too
-   * large to download directly. Please use Email CSV instead. …") is rendered
-   * only in the size-exceeded case. We therefore match the directing PHRASE
-   * (scoped to that wrapper), not the wrapper's raw text — so the enabled case
-   * correctly returns null. Validated by running CT-01/CT-02 (2026-06-18):
-   * the wrapper text was "Download CSV", which must NOT be treated as a tooltip.
+   * DOM (sandbox 2026-06-18, #1321): React-Bootstrap renders the tooltip as a
+   * PORTAL — `<div role="tooltip" class="tooltip show bs-tooltip-auto">` is
+   * injected outside the trigger span at the document level. The span wrapper
+   * `<span id="{tooltipIdPrefix}-{random}">` contains only the button label
+   * ("Download CSV"), NOT the tooltip text. We therefore look for the portal
+   * div after hover, scoped by the directing phrase.
    */
   async getDownloadDisabledTooltip(): Promise<string | null> {
-    const wrapper = this.page.locator(SELECTORS.csvDownloadTooltipById(this.tooltipIdPrefix)).first();
-    if (!(await wrapper.isVisible({ timeout: 3_000 }).catch(() => false))) return null;
-    const directing = wrapper.getByText(/too large to download directly/i).first();
-    if (!(await directing.isVisible({ timeout: 1_000 }).catch(() => false))) return null;
-    const text = (await directing.textContent())?.trim();
-    return text && text.length > 0 ? text : null;
+    const portal = this.page.locator(SELECTORS.csvDownloadTooltipPortal).first();
+    if (!(await portal.isVisible({ timeout: 3_000 }).catch(() => false))) return null;
+    const text = (await portal.textContent())?.trim();
+    if (!text || !/too large to download directly/i.test(text)) return null;
+    return text;
   }
 
   // ── Download CSV — action ─────────────────────────────────────────────

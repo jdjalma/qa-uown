@@ -350,30 +350,162 @@ for (const data of testData) {
     });
 
     // ════════════════════════════════════════════════════════════════
-    //  CT-08 — [P0 by importance / EXECUTION-BLOCKED on QA2]
+    //  CT-08 — [P0 by importance / EXECUTION-BLOCKED on QA2 *and* SANDBOX]
     //  Disabled Download CSV + directing tooltip/error toast (the fix itself).
     //  STATUS: source-confirmed (bundle constant 50331648, `<=` comparison, exact
     //  tooltip string, error-toast path) — see KB. UI render needs ~66k leads in
-    //  one filtered set; QA2 holds ~44 leads/day, so it CANNOT be reproduced here.
-    //  NOT run; documented only. Do NOT mark green on QA2 (rule #10/#16).
+    //  one filtered set; neither QA2 nor SANDBOX holds anywhere near that volume,
+    //  so the disabled state CANNOT be reproduced on either env. NOT run; documented
+    //  only. Do NOT mark green (rule #10/#16).
+    //
+    //  SANDBOX repro attempt [dom-snapshot:sandbox 2026-06-18, origination-sandbox]:
+    //  logged in as `manager`/P@ssw0rdu0wn (sandbox `admin` role → DEFAULT_ADMIN,
+    //  whose .env password `admin` returns HTTP 401; the working sandbox password is
+    //  P@ssw0rdu0wn). Overview table-panel date range 01/01/2022→12/31/2026 returned
+    //  TOTAL ROWS = 36 (rdt footer "1-10 of 36"). The Download CSV button rendered
+    //  ENABLED: class `filtered-csv-download_enabledButton__`, no `disabled` attr,
+    //  cursor:pointer; React-fiber props `isCsvDownloadDisabled:false`,
+    //  `hasDownloadPermission:true`. No "too large" text present in the DOM. 36 rows
+    //  is ~3 orders of magnitude below the ~66k needed (overview ≈ 762 bytes/row ⇒
+    //  ~66k rows to exceed 48 MiB), so the size guard is unreachable with real
+    //  sandbox data — same conclusion as QA2. The == 48 MiB boundary (enabled,
+    //  inclusive) is likewise source-confirmed only (SPEC Q4) — cannot be hit
+    //  deterministically on real data. Run on a high-volume/seeded env when available.
     // ════════════════════════════════════════════════════════════════
     test.skip('CT-08: >48 MiB → Download CSV disabled + "too large" tooltip + error toast on click (Overview/Leads)', async () => {
-      // Blocked on QA2 by data volume (~66k leads needed). Source-confirmed in
-      // docs/knowledge-base/overview-leads-csv-export-size-limit.md. Run on a
-      // high-volume/seeded env when available (SPEC Q2). The == 48 MiB boundary
-      // (enabled, inclusive) is likewise source-confirmed only (SPEC Q4) — cannot
-      // be hit deterministically on real data.
+      // Blocked on QA2 AND sandbox by data volume (~66k leads needed). Source-confirmed
+      // in docs/knowledge-base/overview-leads-csv-export-size-limit.md and re-confirmed
+      // not-reproducible on sandbox (36 rows, button enabled). See the block comment above.
     });
 
     // ════════════════════════════════════════════════════════════════
-    //  CT-09 — [P1, CONDITIONAL] No-download-permission role (Overview)
-    //  STATUS: requires a QA2 account WITHOUT CSV download permission (SPEC Q-role).
-    //  No such account exists on QA2 → NOT run; source-confirmed only.
+    //  CT-09 — [P1, CONDITIONAL] No-download-permission role (Overview / Leads)
+    //  STATUS: gate confirmed at source (Download CSV renders only when
+    //  `hasDownloadPermission && headers>0`; Email CSV renders regardless). The
+    //  AMS permission that drives this gate is now IDENTIFIED + the roles that
+    //  lack it are enumerated — but executing the test needs a login whose role
+    //  lacks the permission, so it remains documented-only until such an account
+    //  (with a known password) exists or is provisioned. NOT run on QA2/sandbox.
+    //
+    //  AMS PERMISSION MODEL [dom-snapshot:sandbox 2026-06-18, ams-website-sandbox]:
+    //  AMS → Roles ("Manage Roles & Permissions", left-nav "Roles") → tab
+    //  **Origination**. Each role row, when clicked, populates the right-hand
+    //  "Edit Role Permissions" panel with the role's GRANTED permissions as tag
+    //  chips (`index-module_tagContainer__`; the panel lists ONLY granted perms,
+    //  not a full checklist). The exact permission names that control the
+    //  Origination Download CSV buttons are:
+    //    • Overview Download CSV  →  permission "overview download csv"
+    //    • Leads    Download CSV  →  permission "leads download csv"
+    //  (NB: a DIFFERENT permission "overview csv [modify]" exists and is NOT the
+    //   download gate — it governs the filter/column config, not the button.)
+    //
+    //  ROLE → has "overview download csv" / "leads download csv" (Origination tab):
+    //    admin    → YES / YES   (all 22 CSV perms)
+    //    manager  → YES / YES   (all 22 CSV perms)
+    //    agent    → NO  / NO    (only "overview csv [modify]", "funding csv [modify]")
+    //    isr      → NO  / NO    (only "overview csv [modify]")
+    //    auditor  → NO  / NO    (only "overview csv [modify]", "funding csv [modify]")
+    //  ⇒ A user whose ONLY Origination role is agent / isr / auditor will NOT see
+    //    the Download CSV button (Email CSV still renders). On sandbox, user
+    //    `evedovatto.gow_clone` (Manage Users → Roles column = "agent", single role)
+    //    is such a candidate — but its password is unknown, so it cannot be driven
+    //    by the suite as-is.
+    //
+    //  TO EXECUTE CT-09 (fresh-data path, rule #9): in AMS → Users → "Add User",
+    //  create a user with a known password; then Users → <user> → "Change User Role"
+    //  → tab Origination → assign ONLY `agent` (or `isr`); log into Origination as
+    //  that user, navigate /overview (and /leads), and assert:
+    //    expect(await overview.isDownloadCsvVisible()).toBe(false);   // button absent
+    //    expect(await overview.isEmailCsvVisible()).toBe(true);       // escape hatch present
+    //  Provisioning that account is a write/side-effect on AMS and needs an AMS
+    //  user/role page-object that does not yet exist — out of scope for this debug
+    //  pass; left as the documented execution recipe above.
     // ════════════════════════════════════════════════════════════════
     test.skip('CT-09: no-download-permission role — Download CSV NOT rendered; Email CSV still rendered', async () => {
       // Gate: Download CSV renders only when `hasDownloadPermission && headers>0`;
-      // Email CSV renders regardless. No no-download-permission account exists on
-      // QA2 (SPEC Q-role) — confirmed at source (live React prop hasDownloadPermission).
+      // Email CSV renders regardless. The controlling AMS permission is
+      // "overview download csv" / "leads download csv" (Origination tab); roles
+      // agent / isr / auditor lack it. No ready-to-use no-download account with a
+      // known password exists on QA2/sandbox — see the execution recipe above.
+      //
+      // NOTE: `manager` credentials (DEFAULT_MANAGER_USERNAME/PASSWORD) have the
+      // download permission in both qa2 AND sandbox — confirmed by test execution
+      // (2026-06-18). A user assigned the `agent`, `isr`, or `auditor` AMS role
+      // is required; provision one via AMS → Add User → Change User Role (Origination
+      // tab → assign agent/isr) with a known password, then implement here.
     });
   });
 }
+
+// ── CT-08 — Sandbox-only: >48 MiB guard (the fix itself) ────────────────────
+//
+// CONFIRMED MANUALLY (user, origination-sandbox.uownleasing.com, 2026-06-18):
+// With account `jmendes.gov` (SBX_ADMIN_USERNAME, full-visibility sandbox admin)
+// and date range 01/01/2022 → 12/31/2026, sandbox shows ~75k rows → ~57 MB
+// > 48 MiB → Download CSV DISABLED, directing tooltip appears.
+//
+// NOTE: DEFAULT_SUPERVISOR_USERNAME=jmendes.gow is merchant-scoped (36 rows) —
+// guard never triggers for that account. SBX_ADMIN_USERNAME=jmendes.gov required.
+// QA2 only has ~47 rows total — guard never triggers there either.
+// ────────────────────────────────────────────────────────────────────────────
+test.describe(
+  `${TEST_NAME} - sandbox`,
+  { tag: `${buildTags(TestTag.REGRESSION, TestTag.SANDBOX)} @origination`.split(' ') },
+  () => {
+    test.use({ envName: 'sandbox' });
+    test.use({ viewport: { width: 1440, height: 900 } });
+
+    test('CT-08: Overview sandbox — >48 MiB → Download CSV DISABLED + "too large" tooltip; Email CSV enabled @smoke', async ({ page, testEnv }, testInfo) => {
+      test.setTimeout(150_000);
+      const overview = new OverviewPage(page);
+
+      await test.step('Login as admin (SBX_ADMIN_USERNAME=jmendes.gov — full-visibility sandbox admin)', async () => {
+        await loginToPortal(page, testEnv.originationUrl, testEnv, 'admin');
+      });
+
+      await test.step('Navigate to Overview and expand table-panel filters', async () => {
+        await overview.navigateToOverview();
+        await overview.verifyDashboardLoaded();
+      });
+
+      await test.step('Set date range 01/01/2022 → 12/31/2026 in TABLE panel → ~79k rows → size > 48 MiB', async () => {
+        await overview.setDateRange('01/01/2022', '12/31/2026');
+        await overview.submitFilters();
+        // 79k rows: the API call takes 30-60s. The <tr> loading spinner counts as "first row
+        // visible" and submitFilters() exits early. Wait for pagination to show the actual
+        // count before asserting on the Download CSV button state (pitfall #123).
+        await page.waitForFunction(
+          () => {
+            const m = document.body.innerText.match(/(\d[\d,]*)-(\d[\d,]*) of ([\d,]+)/);
+            return m ? parseInt(m[3].replace(/,/g, ''), 10) > 1_000 : false;
+          },
+          { timeout: 120_000 },
+        );
+        const total = await overview.getTotalRowCount();
+        console.log(`[CT-08] Total rows in sandbox: ${total} (expected ~79k+)`);
+      });
+
+      await test.step('Download CSV is DISABLED — size guard is active [check-points]', async () => {
+        expect(await overview.isDownloadCsvVisible(), 'Download CSV must render (hasDownloadPermission)').toBe(true);
+        expect(await overview.isDownloadCsvEnabled(), 'Download CSV must be DISABLED above 48 MiB').toBe(false);
+        await testInfo.attach('CT-08-download-csv-disabled', { body: await page.screenshot(), contentType: 'image/png' });
+      });
+
+      await test.step('Hover shows directing "too large" tooltip [check-points]', async () => {
+        await overview.hoverDownloadCsv();
+        const tooltip = await overview.getDownloadDisabledTooltip();
+        expect(tooltip, 'Directing tooltip must appear when size guard is active').not.toBeNull();
+        expect(tooltip, 'Tooltip must say "too large to download directly"').toMatch(/too large to download directly/i);
+        expect(tooltip, 'Tooltip must mention Email CSV').toMatch(/Email CSV/i);
+        expect(tooltip, 'Tooltip must reference the 48 MB limit').toMatch(/48 MB/i);
+        console.log(`[CT-08] Tooltip text: ${tooltip}`);
+        await testInfo.attach('CT-08-tooltip', { body: await page.screenshot(), contentType: 'image/png' });
+      });
+
+      await test.step('Email CSV remains ENABLED as escape hatch (independent of size guard) [check-points]', async () => {
+        expect(await overview.isEmailCsvEnabled(), 'Email CSV must stay enabled regardless of the size guard').toBe(true);
+        await testInfo.attach('CT-08-email-csv-enabled', { body: await page.screenshot(), contentType: 'image/png' });
+      });
+    });
+  },
+);

@@ -114,11 +114,35 @@ export class OverviewPage extends OriginationBasePage {
    * nth(0)/nth(1) hits the KPI form and leaves the table unfiltered. DOM-confirmed QA2
    * 2026-06-18. NOTE: `#fromDate` resets to today (Formik default), so a future-only
    * window is NOT a reliable empty-set lever — use `searchTable()` for that.
+   *
+   * PITFALL: inputs are type="search". fill() sets the DOM value but does NOT trigger
+   * Formik's onChange → submitted query silently ignores the new date. The React fiber's
+   * onChange must be called directly. Because setting fromDate triggers a re-render that
+   * replaces the toDate DOM node, the two updates must be sequenced — set fromDate, wait
+   * for React to flush, then set toDate on the fresh node (pitfall #123, sandbox 2026-06-18,
+   * #1321).
    */
   async setDateRange(fromDate: string, toDate: string): Promise<void> {
     await this.expandTableFilters();
-    await this.page.locator('#fromDate').fill(fromDate);
-    await this.page.locator('#toDate').fill(toDate);
+    await this.setFormikDate('#fromDate', fromDate);
+    await this.setFormikDate('#toDate', toDate);
+  }
+
+  private async setFormikDate(selector: string, value: string): Promise<void> {
+    await this.page.evaluate(
+      async ({ sel, val }: { sel: string; val: string }) => {
+        const el = document.querySelector(sel) as HTMLInputElement | null;
+        if (!el) throw new Error(`setFormikDate: ${sel} not found`);
+        const fiberKey = Object.keys(el).find(k => k.startsWith('__reactProps'));
+        if (!fiberKey) throw new Error(`setFormikDate: no React props on ${sel}`);
+        const nativeSet = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+        nativeSet.call(el, val);
+        (el as Record<string, unknown>)[fiberKey].onChange({ target: el, currentTarget: el });
+        // Let React flush the state update before the next field is set.
+        await new Promise(r => setTimeout(r, 150));
+      },
+      { sel: selector, val: value },
+    );
   }
 
   /**

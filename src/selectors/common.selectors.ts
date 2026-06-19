@@ -21,7 +21,9 @@ export const SELECTORS: AppSelectors = {
   toastClose: '.Toastify__close-button',
 
   // ── Pagination ─────────────────────────────────────────────────────
+  // react-data-table-component (rdt) standard footer button IDs.
   paginationNext: '#pagination-next-page',
+  paginationPrevious: '#pagination-previous-page',
   rowsPerPageDropdown: "select[aria-label='Rows per page:']",
 
   // ── Sidebar ────────────────────────────────────────────────────────
@@ -53,6 +55,18 @@ export const SELECTORS: AppSelectors = {
   filterSingleValue: "div[class*='filter__single-value']",
   filterClearIndicator: '.filter__clear-indicator',
   filterMultiValueLabel: "div[class*='filter__multi-value__label']",
+  // ── Modification Report filter panel (#1315 — CT-03/CT-04) ─────────
+  // DOM-first (LIVE qa2 2026-06-18, jmendes.gow, 1440×900): the panel exposes
+  // a free-text agent search and two date inputs as Formik-controlled inputs
+  // with stable ids (`#agentName`, `#from`, `#to`). They are React-controlled,
+  // so values MUST be set via the native-setter + `input` event path
+  // (`forceReactInputValue`), NOT `fill()` alone. Dates use MM/DD/YYYY
+  // (placeholder confirmed). The Modification Type single-select is the
+  // `label:has-text('Modification Type') ~ div .filter__control` react-select
+  // (options: LEAD_STATUS_CHANGE / APPROVAL_AMOUNT_CHANGE / LEASE_MOD).
+  modReportAgentNameInput: "input#agentName[name='agentName']",
+  modReportStartDateInput: "input#from[name='from']",
+  modReportEndDateInput: "input#to[name='to']",
   // Task #1292 — multi-select Merchant/Location filter (Origination R1.52.0)
   // Bottom-of-page leads-style filter block (Filters toggle + Search button).
   // CSS-module hash suffix is unstable; anchor via the prefix attribute selector.
@@ -69,6 +83,30 @@ export const SELECTORS: AppSelectors = {
   modalClose: '.modal-header .close, [data-dismiss="modal"]',
   modalShow: '.modal.show, .modal.fade.show',
   modalBackdrop: '.modal-backdrop',
+
+  // ── Status-change action modals (Origination customer page, #1315) ──
+  // "Move Contract to Signed" modal (BR-06): appears when a lead with a prior
+  // signing flow has "Change to Signed" clicked. Carries a required comment
+  // field and a CONFIRM button. DOM-first (discovery KB modification-report-
+  // agent-name-bug): [role="dialog"] with input placeholder "Add a comment
+  // (required)" + a submit button.
+  moveContractToSignedModal: "[role='dialog']:has-text('Move Contract to Signed'), .modal.show:has-text('Move Contract to Signed')",
+  moveContractToSignedComment: "[role='dialog'] input[placeholder='Add a comment (required)'], .modal.show input[placeholder='Add a comment (required)']",
+  moveContractToSignedConfirm: "[role='dialog'] button.submit-button, .modal.show button.submit-button, [role='dialog'] button:has-text('CONFIRM'), .modal.show button:has-text('CONFIRM')",
+  // "Set to Expired" confirmation modal (#1315 — CT-01).
+  // DOM-first (LIVE qa2 lead 16728, 2026-06-18, headless chromium 1440×900):
+  // the action opens an "Add a Comment" modal inside `.modal.fade.show`
+  // (role="dialog"). It carries an OPTIONAL comment input (`name="comment"`,
+  // placeholder "Type here...", NOT required — Save stays enabled when empty)
+  // and a submit button whose visible label is "Save" (NOT "CONFIRM"/"Yes",
+  // and there is NO `.submit-button` class). The old selector (CONFIRM/Yes/
+  // .submit-button) matched 0 elements → confirmVisible stayed false → the
+  // method returned silently and changeLeadStatus never fired.
+  setToExpiredModal: "[role='dialog']:has(input[name='comment']), .modal.show:has(input[name='comment'])",
+  setToExpiredComment: "[role='dialog'] input[name='comment'], .modal.show input[name='comment']",
+  // Anchor on the submit button (type=submit) inside the shown modal; "Save"
+  // text kept as a secondary clause for resilience to a future type change.
+  setToExpiredConfirm: "[role='dialog'] button[type='submit'], .modal.show button[type='submit'], [role='dialog'] button:has-text('Save'), .modal.show button:has-text('Save')",
 
   // ── Buttons ────────────────────────────────────────────────────────
   submitButton: '.submit-button',
@@ -722,8 +760,12 @@ export const SELECTORS: AppSelectors = {
   csvDownloadButtonEnabled: "button[class*='filtered-csv-download_csvButton'][class*='enabledButton']",
   csvDownloadButtonDisabled: "button[class*='filtered-csv-download_csvButton'][class*='disabledButton']",
   csvEmailButton: "button:has-text('Email CSV')",
-  // The Download CSV button is wrapped in a <span id="{tooltipIdPrefix}-{random}">.
+  // The Download CSV button is wrapped in <span id="{tooltipIdPrefix}-{random}">.
+  // On hover, React-Bootstrap renders the directing message as a portal:
+  // <div role="tooltip" class="tooltip show bs-tooltip-auto"> outside the span.
+  // DOM-confirmed sandbox 2026-06-18 after applying 79k-row date filter (#1321).
   csvDownloadTooltipById: (tooltipIdPrefix: string) => `span[id^=${JSON.stringify(tooltipIdPrefix + '-')}]`,
+  csvDownloadTooltipPortal: "div[role='tooltip'].tooltip.show, div.tooltip.show",
   // Email CSV modal — a dialog with title "Which email should we send this CSV file to?".
   csvEmailModal: "[role='dialog']:has-text('Which email should we send this CSV file to?'), .modal:has-text('Which email should we send this CSV file to?')",
   csvEmailModalTitle: "text=Which email should we send this CSV file to?",
