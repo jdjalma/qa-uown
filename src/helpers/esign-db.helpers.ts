@@ -30,6 +30,7 @@
  */
 
 import { TIMEOUTS } from '../config/constants.js';
+import { pollUntil } from './common.helpers.js';
 import type { DatabaseHelpers } from './database.helpers.js';
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -185,39 +186,21 @@ interface PollOptions {
   intervalMs?: number;
 }
 
-async function sleep(ms: number): Promise<void> {
-  await new Promise<void>((resolve) => setTimeout(resolve, ms));
-}
-
 /**
- * Generic poll-until-non-null with exponential backoff. Mirrors the private
- * helper in `DatabaseHelpers#pollUntil` (initial 100 ms → factor 1.5 → cap
- * 2_000 ms, default total 30_000 ms via `TIMEOUTS.DB_WAIT`).
- *
- * Returns null on timeout — callers that need a thrown error wrap with their
- * own message (see e.g. `waitForEsignDocumentStatus`).
+ * Poll-until-non-null com backoff. Delega ao `pollUntil` compartilhado
+ * (common.helpers). Retorna null no timeout — callers que precisam de throw
+ * embrulham com mensagem própria (ver `waitForEsignDocumentStatus`).
  */
 async function pollUntilEsign<T>(
   check: () => Promise<T | null>,
   logPrefix: string,
   options: PollOptions = {},
 ): Promise<T | null> {
-  const timeoutMs = options.timeoutMs ?? TIMEOUTS.DB_WAIT;
-  const initial = options.intervalMs ?? TIMEOUTS.DB_POLL_INITIAL;
-  const deadline = Date.now() + timeoutMs;
-  let interval = initial;
-  while (Date.now() < deadline) {
-    try {
-      const result = await check();
-      if (result !== null && result !== undefined) return result;
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.warn(`[${logPrefix}] poll error: ${(error as Error).message}`);
-    }
-    await sleep(interval);
-    interval = Math.min(interval * TIMEOUTS.DB_POLL_BACKOFF, TIMEOUTS.DB_POLL_MAX);
-  }
-  return null;
+  return pollUntil(check, {
+    timeoutMs: options.timeoutMs,
+    intervalMs: options.intervalMs,
+    logPrefix,
+  });
 }
 
 // SELECT shared by every esign_document lookup — keeps blob columns OUT of

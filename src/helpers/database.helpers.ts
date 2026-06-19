@@ -1,6 +1,6 @@
 import pg from 'pg';
 import { TIMEOUTS } from '../config/constants.js';
-import { sleep } from './common.helpers.js';
+import { sleep, pollUntil as pollUntilShared } from './common.helpers.js';
 
 const { Pool } = pg;
 
@@ -1966,24 +1966,13 @@ export class DatabaseHelpers {
     await this.pool.end();
   }
 
+  // Delega ao pollUntil compartilhado (common.helpers) — preserva os call sites `this.pollUntil`.
   private async pollUntil<T>(
     check: () => Promise<T | null>,
     timeoutMs: number = TIMEOUTS.DB_WAIT,
     logPrefix: string = 'poll',
   ): Promise<T | null> {
-    const deadline = Date.now() + timeoutMs;
-    let interval: number = TIMEOUTS.DB_POLL_INITIAL;
-    while (Date.now() < deadline) {
-      try {
-        const result = await check();
-        if (result !== null && result !== undefined) return result;
-      } catch (error) {
-        console.warn(`[${logPrefix}] poll error: ${(error as Error).message}`);
-      }
-      await sleep(interval);
-      interval = Math.min(interval * TIMEOUTS.DB_POLL_BACKOFF, TIMEOUTS.DB_POLL_MAX);
-    }
-    return null;
+    return pollUntilShared(check, { timeoutMs, logPrefix });
   }
 
   private formatDbError(operation: string, sql: string, params: unknown[], error: Error): string {

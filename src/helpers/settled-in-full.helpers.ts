@@ -23,7 +23,7 @@
  */
 
 import { TIMEOUTS } from '../config/constants.js';
-import { sleep } from './common.helpers.js';
+import { sleep, pollUntil as pollUntilShared } from './common.helpers.js';
 import type { DatabaseHelpers } from './database.helpers.js';
 
 // ── Types ─────────────────────────────────────────────────────────────
@@ -251,20 +251,7 @@ async function pollUntil<T>(
   timeoutMs: number,
   logPrefix: string,
 ): Promise<T | null> {
-  const deadline = Date.now() + timeoutMs;
-  let interval: number = TIMEOUTS.DB_POLL_INITIAL;
-  while (Date.now() < deadline) {
-    try {
-      const result = await check();
-      if (result !== null && result !== undefined) return result;
-    } catch (error) {
-      // reason: mirror DatabaseHelpers.pollUntil — log and retry on transient DB errors
-      console.warn(`[${logPrefix}] poll error: ${(error as Error).message}`);
-    }
-    await sleep(interval);
-    interval = Math.min(interval * TIMEOUTS.DB_POLL_BACKOFF, TIMEOUTS.DB_POLL_MAX);
-  }
-  return null;
+  return pollUntilShared(check, { timeoutMs, logPrefix });
 }
 
 // ── Eligibility lookups ───────────────────────────────────────────────

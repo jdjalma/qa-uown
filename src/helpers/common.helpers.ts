@@ -64,6 +64,42 @@ export function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+export interface PollUntilOptions {
+  timeoutMs?: number;
+  /** Intervalo inicial; cresce por DB_POLL_BACKOFF até DB_POLL_MAX. */
+  intervalMs?: number;
+  logPrefix?: string;
+}
+
+/**
+ * Poll `check` com backoff exponencial até retornar valor não-nulo ou estourar
+ * `timeoutMs`. Retorna `null` no timeout (callers decidem skip/fail). Erros do
+ * `check` são logados e a poll continua (transientes de DB).
+ *
+ * Primitivo compartilhado — antes reimplementado em database/esign-db/settled-in-full.
+ * NÃO cobre o caso "throw no timeout + intervalo fixo" (ver `sticky.helpers.ts`).
+ */
+export async function pollUntil<T>(
+  check: () => Promise<T | null>,
+  options: PollUntilOptions = {},
+): Promise<T | null> {
+  const timeoutMs = options.timeoutMs ?? TIMEOUTS.DB_WAIT;
+  const logPrefix = options.logPrefix ?? 'poll';
+  const deadline = Date.now() + timeoutMs;
+  let interval = options.intervalMs ?? TIMEOUTS.DB_POLL_INITIAL;
+  while (Date.now() < deadline) {
+    try {
+      const result = await check();
+      if (result !== null && result !== undefined) return result;
+    } catch (error) {
+      console.warn(`[${logPrefix}] poll error: ${(error as Error).message}`);
+    }
+    await sleep(interval);
+    interval = Math.min(interval * TIMEOUTS.DB_POLL_BACKOFF, TIMEOUTS.DB_POLL_MAX);
+  }
+  return null;
+}
+
 /**
  * Parses a money string (e.g. "$3,813.43", "  $1234", "0.00") into a number.
  * Strips currency symbol, thousands separators, and surrounding whitespace.
