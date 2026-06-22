@@ -18,3 +18,4 @@ export * from './gowsign-template.body.js';
 export * from './correspondence.body.js';
 export * from './tms-audit.body.js';
 export * from './tms-payment.body.js';
+export * from './scheduled-task.body.js';

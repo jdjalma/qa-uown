@@ -4,11 +4,28 @@ import type {
   TriggerScheduledTaskResponseBody,
   ScheduledTaskMetadataResponseBody,
 } from '../responses/scheduled-task.response.js';
+import type { CreateOrUpdateScheduledTaskBody } from '../bodies/scheduled-task.body.js';
 
 export class ScheduledTaskClient extends BaseClient {
 
   async triggerScheduledTask(taskName: string): Promise<ApiResponse<TriggerScheduledTaskResponseBody>> {
     return this.post<TriggerScheduledTaskResponseBody>(`/uown/svc/triggerScheduledTask/${taskName}`);
+  }
+
+  /**
+   * Creates or updates a scheduled task (Quartz sweep) by posting the
+   * `ScheduledTask` JPA entity. The canonical test use is narrowing a sweep's
+   * `sqlToPickAccounts` to a single target row before triggering it — see
+   * `buildCreateOrUpdateScheduledTaskBody`.
+   *
+   * ⚠️ Heavy, suite-wide side effect (mutates a shared scheduled task). Callers
+   * MUST restore the original `sqlToPickAccounts` in a try/finally. Used only by
+   * the opt-in destructive svc#559 CT-M1-LIVE.
+   */
+  async createOrUpdateScheduledTask(
+    body: CreateOrUpdateScheduledTaskBody,
+  ): Promise<ApiResponse<ScheduledTaskMetadataResponseBody>> {
+    return this.post<ScheduledTaskMetadataResponseBody>('/uown/svc/createOrUpdateScheduledTask', body);
   }
 
   /**

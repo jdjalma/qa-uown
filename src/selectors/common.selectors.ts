@@ -412,6 +412,12 @@ export const SELECTORS: AppSelectors = {
   seeProtectionBenefitsBtn: 'button:has-text("See Protection Benefits")',
   insuranceOptInCheckbox: 'text=I agree to the Uown Protection Plus',
   insuranceOptOutCheckbox: 'text=No, continue unprotected',
+  // Buddy offer widget host — `@buddy-technology/offer-component` (bumped ^1.7.1 in
+  // origination!1466). The custom element renders the offer card/iframe; assert it is
+  // present & non-empty BEFORE interacting so a layout regression in the bump is
+  // caught (rule #14 — render is not proven by a DB log).
+  buddyOfferElement:
+    'buddy-offer-component, [class*="purchase-insurance"], [class*="offer-component"], #purchase-insurance-submit-btn',
 
   // ── Website Portal ──────────────────────────────────────────────────
   wsAccountSummary: '.account-summary, [data-section="account-summary"]',

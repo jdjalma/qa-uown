@@ -76,6 +76,17 @@ export class MerchantConfigurator {
   /**
    * Configure a merchant by its catalog name (e.g. 'TireAgent', 'ProgressMobility').
    * Resolves the refCode from the static merchant catalog, then calls configure().
+   *
+   * Resolution fallback (#1317 F-005, 2026-06-19): some merchants carry a logical
+   * `refCode` in the catalog (e.g. TerraceFinance → 'terraceFinance') that does NOT
+   * match the env's real `ref_merchant_code`. In qa2 the TerraceFinance row's
+   * `ref_merchant_code` is its `number` ('OL90202-0001'), so a `getMerchantsByRefCode`
+   * lookup keyed by 'terraceFinance' returns empty → `resolve` throws → the Buddy
+   * preflight is skipped and `offer_insurance` never gets enabled. When the catalog
+   * refCode fails to resolve AND it differs from `number`, retry with `number` (which
+   * IS the real `ref_merchant_code` in those envs). This mirrors the existing
+   * `refCode ?? number` fallback used by sticky.helpers / paytomorrow-refund-flow and
+   * is purely additive: when the refCode resolves, behaviour is unchanged.
    */
   async configureByName(
     merchantName: string,
@@ -83,7 +94,19 @@ export class MerchantConfigurator {
   ): Promise<MerchantDetail> {
     const config = getMerchant(merchantName);
     const refCode = config.refCode ?? merchantName.toLowerCase();
-    return this.configure(refCode, state);
+    try {
+      return await this.configure(refCode, state);
+    } catch (err) {
+      const fallback = config.number;
+      if (fallback && fallback !== refCode) {
+        console.log(
+          `[MerchantConfigurator] refCode "${refCode}" did not resolve for "${merchantName}" `
+            + `(${(err as Error).message}); retrying with number "${fallback}"`,
+        );
+        return this.configure(fallback, state);
+      }
+      throw err;
+    }
   }
 
   /**

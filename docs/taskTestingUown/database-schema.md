@@ -105,7 +105,7 @@
 - [uown_los_receivable_history](#uown_los_receivable_history) (4 columns)
 - [uown_los_sched_summary](#uown_los_sched_summary) (62 columns)
 - [uown_los_sched_summary_history](#uown_los_sched_summary_history) (64 columns)
-- [uown_los_uwdata](#uown_los_uwdata) (29 columns)
+- [uown_los_uwdata](#uown_los_uwdata) (32 columns)
 - [uown_los_uwdata_history](#uown_los_uwdata_history) (9 columns)
 - [uown_mail_queue](#uown_mail_queue) (22 columns)
 - [uown_merchant](#uown_merchant) (150 columns)
@@ -185,7 +185,7 @@
 - [uown_sv_sql_config_history](#uown_sv_sql_config_history) (10 columns)
 - [uown_sv_transaction](#uown_sv_transaction) (30 columns)
 - [uown_sv_transaction_history](#uown_sv_transaction_history) (4 columns)
-- [uown_sv_uwdata](#uown_sv_uwdata) (29 columns)
+- [uown_sv_uwdata](#uown_sv_uwdata) (32 columns)
 - [uown_sweep_logs](#uown_sweep_logs) (15 columns)
 - [uown_tax_cloud](#uown_tax_cloud) (16 columns)
 - [uown_tax_cloud_outbound](#uown_tax_cloud_outbound) (19 columns)
@@ -2807,7 +2807,7 @@
 
 ## uown_los_uwdata
 
-**Schema:** `public` | **Columns:** 29
+**Schema:** `public` | **Columns:** 32 (verified vs information_schema, qa2 2026-06-19)
 
 | # | Column | Type | Nullable | Default |
 |---|--------|------|----------|---------|
@@ -2840,6 +2840,11 @@
 | 27 | `eligible_terms` | text | YES |  |
 | 28 | `campaign_id` | integer | YES |  |
 | 29 | `internal_decision` | character varying(255) | YES |  |
+| 30 | `is_eligible_for_extra_info` | boolean | YES |  |
+| 31 | `npm_segment` | integer | YES |  |
+| 32 | `tam_score` | integer | YES |  |
+
+> **`npm_segment` / `tam_score`** (#31/#32) added by migration `V20260603054943_1.53.0__add_columns_npm_segment_and_tam_score.sql` (Flyway version `20260603054943.1.53.0`, MR svc !1469; task #1313). Both `integer`, nullable. The GDS parser writes them on the **16m approval branch** (`decided_by_agent='GDS'` + `eligible_terms ~ '16'`); `tam_score` is **TireAgent-only**. `is_eligible_for_extra_info` (#30) predates this migration — the 29-col snapshot was stale. All three confirmed via information_schema in qa2 (2026-06-19).
 
 ## uown_los_uwdata_history
 
@@ -5306,7 +5311,7 @@
 
 ## uown_sv_uwdata
 
-**Schema:** `public` | **Columns:** 29
+**Schema:** `public` | **Columns:** 32 (verified vs information_schema, qa2 2026-06-19)
 
 | # | Column | Type | Nullable | Default |
 |---|--------|------|----------|---------|
@@ -5339,6 +5344,11 @@
 | 27 | `eligible_terms` | text | YES |  |
 | 28 | `campaign_id` | integer | YES |  |
 | 29 | `internal_decision` | character varying(255) | YES |  |
+| 30 | `is_eligible_for_extra_info` | boolean | YES |  |
+| 31 | `npm_segment` | integer | YES |  |
+| 32 | `tam_score` | integer | YES |  |
+
+> **`npm_segment` / `tam_score`** (#31/#32) — Servicing-side copy, written on funding (account). Same migration `V20260603054943_1.53.0` (task #1313) touched BOTH `uown_los_uwdata` and `uown_sv_uwdata`. Confirmed via information_schema in qa2 (2026-06-19).
 
 ## uown_sweep_logs
 

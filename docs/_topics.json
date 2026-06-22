@@ -4,7 +4,7 @@
     "business-overview": ["business-model", "lease", "rto", "produto-lease"],
     "originacao": ["origination", "pipeline", "los"],
     "fraud-vendors": ["fraud", "fraude", "vendors", "vendor-health", "seon", "neuroid", "kount", "sentilink", "intellicheck", "neustar", "lexisnexis", "plaid", "geolocation"],
-    "underwriting": ["uw", "uw-denied", "uw-campaigns", "uw-campaign", "campanhas", "peak", "off-peak", "campaign-id"],
+    "underwriting": ["uw", "uw-denied", "uw-campaigns", "uw-campaign", "campanhas", "peak", "off-peak", "campaign-id", "uwdata", "npm-segment", "tam-score", "gds-snapshot", "second-look"],
     "ssn": ["ssn-modality"],
     "segment-limits": ["segment", "approved-amounts"],
     "pre-sign-validation": ["missing-fields"],

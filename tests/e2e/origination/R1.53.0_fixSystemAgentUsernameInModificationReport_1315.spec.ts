@@ -47,6 +47,7 @@ import type { TestContext } from '@support/base-test.js';
 import {
   buildTestData,
   createPreQualifiedApplication,
+  driveLeadToSigned,
   calculateDate,
   formatDate,
   sleep,
@@ -462,6 +463,218 @@ for (const data of [testData]) {
           expect(row!['Agent Name'], 'a system-generated action must render SYSTEM').toBe('SYSTEM');
           // Display mapping (KB): CONTRACT_CREATED → "Contract Created", SIGNED → "Signed".
           expect(row!['Old Status']).toMatch(/Contract Created/i);
+          expect(row!['New Status']).toMatch(/Signed/i);
+          expect(row!['Modification Type']).toBe('LEAD_STATUS_CHANGE');
+        });
+      });
+
+      // ════════════════════════════════════════════════════════════════
+      //  CT-05 — SIGNED → EXPIRED via portal "Set to Expired" records the
+      //          real agent (jmendes.gow), not SYSTEM.
+      //
+      //  Precondition: the lead is driven to SIGNED via API
+      //  (`driveLeadToSigned`), which calls `changeLeadStatus` WITHOUT the
+      //  `username` header → it writes a SYSTEM-attributed SIGNED row. That
+      //  precondition row is NOT the subject of this test: the subject is the
+      //  EXPIRED transition the test triggers through the portal. Therefore the
+      //  negative guard is scoped to `new_status='EXPIRED'` (NOT 'SIGNED'),
+      //  and the subject EXPIRED row is pinned with `old_status='SIGNED'` so it
+      //  is distinguishable from CT-01's UW_APPROVED→EXPIRED row.
+      //
+      //  UI-first (rule #14): `setToExpired()` fires `changeLeadStatus` with the
+      //  `username` header; the primary oracle is the rendered "Agent Name" cell
+      //  of /modificationReport.
+      // ════════════════════════════════════════════════════════════════
+      test('CT-05: "Set to Expired" on a SIGNED lead records the real agent, not SYSTEM', async ({ page, api, db }) => {
+        test.setTimeout(300_000);
+        const ctx: TestContext = {
+          leadPk: '', leadUuid: '', accountPk: '', accountNumber: '',
+          contractStatus: '', contractUrl: '', websiteAccountPk: '',
+          achAdded: 0, ccAdded: 0, reportKeys: new Map(),
+        };
+
+        const { env, merchant, applicant } = buildTestData({
+          env: data.env,
+          state: data.state,
+          merchant: data.merchant,
+          orderDescription: data.orderDescription,
+        });
+
+        await test.step('Setup: fresh lead at UW_APPROVED via API', async () => {
+          // skipPaymentInfo → lead stays at UW_APPROVED (no CC submit).
+          // createPreQualifiedApplication runs merchant preflight (rule #12).
+          await createPreQualifiedApplication(
+            api, merchant, applicant, ctx, { skipPaymentInfo: true }, test.info(),
+          );
+          const status = await db.getLeadStatus(ctx.leadPk);
+          expect(status, 'lead should be UW_APPROVED before being driven to SIGNED').toBe('UW_APPROVED');
+        });
+
+        await test.step('Setup: drive lead to SIGNED via API (writes a SYSTEM-attributed SIGNED precondition row)', async () => {
+          // driveLeadToSigned → changeLeadStatus WITHOUT the username header, so
+          // the SIGNED row is attributed to SYSTEM. This is the precondition,
+          // NOT the subject of the assertions below.
+          await driveLeadToSigned(api, merchant, ctx);
+          const deadline = Date.now() + 30_000;
+          let status: string | null = null;
+          while (Date.now() < deadline) {
+            status = await db.getLeadStatus(ctx.leadPk);
+            if (status === 'SIGNED') break;
+            await sleep(1_000);
+          }
+          expect(status, 'lead should be SIGNED before the UI action').toBe('SIGNED');
+        });
+
+        const customerPage = new OriginationCustomerPage(page);
+
+        await test.step('Login to Origination as jmendes.gow (fresh session)', async () => {
+          await loginAsAgentFresh(page, env, PORTAL_AGENT);
+        });
+
+        await test.step('Navigate to the lead customer page (status renders Signed)', async () => {
+          await page.goto(`${env.originationUrl}customers/${ctx.leadPk}`, { waitUntil: 'domcontentloaded' });
+          await page.waitForLoadState('networkidle').catch(() => {});
+          await customerPage.waitForSpinner();
+          const status = await customerPage.getLeadStatus();
+          expect(status.toLowerCase(), 'customer page should show Signed').toContain('signed');
+        });
+
+        await test.step('Click "Set to Expired" and confirm (UI — sends username header)', async () => {
+          await customerPage.setToExpired();
+        });
+
+        await test.step('UI: status transitions to Expired', async () => {
+          const { status, matched } = await customerPage.pollForLeadStatus(['expired'], 8, 4_000);
+          expect(matched, `expected status "Expired" but got "${status}"`).toBeTruthy();
+        });
+
+        await test.step('DB: EXPIRED row records jmendes.gow (not SYSTEM), originating from SIGNED', async () => {
+          const row = await waitForLatestStatusChange(db, ctx.leadPk, 'EXPIRED');
+          expect(row.agent_username, 'agent_username must be the real portal agent').toBe(PORTAL_AGENT.username);
+          expect(row.agent_username, 'agent_username must NOT regress to SYSTEM').not.toBe('SYSTEM');
+          expect(row.old_status, 'transition should originate from SIGNED').toBe('SIGNED');
+          expect(row.mod_type, 'modification type must be LEAD_STATUS_CHANGE').toBe('LEAD_STATUS_CHANGE');
+        });
+
+        await test.step('DB negative guard: no SYSTEM-attributed EXPIRED row for this lead', async () => {
+          // Scoped to new_status='EXPIRED' — NOT 'SIGNED'. The SIGNED precondition
+          // row IS legitimately SYSTEM (driveLeadToSigned drops the header); only
+          // the EXPIRED subject transition must never regress to SYSTEM.
+          const systemRows = await db.query<{ pk: number }>(
+            `SELECT pk FROM uown_lead_modifications
+             WHERE lead_pk = $1 AND mod_type = 'LEAD_STATUS_CHANGE'
+               AND new_status = 'EXPIRED' AND agent_username = 'SYSTEM'`,
+            [ctx.leadPk],
+          );
+          expect(systemRows.length, 'no SYSTEM-attributed EXPIRED row should exist for this fresh lead').toBe(0);
+        });
+
+        const report = new ModificationReportPage(page);
+
+        await test.step('Open Modification Report and filter (today + agent jmendes.gow)', async () => {
+          await report.navigateToModificationReport(env.originationUrl);
+          const today = calculateDate('TODAY'); // MM/DD/YYYY
+          await report.filterByDateRange(today, today);
+          await report.filterByAgentName(PORTAL_AGENT.username);
+          await report.search();
+        });
+
+        await test.step('UI render oracle (primary, rule #14): row shows real agent + Signed→Expired', async () => {
+          const row = await report.getRowByLeadPk(ctx.leadPk);
+          expect(row, `lead ${ctx.leadPk} must appear in the filtered Modification Report`).toBeTruthy();
+          expect(row!['Agent Name'], 'rendered Agent Name must be the real agent, not SYSTEM').toBe(PORTAL_AGENT.username);
+          expect(row!['Agent Name'], 'rendered Agent Name must NOT be SYSTEM').not.toBe('SYSTEM');
+          expect(row!['Modification Type']).toBe('LEAD_STATUS_CHANGE');
+          // Display mapping (KB): SIGNED → "Signed", EXPIRED → "Expired".
+          expect(row!['Old Status']).toMatch(/Signed/i);
+          expect(row!['New Status']).toMatch(/Expired/i);
+        });
+
+        await test.step('Activity log: status-change note present (rule #13)', async () => {
+          const note = await db.queryOne<{ pk: number; notes: string }>(
+            `SELECT pk, notes FROM uown_los_lead_notes
+             WHERE lead_pk = $1 AND notes ILIKE '%EXPIRED%'
+             ORDER BY pk DESC LIMIT 1`,
+            [ctx.leadPk],
+          );
+          expect(note, 'an activity-log note for the EXPIRED transition must exist').toBeTruthy();
+          expect(note!.notes).toMatch(/EXPIRED/i);
+        });
+      });
+
+      // ════════════════════════════════════════════════════════════════
+      //  CT-06 — Modification Report UI shows SYSTEM for a legitimate
+      //          system-generated SIGNED → SIGNED action (no human actor in the
+      //          HTTP context → ThreadAttributes.username blank → "SYSTEM",
+      //          which is CORRECT per BR-02).
+      //
+      //  Data: read-only reuse of a PRE-EXISTING SYSTEM record (no fresh lead).
+      //  Justified exception to the fresh-data default ([[test-data-hierarchy]]),
+      //  mirroring CT-04: the record is only READ, never mutated, and the
+      //  assertion is about a legitimate-SYSTEM display, not a transition the
+      //  test triggers. Skips if QA2 has none. No merchant preflight (no fresh
+      //  lead). No activity-log assertion (read-only display, no business action).
+      // ════════════════════════════════════════════════════════════════
+      test('CT-06: Modification Report UI shows SYSTEM for a SIGNED → SIGNED system action', async ({ page, db }) => {
+        test.setTimeout(180_000);
+
+        const { env } = buildTestData({
+          env: data.env,
+          state: data.state,
+          merchant: data.merchant,
+          orderDescription: data.orderDescription,
+        });
+
+        interface SystemRecord { lead_pk: string; record_date: string }
+        let record: SystemRecord | null = null;
+
+        await test.step('Setup: locate a SIGNED → SIGNED SYSTEM record (read-only)', async () => {
+          record = await db.queryOne<SystemRecord>(
+            `SELECT lead_pk,
+                    to_char(row_created_timestamp AT TIME ZONE 'America/New_York', 'MM/DD/YYYY') AS record_date
+               FROM uown_lead_modifications
+              WHERE mod_type = 'LEAD_STATUS_CHANGE'
+                AND old_status = 'SIGNED'
+                AND new_status = 'SIGNED'
+                AND agent_username = 'SYSTEM'
+              ORDER BY pk DESC
+              LIMIT 1`,
+          );
+        });
+
+        test.skip(
+          record === null,
+          'No SIGNED → SIGNED SYSTEM record available in QA2 DB',
+        );
+        const rec = record as unknown as SystemRecord;
+
+        const report = new ModificationReportPage(page);
+
+        await test.step('Login to Origination as jmendes.gow (fresh session)', async () => {
+          await loginAsAgentFresh(page, env, PORTAL_AGENT);
+        });
+
+        await test.step('Open Modification Report and filter around the record date + type LEAD_STATUS_CHANGE', async () => {
+          await report.navigateToModificationReport(env.originationUrl);
+          // Widen the window by ±1 day so an EST/UTC boundary record can't fall
+          // outside the filter (the row date is rendered in EST, the filter is
+          // an inclusive MM/DD/YYYY range). Same logic as CT-04.
+          const [mm, dd, yyyy] = rec.record_date.split('/').map(Number);
+          const mid = new Date(yyyy, mm - 1, dd);
+          const start = new Date(mid); start.setDate(mid.getDate() - 1);
+          const end = new Date(mid); end.setDate(mid.getDate() + 1);
+          await report.filterByDateRange(formatDate(start), formatDate(end));
+          await report.filterByModificationType('LEAD_STATUS_CHANGE');
+          await report.filterByAgentName('SYSTEM');
+          await report.search();
+        });
+
+        await test.step('UI: the system record renders Agent Name = SYSTEM with Signed → Signed', async () => {
+          const row = await report.getRowByLeadPk(rec.lead_pk);
+          expect(row, `lead ${rec.lead_pk} (SYSTEM record) must appear in the filtered report`).toBeTruthy();
+          expect(row!['Agent Name'], 'a system-generated action must render SYSTEM').toBe('SYSTEM');
+          // Display mapping (KB): SIGNED → "Signed".
+          expect(row!['Old Status']).toMatch(/Signed/i);
           expect(row!['New Status']).toMatch(/Signed/i);
           expect(row!['Modification Type']).toBe('LEAD_STATUS_CHANGE');
         });

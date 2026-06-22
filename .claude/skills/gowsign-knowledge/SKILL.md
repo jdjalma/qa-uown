@@ -120,13 +120,50 @@ A coluna de status do documento de assinatura é **`status`** (varchar 255, sche
 
 **Regra:**
 - Em assertions de e-sign, usar `status='SENT_TO_CUSTOMER'` para envio e `status='COMPLETED'` para conclusão.
-- NÃO usar `SENT` (esse é valor de `uown_email_queue`, tabela diferente) nem `SIGNED`/`document_status` (não existem nesse enum/coluna).
+- NÃO usar `SENT` (esse é valor de `uown_email_queue`, tabela diferente).
 - Schema autoritativo: [`docs/database-schema.md`](../../../docs/database-schema.md) seção `uown_esign_document`. Cross-link: app-lifecycle pitfall #96.
+
+### CORREÇÃO (svc#546, qa2, 2026-06-22): `SIGNED` e `STORED` EXISTEM no progresso pós-assinatura
+
+A nota antiga "`SENT_TO_CUSTOMER`/`COMPLETED`, NÃO `SIGNED`" foi derivada de leads **NÃO assinados** (até envio). Um lead **genuinamente assinado** alcança **`SIGNED` e depois `STORED`** — o progresso real observado em qa2 (svc#546, leads 16865/16866/16867) é:
+
+**`SENT_TO_CUSTOMER` → `SIGNED` → `STORED` → (`COMPLETED`)**
+
+- Quando atinge `STORED`, o `document_name` vira `*_signed.pdf`.
+- Logo: NÃO afirme que `SIGNED` "não existe nesse enum" — ele existe para leads que efetivamente assinaram. O caveat antigo aplica-se só a leads pré-assinatura.
+
+### GOTCHA pós-assinatura: o campo `request` é SOBRESCRITO para a string `getDocumentStatus`
+
+Após o lead assinar, a row de dispatch em `uown_esign_document` tem o campo **`request` sobrescrito** — de um JSON de dispatch `{...}` para a **string crua `getDocumentStatus`**. Consequência: um helper que filtra `request LIKE '{%'` (ex.: `getEsignDocumentByLeadAndClient`) **NÃO acha a row pós-assinatura** (ela já não começa com `{`).
+
+**Regra:**
+- Para status **pós-assinatura**, consultar por **lead + client diretamente** (`WHERE lead_pk=$1 AND client='GOWSIGN'`), NÃO por `request LIKE '{%'`.
+- Pré-assinatura, a row autoritativa ainda é `uown_esign_document` com o JSON de dispatch.
+
+### Activity log de assinatura (Rule #13)
+
+A assinatura emite notas em `uown_los_lead_notes`:
+- `[ContractService]...Updating lead status to SIGNED`
+- `[EsignRedirectService][updateSignStatus]`
+- `[ESIGNSERVICE]`
+
+Logo a Rule #13 é satisfeita via `uown_los_lead_notes` DEPOIS da assinatura; ANTES da assinatura o registro autoritativo é `uown_esign_document` (não `lead_notes`).
+
+## OH template — fatos de render (svc#546, qa2, 2026-06-22 — primary-source)
+
+O template `OH_2025_SAC_16_MONTHS` (16m SAC, Ohio) — BUG-01 (`{{nextPaymentDueAmount}}` em branco em Item 3/4a) está **FIXED/validado** (renderiza 95.16/22.07/43.50; zero notas de dispatch "variables map missing"). Fatos de render confirmados no PDF flatten:
+
+- **Header token = `AGREEMENT-OH`** — a palavra literal **"Ohio" NÃO aparece** no PDF flatten. Um copy-check pela string "Ohio" dá **falso-negativo**; ancorar em `AGREEMENT-OH`.
+- **Appendix EPO** renderiza `"For a 16-\nmonth lease, the EPO price is calculated as:"` — note a **quebra de linha dentro de "16-month"** (`16-\nmonth`); um match exato por `"16-month"` falha por causa do `\n`.
+- **Brand phone** resolve para **(877)357-5474**.
 
 ## Anti-patterns
 
 - ❌ Validar signing só via DB (não renderiza)
-- ❌ Assertar `status='SENT'` ou `document_status='SIGNED'` em `uown_esign_document` — usar `SENT_TO_CUSTOMER` / `COMPLETED` na coluna `status`
+- ❌ Assertar `status='SENT'` em `uown_esign_document` — `SENT` é de `uown_email_queue`; usar `SENT_TO_CUSTOMER` (envio) na coluna `status`
+- ❌ Afirmar que `SIGNED`/`STORED` "não existem" no enum — existem para leads efetivamente assinados (progresso `SENT_TO_CUSTOMER → SIGNED → STORED → COMPLETED`, svc#546)
+- ❌ Buscar a row pós-assinatura por `request LIKE '{%'` — o `request` vira a string `getDocumentStatus`; query por lead+client direto
+- ❌ Copy-check do contrato OH pela palavra "Ohio" — não aparece no flatten; usar `AGREEMENT-OH`
 - ❌ Esquecer regressão SignWell quando muda GoSign
 - ❌ Não validar diff visual quando muda template
 - ❌ Usar `toEqual` em valor float monetário

@@ -1,12 +1,14 @@
 <!-- GERADO por scripts/docs-tooling.mjs — NÃO editar à mão. Rode: node scripts/docs-tooling.mjs index -->
 # Índice — docs/knowledge-base
 
-> Manifesto gerado a partir do frontmatter (ver `docs/_docs-conventions.md`). 11 arquivos.
+> Manifesto gerado a partir do frontmatter (ver `docs/_docs-conventions.md`). 14 arquivos.
 > Consumidores: leia este índice primeiro para localizar o arquivo canônico por tópico antes de abrir os docs.
 
 | Arquivo | Título | Status | Volatilidade | Verificado | Cobre |
 |---------|--------|--------|--------------|------------|-------|
+| [1313-npm-segment-tam-score-snapshot-routing.md](1313-npm-segment-tam-score-snapshot-routing.md) | 1313 — npm_segment / tam_score snapshot: env & engine routing | stable | volatile | 2026-06-21 | npm-segment, tam-score, gds-snapshot, uwdata |
 | [16m-lease-and-gowsign-signwell-routing-qa2.md](16m-lease-and-gowsign-signwell-routing-qa2.md) | Creating a 16-Month Lease & Controlling GowSign vs Signwell Routing (qa2) | snapshot | volatile | 2026-06-17 | 16m-lease, gowsign-routing, signwell-routing, abb-eligibility, esign-provider |
+| [559-sticky-recover-cancel-sweep.md](559-sticky-recover-cancel-sweep.md) | Sticky Recover Cancel Sweep (svc#559) | stable | volatile | 2026-06-21 | sticky-recovery, sticky-recover-cancel-sweep, scheduled-task-sweep, account-status-transition, activity-log |
 | [alabama-gowsign-template.md](alabama-gowsign-template.md) | Alabama (AL) GowSign Lease-Purchase Template | snapshot | volatile | 2026-06-17 | alabama-gowsign-template, al-2025-sac, epo-section, 13m-render-defect, state-scoping |
 | [ccbin-employment-financial-step.md](ccbin-employment-financial-step.md) | CCBIN Field — Employment & Financial Step | snapshot | stable | 2026-06-15 | ccbin-field, employment-financial-step, credit-card-bin-visualization, autofill, completion-indicator |
 | [merchant-funding-report-emails.md](merchant-funding-report-emails.md) | Merchant Edit — Funding Report Emails | stable | stable | 2026-06-15 | merchants, funding-report, email-validation |
@@ -16,4 +18,5 @@
 | [new-york-gowsign-template.md](new-york-gowsign-template.md) | New York (NY) GowSign Lease/Rental-Purchase Template | snapshot | volatile | 2026-06-18 | gowsign, esign, new-york, epo, template-rendering |
 | [overview-csv-export-merchant-support.md](overview-csv-export-merchant-support.md) | Overview Page — CSV Export & Merchant Support Filter | stable | stable | 2026-06-17 | overview-csv-export, merchant-support-filter, getLeadsInDateRange |
 | [overview-leads-csv-export-size-limit.md](overview-leads-csv-export-size-limit.md) | Overview & Leads — CSV Export Size-Limit Guard (#1321) | snapshot | stable | 2026-06-18 | csv-export-size-limit, filtered-csv-download, email-csv, overview-leads-export, err-string-too-long |
+| [sticky-payment-refund.md](sticky-payment-refund.md) | Sticky Payment Refund (svc#552) | stable | volatile | 2026-06-21 | sticky-refund, reverse-payment, payment-history, sticky-recovery |
 | [underwriting-and-funding-test-data-paths.md](underwriting-and-funding-test-data-paths.md) | Underwriting Decision & Funding — Test-Data Setup Paths | stable | volatile | 2026-06-16 | uw-denied, funding-without-snapshot, merchant-settings-snapshot, test-data-paths |

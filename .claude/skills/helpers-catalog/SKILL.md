@@ -48,6 +48,16 @@ disable-model-invocation: true
 | `datetime.helpers.ts` | `src/helpers/` | TZ-tolerant assertion for Java LocalDateTime vs DB timestamptz |
 | `search-sql-explain.helpers.ts` | `src/helpers/` | EXPLAIN ANALYZE runner for SQLs in `uown_sv_sql_config` |
 
+## INFRA — `database.helpers.ts` pg.Pool hardening (svc#546, 2026-06-22)
+
+> **Benefits ALL tests** — not domain-specific. Catalogued so future DB flakiness isn't misdiagnosed as a browser crash.
+
+The `pg.Pool` in `database.helpers.ts` (`new Pool({...})`, ~line 145) was hardened with:
+- `keepAlive: true` — keeps idle pooled connections alive across the qa2 SSH/`kubectl port-forward` tunnel.
+- a **non-throwing** `pool.on('error', (err) => {...})` listener (~line 162) — swallows/logs the error instead of letting it propagate as `uncaughtException`.
+
+**WHY:** an idle pooled connection dropped by the qa2 tunnel emitted an unhandled `'error'` event that crashed the Playwright **worker** mid-test. It surfaced as a **bogus** `"Target page/context/browser has been closed"` — which looks like a UI/browser failure but is actually a DB-tunnel drop. Without the listener, node treats the pool 'error' as fatal. Related to app-lifecycle pitfall #113 (qa2 tunnel transience) and #130 (port reuse) — same root infra, different symptom. If you see a sudden "browser has been closed" with no preceding UI step, suspect the DB tunnel first.
+
 ## CSV export helpers — `downloads.helpers.ts`
 
 For asserting a downloaded CSV's column SET and row count against the portal total ([[check-points]] consequence oracle) — not just "a file arrived".
@@ -78,6 +88,9 @@ For asserting a downloaded CSV's column SET and row count against the portal tot
 | `updateMerchantProgramDates(pk, dates, authorizedBy)` | Authorized date mutation |
 | `waitForProgramActiveState(pk, expected, timeout?)` | Poll is_active flag |
 | `waitForValueChange(sql, params, oldValue, timeout?)` | Poll until value changes |
+| `getUwScoresByLeadPk(leadPk)` | Read-only projection of `npm_segment, tam_score, decided_by_agent, eligible_terms, uw_status` from `uown_los_uwdata` (latest). #1313. **Guard `decided_by_agent='GDS'` + `eligible_terms~'16'` before asserting the GDS-snapshot fields, else false-bug.** |
+| `getSvUwScoresByAccountPk(accountPk)` | Same projection from Servicing-side `uown_sv_uwdata` by `account_pk` (#1313 CT-04, funded lead → account snapshot) |
+| `waitForUwNpmSegment(leadPk, timeout?)` | Poll-with-backoff until the UW decision row exists AND `npm_segment` is non-null (the GDS snapshot write is async). Read-only. #1313 |
 
 > Full signatures and detailed usage: [references/methods.md](references/methods.md)
 

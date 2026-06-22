@@ -17,6 +17,7 @@
  */
 import { test, expect } from '@fixtures/test-context.fixture.js';
 import { buildTestData } from '@helpers/index.js';
+import { TEST_CARDS } from '@config/constants.js';
 import { createPreQualifiedApplication } from '@helpers/api-setup.helpers.js';
 import {
   signGowSignInFrame,
@@ -98,13 +99,16 @@ async function openNyGowSignContract(
   await page.goto(contractUrl);
   const missingData = new MissingDataFormPage(page);
   await missingData.waitForLoaded(60_000);
-  // cardholder last name MUST equal the applicant last name (svc#544 BR-02)
+  // cardholder last name MUST equal the applicant last name (svc#544 BR-02).
+  // Card: the canonical approved Mastercard (TEST_CARDS.MASTERCARD_APPROVED, BIN 5500)
+  // — the raw Visa 4111… is rejected by the qa2 pre-auth gateway ("Invalid card.")
+  // per the application-lifecycle rule ("use MASTERCARD_APPROVED, never raw Visa in qa").
   await missingData.fillAndSubmit({
     firstName: applicant.firstName,
     lastName: applicant.lastName,
-    cardNumber: '4111111111111111',
-    cvc: '123',
-    expiration: '12/2030',
+    cardNumber: TEST_CARDS.MASTERCARD_APPROVED.number,
+    cvc: TEST_CARDS.MASTERCARD_APPROVED.cvv,
+    expiration: TEST_CARDS.MASTERCARD_APPROVED.expirationDate,
   });
 
   const terms = new TermsOfAgreementPage(page);
@@ -259,17 +263,18 @@ test.describe(
     // AC-03 / AC-04 — the Promotional-Payoff "Early Purchase Option" window
     //   must render its DAY COUNT (the `epoDays` template token).
     //
-    // KNOWN DEFECT (svc#544 BR-06): the backend does not supply `epoDays`
-    //   (`[DocumentDispatchService][GowSign] … missing … [epoDays]`), so the
-    //   sentence renders "within  days" (blank) where Signwell renders
-    //   "within 90 days". Marked test.fail until the backend populates the token
-    //   — when fixed, this test will "unexpectedly pass" and must drop test.fail.
+    // BR-06 history: this was a confirmed migration regression — the backend
+    //   did NOT supply `epoDays` (`[DocumentDispatchService][GowSign] … missing
+    //   … [epoDays]`), so the sentence rendered "within  days" (blank) where
+    //   Signwell renders "within 90 days". FIXED in qa2 for R1.53.0
+    //   (verified 2026-06-21: fresh NY lead 16812 carries `epoDays="90"` in the
+    //   variables map and the missing-token log is gone). The guard is now a
+    //   positive regression assertion — if it ever blanks again, this fails red.
     // ─────────────────────────────────────────────────────────────
     test(
-      '[KNOWN BUG epoDays] EPO Promotional-Payoff renders the number of days',
+      'AC-03/AC-04: EPO Promotional-Payoff renders the number of days (epoDays, BR-06 fixed)',
       async ({ page, api, ctx }, testInfo) => {
         test.setTimeout(300_000);
-        test.fail(true, 'svc#544 BR-06: epoDays token not populated by backend (renders blank)');
 
         const { frame } = await openNyGowSignContract(page, api, ctx, testInfo);
         const bodyText = (await frame.locator('body').innerText()).replace(/[^\S\n]+/g, ' ');

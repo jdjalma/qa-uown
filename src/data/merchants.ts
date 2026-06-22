@@ -124,6 +124,18 @@ export const MERCHANTS: Record<string, MerchantConfig> = {
     number: 'KS3023',
     programs: ['13 month', '16 month'],
   },
+  // Object-of-test merchant for task #1313 (npm_segment snapshot). KS16775 / pk 657
+  // is the env-confirmed Kornerstone 16m route that produces npm_segment via GDS in
+  // qa2 (DB-probed 2026-06-19; ONLINE, NY, is_seon_id_check_required=false). Shares
+  // the Kornerstone portal credentials (username 'kornerstone'); differs only by number.
+  BrooklynFurnitureKS16775: {
+    fullName: '#1 Brooklyn Furniture INC',
+    username: 'kornerstone',
+    password: envOr('MERCHANT_KORNERSTONE_PASSWORD', 'U0wn_Kornerstone_012c'),
+    number: 'KS16775',
+    refCode: 'KS16775',
+    programs: ['13 month', '16 month'],
+  },
   FormPiper: {
     fullName: 'FormPiper',
     username: 'formPiper',

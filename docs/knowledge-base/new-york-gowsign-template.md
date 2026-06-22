@@ -66,9 +66,13 @@ Renderable recipe (UOWN gateway, completable with the standard card — TireAgen
 - **BR-04 — API-only signing is blocked by NeuroID.** `setupApplicationViaApi({ submitPaymentInfoViaApi: true })` → `submitApplication` returns `error: "Failed to verify identification"`; log `[UownClient][submitApplication] Neuro Id verification Failed`. The contract can only be rendered by driving the consumer flow in a **real browser** (Playwright MCP), which generates the behavioural signals NeuroID requires. `[confirmed]`.
 - **BR-05 — NY uses "Rental-Purchase" terminology, not "Lease-Purchase" — and this MATCHES Signwell.** The whole NY template reads "Consumer Rental-Purchase Agreement", "rental payment", etc. The description of this feature (and the OH/AL siblings) describes it as "lease-purchase", but the **Signwell NY baseline (`NY_SAC_LEASE_AGREEMENT` v110) renders the same title: "Consumer Rental-Purchase Agreement-NY"**. So GowSign did NOT deviate — "Rental-Purchase" is the approved NY wording (NY consumer-lease law). `[CONFIRMED — not a defect]` (Signwell DOCX line 942 vs GowSign heading). The legacy template's internal *name* says "LEASE_AGREEMENT" but its rendered title is "Rental-Purchase".
 
-## 🔴 BR-06 / Defect — `epoDays` token blank in the NY contract (customer-visible)
+## ✅ BR-06 / Defect (RESOLVED 2026-06-21) — `epoDays` token blank in the NY contract (customer-visible)
 
-The NY template references `{{epoDays}}` but the backend does not populate it.
+> **✅ FIXED in qa2 for R1.53.0 (backend confirmed via DB 2026-06-21).** A fresh NY GowSign lead created today (**16812**, `uown_esign_document` pk13972, SENT_TO_CUSTOMER) carries **`epoDays="90"`** in the `document.variables` map, and **no `[DocumentDispatchService][GowSign] … missing … [epoDays]` log** is emitted on any of today's NY leads (16812–16819) — contrast lead 16684 (2026-06-18), which had `epoDays` ABSENT + the missing-token log. So the backend now supplies the token. `[CONFIRMED — backend/DB]` (primary source: live qa2 `uown_esign_document.request` + `uown_los_lead_notes`). UI-render re-confirmation ("within 90 days" in the iframe) is pending the next green run of `ny-gowsign-template-svc544.spec.ts` — the spec's CT-03 was flipped from a `test.fail` guard to a positive assertion to lock the fix in. The historical defect analysis below is retained as a dated record (rule #16).
+
+---
+
+The NY template references `{{epoDays}}` but **(pre-fix, ≤2026-06-18)** the backend did not populate it.
 
 - **Backend log (lead 16651):** `[DocumentDispatchService][GowSign] leadPk=16651 variables map missing 1 simple template token(s): [epoDays]`.
 - **Source confirmation (`uown_esign_document.request`, pk13851):** the `variables` map sent to GowSign includes `epoExpiryDate=09/15/2026`, `payOffStartDateAfterEpoExpiry=09/16/2026`, `epoFeeText=" plus a BuyOut Fee of $60.00, "` — but **no `epoDays` key**.
@@ -129,7 +133,7 @@ Baseline = the legacy Signwell NY template **`NY_SAC_LEASE_AGREEMENT` v110** ("L
 | Signature / initials | `{{signature:1:y:customerSign}}`, `{{initial}}`, `{{check preauthyes/no}}` text-tags | Sign button + 16 per-page initials + PreAuth YES/No | ✅ parity (provider-native) |
 | **EPO days ("within N days")** | **"within 90 days … pay only $…"** (L11190) — **populated** | **"within ___ days"** — **BLANK** | 🔴 **REGRESSION** |
 
-**Net:** GowSign follows the same patterns and text as Signwell across the whole document. The **single divergence** is the `epoDays` value (BR-06): Signwell renders "90 days", GowSign renders blank. That is the one item that fails "data was populated properly" — and because the baseline proves Signwell did populate it, it is a **confirmed migration regression**, the headline finding for this task.
+**Net:** GowSign follows the same patterns and text as Signwell across the whole document. The one historical divergence — the `epoDays` value (BR-06: Signwell "90 days" vs GowSign blank) — was a confirmed migration regression on 2026-06-18 and **has since been FIXED in qa2 for R1.53.0** (lead 16812, `epoDays="90"` now in the variables map; see the BR-06 RESOLVED banner above). With that fix, GowSign NY reaches **full content + value parity** with the Signwell baseline. UI-render re-confirmation pending the next green spec run.
 
 ## Signing completion (AC-01 / Scenario 1-2 "signing completion") — CONFIRMED
 

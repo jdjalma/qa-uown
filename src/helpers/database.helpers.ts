@@ -102,6 +102,28 @@ export interface TokenRow {
 export type KountTokenRow = TokenRow;
 export type GdsTokenRow = TokenRow;
 
+// ── UW scores snapshot (task #1313 — npm_segment / tam_score) ───────────
+// `uown_los_uwdata` (lead side) and `uown_sv_uwdata` (account side) gained
+// `npm_segment` + `tam_score` (both integer) in migration V20260603054943_1.53.0.
+// The GDS parser writes them on the 16m approval branch; `tam_score` is
+// TireAgent-only. `decided_by_agent`/`eligible_terms` are the engine + term
+// guards. Column names confirmed vs information_schema in qa2 (32-col table).
+export interface UwScoresRow {
+  lead_pk: number;
+  npm_segment: number | null;
+  tam_score: number | null;
+  decided_by_agent: string | null;
+  eligible_terms: string | null;
+  uw_status: string | null;
+}
+export interface SvUwScoresRow {
+  account_pk: number;
+  npm_segment: number | null;
+  tam_score: number | null;
+  decided_by_agent: string | null;
+  eligible_terms: string | null;
+}
+
 // Raw row shape returned by pg for MerchantProgram SELECT *
 interface MerchantProgramRow {
   pk: number | string;
@@ -124,6 +146,21 @@ export class DatabaseHelpers {
       connectionString,
       max: 5,
       idleTimeoutMillis: 30_000,
+      // TCP keepalive probes keep idle pooled connections alive across long
+      // query gaps (e.g. a 30s UI/PDF render between two DB reads), so a tunnel
+      // /server idle-drop doesn't silently kill the socket (pitfall #113).
+      keepAlive: true,
+    });
+    // CRITICAL (pitfall #113): a pg Pool emits 'error' when an IDLE pooled
+    // client's socket dies (qa2 SSH-tunnel hiccup, server idle-drop). With NO
+    // listener, Node treats it as an unhandled 'error' event and CRASHES the
+    // worker — which tore down the Playwright context mid-test and surfaced as a
+    // bogus "Target page/context/browser has been closed" elsewhere (svc#546
+    // MONTHLY render, 2026-06-22). Swallow it: the Pool discards the dead client
+    // and lazily creates a fresh one for the next query, so reads transparently
+    // recover. Do NOT rethrow here.
+    this.pool.on('error', (err) => {
+      console.warn(`[db-pool] idle client error (recovered, non-fatal): ${err.message}`);
     });
   }
 
@@ -419,6 +456,57 @@ export class DatabaseHelpers {
     return this.queryOne(
       'SELECT * FROM uown_los_uwdata WHERE lead_pk = $1 ORDER BY pk DESC LIMIT 1',
       [leadPk],
+    );
+  }
+
+  /**
+   * UW scores snapshot row for a lead (task #1313 — npm_segment / tam_score).
+   * Projects only the columns under test, confirmed against information_schema in
+   * qa2 (uown_los_uwdata has 32 cols; these are real column names, not entity fields).
+   * `npm_segment`/`tam_score` are nullable integers; `decided_by_agent` is the engine
+   * guard ('GDS' for the rows that carry these fields); `eligible_terms` is the 13/16
+   * term string. Read-only.
+   */
+  async getUwScoresByLeadPk(leadPk: string): Promise<UwScoresRow | null> {
+    return this.queryOne<UwScoresRow>(
+      `SELECT lead_pk, npm_segment, tam_score, decided_by_agent, eligible_terms, uw_status
+         FROM uown_los_uwdata
+        WHERE lead_pk = $1
+        ORDER BY pk DESC
+        LIMIT 1`,
+      [leadPk],
+    );
+  }
+
+  /**
+   * Same projection for the Servicing-side snapshot (task #1313 CT-04, funding copy).
+   * `uown_sv_uwdata` carries `account_pk`; the migration touched BOTH tables.
+   */
+  async getSvUwScoresByAccountPk(accountPk: string): Promise<SvUwScoresRow | null> {
+    return this.queryOne<SvUwScoresRow>(
+      `SELECT account_pk, npm_segment, tam_score, decided_by_agent, eligible_terms
+         FROM uown_sv_uwdata
+        WHERE account_pk = $1
+        ORDER BY pk DESC
+        LIMIT 1`,
+      [accountPk],
+    );
+  }
+
+  /**
+   * Poll until the UW decision row exists AND npm_segment is populated for a lead.
+   * The GDS decision is async (sweep → engine → persist); use this instead of a
+   * single query + sleep ([[db-polling-pattern]]). Returns the row (npm_segment
+   * non-null) or null on timeout. Read-only.
+   */
+  async waitForUwNpmSegment(leadPk: string, timeoutMs: number = TIMEOUTS.DB_WAIT): Promise<UwScoresRow | null> {
+    return this.pollUntil<UwScoresRow>(
+      async () => {
+        const row = await this.getUwScoresByLeadPk(leadPk);
+        return row && row.npm_segment != null ? row : null;
+      },
+      timeoutMs,
+      'waitForUwNpmSegment',
     );
   }
 

@@ -50,6 +50,9 @@ disable-model-invocation: true
 - `uown_sweep_logs`: colunas reais = **`sweep_name`**, **`number_of_records_processed`**, **`error`**, **`source`**, **`start_time`** / **`end_time`** (NÃO `task_name`/`processed`/`created_timestamp`). `number_of_records_processed` escrito DEPOIS do processamento (leitura imediata = 0; app-lifecycle pitfall #87).
 - Ver app-lifecycle pitfalls #94 (`uown_scheduled_task`) e #95 (`uown_sweep_logs`).
 
+**Casos drift-prone conhecidos:**
+- `StickyRecoverCancelSweep` (sandbox pk81, cron `0 0 17 * * ?`) — `sql_to_pick_accounts` = `sticky_transaction_id NOT NULL AND account_status <> 'ACTIVE' AND recovery_status NOT IN ('RECOVERED','FAILED','CANCELED')`. **`ScheduledTaskClient.createOrUpdateScheduledTask` muta esse SQL** (narrow-to-one-row em testes) → SEMPRE restaurar via snapshot (`try/finally`). Ver `docs/knowledge-base/559-sticky-recover-cancel-sweep.md` (svc#559).
+
 **Tag a usar:** `[db-observation:uown_scheduled_task WHERE scheduled_task_name=...]` + `[svc-source:{TaskClass}.java]`
 
 **Memórias relacionadas:** `project_sticky_io_485_drift`, `project_svc_485_sticky_recover`, `reference_get_scheduled_task_by_name`, `reference_sql_config_uppercase`
@@ -150,7 +153,9 @@ disable-model-invocation: true
 
 **Tag a usar:** `[db-observation:\d uown_los_lead_notes]` + `[skill:activity-log-validation]`
 
-**Memórias relacionadas:** `reference_email_templates_catalog` (menciona schema discovery)
+**⚠️ Tabela separada — `uown_los_activity_log`:** nem todo evento vai para `uown_los_lead_notes`. **Notas de Protection Plan / Buddy (opt-in/opt-out/enrollment) ficam em `uown_los_activity_log`**, NÃO em `uown_los_lead_notes` (que carrega a progressão UW `[SubmitApplication]`/`[UnderwritingService]`). Antes de assertar qualquer activity log, confirmar a tabela certa por domínio. `[db-observation:uown_los_activity_log, qa2, 2026-06-21]` (#1317, [[application-lifecycle]] #126).
+
+**Memórias relacionadas:** `reference_email_templates_catalog` (menciona schema discovery), [[buddy-protection-plan-qa2]]
 
 ### 11. Sentry Session Replay — semantics per-tab (not per-application)
 
@@ -248,6 +253,32 @@ disable-model-invocation: true
 
 **Memórias relacionadas:** `reference_move_due_date_validation` (dev3/ = 3d — datado, cross-check antes de usar), `project_move_due_date_trailing_slash_bug`, `feedback_drive_lead_to_funding_default_weekly`
 
+### 17. GowSign template state-routing (expandiu além de CA)
+
+**Por que volatile:** a distribuição de templates GowSign por estado muda no tempo. A regra antiga "qa2 = só CA tem GowSign, resto cai no Signwell" (28-04-2026) está **stale**.
+
+**Observado:**
+- 2026-06-21 (#1317): TerraceFinance (`OL90202-0001`, ONLINE) / **customer state NY** assina via **GowSign** (`uown_esign_document.client='GOWSIGN'`, SIGNED via `[EsignRedirectService][updateSignStatus]`), NÃO Signwell.
+- 2026-06-22 (svc#546): Daniel's clone `OL90205-0079_clone` (INSTORE/store-state CA) roteia o template pelo **CUSTOMER state** → customer OH = `OH_2025_SAC_16_MONTHS`, NÃO o store CA. Contradiz "INSTORE → merchant state". Sempre assertar o template selecionado (`assertSelectedTemplateForLead`). `[test-execution:qa2, leads 16865/16866/16867]`.
+- **BUG-01 (svc#546) FIXED/validado 2026-06-22 (qa2):** o template OH `OH_2025_SAC_16_MONTHS` agora **popula** `nextPaymentDueAmount` no variables map do GowSign (renderiza 95.16/22.07/43.50; zero notas de dispatch "variables map missing"). Antes do fix renderizava em branco em Item 3/Item 4a. svc#546 = fechado.
+- **Lifecycle de status pós-assinatura (correção):** lead efetivamente assinado em GowSign progride `SENT_TO_CUSTOMER → SIGNED → STORED → COMPLETED` (`SIGNED`/`STORED` EXISTEM; a nota antiga "só SENT_TO_CUSTOMER/COMPLETED" era de leads não-assinados). Pós-assinatura o campo `request` vira a string `getDocumentStatus` (não JSON) → query por lead+client, não `request LIKE '{%'`. Fonte: [[gowsign-knowledge]] §OH render facts + §lifecycle.
+
+**Fonte primária:** `SELECT client, status FROM uown_esign_document WHERE lead_pk=$1` para o estado/env alvo — NÃO assumir `state != 'CA' → Signwell`. `EsignService.loadLeadEsignContext()` para a regra (+ exceção INSTORE usa `merchant.state`).
+
+**Tag a usar:** `[db-observation:uown_esign_document WHERE lead_pk=...]` + `[svc-source:EsignService.loadLeadEsignContext]`
+
+**Memórias relacionadas:** [[gowsign-routing-expanded-2026-06]], [[application-lifecycle]] (e-sign routing em `.claude/rules/testing.md`)
+
+### 18. Buddy `already_covered` / `covered_by_*` — assunção não-verificada
+
+**Por que volatile:** a assunção (BR §23) de que cross-coverage popula `already_covered=true` + `covered_by_lead_pk` em `uown_los_protection_plan` é **não-verificada** — 0 rows com `already_covered=true` env-wide (qa2, 2026-06-21). A cross-coverage é observável só na UI ("already enrolled") + ausência de policy duplicada no target (`policy_id=null`).
+
+**Fonte primária:** `SELECT already_covered, covered_by_lead_pk, policy_id FROM uown_los_protection_plan WHERE lead_pk=$1` — NÃO assertar `already_covered=true` sem reconfirmar; usar a UI ("already enrolled" panel) + `policy_id IS NULL` no target como evidência real.
+
+**Tag a usar:** `[db-observation:uown_los_protection_plan, env-wide]`
+
+**Memórias relacionadas:** [[buddy-protection-plan-qa2]], [[application-lifecycle]] #128 + OBS-PP-ALREADYCOVERED-1317
+
 ---
 
 ## Anti-patterns
@@ -308,11 +339,14 @@ Formato de entrada:
 | `docs/business-rules/appendix-d-constantes-enums.md` | 2026-06-18 | code:src/types/enums.ts#FundingQueueStatus; code:src/types/enums.ts#LeadStatus; env:qa2 |
 | `docs/business-rules/appendix-f-sql-reference.md` | 2026-06-18 | db:uown_los_lead; db:uown_sv_account; db:uown_scheduled_task; env:qa2 |
 | `docs/business-rules/appendix-g-cenarios-risco.md` | 2026-06-18 | code:src/data/state-merchant-matrix.ts; env:qa2 |
+| `docs/knowledge-base/1313-npm-segment-tam-score-snapshot-routing.md` | 2026-06-21 | env:qa2; db:uown_los_uwdata; db:uown_sv_uwdata; mr:svc!1469 (migration V20260603054943_1.53.0) |
 | `docs/knowledge-base/16m-lease-and-gowsign-signwell-routing-qa2.md` | 2026-06-17 | env:qa2; code:src/data/state-merchant-matrix.ts#expectedProvider; db:uown_gow_sign_template; db:uown_esign_document |
+| `docs/knowledge-base/559-sticky-recover-cancel-sweep.md` | 2026-06-21 | env:sandbox (DB tunnel 127.0.0.1:5445 → cluster sandbox, SELECT-only); db:uown_scheduled_task pk=81 StickyRecoverCancelSweep (sql_to_pick_accounts confirmed live); db:account 5084 / sticky pk 36 — recovery_status=CANCELED via the fix, 2026-06-17 20:00:02Z (canonical confirmed run); db:uown_sv_activity_log pk=10961637 (log_type=INTERNAL, created_by=SYSTEM, creation_source=SYSTEM_GENERATED); db:uown_sticky_outbound_log pk=32 source=STICKY_RECOVER (cancel request, response=null); code:uown/backend/svc!1483 "Handle non-cancelable transactions" (StickyRecoverCancelService + StickyRecoverCancelSweepService); code:uown/backend/sticky.io!9 "Add markRecoveryCanceled method; task:gitlab svc#559 (description + Gustavo Martins QA comment, milestone RU06.26.1.53.0) |
 | `docs/knowledge-base/alabama-gowsign-template.md` | 2026-06-17 | env:qa2; lead:16649; code:src/data/state-merchant-matrix.ts#expectedProvider; db:uown_gow_sign_template; db:uown_esign_document |
 | `docs/knowledge-base/merchants-config-columns-export.md` | 2026-06-15 | env:qa1; gitlab:task-1309; db:uown_merchant |
 | `docs/knowledge-base/multi-select-filters-mmh-modreport-funding.md` | 2026-06-18 | env:qa2; gitlab:task-1319 |
 | `docs/knowledge-base/new-york-gowsign-template.md` | 2026-06-18 | env:qa2; lead:16651; code:src/data/state-merchant-matrix.ts#expectedProvider; db:uown_esign_document |
+| `docs/knowledge-base/sticky-payment-refund.md` | 2026-06-21 | env:sandbox (happy-path executed live); account:6168 / payment 2190284 / cc 69253 / sticky 31 — REVERSED+REFUNDED live 2026-06-21; env:qa2 (modal surface on account 9549; schema present, uown_sticky empty); code:uown/backend/svc!1465 RefundPaymentService.java + StickyRefundPaymentService.java + StickyRefundCompletionService.java; code:uown/frontend/servicing!696 reverse-payment-modal/index.tsx + utils/data-table-columns.tsx; code:uown/backend/sticky.io!8 RefundService + StickyRestClient.postRefund + StickyRecoveryStatus(REFUND_SUBMITTED/REFUND_FAILED/REFUNDED); db:sandbox uown_sticky (RECOVERED/REFUNDED rows) · uown_sticky_outbound_log.source=STICKY_REFUND · uown_sv_payment STICKY |
 | `docs/knowledge-base/underwriting-and-funding-test-data-paths.md` | 2026-06-16 | env:qa2; db:uown_los_lead_merchant_settings_snapshot; db:uown_sv_account_merchant_settings_snapshot |
 
 <!-- END generated:volatile-docs -->
