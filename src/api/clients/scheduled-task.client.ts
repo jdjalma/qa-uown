@@ -6,6 +6,19 @@ import type {
 } from '../responses/scheduled-task.response.js';
 import type { CreateOrUpdateScheduledTaskBody } from '../bodies/scheduled-task.body.js';
 
+/**
+ * Exact backend Quartz task names for the R1.53.0 RightFoot ACH balance-check
+ * sweeps. Use these with `triggerScheduledTask`/`getScheduledTaskByName` so the
+ * Quartz name lives in ONE place (drift-prone — see [[volatile-knowledge-registry]]
+ * "sweep names"). Reference cron/process-type seeds (backend, NOT asserted here):
+ *   DailyAchBalanceCheckSweep — cron `0 0 15 * * ?`,  process type DAILY_RERUN_DELINQUENT
+ *   RerunAchBalanceCheckSweep — cron `0 0 9 ? * THU`, process type RERUN
+ */
+export const SCHEDULED_TASK_NAMES = {
+  DAILY_ACH_BALANCE_CHECK: 'DailyAchBalanceCheckSweep',
+  RERUN_ACH_BALANCE_CHECK: 'RerunAchBalanceCheckSweep',
+} as const;
+
 export class ScheduledTaskClient extends BaseClient {
 
   async triggerScheduledTask(taskName: string): Promise<ApiResponse<TriggerScheduledTaskResponseBody>> {
@@ -20,7 +33,7 @@ export class ScheduledTaskClient extends BaseClient {
    *
    * ⚠️ Heavy, suite-wide side effect (mutates a shared scheduled task). Callers
    * MUST restore the original `sqlToPickAccounts` in a try/finally. Used only by
-   * the opt-in destructive svc#559 CT-M1-LIVE.
+   * the opt-in destructive CT-M1-LIVE.
    */
   async createOrUpdateScheduledTask(
     body: CreateOrUpdateScheduledTaskBody,
@@ -71,5 +84,23 @@ export class ScheduledTaskClient extends BaseClient {
   /** Manually trigger the GDS access token refresh sweep (replaces in-request token regen). */
   async refreshGdsAccessTokenSweep(): Promise<ApiResponse<unknown>> {
     return this.post<unknown>('/uown/svc/refreshGdsAccessTokenSweep');
+  }
+
+  /**
+   * Trigger the R1.53.0 daily RightFoot ACH balance-check sweep (process type
+   * DAILY_RERUN_DELINQUENT; backend cron `0 0 15 * * ?`). Convenience wrapper over
+   * the generic `triggerScheduledTask` with the exact Quartz task name.
+   */
+  async dailyAchBalanceCheckSweep(): Promise<ApiResponse<TriggerScheduledTaskResponseBody>> {
+    return this.triggerScheduledTask(SCHEDULED_TASK_NAMES.DAILY_ACH_BALANCE_CHECK);
+  }
+
+  /**
+   * Trigger the R1.53.0 RightFoot ACH balance-check RERUN sweep (process type
+   * RERUN; backend cron `0 0 9 ? * THU`). Convenience wrapper over the generic
+   * `triggerScheduledTask` with the exact Quartz task name.
+   */
+  async rerunAchBalanceCheckSweep(): Promise<ApiResponse<TriggerScheduledTaskResponseBody>> {
+    return this.triggerScheduledTask(SCHEDULED_TASK_NAMES.RERUN_ACH_BALANCE_CHECK);
   }
 }

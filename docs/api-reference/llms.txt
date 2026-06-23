@@ -1,0 +1,18 @@
+# Uown - TMS Documentation
+
+## API Reference
+- [Authentication](https://uown-tms.readme.io/reference/authentication.md): All API requests require authentication using an API key. This guide explains how to obtain your API key and use it to authenticate your requests.
+- [Getting Started](https://uown-tms.readme.io/reference/getting-started.md): Welcome and thank you for choosing Uown Leasing TMS Service API! We're excited to have you on board and look forward to supporting you on your integration journey. If you have any questions or need assistance, don't hesitate to reach out to our dedicated support team.
+- [Adjust the next payment due date for an account](https://uown-tms.readme.io/reference/adjustnextduedate.md): Moves a payment due date forward by a specified number of days. Maximum offset is 3 days for weekly frequency accounts and 7 days for all other frequencies. Only the specified payment for the specified due date is moved.
+- [Get account summary](https://uown-tms.readme.io/reference/getaccountsummary.md): Retrieves comprehensive account details including balance and status
+- [Get autopay credit card](https://uown-tms.readme.io/reference/getautopaycreditcard.md): Returns the credit card configured for automatic payments, if any
+- [Get bank accounts](https://uown-tms.readme.io/reference/getbankaccounts.md): Retrieves all active bank accounts associated with the account
+- [Get credit cards](https://uown-tms.readme.io/reference/getcreditcards.md): Retrieves all tokenized credit cards on file for the account
+- [Get payoff amount](https://uown-tms.readme.io/reference/getpayoffamount.md): Calculates the total amount required to pay off the account
+- [Move due dates](https://uown-tms.readme.io/reference/moveduedates.md): Adjusts receivable due dates forward or backward by specified number of days
+- [Process ACH payment](https://uown-tms.readme.io/reference/processachpayment.md): Initiates an ACH (Automated Clearing House) bank payment
+- [Process credit card payment](https://uown-tms.readme.io/reference/processcreditcardpayment.md): Executes a single credit card payment transaction
+- [Payment Arrangement](https://uown-tms.readme.io/reference/processpaymentarrangement.md): Executes payment transactions (ACH and/or credit card) for a payment arrangement
+- [Search accounts by customer identifiers](https://uown-tms.readme.io/reference/searchaccount.md): Finds active primary accounts matching phone, SSN, or date of birth. Returns up to 5 results.
+- [Send PayNearMe payment link](https://uown-tms.readme.io/reference/sendpaynearmepaymentlink.md): Creates a PayNearMe payment link for the account and delivers it via SMS and/or email.
+- [Update contact preferences](https://uown-tms.readme.io/reference/updatecontactpreferences.md): Updates TCPA and AI opt-out preferences for a phone number on the account

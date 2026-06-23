@@ -1,4 +1,4 @@
-// THROWAWAY (svc#544) — extract a stored Signwell esign PDF from the DB,
+// THROWAWAY — extract a stored Signwell esign PDF from the DB,
 // decode base64, parse text, write both to /tmp. Read-only SELECT.
 // Usage: node src/scripts/_scratch_extract_signwell_pdf.mjs <esignDocPk> <outBaseName>
 import fs from 'node:fs';

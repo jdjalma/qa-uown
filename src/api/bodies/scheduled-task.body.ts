@@ -12,7 +12,7 @@ import type { ScheduledTaskMetadataResponseBody } from '../responses/scheduled-t
  * INSERTing a duplicate. All other fields are passed through unchanged.
  *
  * ⚠️ Mutating a shared scheduled task is a heavy, suite-wide side effect — used
- * ONLY by the opt-in destructive CT (svc#559 CT-M1-LIVE) under a try/finally
+ * ONLY by the opt-in destructive CT (CT-M1-LIVE) under a try/finally
  * that restores the original `sqlToPickAccounts`. Not for the read-only suite.
  */
 export interface CreateOrUpdateScheduledTaskBody extends ScheduledTaskMetadataResponseBody {

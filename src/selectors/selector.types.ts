@@ -34,6 +34,7 @@ export interface FilterSelectors {
   filterOptionWithRole: string;
   filterControl: string;
   filterControlResilient: string;
+  filterComboboxInput: string;
   filtersButton: string;
   filterMenuPortal: string;
   filterPlaceholder: string;

@@ -35,3 +35,12 @@ target/
 *.swp
 *.swo
 .DS_Store
+
+# Ad-hoc investigation/probe scripts (local throwaway — not shared)
+src/scripts/_probe_*
+src/scripts/_update_lead*
+tests/**/__scratch_*.spec.ts
+tests/api/_sticky_multi_fresh.spec.ts
+
+# Local working spreadsheets
+qa-sla.xlsx

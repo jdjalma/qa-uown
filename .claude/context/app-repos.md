@@ -2,27 +2,33 @@
 
 # Application Source Repositories
 
-The UOWN Leasing platform source code lives in sibling directories under `projects./`. Agents can read these repos to cross-reference endpoint implementations, DB migrations, frontend components, and business logic.
+The UOWN Leasing platform source code lives under `projects/uown/` (sibling `uown/` directory next to this `qa-uown/` repo). Agents can read these repos to cross-reference endpoint implementations, DB migrations, frontend components, and business logic.
+
+> **Branches/paths verificados em 2026-06-23 nesta máquina.** Branch é volátil — confirme com `git -C ../uown/<repo> rev-parse --abbrev-ref HEAD` antes de citar.
 
 ## Repository Catalog
 
 | Repo | Type | Branch | Relative Path | Key Directories |
 |------|------|--------|---------------|-----------------|
-| **svc** | Java/Spring backend | HEAD (detached) | `../svc/` | `rest/`, `service/`, `db/`, `migration/`, `dto/`, `enumeration/` |
-| **origination** | Node.js frontend | R1.49.0 | `../origination/` | `pages/`, `components/`, `hooks/`, `domain/`, `enums/` |
-| **servicing** | Node.js frontend | master | `../servicing/` | `pages/`, `components/`, `api/`, `domain/`, `enums/` |
-| **website** | Node.js/React | R1.49.0 | `../website/` | `pages/`, `components/`, `api/`, `domain/`, `layout/` |
-| **ams** | Java/Spring | master | `../ams/` | `src/main/java/com/uownleasing/ams/` |
-| **ams-website** | Node.js/React | master | `../ams-website/` | `pages/`, `components/`, `layouts/` |
-| **payment-gateway** | Java/Spring | master | `../payment-gateway/` | `src/main/java/com/uownleasing/payment/` |
-| **uwengine** | Java/Spring | R1.49.1 | `../uwengine/` | `src/main/java/com/uownleasing/uwengine/` (service/, db/, enumeration/) |
-| **ccverification** | Java/Spring | R1.49.1 | `../ccverification/` | `src/main/java/com/uownleasing/CCVerification/` (service/, db/, enumeration/) |
-| **common** | Java shared lib | R1.49.1 | `../common/` | `src/main/java/com/uownleasing/common/` (enumeration/, utils/, db/, service/) |
-| **los-common** | Java shared lib | R1.49.1 | `../los-common/` | `src/main/java/com/uownleasing/los/common/` |
-| **svc-common** | Java shared lib | R1.49.1 | `../svc-common/` | `src/main/java/com/uownleasing/svc/common/` |
-| **configuration** | Config | main | `../configuration/` | Root (FAQ.md, README.md) |
+| **svc** | Java/Spring backend | R1.53.0 | `../uown/svc/` | `rest/`, `service/`, `db/`, `migration/`, `dto/`, `enumeration/` |
+| **origination** | Node.js frontend | R1.51.1 | `../uown/origination/` | `pages/`, `components/`, `hooks/`, `domain/`, `enums/` |
+| **servicing** | Node.js frontend | R1.50.2 | `../uown/servicing/` | `pages/`, `components/`, `api/`, `domain/`, `enums/` |
+| **ams** | Java/Spring | master | `../uown/ams/` | `src/main/java/com/uownleasing/ams/` |
+| **uwengine** | Java/Spring | master | `../uown/uwengine/` | `src/main/java/com/uownleasing/uwengine/` (service/, db/, enumeration/) |
+| **common** | Java shared lib | master | `../uown/common/` | `src/main/java/com/uownleasing/common/` (enumeration/, utils/, db/, service/) |
+| **los-common** | Java shared lib | master | `../uown/los-common/` | `src/main/java/com/uownleasing/los/common/` |
+| **svc-common** | Java shared lib | master | `../uown/svc-common/` | `src/main/java/com/uownleasing/svc/common/` |
+| **configuration** | Config | uown-qa1 | `../uown/configuration/` | Root (FAQ.md, README.md) |
+| **website** | Node.js/React | — (não clonado nesta máquina) | `../uown/website/` | `pages/`, `components/`, `api/`, `domain/`, `layout/` |
+| **ams-website** | Node.js/React | — (não clonado nesta máquina) | `../uown/ams-website/` | `pages/`, `components/`, `layouts/` |
+| **payment-gateway** | Java/Spring | — (não clonado nesta máquina) | `../uown/payment-gateway/` | `src/main/java/com/uownleasing/payment/` |
+| **ccverification** | Java/Spring | — (não clonado nesta máquina) | `../uown/ccverification/` | `src/main/java/com/uownleasing/CCVerification/` (service/, db/, enumeration/) |
 
-> **All paths are relative to fintech-playwright root.** Use `../svc/` etc. in Grep/Glob/Read tool calls.
+> **All paths are relative to the qa-uown root.** Use `../uown/svc/` etc. in Grep/Glob/Read tool calls.
+>
+> **Repos ausentes:** `website`, `ams-website`, `payment-gateway`, `ccverification` **não estão clonados** nesta máquina (nem em `../uown/` nem em `../`). Se precisar deles, clone sob `../uown/` ou trate como indisponível (fallback: Postman collection / business-rules).
+>
+> **Branches stale em libs compartilhadas:** `common`/`uwengine`/`los-common`/`svc-common` locais estão em `master` — alguns valores R1.53.0 (ex.: `ACHProcessType.DAILY_RERUN_DELINQUENT`, `UWInfo.npmSegment`/`tamScore`) só existem em `origin/R1.53.0`. Leia via `git show origin/R1.53.0:<path>`. Há também checkouts standalone duplicados em `../{ams,common,los-common,svc-common,uwengine}` — prefira os de `../uown/`.
 
 ## Search Guide by Task Type
 
@@ -32,11 +38,11 @@ Search the **svc** backend for REST controllers and service logic:
 
 ```
 # Find controller for an endpoint (e.g., /api/leases)
-Grep pattern: @.*Mapping.*leases    path: ../svc/src/main/java/  type: java
-Grep pattern: @RequestMapping       path: ../svc/src/main/java/com/uownleasing/svc/rest/  type: java
+Grep pattern: @.*Mapping.*leases    path: ../uown/svc/src/main/java/  type: java
+Grep pattern: @RequestMapping       path: ../uown/svc/src/main/java/com/uownleasing/svc/rest/  type: java
 
 # Find service implementation
-Grep pattern: class.*Service        path: ../svc/src/main/java/com/uownleasing/svc/service/  type: java
+Grep pattern: class.*Service        path: ../uown/svc/src/main/java/com/uownleasing/svc/service/  type: java
 ```
 
 ### Database / Migration / Entity
@@ -45,14 +51,14 @@ Search **svc** for Flyway migrations and JPA entities:
 
 ```
 # Find migration for a table (e.g., payment_arrangement)
-Grep pattern: payment_arrangement   path: ../svc/src/main/resources/db/migration/  glob: *.sql
+Grep pattern: payment_arrangement   path: ../uown/svc/src/main/resources/db/migration/  glob: *.sql
 
 # Find entity class
-Grep pattern: @Table.*table_name    path: ../svc/src/main/java/com/uownleasing/svc/db/  type: java
-Grep pattern: @Entity               path: ../svc/src/main/java/com/uownleasing/svc/db/  type: java
+Grep pattern: @Table.*table_name    path: ../uown/svc/src/main/java/com/uownleasing/svc/db/  type: java
+Grep pattern: @Entity               path: ../uown/svc/src/main/java/com/uownleasing/svc/db/  type: java
 
 # Find latest migrations
-Glob pattern: ../svc/src/main/resources/db/migration/V2026*.sql
+Glob pattern: ../uown/svc/src/main/resources/db/migration/V2026*.sql
 ```
 
 ### Enumerations / Constants
@@ -61,11 +67,11 @@ Search **common**, **svc**, or domain-specific repos:
 
 ```
 # Find enum definition (e.g., LeadStatus)
-Grep pattern: enum LeadStatus       path: ../common/src/main/java/  type: java
-Grep pattern: enum LeadStatus       path: ../svc/src/main/java/  type: java
+Grep pattern: enum LeadStatus       path: ../uown/common/src/main/java/  type: java
+Grep pattern: enum LeadStatus       path: ../uown/svc/src/main/java/  type: java
 
 # Find constants
-Grep pattern: static final.*CONSTANT_NAME  path: ../svc/  type: java
+Grep pattern: static final.*CONSTANT_NAME  path: ../uown/svc/  type: java
 ```
 
 ### Underwriting / Credit Check
@@ -74,19 +80,19 @@ Search **uwengine** and **ccverification**:
 
 ```
 # UW rules and decision logic
-Grep pattern: class.*Service        path: ../uwengine/src/main/java/com/uownleasing/uwengine/service/  type: java
+Grep pattern: class.*Service        path: ../uown/uwengine/src/main/java/com/uownleasing/uwengine/service/  type: java
 
-# CC verification logic
-Grep pattern: class.*Service        path: ../ccverification/src/main/java/com/uownleasing/CCVerification/service/  type: java
+# CC verification logic (ccverification ausente — ver nota acima)
+Grep pattern: class.*Service        path: ../uown/ccverification/src/main/java/com/uownleasing/CCVerification/service/  type: java
 ```
 
 ### Payment Gateway
 
-Search **payment-gateway**:
+Search **payment-gateway** (ausente — ver nota acima):
 
 ```
-Grep pattern: @.*Mapping            path: ../payment-gateway/src/main/java/  type: java
-Grep pattern: class.*Service        path: ../payment-gateway/src/main/java/  type: java
+Grep pattern: @.*Mapping            path: ../uown/payment-gateway/src/main/java/  type: java
+Grep pattern: class.*Service        path: ../uown/payment-gateway/src/main/java/  type: java
 ```
 
 ### Frontend Components (UI behavior)
@@ -95,24 +101,24 @@ Search the portal-specific frontend repo:
 
 ```
 # Origination portal UI
-Grep pattern: ComponentName         path: ../origination/components/  glob: *.{js,jsx,ts,tsx}
-Grep pattern: export.*function      path: ../origination/pages/  glob: *.{js,jsx,ts,tsx}
+Grep pattern: ComponentName         path: ../uown/origination/components/  glob: *.{js,jsx,ts,tsx}
+Grep pattern: export.*function      path: ../uown/origination/pages/  glob: *.{js,jsx,ts,tsx}
 
 # Servicing portal UI
-Grep pattern: ComponentName         path: ../servicing/components/  glob: *.{js,jsx,ts,tsx}
+Grep pattern: ComponentName         path: ../uown/servicing/components/  glob: *.{js,jsx,ts,tsx}
 
-# Website (consumer-facing)
-Grep pattern: ComponentName         path: ../website/components/  glob: *.{js,jsx,ts,tsx}
+# Website (consumer-facing — ausente, ver nota acima)
+Grep pattern: ComponentName         path: ../uown/website/components/  glob: *.{js,jsx,ts,tsx}
 
-# AMS portal
-Grep pattern: ComponentName         path: ../ams-website/components/  glob: *.{js,jsx,ts,tsx}
+# AMS portal (ams-website ausente, ver nota acima)
+Grep pattern: ComponentName         path: ../uown/ams-website/components/  glob: *.{js,jsx,ts,tsx}
 ```
 
 ### Configuration / Feature Flags
 
 ```
-Grep pattern: feature_flag_name     path: ../configuration/
-Grep pattern: FEATURE_              path: ../svc/src/main/java/com/uownleasing/svc/config/  type: java
+Grep pattern: feature_flag_name     path: ../uown/configuration/
+Grep pattern: FEATURE_              path: ../uown/svc/src/main/java/com/uownleasing/svc/config/  type: java
 ```
 
 ## Cross-Reference Sources
@@ -129,10 +135,11 @@ Grep pattern: FEATURE_              path: ../svc/src/main/java/com/uownleasing/s
 Before any task analysis, the orchestrator runs `git pull --ff-only` on all repos:
 
 ```bash
-# Executed by orchestrator in Phase 0a
-for repo in svc origination servicing website ams ams-website payment-gateway uwengine ccverification common los-common svc-common configuration; do
-  git -C "../$repo" pull --ff-only 2>&1 || echo "WARN: $repo sync failed (using stale)"
+# Executed by orchestrator in Phase 0a (repos clonados sob ../uown/)
+for repo in svc origination servicing ams uwengine common los-common svc-common configuration; do
+  git -C "../uown/$repo" pull --ff-only 2>&1 || echo "WARN: $repo sync failed (using stale)"
 done
+# website, ams-website, payment-gateway, ccverification: ausentes nesta máquina (clone sob ../uown/ se necessário)
 ```
 
 - Uses `--ff-only` to avoid creating merge conflicts

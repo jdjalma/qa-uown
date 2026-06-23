@@ -1132,6 +1132,18 @@ sendACHPaymentsSweep SQL condition:
 
 Without `achProcessType: 'REQUEST'`, an ACH arrangement payment would only be sent if there is a receivable due within 1 day, causing test failures on accounts with no upcoming receivables.
 
+### RightFoot ACH balance-check sweeps (R1.53.0)
+
+For **delinquent ACH auto-pay** accounts, R1.53.0 (svc#540) gates ACH reruns behind a RightFoot bank-balance check. A new `achProcessType` value — **`DAILY_RERUN_DELINQUENT`** — is written by `DailyAchBalanceCheckSweep` (and `RERUN` by `RerunAchBalanceCheckSweep`).
+
+```
+DailyAchBalanceCheckSweep   cron 0 0 15 * * ?    process_type DAILY_RERUN_DELINQUENT
+RerunAchBalanceCheckSweep   cron 0 0 9 ? * THU   process_type RERUN
+DailyRerunAchCreationService  (event-driven, NOT Quartz)  → creates the ACH after the RightFoot webhook
+```
+
+The ACH is created only when the matching `uown_right_foot_balance_check` row is `status='SUCCESS'`, same routing+account number, and `exposure + amount + $100 <= balance`; the new `uown_sv_achpayment` carries FK `right_foot_balance_check_pk`. Trigger from a test via `api.scheduledTask.dailyAchBalanceCheckSweep()` / `.rerunAchBalanceCheckSweep()` (`SCHEDULED_TASK_NAMES`). Canonical rule: `docs/business-rules/09-integracoes-externas.md §48`.
+
 ## Hooks (E2E)
 
 Hooks are automatically applied when using `src/support/base-test.ts`:

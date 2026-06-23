@@ -1,0 +1,2796 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Uown TMS Service API",
+    "description": "# Uown TMS Service API\n\nREST API for telephony management: account summaries, payments, due dates, and activity logs.\n\n## Authentication\n\nSend your API key in the `Authorization` header on every request. Contact your Uown integration contact for credentials and key provisioning.\n\n## Environments\n\nUse the server dropdown: **Sandbox** for testing, **Production** for live traffic.\n",
+    "version": "v1"
+  },
+  "servers": [
+    {
+      "url": "https://svc-sandbox.uownleasing.com",
+      "description": "Sandbox Server - Testing and integration environment for partners"
+    },
+    {
+      "url": "https://svc-prod.uownleasing.com",
+      "description": "Production Server - Live production environment"
+    }
+  ],
+  "security": [
+    {
+      "apiKeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "UOWN TMS SERVICE API",
+      "description": "Telephony Management System API - Account, payment, due date and activity operations"
+    }
+  ],
+  "paths": {
+    "/uown/tms/v1/accounts/search": {
+      "post": {
+        "tags": [
+          "UOWN TMS SERVICE API"
+        ],
+        "summary": "Search accounts by customer identifiers",
+        "description": "Finds active primary accounts matching phone, SSN, or date of birth. Returns up to 5 results.",
+        "operationId": "searchAccount",
+        "requestBody": {
+          "description": "Search criteria with at least one identifier (phone, SSN, or DOB)",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FindAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Accounts found successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FindAccountResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid search criteria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Too many accounts found (>5)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/uown/tms/v1/accounts/{accountId}/contactPreferences": {
+      "post": {
+        "tags": [
+          "UOWN TMS SERVICE API"
+        ],
+        "summary": "Update contact preferences",
+        "description": "Updates TCPA and AI opt-out preferences for a phone number on the account",
+        "operationId": "updateContactPreferences",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "description": "Account ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContactPreferencesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactPreferencesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uown/tms/v1/accounts/{accountId}/due-dates/move": {
+      "post": {
+        "tags": [
+          "UOWN TMS SERVICE API"
+        ],
+        "summary": "Move due dates",
+        "description": "Adjusts receivable due dates forward or backward by specified number of days",
+        "operationId": "moveDueDates",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "description": "Account ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "fromDueDate",
+            "in": "query",
+            "description": "Starting due date (optional)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "moveNumberOfDays",
+            "in": "query",
+            "description": "Number of days to move",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleAdjustmentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uown/tms/v1/accounts/{accountId}/payment-methods/bank-accounts": {
+      "get": {
+        "tags": [
+          "UOWN TMS SERVICE API"
+        ],
+        "summary": "Get bank accounts",
+        "description": "Retrieves all active bank accounts associated with the account",
+        "operationId": "getBankAccounts",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "description": "Account ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BankAccountResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uown/tms/v1/accounts/{accountId}/payment-methods/credit-cards": {
+      "get": {
+        "tags": [
+          "UOWN TMS SERVICE API"
+        ],
+        "summary": "Get credit cards",
+        "description": "Retrieves all tokenized credit cards on file for the account",
+        "operationId": "getCreditCards",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "description": "Account ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CreditCardResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uown/tms/v1/accounts/{accountId}/payment-methods/credit-cards/autopay": {
+      "get": {
+        "tags": [
+          "UOWN TMS SERVICE API"
+        ],
+        "summary": "Get autopay credit card",
+        "description": "Returns the credit card configured for automatic payments, if any",
+        "operationId": "getAutopayCreditCard",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "description": "Account ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditCardResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uown/tms/v1/accounts/{accountId}/paymentArrangements": {
+      "post": {
+        "tags": [
+          "UOWN TMS SERVICE API"
+        ],
+        "summary": "Payment Arrangement",
+        "description": "Executes payment transactions (ACH and/or credit card) for a payment arrangement",
+        "operationId": "processPaymentArrangement",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "description": "Account ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentArrangementDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentArrangementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uown/tms/v1/accounts/{accountId}/payments/ach": {
+      "post": {
+        "tags": [
+          "UOWN TMS SERVICE API"
+        ],
+        "summary": "Process ACH payment",
+        "description": "Initiates an ACH (Automated Clearing House) bank payment",
+        "operationId": "processAchPayment",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "description": "Account ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AchPaymentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AchPaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uown/tms/v1/accounts/{accountId}/payments/credit-card": {
+      "post": {
+        "tags": [
+          "UOWN TMS SERVICE API"
+        ],
+        "summary": "Process credit card payment",
+        "description": "Executes a single credit card payment transaction",
+        "operationId": "processCreditCardPayment",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "description": "Account ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreditCardPaymentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CCTransactionResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uown/tms/v1/accounts/{accountId}/paynearme/send": {
+      "post": {
+        "tags": [
+          "UOWN TMS SERVICE API"
+        ],
+        "summary": "Send PayNearMe payment link",
+        "description": "Creates a PayNearMe payment link for the account and delivers it via SMS and/or email.",
+        "operationId": "sendPayNearMePaymentLink",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "description": "Account ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "deliveryChannel",
+            "in": "query",
+            "description": "Delivery channels (SMS, EMAIL).",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "SMS",
+                  "EMAIL"
+                ]
+              }
+            }
+          },
+          {
+            "name": "amountOverride",
+            "in": "query",
+            "description": "Optional payment amount override for the PayNearMe link",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PayNearMeLinkDeliveryResult"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uown/tms/v1/accounts/{accountId}/payoff": {
+      "get": {
+        "tags": [
+          "UOWN TMS SERVICE API"
+        ],
+        "summary": "Get payoff amount",
+        "description": "Calculates the total amount required to pay off the account",
+        "operationId": "getPayoffAmount",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "description": "Account ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayOffResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uown/tms/v1/accounts/{accountId}/summary": {
+      "get": {
+        "tags": [
+          "UOWN TMS SERVICE API"
+        ],
+        "summary": "Get account summary",
+        "description": "Retrieves comprehensive account details including balance and status",
+        "operationId": "getAccountSummary",
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "description": "Account ID",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TmsAccountSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uown/tms/v1/accounts/{accountPk}/next-due-date/adjustments": {
+      "post": {
+        "tags": [
+          "UOWN TMS SERVICE API"
+        ],
+        "summary": "Adjust the next payment due date for an account",
+        "description": "Moves a payment due date forward by a specified number of days. Maximum offset is 3 days for weekly frequency accounts and 7 days for all other frequencies. Only the specified payment for the specified due date is moved.",
+        "operationId": "adjustNextDueDate",
+        "parameters": [
+          {
+            "name": "accountPk",
+            "in": "path",
+            "description": "Account primary key",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Adjustment parameters: dueDate, offset (number of days to move forward, range: 0-7; max 3 days for weekly frequency accounts)",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NextDueDateAdjustmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Payment due date adjusted successfully. Returns updated due date information.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DueDateAdjustmentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request — possible causes: offset exceeds the allowed maximum (3 days for WEEKLY frequency, 7 days for all other frequencies), provided due date does not match the account's next due date",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Account not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Account has no pending due date available to be moved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "description": "API Key authentication. Include your API key in the Authorization header.",
+        "name": "Authorization",
+        "in": "header"
+      }
+    },
+    "schemas": {
+      "ACHPayment": {
+        "type": "object",
+        "properties": {
+          "pk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "accountPk": {
+            "minimum": 1,
+            "type": "integer",
+            "format": "int64"
+          },
+          "uuid": {
+            "type": "string"
+          },
+          "customerFirstName": {
+            "type": "string"
+          },
+          "customerLastName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "SENT",
+              "ACK_ERROR",
+              "ERROR_SENDING",
+              "ERROR",
+              "CANCELLED",
+              "COMPLETED",
+              "ACK_RECEIVED",
+              "INACTIVE",
+              "RETURNED",
+              "REVERSED",
+              "SETTLED",
+              "CORRECTION",
+              "REJECTED",
+              "BLOCKED",
+              "REFUNDED",
+              "PENDING_TO_RERUN",
+              "MANUAL_REVERSE",
+              "PICKED_TO_SEND",
+              "STATUS_UPDATE_PENDING",
+              "PARTIALLY_REFUNDED",
+              "BLOCKED_ACCOUNT",
+              "SKIPPED",
+              "SETTLED_IN_RERUN",
+              "ACCOUNT_VALIDATION_ERROR"
+            ]
+          },
+          "vendorACHStatus": {
+            "type": "string"
+          },
+          "sentTimestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sentToVendor": {
+            "type": "string",
+            "enum": [
+              "PROFITUITY"
+            ]
+          },
+          "returnOrSettleResponse": {
+            "type": "string"
+          },
+          "returnDateTimestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "returnDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "returnCode": {
+            "type": "string"
+          },
+          "returnCodeDescription": {
+            "type": "string"
+          },
+          "sendPaymentReminder": {
+            "type": "boolean"
+          },
+          "settlementId": {
+            "type": "string"
+          },
+          "settlementTimestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "useBankDataOnFile": {
+            "type": "boolean"
+          },
+          "bankData": {
+            "$ref": "#/components/schemas/BankData"
+          },
+          "bankAccountType": {
+            "type": "string",
+            "enum": [
+              "CHECKING",
+              "SAVINGS"
+            ]
+          },
+          "errorDesc": {
+            "type": "string"
+          },
+          "achProcessType": {
+            "type": "string",
+            "enum": [
+              "SCHEDULED",
+              "RERUN",
+              "RERUN_NSF",
+              "REQUEST",
+              "REFUND"
+            ]
+          },
+          "paymentPK": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "postingDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "username": {
+            "type": "string"
+          },
+          "comments": {
+            "type": "string"
+          },
+          "paymentFileName": {
+            "type": "string"
+          },
+          "rowNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "entryClass": {
+            "type": "string",
+            "enum": [
+              "PPD",
+              "CCD",
+              "WEB",
+              "TEL"
+            ]
+          },
+          "numberOfTries": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "achType": {
+            "type": "string",
+            "enum": [
+              "ACHDebit",
+              "ACHCredit"
+            ]
+          },
+          "paymentFileId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "paymentArrangementPk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "accountNum": {
+            "type": "string"
+          },
+          "routingNum": {
+            "type": "string"
+          },
+          "bankNamee": {
+            "type": "string"
+          },
+          "isAutoPay": {
+            "type": "boolean"
+          },
+          "allocationStrategy": {
+            "type": "string",
+            "enum": [
+              "DEFAULT",
+              "REGULAR_RECEIVABLES",
+              "EPO_ONLY"
+            ]
+          },
+          "vendorSettlementTimestamp": {
+            "type": "string"
+          },
+          "dateOfRepresentment": {
+            "type": "string",
+            "format": "date"
+          },
+          "originalACHPk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "originalAchPostingDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "AccountProfile": {
+        "type": "object",
+        "properties": {
+          "accountPk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "accountStatus": {
+            "type": "string",
+            "enum": [
+              "FUNDED",
+              "ACTIVE",
+              "PAID_OUT",
+              "PAID_OUT_EARLY",
+              "PAID_OUT_EARLY_EPO",
+              "CHARGED_OFF",
+              "CANCELLED",
+              "CLOSED",
+              "SOLD",
+              "SETTLED_IN_FULL"
+            ]
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "last4Ssn": {
+            "type": "string"
+          },
+          "dob": {
+            "type": "string",
+            "format": "date"
+          },
+          "zip": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        }
+      },
+      "AchPaymentRequest": {
+        "required": [
+          "amount",
+          "bankAccount",
+          "postingDate"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "Debit amount"
+          },
+          "postingDate": {
+            "type": "string",
+            "description": "Scheduled posting date",
+            "format": "date"
+          },
+          "allocationStrategy": {
+            "type": "string",
+            "description": "Receivable allocation behavior",
+            "enum": [
+              "DEFAULT",
+              "REGULAR_RECEIVABLES",
+              "EPO_ONLY"
+            ]
+          },
+          "comments": {
+            "type": "string",
+            "description": "Optional free-form operator comment appended to the ACH record"
+          },
+          "bankAccount": {
+            "$ref": "#/components/schemas/BankAccountDetails"
+          }
+        }
+      },
+      "AchPaymentResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "SENT",
+              "ACK_ERROR",
+              "ERROR_SENDING",
+              "ERROR",
+              "CANCELLED",
+              "COMPLETED",
+              "ACK_RECEIVED",
+              "INACTIVE",
+              "RETURNED",
+              "REVERSED",
+              "SETTLED",
+              "CORRECTION",
+              "REJECTED",
+              "BLOCKED",
+              "REFUNDED",
+              "PENDING_TO_RERUN",
+              "MANUAL_REVERSE",
+              "PICKED_TO_SEND",
+              "STATUS_UPDATE_PENDING",
+              "PARTIALLY_REFUNDED",
+              "BLOCKED_ACCOUNT",
+              "SKIPPED",
+              "SETTLED_IN_RERUN",
+              "ACCOUNT_VALIDATION_ERROR"
+            ]
+          },
+          "amount": {
+            "type": "number"
+          },
+          "postingDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "customerFirstName": {
+            "type": "string"
+          },
+          "customerLastName": {
+            "type": "string"
+          },
+          "bankAccountType": {
+            "type": "string",
+            "enum": [
+              "CHECKING",
+              "SAVINGS"
+            ]
+          },
+          "achProcessType": {
+            "type": "string",
+            "enum": [
+              "SCHEDULED",
+              "RERUN",
+              "RERUN_NSF",
+              "REQUEST",
+              "REFUND"
+            ]
+          },
+          "returnCode": {
+            "type": "string"
+          },
+          "returnCodeDescription": {
+            "type": "string"
+          },
+          "settlementId": {
+            "type": "string"
+          },
+          "settlementTimestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "maskedAccountNumber": {
+            "type": "string"
+          },
+          "maskedRoutingNumber": {
+            "type": "string"
+          }
+        }
+      },
+      "AddressInfo": {
+        "required": [
+          "city",
+          "state",
+          "streetAddress1",
+          "zipCode",
+          "zipCode9"
+        ],
+        "type": "object",
+        "properties": {
+          "addressPk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "customerPk": {
+            "minimum": 1,
+            "type": "integer",
+            "format": "int64"
+          },
+          "addressType": {
+            "type": "string",
+            "enum": [
+              "MAILING",
+              "HOME"
+            ]
+          },
+          "streetAddress1": {
+            "type": "string"
+          },
+          "streetAddress2": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "zipCode": {
+            "type": "string"
+          },
+          "zipCode9": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "doNotContact": {
+            "type": "boolean"
+          },
+          "duration": {
+            "type": "string",
+            "enum": [
+              "LESS_THAN_30_DAYS",
+              "LESS_THAN_6_MONTHS",
+              "_1_TO_3_MONTHS",
+              "_3_TO_12_MONTHS",
+              "_6_TO_12_MONTHS",
+              "_1_TO_2_YEARS",
+              "OVER_1_YEAR",
+              "_2_YEARS_OR_MORE",
+              "UNKNOWN"
+            ]
+          },
+          "atAddressFrom": {
+            "type": "string"
+          },
+          "housingStatus": {
+            "type": "string",
+            "enum": [
+              "OWN_OR_BUY",
+              "RENT",
+              "PARENTS_OR_RELATIVE",
+              "OTHER"
+            ]
+          },
+          "isAutocompleteVerified": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BankAccountDetails": {
+        "type": "object",
+        "properties": {
+          "bankAccountId": {
+            "type": "integer",
+            "description": "Saved bank account id for this account",
+            "format": "int64"
+          },
+          "routingNumber": {
+            "type": "string",
+            "description": "ABA routing number (required when not using bankAccountId)"
+          },
+          "accountNumber": {
+            "type": "string",
+            "description": "Account number (required when not using bankAccountId)"
+          },
+          "bankName": {
+            "type": "string",
+            "description": "Bank name (optional when using keyed account details)"
+          },
+          "accountHolderFirstName": {
+            "type": "string",
+            "description": "Account holder given name (optional; primary customer used when omitted)"
+          },
+          "accountHolderLastName": {
+            "type": "string",
+            "description": "Account holder family name (optional; primary customer used when omitted)"
+          },
+          "designateAutoPay": {
+            "type": "boolean",
+            "description": "When true, designates this bank account for autopay",
+            "default": false
+          },
+          "exclusiveBankInstrument": {
+            "type": "boolean"
+          }
+        },
+        "description": "Saved bank account or keyed bank details"
+      },
+      "BankAccountResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "maskedAccountNumber": {
+            "type": "string"
+          },
+          "maskedRoutingNumber": {
+            "type": "string"
+          },
+          "bankName": {
+            "type": "string"
+          },
+          "bankAccountType": {
+            "type": "string",
+            "enum": [
+              "CHECKING",
+              "SAVINGS"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "lastUsedDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "BankData": {
+        "required": [
+          "accountNumber",
+          "bankName",
+          "routingNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "accountNumber": {
+            "type": "string"
+          },
+          "routingNumber": {
+            "type": "string"
+          },
+          "bankName": {
+            "type": "string"
+          },
+          "isAutoPay": {
+            "type": "boolean"
+          },
+          "bankAccountPk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "bankAccountType": {
+            "type": "string",
+            "enum": [
+              "CHECKING",
+              "SAVINGS"
+            ]
+          },
+          "customerFirstName": {
+            "type": "string"
+          },
+          "customerLastName": {
+            "type": "string"
+          }
+        }
+      },
+      "BillingAddress": {
+        "type": "object",
+        "properties": {
+          "streetAddress1": {
+            "type": "string",
+            "description": "Street address line 1"
+          },
+          "streetAddress2": {
+            "type": "string",
+            "description": "Street address line 2"
+          },
+          "city": {
+            "type": "string",
+            "description": "City"
+          },
+          "state": {
+            "type": "string",
+            "description": "Two-letter state code"
+          },
+          "zipCode": {
+            "type": "string",
+            "description": "ZIP code"
+          }
+        },
+        "description": "Optional billing address associated with the card"
+      },
+      "CCInfo": {
+        "type": "object",
+        "properties": {
+          "leadPk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "accountPk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "kountPk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "creditCardPk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "ccFirstName": {
+            "type": "string"
+          },
+          "ccLastName": {
+            "type": "string"
+          },
+          "ccNumber": {
+            "type": "string"
+          },
+          "ccExp": {
+            "type": "string"
+          },
+          "ccType": {
+            "type": "string",
+            "enum": [
+              "AMEX",
+              "VISA",
+              "DISCOVER",
+              "MASTERCARD",
+              "OTHER"
+            ]
+          },
+          "cvc": {
+            "type": "string"
+          },
+          "ccToken": {
+            "type": "string"
+          },
+          "autoPay": {
+            "type": "boolean"
+          },
+          "isDeleted": {
+            "type": "boolean"
+          },
+          "errorMsg": {
+            "type": "string"
+          },
+          "kountSessionId": {
+            "type": "string"
+          },
+          "ccVendor": {
+            "type": "string",
+            "enum": [
+              "USAEPAY",
+              "CHANNEL_PAYMENTS_CC",
+              "OMNIFUND",
+              "OTHER"
+            ]
+          },
+          "preAuthStatus": {
+            "type": "string",
+            "enum": [
+              "SESSION_UNAVAILABLE",
+              "SUCCESS",
+              "DENIED",
+              "ERROR",
+              "NOT_RUN"
+            ]
+          },
+          "ccHash": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ccConnectorToken": {
+            "type": "string"
+          },
+          "isValidCard": {
+            "type": "boolean"
+          },
+          "invalidCardReason": {
+            "type": "string"
+          },
+          "ccAddress": {
+            "$ref": "#/components/schemas/AddressInfo"
+          },
+          "expired": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CCTransactionInfo": {
+        "type": "object",
+        "properties": {
+          "accountPk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "leadPk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "creditCardTransactionPk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "paymentPk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "originalCCPk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "postingDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "numberOfTries": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rerunStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "FUTURE_PENDING",
+              "APPROVED",
+              "DENIED",
+              "ERROR",
+              "REFUNDED",
+              "CANCELLED",
+              "MANUAL_REVERSE",
+              "PICKED_TO_SEND",
+              "PARTIALLY_REFUNDED",
+              "SKIPPED",
+              "REUSED"
+            ]
+          },
+          "rerunNsfStatus": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "FUTURE_PENDING",
+              "APPROVED",
+              "DENIED",
+              "ERROR",
+              "REFUNDED",
+              "CANCELLED",
+              "MANUAL_REVERSE",
+              "PICKED_TO_SEND",
+              "PARTIALLY_REFUNDED",
+              "SKIPPED",
+              "REUSED"
+            ]
+          },
+          "amount": {
+            "type": "number"
+          },
+          "originalAmount": {
+            "type": "number"
+          },
+          "remainingRefundableAmount": {
+            "type": "number"
+          },
+          "chargedFeeAmount": {
+            "type": "number"
+          },
+          "authCode": {
+            "type": "string"
+          },
+          "ipAddress": {
+            "type": "string"
+          },
+          "vendor": {
+            "type": "string",
+            "enum": [
+              "USAEPAY",
+              "CHANNEL_PAYMENTS_CC",
+              "OMNIFUND",
+              "OTHER"
+            ]
+          },
+          "ccAction": {
+            "type": "string",
+            "enum": [
+              "TOKENIZATION",
+              "AUTHENTICATION",
+              "SALE",
+              "CREDIT",
+              "CAPTURE",
+              "CONNECTOR_TOKENIZATION"
+            ]
+          },
+          "ccTransactionType": {
+            "type": "string",
+            "enum": [
+              "SCHEDULED",
+              "REQUEST",
+              "OTHER",
+              "RERUN",
+              "RERUN_NSF",
+              "DAILY_DELINQUENCY_RUN",
+              "_100_DAY_DELINQUENCY_RUN",
+              "DAILY_SCHEDULED_DENIED_RERUN",
+              "VINTAGE_RUN",
+              "VINTAGE_RUN_ON_APPROVED",
+              "BLACKLIST_CHECK",
+              "BIN_MISMATCH"
+            ]
+          },
+          "gatewayRequest": {
+            "type": "string"
+          },
+          "gatewayResponse": {
+            "type": "string"
+          },
+          "gatewayTransactionId": {
+            "type": "string"
+          },
+          "gatewayAuthToken": {
+            "type": "string"
+          },
+          "completedTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "saveOnSuccessOnly": {
+            "type": "boolean"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "errorStacktrace": {
+            "type": "string"
+          },
+          "useCardOnFile": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "FUTURE_PENDING",
+              "APPROVED",
+              "DENIED",
+              "ERROR",
+              "REFUNDED",
+              "CANCELLED",
+              "MANUAL_REVERSE",
+              "PICKED_TO_SEND",
+              "PARTIALLY_REFUNDED",
+              "SKIPPED",
+              "REUSED"
+            ]
+          },
+          "isNsf": {
+            "type": "boolean"
+          },
+          "ccInfo": {
+            "$ref": "#/components/schemas/CCInfo"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "allocationStrategy": {
+            "type": "string",
+            "enum": [
+              "DEFAULT",
+              "REGULAR_RECEIVABLES",
+              "EPO_ONLY"
+            ]
+          },
+          "isCustomRefund": {
+            "type": "boolean"
+          },
+          "accountPkk": {
+            "type": "integer"
+          },
+          "amountt": {
+            "type": "number"
+          },
+          "postingDatee": {
+            "type": "string",
+            "format": "date"
+          },
+          "agentUsername": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "chargeType": {
+            "type": "string",
+            "enum": [
+              "FEE",
+              "PURCHASE"
+            ]
+          },
+          "idempotencyKey": {
+            "type": "string"
+          },
+          "chargeFee": {
+            "type": "boolean"
+          },
+          "sameDayTransaction": {
+            "type": "boolean"
+          },
+          "ccPeek": {
+            "type": "boolean"
+          },
+          "isSettlementPayment": {
+            "type": "boolean"
+          },
+          "paymentArrangementPk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "ccVendorTransactionId": {
+            "type": "string"
+          }
+        }
+      },
+      "CCTransactionResult": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "FUTURE_PENDING",
+              "APPROVED",
+              "DENIED",
+              "ERROR",
+              "REFUNDED",
+              "CANCELLED",
+              "MANUAL_REVERSE",
+              "PICKED_TO_SEND",
+              "PARTIALLY_REFUNDED",
+              "SKIPPED",
+              "REUSED"
+            ]
+          },
+          "error": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "postingDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "creditCardTransactionPk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "gatewayTransactionId": {
+            "type": "string"
+          },
+          "ccNumber": {
+            "type": "string"
+          }
+        }
+      },
+      "CardDetails": {
+        "type": "object",
+        "properties": {
+          "creditCardId": {
+            "type": "integer",
+            "description": "Id of a tokenized card on file for the account",
+            "format": "int64"
+          },
+          "ccFirstName": {
+            "maxLength": 255,
+            "minLength": 0,
+            "type": "string",
+            "description": "Optional cardholder given name (keyed card)"
+          },
+          "ccLastName": {
+            "maxLength": 255,
+            "minLength": 0,
+            "type": "string",
+            "description": "Optional cardholder family name (keyed card)"
+          },
+          "ccNumber": {
+            "type": "string",
+            "description": "Primary account number (PAN); required for keyed card payments"
+          },
+          "ccExp": {
+            "maxLength": 5,
+            "minLength": 0,
+            "type": "string",
+            "description": "Expiration date in MM/YY format (keyed card)"
+          },
+          "cvc": {
+            "maxLength": 4,
+            "minLength": 0,
+            "type": "string",
+            "description": "Card security code"
+          },
+          "autoPay": {
+            "type": "boolean",
+            "description": "When true, designates this card for autopay (keyed or on-file)"
+          },
+          "billingAddress": {
+            "$ref": "#/components/schemas/BillingAddress"
+          },
+          "exclusiveCardMode": {
+            "type": "boolean"
+          }
+        },
+        "description": "Card on file or keyed card details"
+      },
+      "ContactPreferencesRequest": {
+        "required": [
+          "phoneNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "phoneNumber": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "doNotCall": {
+            "type": "boolean"
+          },
+          "doNotText": {
+            "type": "boolean"
+          },
+          "optOutAi": {
+            "type": "boolean"
+          },
+          "optOutReason": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          },
+          "atLeastOnePreference": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ContactPreferencesResponse": {
+        "type": "object",
+        "properties": {
+          "accountPk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "phoneNumber": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "doNotCall": {
+            "type": "boolean"
+          },
+          "doNotText": {
+            "type": "boolean"
+          },
+          "optOutAi": {
+            "type": "boolean"
+          },
+          "optOutAiReason": {
+            "type": "string"
+          }
+        }
+      },
+      "CreditCardPaymentRequest": {
+        "required": [
+          "amount",
+          "postingDate"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "Payment amount"
+          },
+          "postingDate": {
+            "type": "string",
+            "description": "Effective posting date for the payment",
+            "format": "date"
+          },
+          "allocationStrategy": {
+            "type": "string",
+            "description": "How the payment allocates across receivables",
+            "enum": [
+              "DEFAULT",
+              "REGULAR_RECEIVABLES",
+              "EPO_ONLY"
+            ]
+          },
+          "chargeFee": {
+            "type": "boolean",
+            "description": "Charge an additional processing fee when applicable",
+            "default": true
+          },
+          "comment": {
+            "type": "string",
+            "description": "Optional note stored on the transaction"
+          },
+          "card": {
+            "$ref": "#/components/schemas/CardDetails"
+          }
+        }
+      },
+      "CreditCardResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "maskedCardNumber": {
+            "type": "string"
+          },
+          "cardType": {
+            "type": "string"
+          },
+          "expirationDate": {
+            "type": "string"
+          },
+          "isAutoPay": {
+            "type": "boolean"
+          },
+          "isValidCard": {
+            "type": "boolean"
+          },
+          "lastUsedDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "DueDateAdjustmentResponse": {
+        "type": "object",
+        "properties": {
+          "accountPk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "originalDueDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "newDueDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        },
+        "description": "Standardized error response following REST best practices"
+      },
+      "FindAccountRequest": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "description": "Customer phone number",
+            "example": "5551234567"
+          },
+          "last4SSN": {
+            "type": "string",
+            "description": "Last 4 digits of the customer's Social Security Number",
+            "example": "1234"
+          },
+          "dob": {
+            "type": "string",
+            "description": "Customer date of birth",
+            "format": "date",
+            "example": "1985-06-15"
+          }
+        },
+        "description": "Search criteria. At least one of phone, last4SSN, or dob must be provided."
+      },
+      "FindAccountResponse": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountProfile"
+            }
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "NextDueDateAdjustmentRequest": {
+        "type": "object",
+        "properties": {
+          "dueDate": {
+            "type": "string",
+            "description": "The due date to adjust.",
+            "format": "date",
+            "nullable": true,
+            "example": "2026-03-15"
+          },
+          "offset": {
+            "maximum": 7,
+            "minimum": 0,
+            "type": "integer",
+            "description": "Number of days to move the due date forward (0–7). For WEEKLY frequency accounts the maximum is 3 days.",
+            "format": "int32",
+            "example": 3
+          }
+        }
+      },
+      "PayNearMeLinkDeliveryResult": {
+        "type": "object",
+        "properties": {
+          "smartLink": {
+            "type": "string"
+          },
+          "deliveryChannel": {
+            "type": "string",
+            "enum": [
+              "SMS",
+              "EMAIL"
+            ]
+          },
+          "recipientAddress": {
+            "type": "string"
+          },
+          "deliveryReferenceId": {
+            "type": "string"
+          },
+          "amountDue": {
+            "type": "number"
+          }
+        }
+      },
+      "PayOffResponse": {
+        "type": "object",
+        "properties": {
+          "accountPk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "amount": {
+            "type": "number"
+          }
+        }
+      },
+      "PaymentArrangementDto": {
+        "type": "object",
+        "properties": {
+          "accountPk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "paymentArrangement": {
+            "type": "boolean"
+          },
+          "arrangementType": {
+            "type": "string",
+            "enum": [
+              "NORMAL",
+              "SETTLEMENT"
+            ]
+          },
+          "achPayments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ACHPayment"
+            }
+          },
+          "creditCardTransactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CCTransactionInfo"
+            }
+          }
+        }
+      },
+      "PaymentArrangementResponse": {
+        "type": "object",
+        "properties": {
+          "accountPk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "creditCardTransactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CCTransactionResult"
+            }
+          },
+          "achPayments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AchPaymentResponse"
+            }
+          }
+        }
+      },
+      "ScheduleAdjustmentResponse": {
+        "type": "object",
+        "properties": {
+          "accountPk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "adjustedFromDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "offset": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "adjustedToDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "adjustedDues": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "TmsAccountSummary": {
+        "type": "object",
+        "properties": {
+          "accountPk": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "refAccountId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "customerFullName": {
+            "type": "string"
+          },
+          "customerDob": {
+            "type": "string",
+            "format": "date"
+          },
+          "customerAddressLine1": {
+            "type": "string"
+          },
+          "customerAddressLine2": {
+            "type": "string"
+          },
+          "customerCity": {
+            "type": "string"
+          },
+          "customerState": {
+            "type": "string"
+          },
+          "customerZip": {
+            "type": "string"
+          },
+          "accountStatus": {
+            "type": "string",
+            "enum": [
+              "FUNDED",
+              "ACTIVE",
+              "PAID_OUT",
+              "PAID_OUT_EARLY",
+              "PAID_OUT_EARLY_EPO",
+              "CHARGED_OFF",
+              "CANCELLED",
+              "CLOSED",
+              "SOLD",
+              "SETTLED_IN_FULL"
+            ]
+          },
+          "nextPaymentDueAmount": {
+            "type": "number"
+          },
+          "nextDueDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "debtType": {
+            "type": "string"
+          },
+          "internalAccountScore": {
+            "type": "number",
+            "format": "double"
+          },
+          "contractBalance": {
+            "type": "number"
+          },
+          "pastDueAmount": {
+            "type": "number"
+          },
+          "activationDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "daysPastDue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "numberOfPaymentsMade": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ratingLetter": {
+            "type": "string",
+            "enum": [
+              "P",
+              "F",
+              "C",
+              "D",
+              "R",
+              "E",
+              "U",
+              "G",
+              "J",
+              "S",
+              "B",
+              "L",
+              "M"
+            ]
+          },
+          "dateOfNextCall": {
+            "type": "string",
+            "format": "date"
+          },
+          "epoBalance": {
+            "type": "number"
+          },
+          "merchantName": {
+            "type": "string"
+          },
+          "locationName": {
+            "type": "string"
+          },
+          "earlyPayOffDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "numberOfPaymentsLeft": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lastScheduledPaymentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "eligibleForPromotionalPayOff": {
+            "type": "boolean"
+          },
+          "customerPaymentFrequency": {
+            "type": "string",
+            "enum": [
+              "DAILY",
+              "WEEKLY",
+              "BI_WEEKLY",
+              "SEMI_MONTHLY",
+              "MONTHLY",
+              "UNKNOWN"
+            ]
+          },
+          "numberOfDueDateMoves": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lastScheduleMovedDate": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+}

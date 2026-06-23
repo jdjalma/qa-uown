@@ -84,6 +84,36 @@ export class SearchPage extends BasePage {
   async ensureSearchVisible(): Promise<void> {
     if (await this.quickSearchInput.isVisible({ timeout: 2_000 }).catch(() => false)) return;
 
+    // Fail-fast auth guard. The quick-search input lives in the authenticated
+    // navbar; if the SPA loses its in-memory session mid-run (the JWT is held
+    // in memory — a full reload or a session expiry drops it) or a protected
+    // call 403's, the route-guard unmounts the app and renders the "Merchant
+    // Login" shell. The `#search-input` node then resolves once (stale frame)
+    // and is immediately detached, producing a misleading
+    // `locator.click: element was detached from the DOM` timeout 15s later.
+    // Detect the login shell and throw a precise, actionable error instead of
+    // letting the caller blame the selector, so the fix is "re-login", not a
+    // selector change. (stg 2026-06-23: this surfaced once in a long
+    // unified-flow run as a TRANSIENT session loss at Phase 5 — NOT a bad
+    // credential. Re-verified live: the `manager` account (jmndes.gow) logs in
+    // 200 → /overview and the full quick-search path passes clean with zero
+    // 401/403, so the input detach is an in-run session-state flake, not
+    // account-scoped auth rejection. CLAUDE.md #15.)
+    const onLoginShell = await this.page
+      .getByText('Merchant Login', { exact: false })
+      .isVisible({ timeout: 1_000 })
+      .catch(() => false);
+    if (onLoginShell) {
+      throw new Error(
+        '[SearchPage] Quick search unavailable: the portal redirected to the '
+        + `"Merchant Login" page (URL: ${this.page.url()}). The in-memory agent `
+        + 'session was lost (session expiry or a full reload dropped the JWT, or a '
+        + 'protected call 403\'d) — this is a session/environment issue, NOT a '
+        + 'selector failure and NOT necessarily a bad credential. Re-login before '
+        + 'using quick search.',
+      );
+    }
+
     // Click hamburger/navbar toggle to expand the collapsed nav
     const hamburger = this.page.locator('.navbar-toggler, button[aria-label="Toggle navigation"], nav button.btn').first();
     if (await hamburger.isVisible({ timeout: 2_000 }).catch(() => false)) {
@@ -340,7 +370,7 @@ export class SearchPage extends BasePage {
     email?: string;
     firstName?: string;
     lastName?: string;
-  }): Promise<void> {
+  }, reauth?: () => Promise<void>): Promise<void> {
     const searchTypes: Array<{ type: SearchType; value: string }> = [];
 
     if (searchCriteria.leadPk) {
@@ -360,6 +390,11 @@ export class SearchPage extends BasePage {
     }
 
     for (const { type, value } of searchTypes) {
+      // Optional per-iteration session refresh. On portals with a short-lived
+      // session (stg origination, ~60-90s) this whole loop outlives one session,
+      // so callers pass a reauth closure (re-login + re-navigate) to mint a fresh
+      // session before each search and land authenticated with the navbar present.
+      if (reauth) await reauth();
       await this.selectSearchType(type);
       await this.searchAndSelectFirst(value);
       // Navigate back to allow next search

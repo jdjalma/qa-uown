@@ -143,8 +143,8 @@ READ-ONLY — does not mutate `uown_sticky*` audit tables.
 - `assertStickyDedupeUnique(db)`
 - `getStickySweepSqlSnapshot(db)`
 - `waitForStickyRecoverSweepRun(db, opts?)`
-- `getStickyCancelSweepSqlSnapshot(db)` — current `sql_to_pick_accounts` of `StickyRecoverCancelSweep` (drift check; throws if the task row is absent). Added svc#559.
-- `waitForStickyCancelSweepRun(db, { sincePk?, timeoutMs? })` — polls `uown_sweep_logs WHERE sweep_name='StickyRecoverCancelSweep'` for a completed run newer than `sincePk`. Added svc#559.
+- `getStickyCancelSweepSqlSnapshot(db)` — current `sql_to_pick_accounts` of `StickyRecoverCancelSweep` (drift check; throws if the task row is absent).
+- `waitForStickyCancelSweepRun(db, { sincePk?, timeoutMs? })` — polls `uown_sweep_logs WHERE sweep_name='StickyRecoverCancelSweep'` for a completed run newer than `sincePk`.
 - `getLatestStickyRecoverSweepLogPk(db)`
 - `findEligibleStickyCct(db, rating)`
 - `createStickyEligibleFromExistingAccount(db, opts?)`

@@ -40,7 +40,12 @@
  */
 import { test, expect } from '@support/base-test.js';
 import type { DatabaseHelpers } from '@helpers/database.helpers.js';
-import { sweepLogBaseline, triggerAndWaitSweepLog } from '@helpers/sweep-fixture.helpers.js';
+import {
+  sweepLogBaseline,
+  triggerAndWaitSweepLog,
+  classifySweepError,
+  getSweepLogError as getSweepError,
+} from '@helpers/sweep-fixture.helpers.js';
 import { TestTag, buildTags, splitTags } from '@ptypes/enums.js';
 
 // ── Sweep / template contract (case-sensitive — confirmed on dev3) ──────────
@@ -59,37 +64,8 @@ const SWEEP = {
   eSignDocumentStatus: { task: 'eSignDocumentStatusSweep' },
 } as const;
 
-// sweepLogBaseline + triggerAndWaitSweepLog importados de @helpers/sweep-fixture.
-
-/** Reads the `error` text of the newest sweep_log row above `prevPk` (empty string if none). */
-async function getSweepError(db: DatabaseHelpers, sweepName: string, prevPk: number): Promise<string> {
-  const rows = await db.query<{ error: string | null }>(
-    `SELECT error FROM uown_sweep_logs WHERE sweep_name = $1 AND pk > $2 ORDER BY pk DESC LIMIT 1`,
-    [sweepName, prevPk],
-  );
-  return String(rows[0]?.error ?? '').trim();
-}
-
-/**
- * Classifies a sweep_log error string (CLAUDE.md rule #10 conservative classification):
- *   - 'clean'        — no error.
- *   - 'provisioning' — missing table/column in dev3 (relation/column does not exist) — the
- *                      sweep SQL is correct (object exists in stg/prod) but dev3 was not
- *                      migrated. NOT a product bug; the sweep cannot run in dev3 → skip.
- *   - 'environment'  — processor/connector/external-sink absent in dev3, or informational
- *                      ("No transactions found", "FAIL : N" from a missing payment gateway).
- *                      Expected in dev3, NOT a product bug.
- *   - 'product'      — a genuine code-level exception (NPE, validation failure) that is not
- *                      explained by missing infra. Report as [OBSERVAÇÃO] for dev review.
- */
-function classifySweepError(error: string): 'clean' | 'provisioning' | 'environment' | 'product' {
-  if (!error) return 'clean';
-  if (/relation "\w+" does not exist|column [\w.]+ does not exist/i.test(error)) return 'provisioning';
-  if (/No transactions found|No recoveries found|FAIL : \d+|Failed to send ACH|TaxCloud|Bearer |processor|connector|gateway/i.test(error)) {
-    return 'environment';
-  }
-  return 'product';
-}
+// sweepLogBaseline + triggerAndWaitSweepLog + classifySweepError + getSweepError(getSweepLogError)
+// importados de @helpers/sweep-fixture (consolidados 2026-06-23 — rule #2, sem duplicar a taxonomia).
 
 /** MAX(pk) baseline for an email_queue template (0 when none). */
 async function emailQueueBaseline(db: DatabaseHelpers, template: string): Promise<number> {

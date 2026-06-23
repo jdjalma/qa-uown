@@ -1,8 +1,13 @@
 # Database Schema — QA2 (svc)
 
 > **Source:** `postgresql://127.0.0.1:5445/svc` (QA2 environment)  
-> **Extracted:** 2026-03-04  
-> **Tables:** 189  
+> **Extracted:** 2026-03-04 (full dump) · **R1.53.0 additions appended 2026-06-23**  
+> **Tables:** 189 (+10 R1.53.0 — see [R1.53.0 Additions](#r1530-additions-flyway-post-extraction) at end)  
+>
+> ⚠️ The alphabetical sections below reflect the 2026-03-04 dump. R1.53.0 tables/columns
+> (RightFoot, customer journey, merchant-settings snapshot, UW scores) are documented in a
+> dedicated appended section at the end, sourced from Flyway migrations — re-run a full
+> extract against the live QA2 `svc` schema to merge them inline.
 
 ## Table of Contents
 
@@ -2844,7 +2849,7 @@
 | 31 | `npm_segment` | integer | YES |  |
 | 32 | `tam_score` | integer | YES |  |
 
-> **`npm_segment` / `tam_score`** (#31/#32) added by migration `V20260603054943_1.53.0__add_columns_npm_segment_and_tam_score.sql` (Flyway version `20260603054943.1.53.0`, MR svc !1469; task #1313). Both `integer`, nullable. The GDS parser writes them on the **16m approval branch** (`decided_by_agent='GDS'` + `eligible_terms ~ '16'`); `tam_score` is **TireAgent-only**. `is_eligible_for_extra_info` (#30) predates this migration — the 29-col snapshot was stale. All three confirmed via information_schema in qa2 (2026-06-19).
+> **`npm_segment` / `tam_score`** (#31/#32) added by migration `V20260603054943_1.53.0__add_columns_npm_segment_and_tam_score.sql` (Flyway version `20260603054943.1.53.0`, MR svc !1469). Both `integer`, nullable. The GDS parser writes them on the **16m approval branch** (`decided_by_agent='GDS'` + `eligible_terms ~ '16'`); `tam_score` is **TireAgent-only**. `is_eligible_for_extra_info` (#30) predates this migration — the 29-col snapshot was stale. All three confirmed via information_schema in qa2 (2026-06-19).
 
 ## uown_los_uwdata_history
 
@@ -5348,7 +5353,7 @@
 | 31 | `npm_segment` | integer | YES |  |
 | 32 | `tam_score` | integer | YES |  |
 
-> **`npm_segment` / `tam_score`** (#31/#32) — Servicing-side copy, written on funding (account). Same migration `V20260603054943_1.53.0` (task #1313) touched BOTH `uown_los_uwdata` and `uown_sv_uwdata`. Confirmed via information_schema in qa2 (2026-06-19).
+> **`npm_segment` / `tam_score`** (#31/#32) — Servicing-side copy, written on funding (account). Same migration `V20260603054943_1.53.0` touched BOTH `uown_los_uwdata` and `uown_sv_uwdata`. Confirmed via information_schema in qa2 (2026-06-19).
 
 ## uown_sweep_logs
 
@@ -5561,4 +5566,195 @@
 | 5 | `override_from_statuses` | character varying(255) | YES |  |
 | 6 | `step_name` | character varying(255) | YES |  |
 | 7 | `step_order` | integer | YES |  |
+
+---
+
+# R1.53.0 Additions (Flyway, post-extraction)
+
+> Sourced from Flyway migrations in `svc` R1.53.0 (not a live re-extract). Verify against the live QA2 `svc` schema before relying on exact types/defaults.
+
+## New columns on existing tables
+
+| Table | New column | Type | Migration |
+|-------|-----------|------|-----------|
+| `uown_sv_achpayment` | `right_foot_balance_check_pk` | bigint | `V20260619131000` |
+| `uown_los_uwdata` | `npm_segment` | integer | `V20260603054943` |
+| `uown_los_uwdata` | `tam_score` | integer | `V20260603054943` |
+| `uown_sv_uwdata` | `npm_segment` | integer | `V20260603054943` |
+| `uown_sv_uwdata` | `tam_score` | integer | `V20260603054943` |
+
+## uown_right_foot_balance_check
+
+**Schema:** `public` | **Columns:** 19 | **Migration:** `V20260612102430` | **Unique:** `authorizer_unique_id`
+
+| # | Column | Type | Nullable | Default |
+|---|--------|------|----------|---------|
+| 1 | `pk` | bigint | NO | `BIGSERIAL` |
+| 2 | `authorizer_unique_id` | character varying(255) | NO |  |
+| 3 | `account_pk` | bigint | NO |  |
+| 4 | `batch_id` | character varying(64) | YES |  |
+| 5 | `account_number` | character varying(64) | YES |  |
+| 6 | `routing_number` | character varying(16) | YES |  |
+| 7 | `requested_amount` | numeric(19,2) | YES |  |
+| 8 | `balance` | numeric(19,2) | YES |  |
+| 9 | `status` | character varying(64) | YES |  |
+| 10 | `failure_reason` | text | YES |  |
+| 11 | `process_type` | character varying(255) | YES |  |
+| 12 | `request_timestamp` | timestamp without time zone | YES |  |
+| 13 | `response_timestamp` | timestamp without time zone | YES |  |
+| 14 | `row_created_timestamp` | timestamp without time zone | YES | `CURRENT_TIMESTAMP` |
+| 15 | `row_updated_timestamp` | timestamp without time zone | YES |  |
+| 16 | `tenant_id` | bigint | YES |  |
+| 17 | `agent` | character varying(255) | YES |  |
+| 18 | `web_user_id` | bigint | YES |  |
+| 19 | `batch_pk` | bigint | YES |  |
+
+## uown_right_foot_batch
+
+**Schema:** `public` | **Columns:** 13 | **Migration:** `V20260616122043`
+
+| # | Column | Type | Nullable | Default |
+|---|--------|------|----------|---------|
+| 1 | `pk` | bigint | NO | `BIGSERIAL` |
+| 2 | `batch_id` | character varying(255) | YES |  |
+| 3 | `status` | character varying(255) | NO |  |
+| 4 | `webhook_payload` | text | YES |  |
+| 5 | `errors` | text | YES |  |
+| 6 | `row_created_timestamp` | timestamp without time zone | YES | `CURRENT_TIMESTAMP` |
+| 7 | `row_updated_timestamp` | timestamp without time zone | YES |  |
+| 8 | `tenant_id` | bigint | YES |  |
+| 9 | `agent` | character varying(255) | YES |  |
+| 10 | `web_user_id` | bigint | YES |  |
+| 11 | `webhook_payload_received_at` | timestamp without time zone | YES |  |
+| 12 | `process_type` | character varying(255) | YES |  |
+| 13 | `batch_complete_event_fired` | boolean | NO | `FALSE` |
+
+## uown_right_foot_outbound_api_log
+
+**Schema:** `public` | **Columns:** 9 | **Migration:** `V20260612102430`
+
+| # | Column | Type | Nullable | Default |
+|---|--------|------|----------|---------|
+| 1 | `id` | bigint | NO | `BIGSERIAL` |
+| 2 | `json_api_endpoint` | character varying(255) | YES |  |
+| 3 | `request_url` | text | YES |  |
+| 4 | `http_method` | character varying(16) | YES |  |
+| 5 | `request_headers` | text | YES |  |
+| 6 | `request_body` | text | YES |  |
+| 7 | `http_status` | integer | YES |  |
+| 8 | `response_body` | text | YES |  |
+| 9 | `stack_trace` | text | YES |  |
+
+## uown_los_lead_merchant_settings_snapshot
+
+**Schema:** `public` | **Columns:** 13 | **Migration:** `V20260609155406` | **Unique:** `lead_pk`
+
+| # | Column | Type | Nullable | Default |
+|---|--------|------|----------|---------|
+| 1 | `pk` | bigint | NO | `IDENTITY` |
+| 2 | `row_created_timestamp` | timestamp without time zone | YES |  |
+| 3 | `row_updated_timestamp` | timestamp without time zone | YES |  |
+| 4 | `tenant_id` | bigint | YES |  |
+| 5 | `web_user_id` | bigint | YES |  |
+| 6 | `agent` | character varying(255) | YES |  |
+| 7 | `lead_pk` | bigint | NO |  |
+| 8 | `merchant_pk` | bigint | NO |  |
+| 9 | `program_pk` | bigint | YES |  |
+| 10 | `epo5` | boolean | YES |  |
+| 11 | `epo10` | boolean | YES |  |
+| 12 | `uw_pipeline` | character varying(10) | YES |  |
+| 13 | `fraud_threshold` | integer | YES |  |
+
+## uown_sv_account_merchant_settings_snapshot
+
+**Schema:** `public` | **Columns:** 14 | **Migration:** `V20260609155406` | **Unique:** `account_pk`
+
+| # | Column | Type | Nullable | Default |
+|---|--------|------|----------|---------|
+| 1 | `pk` | bigint | NO | `IDENTITY` |
+| 2 | `row_created_timestamp` | timestamp without time zone | YES |  |
+| 3 | `row_updated_timestamp` | timestamp without time zone | YES |  |
+| 4 | `tenant_id` | bigint | YES |  |
+| 5 | `web_user_id` | bigint | YES |  |
+| 6 | `agent` | character varying(255) | YES |  |
+| 7 | `account_pk` | bigint | NO |  |
+| 8 | `lead_pk` | bigint | NO |  |
+| 9 | `merchant_pk` | bigint | NO |  |
+| 10 | `program_pk` | bigint | YES |  |
+| 11 | `epo5` | boolean | YES |  |
+| 12 | `epo10` | boolean | YES |  |
+| 13 | `uw_pipeline` | character varying(10) | YES |  |
+| 14 | `fraud_threshold` | integer | YES |  |
+
+## uown_customer_journey
+
+**Schema:** `public` | **Columns:** 17 | **Migration:** `V20260611054944` | **Unique:** `journey_id`
+
+| # | Column | Type | Nullable | Default |
+|---|--------|------|----------|---------|
+| 1 | `pk` | bigint | NO | `BIGSERIAL` |
+| 2 | `journey_id` | character varying(255) | NO |  |
+| 3 | `application_id` | character varying(255) | YES |  |
+| 4 | `merchant_id` | character varying(255) | YES |  |
+| 5 | `shortcode` | character varying(32) | YES |  |
+| 6 | `current_step` | character varying(255) | YES |  |
+| 7 | `status` | character varying(32) | NO |  |
+| 8 | `started_at` | timestamp without time zone | YES |  |
+| 9 | `completed_at` | timestamp without time zone | YES |  |
+| 10 | `last_activity_at` | timestamp without time zone | YES |  |
+| 11 | `total_sessions` | integer | YES | `0` |
+| 12 | `total_refreshes` | integer | YES | `0` |
+| 13 | `total_submit_attempts` | integer | YES | `0` |
+| 14 | `row_created_timestamp` | timestamp without time zone | YES | `CURRENT_TIMESTAMP` |
+| 15 | `row_updated_timestamp` | timestamp without time zone | YES | `CURRENT_TIMESTAMP` |
+| 16 | `tenant_id` | bigint | YES |  |
+| 17 | `source` | character varying(255) | YES |  |
+
+## uown_customer_session
+
+**Schema:** `public` | **Columns:** 18 | **Migration:** `V20260611054945` | **Unique:** `session_id`
+
+| # | Column | Type | Nullable | Default |
+|---|--------|------|----------|---------|
+| 1 | `pk` | bigint | NO | `BIGSERIAL` |
+| 2 | `session_id` | character varying(255) | NO |  |
+| 3 | `journey_id` | character varying(255) | NO |  |
+| 4 | `status` | character varying(255) | NO |  |
+| 5 | `browser` | character varying(255) | YES |  |
+| 6 | `device_type` | character varying(255) | YES |  |
+| 7 | `operating_system` | character varying(255) | YES |  |
+| 8 | `iframe_ind` | boolean | YES | `FALSE` |
+| 9 | `embedder_origin` | character varying(255) | YES |  |
+| 10 | `refresh_count` | integer | YES | `0` |
+| 11 | `last_page_name` | character varying(255) | YES |  |
+| 12 | `last_event_type` | character varying(255) | YES |  |
+| 13 | `last_event_time` | timestamp without time zone | YES |  |
+| 14 | `started_at` | timestamp without time zone | YES |  |
+| 15 | `ended_at` | timestamp without time zone | YES |  |
+| 16 | `row_created_timestamp` | timestamp without time zone | YES | `CURRENT_TIMESTAMP` |
+| 17 | `row_updated_timestamp` | timestamp without time zone | YES | `CURRENT_TIMESTAMP` |
+| 18 | `tenant_id` | bigint | YES |  |
+
+## uown_customer_event
+
+**Schema:** `public` | **Columns:** 16 | **Migration:** `V20260611054946` | **Unique:** `event_id`
+
+| # | Column | Type | Nullable | Default |
+|---|--------|------|----------|---------|
+| 1 | `pk` | bigint | NO | `BIGSERIAL` |
+| 2 | `event_id` | character varying(255) | NO |  |
+| 3 | `session_id` | character varying(255) | NO |  |
+| 4 | `journey_id` | character varying(255) | NO |  |
+| 5 | `event_type` | character varying(255) | NO |  |
+| 6 | `page_name` | character varying(255) | YES |  |
+| 7 | `event_timestamp` | timestamp without time zone | YES |  |
+| 8 | `api_method` | character varying(255) | YES |  |
+| 9 | `api_duration_ms` | bigint | YES |  |
+| 10 | `render_duration_ms` | bigint | YES |  |
+| 11 | `page_duration_ms` | bigint | YES |  |
+| 12 | `error_code` | character varying(255) | YES |  |
+| 13 | `error_message` | character varying(255) | YES |  |
+| 14 | `row_created_timestamp` | timestamp without time zone | YES | `CURRENT_TIMESTAMP` |
+| 15 | `row_updated_timestamp` | timestamp without time zone | YES | `CURRENT_TIMESTAMP` |
+| 16 | `tenant_id` | bigint | YES |  |
 

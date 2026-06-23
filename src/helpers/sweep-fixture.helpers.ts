@@ -51,6 +51,46 @@ export async function sweepLogBaseline(db: DatabaseHelpers, sweepName: string): 
   );
 }
 
+/** Reads the `error` text of the newest uown_sweep_logs row above `prevPk` (empty string if none). */
+export async function getSweepLogError(
+  db: DatabaseHelpers,
+  sweepName: string,
+  prevPk: number,
+): Promise<string> {
+  const rows = await db.query<{ error: string | null }>(
+    `SELECT error FROM uown_sweep_logs WHERE sweep_name = $1 AND pk > $2 ORDER BY pk DESC LIMIT 1`,
+    [sweepName, prevPk],
+  );
+  return String(rows[0]?.error ?? '').trim();
+}
+
+/** Outcome of {@link classifySweepError}. */
+export type SweepErrorKind = 'clean' | 'provisioning' | 'environment' | 'product';
+
+/**
+ * Classifies a `uown_sweep_logs.error` string (CLAUDE.md rule #10 conservative classification).
+ * Consolidated 2026-06-23 from the local copy in business-sweeps-servicing.spec.ts so the
+ * funding/refund report-content spec can reuse the exact same taxonomy (rule #2 — no duplicate).
+ *
+ *   - 'clean'        — no error.
+ *   - 'provisioning' — missing table/column in the env (relation/column does not exist). The
+ *                      sweep SQL is correct (object exists in stg/prod) but the env was not
+ *                      migrated. NOT a product bug; the sweep cannot run there → skip.
+ *   - 'environment'  — processor/connector/external-sink absent, or informational
+ *                      ("No transactions found", "FAIL : N" from a missing payment gateway).
+ *                      Expected in lower envs, NOT a product bug.
+ *   - 'product'      — a genuine code-level exception (NPE, validation failure) not explained
+ *                      by missing infra. Report as [OBSERVAÇÃO] for dev review.
+ */
+export function classifySweepError(error: string): SweepErrorKind {
+  if (!error) return 'clean';
+  if (/relation "\w+" does not exist|column [\w.]+ does not exist/i.test(error)) return 'provisioning';
+  if (/No transactions found|No recoveries found|FAIL : \d+|Failed to send ACH|TaxCloud|Bearer |processor|connector|gateway/i.test(error)) {
+    return 'environment';
+  }
+  return 'product';
+}
+
 /**
  * Dispara um sweep, aguarda uma nova row em uown_sweep_logs (pk monotônico > baseline)
  * e retorna o processed count registrado. O count pode ser 0 mesmo num sweep bem-sucedido

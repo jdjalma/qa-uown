@@ -3,13 +3,15 @@ title: Originação e Pipeline de Aplicação
 domain: business-rules
 status: stable
 volatility: volatile
-last_verified: 2026-06-18
+last_verified: 2026-06-23
 sources:
   - code: src/config/constants.ts#generateTestSSN
   - db: uown_los_lead
   - db: uown_los_uw_info
+  - svc-source: service/LeadRiskService.java
+  - svc-source: analytics/service/CustomerEventService.java
   - env: qa2
-covers: [pipeline, underwriting, fraud-vendors, neuroid, kount, state-check, geolocation]
+covers: [pipeline, underwriting, fraud-vendors, neuroid, kount, state-check, geolocation, customer-journey, segment-limits]
 ---
 
 # Originacao e Pipeline de Aplicacao
@@ -295,7 +297,13 @@ A UOwn utiliza uma estrategia de **defesa em camadas** com multiplos servicos te
 
 **Quando roda:** O SDK JavaScript coleta dados durante o preenchimento do formulario. A verificacao e consultada durante a submissao.
 
-**Possiveis resultados:** APPROVE, DECLINE, PROFILE_NOT_FOUND (JS desabilitado), ERROR.
+**Possiveis resultados:** APPROVE, DECLINE, PROFILE_NOT_FOUND (JS desabilitado), ERROR, **`NOT_ENOUGH_INTERACTION_DATA`** (novo em R1.53.0).
+
+**R1.53.0 — `NOT_ENOUGH_INTERACTION_DATA` (NeuroID sem dados suficientes):**
+- Tratado como **pass-through nao-bloqueante**: `success=true`, as regras de fraude continuam rodando; o cliente so e bloqueado se outros sinais de fraude dispararem. Junto com `PROFILE_NOT_FOUND`, pode acionar o caminho de config "approve on profile not found".
+- **Toggle de simulacao** (para testes): config `com.uownleasing.svc.service.NeuroIdVerificationService.simulate.not.enough.interaction.data` (default `false`) — quando `true`, svc sobrescreve o status real para `NOT_ENOUGH_INTERACTION_DATA` com `success=true`.
+- **[ATENCAO — drift]** O guard "prevent repeated NeuroID calls" (skip-on-prior-approval / returning-to-sign, `preventRepeatedNeuroIdCallsSigningRetry`) **NAO esta merge na R1.53.0** — vive no branch nao-mergeado `R1.53.0_neuro_id` (com revert). Os steps atuais `NeuroIdCheckStep`/`NeuroIdVerificationStep` **nao** tem guard de chamada repetida. Confirmar contra o env deployado antes de escrever testes que assumam skip.
+- **Fontes:** `service/application/submitApp/NeuroIdVerificationService.java:58,130,147-156`, `enumeration/NeuroIdStatus.java`.
 
 ### 5.6 Intellicheck (Autenticacao de Documento de Identidade)
 
@@ -551,13 +559,15 @@ Controla exposicao a risco. Clientes de alto risco recebem limites menores; clie
 
 ### Como Funciona
 
-Dados carregados de arquivo CSV (`combined_approval_amounts.csv`):
+Dados carregados de arquivo CSV (`combined_approval_amounts.csv`, 60 linhas) para a tabela `approved_amount_by_segment`. A linha e selecionada por `(lambdaSegment, riskType)` via `ApprovedAmountBySegmentRepo.findByLambdaSegmentAndRiskType`:
 
 | Campo | Descricao |
 |-------|-----------|
-| `lambdaSegment` | Segmento de risco 1-10 (1 = melhor) |
-| `riskType` | PRIME, GOOD, FAIR, POOR, etc. |
+| `lambdaSegment` | Segmento de risco **1-20** (coluna "Model Segment" do CSV; vem do GDS) |
+| `riskType` | Apenas **`DEFAULT`**, **`HIGH_RISK`**, **`TIRE_AGENT`** (entidade `ApprovedAmountBySegment.java`; derivado do `peakCampaignId` por `LeadRiskService.determineRiskType` — ver [appendix-e](appendix-e-campanhas-uw.md)) |
 | `maxApprovedAmountCR` | Valor maximo aprovado |
+
+> **Correcao R1.53.0 (drift doc-vs-codigo):** a matriz e chaveada em `lambdaSegment` (1-20) + `riskType` (`DEFAULT`/`HIGH_RISK`/`TIRE_AGENT`). Os antigos rotulos "PRIME/GOOD/FAIR/POOR" e o range "1-10" estavam incorretos. Os scores `npm_segment`/`tam_score` (abaixo) sao **snapshot, NAO entram nesta selecao**. **Fontes:** `db/entity/ApprovedAmountBySegment.java`, `db/repository/ApprovedAmountBySegmentRepo.java`, `service/LeadRiskService.java`, `resources/combined_approval_amounts.csv`.
 
 ### Como Atualizar
 
@@ -569,6 +579,19 @@ Upload de novo arquivo CSV com limites atualizados.
 ### Impacto
 
 O valor de aprovacao do cliente e limitado ao `maxApprovedAmountCR` do seu segmento. Afeta diretamente quanto o cliente pode financiar.
+
+### Scores Adicionais do GDS: npm_segment e tam_score (R1.53.0)
+
+A release 1.53.0 adicionou dois scores inteiros vindos do motor de underwriting GDS, persistidos junto aos demais outputs de UW em `uown_los_uwdata` (lead) e copiados para `uown_sv_uwdata` na criacao da conta:
+
+| Campo | Tipo | Origem | Significado |
+|-------|------|--------|-------------|
+| `npm_segment` | INTEGER (nullable) | node `out.npm_segment` da resposta GDS | Segmento de risco — **[HIPOTESE]** semantica/range nao documentados no codigo svc |
+| `tam_score` | INTEGER (nullable) | node `out.tam_score` da resposta GDS | Score de modelo (TireAgent-only per memoria; valor live observado 475 em stg) — **[HIPOTESE]** |
+
+- Fluxo: `GdsResponseParser` le os nodes -> `UnderwritingService.toUWInfo` seta em `UWInfo` -> persistido em `uown_los_uwdata` -> mesmo objeto `UWInfo` copiado para `uown_sv_uwdata` no import LOS->SVC.
+- So populados quando presentes no node `out`; ausentes => NULL. svc **nao** filtra por client-type (a logica de quais clientes emitem as chaves vive no `uwengine`).
+- **Fontes:** `service/gds/GdsResponseParser.java:58-63`, `service/UnderwritingService.java:107-108`, `pojo/UWResponse.java:66-67`, migration `V20260603054943_1.53.0`.
 
 ---
 
@@ -663,6 +686,35 @@ A informacao de condado e necessaria para calculo correto de impostos, pois nos 
 - **Parser:** JSoup para extrair condado do HTML retornado
 - **Fallback:** Retorna `null` silenciosamente em caso de erro
 - **Sem cache:** Cada consulta faz chamada HTTP
+
+---
+
+## 66. Customer Journey Tracking (Analytics de Funil) — R1.53.0
+
+### O Que e
+
+Rastreamento do **funil de aplicacao do cliente** para analise de abandono e performance, introduzido na R1.53.0. Captura, por jornada: contagem de sessoes, refreshes e tentativas de submit; por sessao: browser/device/OS, iframe vs portal, embedder origin; por evento: pagina, timing de API/render/pagina, e erros.
+
+### Como Funciona
+
+- Alimentado pelo **frontend** (Website/origination application form, iframe-embeddable) via REST sob `/api/journeys`. `journeyId` = `leadPk`; `source` = `IFRAME`/`PORTAL`.
+- **Design race-tolerant:** jornada e sessao sao criadas lazy (`getOrCreate`) no 1o contato — **nao ha endpoint de criar jornada**. Jornada nasce `IN_PROGRESS`.
+- **Eventos:** `PAGE_REFRESHED` incrementa refreshes (sessao + jornada); `REDIRECT_COMPLETED` marca a jornada `COMPLETED`; demais event_types sao texto livre. `currentStep` = ultima `pageName`.
+- **Sessao:** `start` enriquece com device/browser/OS/iframe/embedder; `end` => status `ENDED`.
+
+### Endpoints
+
+| Acao | Endpoint |
+|------|----------|
+| Iniciar sessao | `POST /api/journeys/{journeyId}/session/start` |
+| Encerrar sessao | `POST /api/journeys/{journeyId}/session/{sessionId}/end` |
+| Registrar evento | `POST /api/journeys/{journeyId}/events` |
+
+### Observacoes (R1.53.0)
+
+- **[OBSERVACAO]** `ABANDONED` (JourneyStatus) declarado mas **nunca setado** em codigo svc — abandono provavelmente computado por job/consumidor externo (ha index em `last_activity_at`).
+- **[OBSERVACAO]** `total_submit_attempts`, `application_id`, `merchant_id`, `shortcode`, `source` declarados mas **nunca populados** em codigo svc R1.53.0; possivel no-op de persistencia em `CustomerJourneyService.complete()` (muta sem `save()` fora de tx gerenciada). Confirmar com produto.
+- Tabelas e enum: [appendix-c](appendix-c-tabelas-banco.md) · [appendix-d D.37](appendix-d-constantes-enums.md). Fontes: pacote `svc/analytics/` (entity/service/controller/dto, enum `JourneyStatus`).
 
 ---
 

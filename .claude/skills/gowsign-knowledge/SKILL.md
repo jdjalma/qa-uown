@@ -123,9 +123,9 @@ A coluna de status do documento de assinatura é **`status`** (varchar 255, sche
 - NÃO usar `SENT` (esse é valor de `uown_email_queue`, tabela diferente).
 - Schema autoritativo: [`docs/database-schema.md`](../../../docs/database-schema.md) seção `uown_esign_document`. Cross-link: app-lifecycle pitfall #96.
 
-### CORREÇÃO (svc#546, qa2, 2026-06-22): `SIGNED` e `STORED` EXISTEM no progresso pós-assinatura
+### CORREÇÃO (qa2, 2026-06-22): `SIGNED` e `STORED` EXISTEM no progresso pós-assinatura
 
-A nota antiga "`SENT_TO_CUSTOMER`/`COMPLETED`, NÃO `SIGNED`" foi derivada de leads **NÃO assinados** (até envio). Um lead **genuinamente assinado** alcança **`SIGNED` e depois `STORED`** — o progresso real observado em qa2 (svc#546, leads 16865/16866/16867) é:
+A nota antiga "`SENT_TO_CUSTOMER`/`COMPLETED`, NÃO `SIGNED`" foi derivada de leads **NÃO assinados** (até envio). Um lead **genuinamente assinado** alcança **`SIGNED` e depois `STORED`** — o progresso real observado em qa2 (leads 16865/16866/16867) é:
 
 **`SENT_TO_CUSTOMER` → `SIGNED` → `STORED` → (`COMPLETED`)**
 
@@ -149,7 +149,7 @@ A assinatura emite notas em `uown_los_lead_notes`:
 
 Logo a Rule #13 é satisfeita via `uown_los_lead_notes` DEPOIS da assinatura; ANTES da assinatura o registro autoritativo é `uown_esign_document` (não `lead_notes`).
 
-## OH template — fatos de render (svc#546, qa2, 2026-06-22 — primary-source)
+## OH template — fatos de render (qa2, 2026-06-22 — primary-source)
 
 O template `OH_2025_SAC_16_MONTHS` (16m SAC, Ohio) — BUG-01 (`{{nextPaymentDueAmount}}` em branco em Item 3/4a) está **FIXED/validado** (renderiza 95.16/22.07/43.50; zero notas de dispatch "variables map missing"). Fatos de render confirmados no PDF flatten:
 
@@ -161,7 +161,7 @@ O template `OH_2025_SAC_16_MONTHS` (16m SAC, Ohio) — BUG-01 (`{{nextPaymentDue
 
 - ❌ Validar signing só via DB (não renderiza)
 - ❌ Assertar `status='SENT'` em `uown_esign_document` — `SENT` é de `uown_email_queue`; usar `SENT_TO_CUSTOMER` (envio) na coluna `status`
-- ❌ Afirmar que `SIGNED`/`STORED` "não existem" no enum — existem para leads efetivamente assinados (progresso `SENT_TO_CUSTOMER → SIGNED → STORED → COMPLETED`, svc#546)
+- ❌ Afirmar que `SIGNED`/`STORED` "não existem" no enum — existem para leads efetivamente assinados (progresso `SENT_TO_CUSTOMER → SIGNED → STORED → COMPLETED`)
 - ❌ Buscar a row pós-assinatura por `request LIKE '{%'` — o `request` vira a string `getDocumentStatus`; query por lead+client direto
 - ❌ Copy-check do contrato OH pela palavra "Ohio" — não aparece no flatten; usar `AGREEMENT-OH`
 - ❌ Esquecer regressão SignWell quando muda GoSign
@@ -171,8 +171,23 @@ O template `OH_2025_SAC_16_MONTHS` (16m SAC, Ohio) — BUG-01 (`{{nextPaymentDue
 - ❌ Detectar iframe GowSign por `src*="gowsign.com"` — host varia por env (sandbox = `gowsign-app-dev-uown.azurewebsites.net`); usar classe `alternative-contract-vendor_iframe__nSb3A` ou substring `gowsign`
 - ❌ Assumir que `completeESign` cobre só PandaDocs/SignWell — quando o estado tem template GowSign (ex: NY), o lead roteia para GowSign e exige o branch dedicado; não confundir o `TimeoutError` resultante com flakiness de timing
 
+## Correlacao enum vendor GowSign ↔ `uown_esign_document.status` (vendor API ref 2026-06-23)
+
+A API do vendor GowSign (contrato externo em [`appendix-a-integracoes.md`](../../../docs/business-rules/appendix-a-integracoes.md) §GowSign Vendor API) expoe dois enums proprios do vendor que NAO sao a coluna interna `uown_esign_document.status` — sao do lado do vendor:
+
+- **vendor `status`:** `CREATED → OUTSTANDING → SIGNED → COMPLETED` (+ `EXPIRED`/`CANCELED`)
+- **vendor `pdfStatus`:** `CREATED_PENDING/CREATED_GENERATED/SIGNED_PENDING/SIGNED_GENERATED/AUDIT_TRAIL_PENDING/AUDIT_TRAIL_GENERATED`
+
+Correlacao (`[HIPOTESE]` — alinhamento de nomes, nao confirmado por trace cross-system):
+- vendor `SIGNED`/`COMPLETED` ↔ progressao interna `SIGNED → STORED → COMPLETED` (documentada acima). O `STORED` interno (`*_signed.pdf`) e o estado UOWn pos-assinatura; nao ha valor `STORED` no enum do vendor.
+- Nao assertar igualdade direta de nome entre o enum do vendor e a coluna interna — eles vivem em sistemas diferentes; usar `uown_esign_document.status` (coluna interna) para assertions de teste, vendor `status`/`pdfStatus` so se inspecionando a API do vendor diretamente.
+
+Fonte do enum vendor: `[external-doc:postman/gowsign-api,2026-06-23]`. Comportamento canonico de routing/template NAO mora aqui (fronteira de autoridade) → ver business-rules.
+
 ## Cross-links
 
+- Registro de templates EPO 16-meses (conteudo de contrato por estado) → [`appendix-h-epo-template-registry.md`](../../../docs/business-rules/appendix-h-epo-template-registry.md)
+- API do vendor GowSign (contrato externo: status/pdfStatus, bracket syntax, webhook) → [`appendix-a-integracoes.md`](../../../docs/business-rules/appendix-a-integracoes.md) §GowSign Vendor API
 - Memory: `project_gosign_rollout`, `feedback_float_repr_not_bug`
 - Skill [[ui-first-principle]] — base da regra #14
 - Skill [[dom-investigation]] — usar MCP Playwright em iframe

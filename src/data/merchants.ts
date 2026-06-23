@@ -124,7 +124,7 @@ export const MERCHANTS: Record<string, MerchantConfig> = {
     number: 'KS3023',
     programs: ['13 month', '16 month'],
   },
-  // Object-of-test merchant for task #1313 (npm_segment snapshot). KS16775 / pk 657
+  // Object-of-test merchant for the npm_segment snapshot. KS16775 / pk 657
   // is the env-confirmed Kornerstone 16m route that produces npm_segment via GDS in
   // qa2 (DB-probed 2026-06-19; ONLINE, NY, is_seon_id_check_required=false). Shares
   // the Kornerstone portal credentials (username 'kornerstone'); differs only by number.
@@ -186,6 +186,11 @@ export const MERCHANTS: Record<string, MerchantConfig> = {
     number: 'OL90202-0001',
     refCode: 'terraceFinance',
     programs: ['13 month', '16 month'],
+    // stg uses a user-configured clone of terraceFinance (pk 15752) for the
+    // merchant-settings snapshot env-port — same credentials, different ref_merchant_code. Precedent: DanielsJewelers.
+    envOverrides: {
+      stg: { number: 'OL90202-0001_clone' },
+    },
   },
   EZPawn: {
     fullName: 'EZ Pawn (TF10078-0001)',
@@ -297,6 +302,9 @@ export const MERCHANTS: Record<string, MerchantConfig> = {
     refCode: 'kornerstone',
     envOverrides: {
       qa2: { password: envOr('MERCHANT_BODEGA_FURNITURE_QA2_PASSWORD', 'U0wn_Kornerstone_012c') },
+      // stg uses a user-configured KS clone (pk 15753) for the merchant-settings snapshot env-port —
+      // same kornerstone credentials, different ref_merchant_code.
+      stg: { number: 'KS8795_clone' },
     },
   },
 };

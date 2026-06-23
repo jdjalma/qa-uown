@@ -45,6 +45,17 @@ Geracao de contratos, assinatura eletronica (SignWell/PandaDoc), taxa de assinat
 
 Se merchant tem `isSignedToFunding = true`, apos assinatura o lead move automaticamente para `FUNDING`.
 
+### EPO Sections (registro de templates 16 meses)
+
+Os templates SAC 16-meses tem 4 blocos de clausula EPO no contrato assinado:
+
+- **Item 4 — Promotional Payoff** — janela promocional `{{epoDays}}`; "any late payment voids this option". Variante de daily-accrual **ate a data corrente** (`current_date_promo`: CA, TX, OH) vs **ate a data de exercicio** (`exercise_date_promo`: AL, FL, LA, NC, TN, GA, PA).
+- **Item 4a — Lease-Purchase Ownership (= EPO)** — preco EPO e clausula de ownership; mesma divisao current-date vs exercise-date daily-accrual (excecao NY = formula proporcional Cash Price, New baseline).
+- **R3 — Consumer appendix (pagina "EARLY PURCHASE OPTIONS")** — pagina de formula EPO destinada ao consumidor.
+- **R5 — CA-only EPO chart** — `[table|earlyPurchaseOption]` (CA; reaproveitado em NY/PA).
+
+Registro completo (texto verbatim por estado, tokens, matriz de validacao) → [`appendix-h-epo-template-registry.md`](appendix-h-epo-template-registry.md). Fonte primaria: wiki `gow-sign/EPO-SECTIONS` `[external-doc:gitlab/EPO-SECTIONS,2026-06-23]`.
+
 ---
 
 ## 55. Taxa de Assinatura (Signing Fee)

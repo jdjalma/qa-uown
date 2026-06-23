@@ -16,6 +16,7 @@
 | **API regression** | `tests/api/` (4 specs) | `new-application-api`, `lease-cancellation-api`, `seon-id-verification-bypass`, `finalize-email-518-validation` | ~3-5 min each | varies |
 | **Website OTP** | `tests/e2e/website/login-otp.spec.ts` | OTP via IMAP, account dropdown, sidebar navigation | ~5 min | `@regression` |
 | **Email Sweeps (Servicing)** | `tests/e2e/servicing/email-sweeps-servicing.spec.ts` | 3 cenarios (S1 settledInFull, S2 RecurringPaymentReminder, S3 FirstPaymentReminder); trigger manual + DB assert via `uown_email_queue` (PK monotonico). 5/5 PASS dev3 2026-06-02 | ~5 min | `@regression` |
+| **Servicing Sweeps (R1.53.0)** | `tests/e2e/servicing/{business,cc-rerun,document-dispatch,external-sync,payment-scheduling,report,funding-refund-report-content}-sweeps-servicing.spec.ts` | Familia de sweeps de servicing (business / CC-rerun / document-dispatch / external-sync / payment-scheduling / report / funding-refund-report-content); trigger manual + DB assert (`ORDER BY pk DESC`) | ~5-10 min | `@regression` |
 
 ## Suite cost (qa2 baseline)
 

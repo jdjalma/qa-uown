@@ -49,7 +49,25 @@ export class MerchantSettingPage extends OriginationBasePage {
 
   async navigateToMerchantSettings(originationUrl: string): Promise<void> {
     await this.page.goto(`${originationUrl}merchantSetting`, { waitUntil: 'domcontentloaded' });
-    await this.waitForPageLoad();
+    // DOM-first readiness anchor (NOT a timeout bump — Rule #15). The stg Origination
+    // SPA keeps background connections open, so `waitForPageLoad()`'s
+    // `waitForLoadState('networkidle')` never resolves on the 2nd+ navigation within a
+    // serial suite (TC-03b+ timed out deterministically at base.page.ts:27). The
+    // shared `waitForPageLoad()` is intentionally NOT changed (other page objects rely
+    // on it); instead wait for the concrete `/merchantSetting` readiness signal — the
+    // "Search table" filter box — which a login-probe confirmed is the visible anchor.
+    await this.waitForSpinner();
+    // The Filters button is the unconditional structural signal that the SPA route
+    // mounted; the "Search table" box is inside the Filters panel. Wait on the box
+    // (default-expanded on stg), but if it is collapsed, expand once so the anchor is
+    // robust — never re-introduce a deterministic timeout if the panel defaults closed.
+    const searchVisible = await this.merchantSearchTableInput
+      .isVisible({ timeout: 10_000 })
+      .catch(() => false);
+    if (!searchVisible && await this.filtersButton.isVisible({ timeout: 5_000 }).catch(() => false)) {
+      await this.filtersButton.click();
+    }
+    await this.merchantSearchTableInput.waitFor({ state: 'visible', timeout: 30_000 });
     // Dismiss any error toasts (e.g. "Unable to load program groups") — wait up to 2 s for them to appear
     await this.page.locator('.Toastify__close-button').first().waitFor({ state: 'visible', timeout: 2_000 }).catch(() => {});
     const closeButtons = this.page.locator('.Toastify__close-button');

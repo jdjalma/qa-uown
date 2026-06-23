@@ -77,7 +77,7 @@ export class MerchantConfigurator {
    * Configure a merchant by its catalog name (e.g. 'TireAgent', 'ProgressMobility').
    * Resolves the refCode from the static merchant catalog, then calls configure().
    *
-   * Resolution fallback (#1317 F-005, 2026-06-19): some merchants carry a logical
+   * Resolution fallback (F-005, 2026-06-19): some merchants carry a logical
    * `refCode` in the catalog (e.g. TerraceFinance → 'terraceFinance') that does NOT
    * match the env's real `ref_merchant_code`. In qa2 the TerraceFinance row's
    * `ref_merchant_code` is its `number` ('OL90202-0001'), so a `getMerchantsByRefCode`

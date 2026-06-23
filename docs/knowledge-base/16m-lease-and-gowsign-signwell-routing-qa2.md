@@ -3,9 +3,10 @@ title: Creating a 16-Month Lease & Controlling GowSign vs Signwell Routing (qa2)
 domain: knowledge-base
 status: snapshot
 volatility: volatile
-last_verified: 2026-06-17
+last_verified: 2026-06-23
 sources:
   - env: qa2
+  - env: stg
   - code: src/data/state-merchant-matrix.ts#expectedProvider
   - db: uown_gow_sign_template
   - db: uown_esign_document
@@ -90,7 +91,7 @@ There are **two reliable routes** to a 16m lease in qa2:
 - **Required on `sendApplication`:** Kornerstone needs `bankData` — `mainBankRoutingNumber='123456780'` + `mainBankAccountNumber='160781900000'` (`TEST_BANK` defaults), else 400 ([[application-lifecycle]] pitfall #5). High income helps the ABB.
 - **Signing URL shape:** `https://secure-qa2.kornerstoneliving.com/{shortCode}/complete?planId=WK16` (Kornerstone host, NOT `uownleasing.com`). `planId=WK16` = the 16-month weekly plan.
 
-**Fresh proof (today, 2026-06-17), via `tests/api/__scratch_ohio_signing_url_svc546.spec.ts` (`ENV=qa2 STATE=<S>`):**
+**Fresh proof (today, 2026-06-17), via `tests/api/__scratch_ohio_signing_url.spec.ts` (`ENV=qa2 STATE=<S>`):**
 
 | Lead | State | paymentDetailsList | term | Signing URL |
 |---|---|---|---|---|
@@ -145,7 +146,7 @@ So **a 16m-only offer can come from EITHER side**: the merchant has only a 16m p
 | **16m + GowSign (CA jewelry)** | KS16775 | ONLINE | `CA` | Kornerstone ABB → 16 | GOWSIGN / `California Lease Agreement` `[confirmed]` (lead 16620) |
 | **16m forced by program** | Daniel's clone (pk47) | INSTORE | (any — ignored) | only-16m program set | GOWSIGN / `CA_2025_SAC_JEWELRY_16_MONTHS` (routes by CA) `[inferred]` |
 
-API drive sequence is the canonical one ([[application-lifecycle]]): `buildTestData` → `sendApplication` (+ Kornerstone `bankData`) → `getApplicationStatus` (APPROVED) → `sendInvoice` (pick the 16m `paymentDetailsList` entry, `planId=WK16`) → `getMissingFields(shortCode,{planId})` → `submitApplication`. The reusable scratch is `tests/api/__scratch_ohio_signing_url_svc546.spec.ts` (now parameterized by `STATE`).
+API drive sequence is the canonical one ([[application-lifecycle]]): `buildTestData` → `sendApplication` (+ Kornerstone `bankData`) → `getApplicationStatus` (APPROVED) → `sendInvoice` (pick the 16m `paymentDetailsList` entry, `planId=WK16`) → `getMissingFields(shortCode,{planId})` → `submitApplication`. The reusable scratch is `tests/api/__scratch_ohio_signing_url.spec.ts` (now parameterized by `STATE`).
 
 ---
 
@@ -163,6 +164,21 @@ The Kornerstone API path stops at the `…/complete?planId=WK16` URL; `submitApp
   2. **Re-navigate to the same signing URL.** Because the lead is now `CC_AUTH_PASSED`, the page renders a **"Sign Contract"** button instead of the CC form (skips the NeuroID-gated step).
   3. Click **Sign Contract** → creates the GowSign document → **Terms** page → check both confirmations → **Proceed to signature** → the GowSign iframe renders the contract. (Kornerstone Terms goes straight to "Proceed to signature"; the Protection Plus step seen on the UOWN-gateway flow does not gate it here.)
 - Completing the *signature* ceremony (Start → Sign → Finish) inside the GowSign iframe was not needed to **read** the contract — the document renders at `SENT_TO_CUSTOMER`. A non-Kornerstone UOWN-gateway merchant (TerraceFinance AL 13m, lead 16649) is still the simplest fully-automatable path but caps at 13m; the reload trick above is what unlocks the **16m** render on Kornerstone.
+
+---
+
+## stg — Kornerstone 16m + LA (2026-06-23)
+
+> **Extends the Kornerstone-16m route from qa2 → stg.** The "ABB Kornerstone returns EligibleTerms 16" fact (Route A above), previously only proven in qa2, is now `[confirmed]` **live in stg** (read-only + API drive, 2026-06-23). This also adds **LA** as a GowSign-routed state in stg.
+
+- **ABB Kornerstone returns EligibleTerms 16 in stg.** `[confirmed]` live stg 2026-06-23.
+- **Recipe (stg):** merchant **`KS10150` "Paramount Jewelers"** (Kornerstone, **ONLINE**, `valid_states` includes **LA**) + customer `state=LA` + `bankData` (`TEST_BANK`: `mainBankRoutingNumber='123456780'`, `mainBankAccountNumber='160781900000'`) → APPROVED, `paymentDetailsList` terms `[16,13]`, 16m `planId=WK16`.
+  - **Evidence:** lead **7218072**, shortCode `6fX8HLUp`, approvedAmount 2120. `[confirmed]` (API drive, stg, 2026-06-23).
+- **stg GowSign LA templates** (`uown_gow_sign_template`): `LA_2025_SAC` (**pk 27**, 13m) + `LA_2025_SAC_16_MONTHS` (**pk 28**, 16m), both `client_type=null`. → 16m + LA on an ONLINE merchant routes **GowSign `LA_2025_SAC_16_MONTHS`** at `CONTRACT_CREATED`. `[confirmed]` (DB, stg, 2026-06-23). Re-list via `getGowSignTemplatesForState(db, 'LA')` (`src/helpers/gowsign-template-db.helpers.ts`) — table is `uown_gow_sign_template` (NOT `uown_gowsign_template`).
+- **Entry signing URL** (CC pre-auth `/complete` page, provider-agnostic, Kornerstone host): `https://secure-stg.kornerstoneliving.com/6fX8HLUp/complete?planId=WK16`. The provider only materializes in `uown_esign_document.client` **after** the CC pre-auth flips the lead to `CONTRACT_CREATED` — same as Route A in qa2. The Kornerstone `/complete` page has the **NeuroID** gate (use the reload workaround above to reach the rendered contract).
+- **TireAgent+GDS route does NOT serve LA in stg.** The TireAgent+GDS path (SSN `100000053`) is **anchored to a CA profile** in stg → sending LA yields `ADDRESS_MISMATCH`. For LA-16m in stg use the Kornerstone fresh-profile/ABB route (KS10150). `[confirmed]` 2026-06-23.
+
+> Related memory (datada, cross-check — não copiar): `stg-kornerstone-16m-la-gowsign.md`. See also [[qa2-16m-eligibility-kornerstone-route]] (the qa2 origin of the Kornerstone-16m route this extends).
 
 ---
 

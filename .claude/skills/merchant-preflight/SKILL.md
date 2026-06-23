@@ -68,6 +68,7 @@ Ver `src/data/merchant-config-contract.ts` para o source-of-truth. Resumo:
 2. **Elegibilidade 16m é merchant-config, não brand** — qualquer merchant (UOWN ou KS) com programa 16m ativo suporta. Nunca dizer "UOWN não oferece 16m" (memory `feedback_16m_eligibility_merchant_config`).
 3. **DV360 UAT qa1 outage 2026-05-18** — `sendApplication` retornava 500 Apache HTML em qa1; svc saudável; workaround: aguardar/qa2/leads pré-existentes (memory `project_dv360_uat_qa1_outage_2026_05_18`).
 4. **Auto-heal não é grátis** — toca merchant config no DB. Em testes paralelos pode causar race. Considere `skipMerchantPreflight: true` se outro teste já garantiu o setup.
+5. **Snapshot immutability (R1.53.0)** — a config de UW do merchant é **congelada na aprovação** em `uown_los_lead_merchant_settings_snapshot` (no `UW_APPROVED` do lead) e em `uown_sv_account_merchant_settings_snapshot` (na criação da conta, copiando o snapshot do lead). Para testes que dependem do snapshot, o preflight/auto-heal precisa rodar **ANTES da aprovação UW** — mutar a config do merchant DEPOIS da aprovação **NÃO** atualiza o snapshot já gravado (cria drift live-vs-snapshot que não propaga). Ver app-lifecycle pitfall #112 e `appendix-c` (Merchant Settings Snapshot).
 
 ## Anti-patterns
 

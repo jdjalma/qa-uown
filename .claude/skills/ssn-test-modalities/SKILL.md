@@ -74,7 +74,7 @@ Merchant suporta 16m se tem `uown_merchant_program` com `term_in_months=16` + `i
 | Merchant | qualquer com 16m ativo |
 | Profile | qualquer valido |
 
-> **Route B — merchant 16m-only por programa (Daniel's clone `OL90205-0079_clone`, svc#546, qa2, 2026-06-22):** neste clone EligibleTerms 16 vem do merchant ser **16m-only por programa** (não do sufixo SSN). Logo **QUALQUER SSN aprovador** rende 16m — um `generateTestSSN(true)` com sufixo `916` fresco funciona; **NÃO está amarrado** ao sticky `082390916`. Preferir SSN fresco aqui (ver caveat de routing de assinatura abaixo e [[application-lifecycle]] #132). `[test-execution:qa2, leads 16865/16866/16867]`.
+> **Route B — merchant 16m-only por programa (Daniel's clone `OL90205-0079_clone`, qa2, 2026-06-22):** neste clone EligibleTerms 16 vem do merchant ser **16m-only por programa** (não do sufixo SSN). Logo **QUALQUER SSN aprovador** rende 16m — um `generateTestSSN(true)` com sufixo `916` fresco funciona; **NÃO está amarrado** ao sticky `082390916`. Preferir SSN fresco aqui (ver caveat de routing de assinatura abaixo e [[application-lifecycle]] #132). `[test-execution:qa2, leads 16865/16866/16867]`.
 
 ### Modalidade C.2 - 16m Second Look
 
@@ -86,7 +86,7 @@ Merchant suporta 16m se tem `uown_merchant_program` com `term_in_months=16` + `i
 
 **Fluxo:** 1a submissao sem bank data -> UW_DENIED + preview 16m -> 2a submissao com bank data -> UW_APPROVED 16m.
 
-> **Gatilho do `tam_score` (GDS snapshot, task #1313):** a familia Second Look `100000053` (TireAgent) e o caminho que produz `tam_score` em `uown_los_uwdata`/`uown_sv_uwdata` — mas SO quando a 2a submissao aprova 16m. Em **qa2 essa modalidade DENEGA e short-circuita** (Second Look validado so em **stg**), logo `tam_score` e **inalcancavel em qa2** (`count=0` sobre 6046+2037 linhas, discovery 2026-06-19). O env-alvo p/ `tam_score` (stg vs dev2) esta **PENDENTE de confirmacao do Marcos** — nao afirmar como fato. O outro campo do #1313, `npm_segment`, vem de **qualquer decisao GDS 16m** (Kornerstone/UOWN/PayTomorrow) e NAO esta amarrado a SSN. Detalhe: `docs/knowledge-base/1313-npm-segment-tam-score-snapshot-routing.md`.
+> **Gatilho do `tam_score` (GDS snapshot):** a familia Second Look `100000053` (TireAgent) e o caminho que produz `tam_score` em `uown_los_uwdata`/`uown_sv_uwdata` — mas SO quando a 2a submissao aprova 16m. Em **qa2 essa modalidade DENEGA e short-circuita** (Second Look validado so em **stg**), logo `tam_score` e **inalcancavel em qa2** (`count=0` sobre 6046+2037 linhas, discovery 2026-06-19). O env-alvo p/ `tam_score` (stg vs dev2) esta **PENDENTE de confirmacao do Marcos** — nao afirmar como fato. O outro campo, `npm_segment`, vem de **qualquer decisao GDS 16m** (Kornerstone/UOWN/PayTomorrow) e NAO esta amarrado a SSN. Detalhe: `docs/knowledge-base/npm-segment-tam-score-snapshot-routing.md`.
 
 ### Modalidade D - Denied
 
@@ -185,7 +185,7 @@ Silent skip de brand = violacao.
 - Kornerstone (KS*) sempre recebe 16m por rota separada (independente de sufixo SSN)
 - Brand e ortogonal a modalidade - depende da config do merchant, nao do nome
 
-### Routing do template por CUSTOMER state — Daniel's clone `OL90205-0079_clone` (svc#546, qa2, 2026-06-22)
+### Routing do template por CUSTOMER state — Daniel's clone `OL90205-0079_clone` (qa2, 2026-06-22)
 
 > **CORREÇÃO da nota antiga "INSTORE → store-state CA template" (resolve Open Question Q1 do SPEC `docs/scenarios/ohio-scenario3-contract-validation-spec.md`):** o clone roteia o template GowSign pelo **CUSTOMER state**, NÃO pelo store state CA. Customer OH → `OH_2025_SAC_16_MONTHS`. `[CONFIRMADO]` em qa2 (leads 16865/16866/16867) — contradiz a regra documentada "INSTORE roteia por merchant state". Antes de confiar na regra INSTORE→merchant-state para este clone, **assertar o template selecionado** (`assertSelectedTemplateForLead`). Cross-link: [[gowsign-knowledge]] OH render facts, [[volatile-knowledge-registry]] §17 (GowSign state-routing).
 

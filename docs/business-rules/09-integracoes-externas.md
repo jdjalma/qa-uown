@@ -3,12 +3,13 @@ title: Integracoes com Terceiros
 domain: business-rules
 status: stable
 volatility: volatile
-last_verified: 2026-06-18
+last_verified: 2026-06-23
 sources:
   - code: src/data/merchant-config-contract.ts#offerInsurance
   - db: uown_sv_protection_plan
+  - svc-source: config/rightfoot/RightFootConfig.java
   - env: qa2
-covers: [buddy-insurance, taxcloud, taxjar, five9, kornerstone, proget, skit-ai, vendor-health]
+covers: [buddy-insurance, taxcloud, taxjar, five9, kornerstone, proget, skit-ai, vendor-health, rightfoot]
 ---
 
 # Integracoes com Terceiros
@@ -369,6 +370,86 @@ Registra cada chamada de saida para o Podium com `url`, `call_type`, `request` e
 ### Milestone
 
 RU03.26.1.50.0 -- Task #442 (`uownSvcPodiumApiIntegration`)
+
+---
+
+## 48. RightFoot (Verificacao de Saldo Bancario ACH) — R1.53.0
+
+### O Que e
+
+RightFoot e um fornecedor externo de **verificacao de saldo bancario (bank balance check)** para pagamentos ACH, introduzido em R1.53.0 (svc#540). Base URL `https://api.rightfoot.com` (mesma em prod e sandbox).
+
+### Para Que Serve
+
+Confirmar que a conta bancaria do cliente tem **fundos suficientes antes de criar/retentar um debito ACH**, reduzindo retornos NSF. Um novo ACH so e semeado quando `exposure + requested_amount + buffer $100 <= balance` (buffer hardcoded em `DailyRerunACHCreate.sql:70`).
+
+### Escopo (Quando Roda)
+
+Aplica-se a contas **ACTIVE com auto-pay ACH em janela de inadimplencia**. Ambos os sweeps de balance-check selecionam `account_status='ACTIVE'`, `auto_pay_types LIKE '%ACH%'`, conta bancaria com `auto_pay=true`, dentro da janela de delinquencia. **Nao ha flag por merchant nem por client-type** — a selecao e puramente account-state/delinquency-driven (via SQL seedado).
+
+### Fluxo (3 Etapas)
+
+1. Um **sweep de balance-check** submete requests ao RightFoot (`rightFootBalanceCheckService.submit`).
+2. RightFoot responde via **webhook** que completa o batch (`POST /uown/webhooks/rightfoot/batch-ready`).
+3. O evento Spring `RightFootBatchCompleteEvent` (listener **AFTER_COMMIT**) dispara `DailyRerunAchCreationService.createDailyRerunACHs(batchIds)`, que cria as linhas `uown_sv_achpayment`.
+
+### Sweeps
+
+| Sweep | Cron seedado | process_type | Selecao (resumo) | Batch |
+|-------|--------------|--------------|------------------|-------|
+| `DailyAchBalanceCheckSweep` | `0 0 15 * * ?` (15:00 diario) | `DAILY_RERUN_DELINQUENT` | janela `CURRENT_DATE-150 .. -15`, ultimo ACH SETTLED por conta, `LIMIT 5000` | 5000, pool 3 threads |
+| `RerunAchBalanceCheckSweep` | `0 0 9 ? * THU` (Qui 09:00) | `RERUN` | `SCHEDULED` ou `REQUEST` ligado a arranjo `SETTLEMENT`; `return_code IN (R01,R09)`; `status IN (RETURNED,REVERSED)`; `tries<2`; delinquency `<45d`; sem RERUN previo | 500 (config), single-thread |
+| `DailyRerunAchCreationService` | **nao e Quartz** — disparado pelo evento de batch-complete + REST | — | SQL `DailyRerunACHCreate` | 1000, pool 4 threads, `username=SYSTEM` |
+
+### Gating do ACH (`DailyRerunACHCreate.sql`)
+
+Um ACH so e criado quando o balance check correspondente satisfaz: `status='SUCCESS'`, `response_timestamp IS NOT NULL`, **mesmo routing+account number** da conta bancaria, dentro da janela, e `exposure + requested_amount + 100 <= balance`. O novo `uown_sv_achpayment` carrega a FK `right_foot_balance_check_pk` de volta ao balance check aprovado. **Guard de duplicidade**: nenhum novo ACH `DAILY_RERUN_DELINQUENT` e criado se ja houver um in-flight (`PENDING/PICKED_TO_SEND/STATUS_UPDATE_PENDING/SENT`) para a conta.
+
+### Webhook & Batch
+
+- Endpoint inbound: `POST /uown/webhooks/rightfoot/batch-ready` (aceita JSON ou text/plain) -> `RightFootWebhookService.handleWebhook`.
+- `uown_right_foot_batch` guarda `webhook_payload`, `errors`, `status`, `process_type`, `webhook_payload_received_at`, e `batch_complete_event_fired` (BOOLEAN default FALSE) — flag de idempotencia do evento de conclusao.
+- Triggers admin (`RightFootController`, `/uown/rightfoot`): `POST /uown/rightfoot/batch-result` (reprocessa 1 batch), `POST /uown/rightfoot/ach-payments/daily-rerun` (cria ACH manualmente a partir de uma lista de batchIds).
+
+### Status & Failure
+
+Unico valor confirmado em codigo svc: `uown_right_foot_balance_check.status = 'SUCCESS'` (condicao do gate). Os demais valores de `status`/`failure_reason` e o parser do webhook vivem na lib `com.uownleasing:rightfoot:1.53.0`, que **nao esta disponivel em disco** (nao checked-out, nao no cache Gradle). **[HIPOTESE]** — nao assumir valores alem de `SUCCESS`.
+
+### Configuracoes
+
+Prefixo `com.uownleasing.svc.rightfoot.`, via `ConfigurationManagement`/Hazelcast — **nao** presentes em `application.yaml`:
+
+| Chave | Default | Observacao |
+|-------|---------|------------|
+| `api.key` | prod vazio / sandbox literal | **[SEGURANCA]** fallback sandbox hardcoded em `RightFootConfig.java:26-28` |
+| `base.url` | `https://api.rightfoot.com` | |
+| `webhook.url` | host + `/uown/webhooks/rightfoot/batch-ready` | |
+| `balance.threshold` | 100 | sem caller em svc — **[HIPOTESE]** consumido na lib; buffer real e literal no SQL |
+| `balance.check.sweep.cron` | `0 0 8 ? * THU` | **[OBSERVACAO]** divergente do cron seedado (`0 0 15 * * ?`); getter sem caller em svc |
+| `...RerunAchBalanceCheckSweep.batchSize` | 500 | |
+| `...DailyRerunAchCreationService.interrupt` | false | kill-switch |
+
+### Tabelas
+
+- `uown_right_foot_balance_check` — `authorizer_unique_id` UNIQUE (`RFBC-{accountPk}-{snowflakeId}`), `account_pk`, `batch_id`, `routing_number`/`account_number`, `requested_amount` (= `next_payment_with_tax`, ou `amount` do ACH em arranjo SETTLEMENT), `balance`, `status`, `failure_reason`, `process_type`, `request/response_timestamp`.
+- `uown_right_foot_batch` — `batch_id`, `status`, `webhook_payload`, `errors`, `process_type`, `batch_complete_event_fired`.
+- `uown_right_foot_outbound_api_log` — log de chamadas de saida (endpoint, url, method, headers, request/response, http_status, stack_trace).
+- `uown_sv_achpayment.right_foot_balance_check_pk` — FK do ACH para o balance check.
+- Cleanup: `CleanupService.deleteOldEntries(deletionCutOff)` purga linhas antigas das duas primeiras tabelas.
+
+### Observacoes para o Time (R1.53.0)
+
+- **[OBSERVACAO]** Divergencia de cron entre config default e task seedada (acima).
+- **[OBSERVACAO]** Artefato de sintaxe em `DailyAchBalanceCheckSweep.java:241` — `TO_CHAR(date_of_birth, 'YYYY-MM-DD') AS date_of_birth,\n,\n` contem virgula solta (`,\n,\n`) que quebraria a query se executada verbatim. Confirmar com o time.
+- **[SEGURANCA]** API key literal hardcoded como fallback sandbox (`RightFootConfig.java:26-28`).
+
+### Fontes (svc R1.53.0)
+
+`config/rightfoot/RightFootConfig.java` · `service/sweeps/rightfoot/{DailyAchBalanceCheckSweep,RerunAchBalanceCheckSweep,RightFootBalanceCheckMapper}.java` · `service/ach/DailyRerunAchCreationService.java` · `service/ach/listener/RightFootCompleteListener.java` · `rest/svc/{RightFootController,RightFootWebhookController}.java` · `service/BootstrapService.java` (~2275) · `resources/sqls/DailyRerunACHCreate.sql` · migrations `V20260612102430` / `V20260616122043` / `V20260619131000`. Lib `com.uownleasing:rightfoot:1.53.0` (internals nao disponiveis em disco).
+
+### Milestone
+
+R1.53.0 — svc#540 (Implement rightfoot foundation), svc#540 (RerunAchBalanceCheckSweep), duplicate payment checks
 
 ---
 

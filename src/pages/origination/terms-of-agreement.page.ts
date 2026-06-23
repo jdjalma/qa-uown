@@ -48,7 +48,7 @@ export class TermsOfAgreementPage extends BasePage {
   /**
    * Wait until the customer has proceeded past Terms into the e-sign step.
    *
-   * Two real routes exist (DOM-confirmed on qa2, lead via #1317 CT-02, 2026-06-19):
+   * Two real routes exist (DOM-confirmed on qa2, lead via CT-02, 2026-06-19):
    *   - GowSign / SignWell render the e-sign document as a MODAL OVERLAY on top of
    *     the Terms page — `#termsOfAgreementForm` stays in the DOM (just covered), so
    *     waiting for it to be `hidden` never resolves and times out.
@@ -102,7 +102,7 @@ export class TermsOfAgreementPage extends BasePage {
    *      no painel de PP e clica PROCEED TO SIGNATURE
    *   3. Senao → clica PROCEED TO SIGNATURE direto (caminho standard)
    *
-   * Hardening (#1317): retorna `{ buddyReached, radioClicked }` para que o teste
+   * Hardening: retorna `{ buddyReached, radioClicked }` para que o teste
    * possa FALHAR num fallback silencioso (insurance merchant que não abre o Buddy)
    * em vez de passar verde. Lança quando o painel Buddy abriu mas nenhum radio de
    * opt-in/opt-out pôde ser clicado — submeter cego mascararia uma regressão de
@@ -172,7 +172,7 @@ export class TermsOfAgreementPage extends BasePage {
       }
     }
 
-    // Hardening (#1317): never submit blind. A non-clicked radio means the widget
+    // Hardening: never submit blind. A non-clicked radio means the widget
     // failed to render its choices — submitting anyway would record an arbitrary
     // default and the test would pass on a broken widget.
     if (!radioClicked) {
@@ -194,7 +194,7 @@ export class TermsOfAgreementPage extends BasePage {
    * (a prior lease on the same email opted in), the widget does NOT render the
    * opt-in/opt-out radios — it shows "Our records indicate that you're already
    * enrolled!" plus only a PROCEED TO SIGNATURE button (DOM-proven 2026-06-21, qa2,
-   * #1317 CT-05). acceptAndProceedWithProtectionPlan would (correctly) throw here
+   * CT-05). acceptAndProceedWithProtectionPlan would (correctly) throw here
    * because there are 0 radios — this method is the cross-coverage counterpart.
    *
    * @returns `{ alreadyEnrolled }` — true when the already-enrolled panel was detected

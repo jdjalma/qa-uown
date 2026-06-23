@@ -39,6 +39,15 @@ export const SELECTORS: AppSelectors = {
   filterControl: '.filter__control',
   /** Resilient combobox locator — works whether the widget exposes `.filter__control` (qa2 react-select) or only the ARIA `combobox` role (stg / alternate themes). */
   filterControlResilient: '.filter__control, [role="combobox"]',
+  /**
+   * The typeable react-select combobox input INSIDE a `.filter__control`.
+   * Used by the keep-open methods to type-to-narrow the 6885-merchant roster in
+   * stg (scrolling to a target is unviable). Scope this UNDER the per-label control
+   * (`controlByLabel`) so it never matches a sibling filter's input. react-select
+   * renders it as `input.filter__input` with `aria-autocomplete="list"`; match both
+   * to be theme-resilient.
+   */
+  filterComboboxInput: "input.filter__input, input[aria-autocomplete='list']",
   filtersButton: "button[class*='filterButton'], button:has-text('Filters')",
   // Overview dashboard metric cards. CSS module uses `summaryBox` as logical name;
   // anchor on the prefix since the hash suffix changes per build.

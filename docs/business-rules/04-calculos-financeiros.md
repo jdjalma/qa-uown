@@ -3,10 +3,12 @@ title: Cálculos e Fórmulas Financeiras
 domain: business-rules
 status: stable
 volatility: stable
-last_verified: 2026-06-18
+last_verified: 2026-06-23
 sources:
   - code: src/helpers/svc-payoff.helpers.ts#parseEpoBreakdown
   - code: src/data/sixteenMonthEpoForCa531.testData.ts#ISSUE531_DATA
+  - svc-source: pojo/rest/CalculatorResults.java
+  - svc-source: service/AccountAmountsService.java
 covers: [payment-calculator, epo, payoff, money-factor, payment-frequency, state-rules]
 ---
 
@@ -31,6 +33,22 @@ contractAmountBeforeTax = baseCost * moneyFactor * termMonths
 contractAmountAfterTax = contractAmountBeforeTax + contractTax + processingFee - companyDiscount
 regularPayment = contractAmountBeforeTax / numberOfPayments
 ```
+
+### Pagamento Devido Hoje e Primeira Parcela com Taxas (R1.53.0 — svc#558)
+
+Corrigido em R1.53.0 para merchants que cobram a signing fee no e-sign (caso Good Feet), evitando duplo-faturamento da taxa/deposito na primeira parcela:
+
+- `paymentDueToday` agora vem **direto de `SchedSummaryInfo.getSigningFee()`** (a signing fee ja resolvida), e nao mais re-derivado de flags do merchant (`chargeProcessingFeeBeforeEsign` / `holdDeposit` / UW).
+- `processingFee` + `securityDeposit` so sao somados a `firstPaymentWithFeesAndTax` **quando NAO ha signing fee sendo cobrada agora** (`signingFee == null || <= 0`). Se a taxa ja foi coletada na assinatura, a primeira parcela nao a recobra.
+- **Fontes:** `pojo/rest/CalculatorResults.java:41-58`.
+
+### Saldo do Contrato no Recibo (Contract Balance) — R1.53.0 (#533)
+
+O saldo do contrato usado no recibo de pagamento passou a ser calculado em Java, nao mais inline no SQL do recibo (que subtraia todos os pagamentos PAID e podia ficar **negativo** com fees):
+
+- `ContractBalance.balance = totalContractAmount − totalPaidAmount` via `AccountAmountsService.getContractBalance(account)`, escalado 2 casas (HALF_EVEN); injetado no placeholder `:contractBalance`.
+- A linha "If you pay off now you save" (`savedAmount = balance − payoff`) so e renderizada quando `savedAmount != null && savedAmount > 0` — o cliente nunca ve "you save" negativo/zero.
+- **Fontes:** `service/PaymentReceiptService.java:104-126`, `pojo/CommonDataPojo.java:179-207`, `service/AccountAmountsService.java:80-103`, templates `correspondence/templates/payment-receipt-email.html`.
 
 ### Numero de Parcelas por Frequencia
 
@@ -191,6 +209,21 @@ O calculo do EPO segue uma cascata de regras estaduais que determinam descontos 
 |--------|---------------|
 | **NC** | EPO nao pode ser menor que o valor da ultima parcela (`lastPaymentNoTaxWithFees`) |
 | **CA, HI, NY, WV** | Formula proporcional: `cost * (remainingPayments / totalPayments)` |
+
+### Formula EPO declarada no contrato (16 meses)
+
+O **texto** do contrato 16-meses declara o preco EPO (intencao verbatim):
+
+> **EPO price = custo dos bens arrendados + impostos + fees aplicaveis + daily lease fees acumuladas da inception ate (data de exercicio | data corrente — depende do estado) − pagamentos de aluguel feitos on-time (excluindo impostos e fees).**
+
+- Janela de **promotional payoff** = `epoDays`; **qualquer parcela atrasada anula a opcao** ("any late payment voids the option").
+- A cascata de **calculo** (descontos por estado) ja esta em §70 acima; os **variantes de texto de contrato** por estado:
+  - **OH:** "Cash Price less **50%** of payments made".
+  - **NY:** proporcional — `Cash Price × (remaining / total payments)` (New baseline; NAO daily-accrual).
+  - **PA / AL / LA / NC / TN / GA:** desconto `{{payOffDiscountPercent}}%` sobre o remaining.
+  - **NC:** EPO nunca abaixo de `{{lastPaymentDueAmountWithTax}}` (floor balloon).
+
+Registro de templates + tokens + matriz → [`appendix-h-epo-template-registry.md`](appendix-h-epo-template-registry.md). Fonte primaria: wiki `gow-sign/EPO-SECTIONS` `[external-doc:gitlab/EPO-SECTIONS,2026-06-23]`.
 
 ### Desativacao de Recebiveis
 

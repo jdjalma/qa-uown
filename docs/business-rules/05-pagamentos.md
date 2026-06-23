@@ -3,15 +3,16 @@ title: Processamento de Pagamentos
 domain: business-rules
 status: stable
 volatility: volatile
-last_verified: 2026-06-18
+last_verified: 2026-06-23
 sources:
   - code: src/api/clients/tms-payment.client.ts#TmsPaymentClient
   - code: src/data/test-cards.ts#TEST_CARDS
   - db: uown_sv_credit_card_transaction
   - db: uown_sv_achpayment
   - db: uown_sv_payment_arrangement
+  - svc-source: service/cc/sticky/StickyRefundCompletionService.java
   - env: qa2
-covers: [credit-card, ach, cc-peek, refunds, payment-arrangements, nsf, sweeps]
+covers: [credit-card, ach, cc-peek, refunds, payment-arrangements, nsf, sweeps, rightfoot, sticky]
 ---
 
 # Processamento de Pagamentos
@@ -188,6 +189,10 @@ Se o pagamento e do tipo REQUEST, com data futura, feito pelo "customer portal":
 
 Cria novo pagamento com `achType = ACHCredit`. Se parcial, cria novo PAID com restante.
 
+### Verificacao de Saldo RightFoot (R1.53.0)
+
+Para contas **ACTIVE com auto-pay ACH em delinquencia**, a release 1.53.0 (svc#540) introduziu o **RightFoot balance check**: antes de criar/retentar um ACH (rerun de delinquente), o saldo bancario e verificado para reduzir retornos NSF. Um ACH so e criado quando o balance check retorna `status='SUCCESS'`, mesmo routing+account number, e `exposure + requested_amount + $100 <= balance`. O novo ACH carrega a FK `right_foot_balance_check_pk` e `process_type=DAILY_RERUN_DELINQUENT`. **Guard de duplicidade:** nenhum novo ACH `DAILY_RERUN_DELINQUENT` se ja houver um in-flight (`PENDING/PICKED_TO_SEND/STATUS_UPDATE_PENDING/SENT`) para a conta. Fornecedor, sweeps e webhook completos: [09-integracoes-externas.md §48](09-integracoes-externas.md).
+
 ---
 
 ## 14. Pos-Pagamento e Alocacao de Recebiveis
@@ -306,6 +311,30 @@ O servico aceita lista de PKs de pagamento (separados por virgula) e processa ca
 ```
 POST /uown/svc/refundPayment/{paymentPk}?amount={valor}&comment={motivo}
 ```
+
+---
+
+## 53b. Sticky — Recovery de CC Recusado e Refund (R1.53.0)
+
+Sticky e o motor de **recovery/dunning de cartao de credito recusado** (vendor `com.uownleasing:sticky`). Estado por conta em `uown_sticky` (`recovery_status`). A release 1.53.0 trouxe varias mudancas confirmadas em codigo:
+
+**Cancelamento de recovery nao-cancelavel:**
+- O `StickyRecoverCancelSweep` so cancela recoveries nao-terminais (`recovery_status NOT IN ('RECOVERED','FAILED','CANCELED')`, conta nao-ACTIVE). Logo `RECOVERED/FAILED/CANCELED` sao os status **terminais**.
+- Ao pedir cancel, se o Sticky responde "Cannot cancel transaction" (HTTP 400 — transacao ja terminal do lado do vendor), svc **NAO falha**: marca o recovery **CANCELED localmente**, loga WARN e grava activity log INTERNAL. Erro nao-branco diferente => `IllegalStateException`. Erro branco => sucesso (sem marcacao).
+
+**Prior attempts + tempo da transacao original (svc#564):**
+- Ao submeter um CC recusado ao Sticky, svc envia o **historico de declines anteriores** (`error`, `error_code`, `completed_time`) e a **contagem** (`null` se vazia), via SQL `StickyPriorAttempts` (self-join em `uown_sv_credit_card_transaction` por `account_pk`+`amount`, tipos `RERUN`/`DAILY_SCHEDULED_DENIED_RERUN`). Da ao motor de dunning do Sticky o historico para decidir a cadencia de retry.
+- **[ATENCAO — drift]** apesar do nome do commit ("UTC"), o codigo merge resolve os timestamps via **`ZoneId.of("America/New_York")`** (`.toInstant()`), **nao UTC**. Verificar contra o DB antes de asserir horarios de recovery em testes.
+
+**Duplicate payment checks:**
+- Na confirmacao de refund, svc busca **todos** os `SvPayment` PAID do `ccPk` (mais recente primeiro). Se houver **>1** PAID, e situacao de pagamento duplicado: loga WARN ("Multiple PAID SvPayments found ... using most recent") e prossegue com o **mais recente** — **nao bloqueia/aborta**. Lista vazia => activity log "no payment found" e retorna.
+
+**Idempotencia de refund (R1.53.0_add_sticky_refund_idempotency):**
+- Nao ha chave de idempotencia dedicada; a protecao e via **maquina de estado PAID**: refund so e permitido se o pagamento e `STICKY` **e** `PAID`. Reverter tira o status PAID, entao uma 2a tentativa e rejeitada ("Only PAID Sticky payments can be refunded") e webhooks tardios nao encontram linha PAID (no-op). Completa inline so quando Sticky retorna `REFUNDED` e o pagamento ainda esta `PAID`.
+
+**Activity log (regra #13):** cancel-local, refund-confirmado/no-payment-found e refund-submitted gravam `LogType.INTERNAL` — asserir nos testes.
+
+**Fontes:** `service/cc/sticky/{StickyRecoverCancelService,StickyRecoverCancelSweepService,StickyRecoverSubmissionService,StickyRefundCompletionService,StickyRefundPaymentService}.java`, `resources/sqls/StickyPriorAttempts.sql`. Internos de enum/vendor em `com.uownleasing:sticky` (nao em disco) — **[HIPOTESE]** onde indicado. Gotchas de ambiente (sandbox-only): knowledge-base `sticky-recover-cancel-sweep.md` / `sticky-payment-refund.md`.
 
 ---
 
@@ -522,6 +551,16 @@ Quando um pagamento ACH ou CC falha por insuficiencia de fundos, uma taxa e cobr
    - Merchant `ONLINE` -> usa estado do **endereco do cliente**
 3. **Override estadual:** Se o `StateConfigurations` do estado tiver NSF fee configurado e > $0, usa o valor estadual
 4. **Fallback:** Se nao houver override estadual, usa o valor default
+
+---
+
+## 72. Recibo de Pagamento — Balance e "You Save" (R1.53.0)
+
+O recibo de pagamento mostra dois valores: **Balance** (obrigacao restante do lease) e **"If you pay off now you save"** (`savedAmount = balance - payOffAmountBeforeEPOExpiry`, exibido **apenas quando > 0**).
+
+- **Fix:** o balance era calculado por subquery SQL inline (`totalContractAmountWithTaxAndFees - SUM(PAID)`) que **ignorava as taxas** (protection plan, NSF, reinstatement, misc), produzindo balance baixo ou **negativo** quando havia fees — corrompendo tambem o "You Save". O calculo migrou para Java `AccountAmountsService.getContractBalance()`, que **inclui todas as fees** (`totalContractAmountWithTaxAndFees + protectionPlanFeesToDate + otherFees - totalPaidAmount`), injetado no SQL via parametro `:contractBalance` (default `0` quando null, arredondamento `HALF_EVEN` 2 casas). Template so renderiza "You Save" quando `savedAmount > 0`.
+- **ExtBrand (svc, branch `R1.53.0_ExtBrand-Png`):** o logo de marca nos links de pagamento **PayNearMe** (email/SMS) passou a ser `company.name().toLowerCase() + ".png"` (`uown.png`, `kornerstone.png`; company null => `uown.png`). Metodo `getExtBrandForCompany` em `config/PayNearMeConfig.java`; usado por `PayNearMeLinkDeliveryBridgeImpl`.
+- **Fontes:** `pojo/CommonDataPojo.java:199-208`, `service/AccountAmountsService.java:35-104`, `service/PaymentReceiptService.java:104-127`, `resources/correspondence/templates/payment-receipt.sql`, `templates/payment-receipt-email.html`, `config/PayNearMeConfig.java:76-81`.
 
 ---
 

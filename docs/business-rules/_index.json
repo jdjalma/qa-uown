@@ -178,7 +178,7 @@
       "domain": "business-rules",
       "status": "stable",
       "volatility": "volatile",
-      "last_verified": "2026-06-18",
+      "last_verified": "2026-06-23",
       "covers": [
         "originacao",
         "underwriting",
@@ -186,7 +186,9 @@
         "fraud-vendors",
         "fraud-vendors",
         "state-rules",
-        "fraud-vendors"
+        "fraud-vendors",
+        "customer-journey",
+        "segment-limits"
       ],
       "sources": [
         {
@@ -201,6 +203,8 @@
           "type": "db",
           "value": "uown_los_uw_info"
         },
+        "svc-source: service/LeadRiskService.java",
+        "svc-source: analytics/service/CustomerEventService.java",
         {
           "type": "env",
           "value": "qa2"
@@ -432,6 +436,10 @@
           "anchor": "impacto"
         },
         {
+          "heading": "Scores Adicionais do GDS: npm_segment e tam_score (R1.53.0)",
+          "anchor": "scores-adicionais-do-gds-npm_segment-e-tam_score-r1530"
+        },
+        {
           "heading": "62. Continuacao e Finalizacao de Aplicacao",
           "anchor": "62-continuacao-e-finalizacao-de-aplicacao"
         },
@@ -478,6 +486,26 @@
         {
           "heading": "Como Funciona",
           "anchor": "como-funciona"
+        },
+        {
+          "heading": "66. Customer Journey Tracking (Analytics de Funil) — R1.53.0",
+          "anchor": "66-customer-journey-tracking-analytics-de-funil-r1530"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Como Funciona",
+          "anchor": "como-funciona"
+        },
+        {
+          "heading": "Endpoints",
+          "anchor": "endpoints"
+        },
+        {
+          "heading": "Observacoes (R1.53.0)",
+          "anchor": "observacoes-r1530"
         }
       ]
     },
@@ -536,6 +564,10 @@
         {
           "heading": "Auto-Move para Funding",
           "anchor": "auto-move-para-funding"
+        },
+        {
+          "heading": "EPO Sections (registro de templates 16 meses)",
+          "anchor": "epo-sections-registro-de-templates-16-meses"
         },
         {
           "heading": "55. Taxa de Assinatura (Signing Fee)",
@@ -614,7 +646,7 @@
       "domain": "business-rules",
       "status": "stable",
       "volatility": "stable",
-      "last_verified": "2026-06-18",
+      "last_verified": "2026-06-23",
       "covers": [
         "payment-calculator",
         "epo",
@@ -631,7 +663,9 @@
         {
           "type": "code",
           "value": "src/data/sixteenMonthEpoForCa531.testData.ts#ISSUE531_DATA"
-        }
+        },
+        "svc-source: pojo/rest/CalculatorResults.java",
+        "svc-source: service/AccountAmountsService.java"
       ],
       "sections": [
         {
@@ -649,6 +683,14 @@
         {
           "heading": "Formulas Principais",
           "anchor": "formulas-principais"
+        },
+        {
+          "heading": "Pagamento Devido Hoje e Primeira Parcela com Taxas (R1.53.0 — svc#558)",
+          "anchor": "pagamento-devido-hoje-e-primeira-parcela-com-taxas-r1530-svc558"
+        },
+        {
+          "heading": "Saldo do Contrato no Recibo (Contract Balance) — R1.53.0 (#533)",
+          "anchor": "saldo-do-contrato-no-recibo-contract-balance-r1530-533"
         },
         {
           "heading": "Numero de Parcelas por Frequencia",
@@ -739,6 +781,10 @@
           "anchor": "regras-especiais-por-estado"
         },
         {
+          "heading": "Formula EPO declarada no contrato (16 meses)",
+          "anchor": "formula-epo-declarada-no-contrato-16-meses"
+        },
+        {
           "heading": "Desativacao de Recebiveis",
           "anchor": "desativacao-de-recebiveis"
         }
@@ -751,7 +797,7 @@
       "domain": "business-rules",
       "status": "stable",
       "volatility": "volatile",
-      "last_verified": "2026-06-18",
+      "last_verified": "2026-06-23",
       "covers": [
         "cc-payments",
         "ach-payments",
@@ -759,7 +805,9 @@
         "refund",
         "payment-arrangement",
         "nsf-fee",
-        "sweeps"
+        "sweeps",
+        "integrations",
+        "sticky"
       ],
       "sources": [
         {
@@ -782,6 +830,7 @@
           "type": "db",
           "value": "uown_sv_payment_arrangement"
         },
+        "svc-source: service/cc/sticky/StickyRefundCompletionService.java",
         {
           "type": "env",
           "value": "qa2"
@@ -893,6 +942,10 @@
           "anchor": "reembolso-ach"
         },
         {
+          "heading": "Verificacao de Saldo RightFoot (R1.53.0)",
+          "anchor": "verificacao-de-saldo-rightfoot-r1530"
+        },
+        {
           "heading": "14. Pos-Pagamento e Alocacao de Recebiveis",
           "anchor": "14-pos-pagamento-e-alocacao-de-recebiveis"
         },
@@ -981,6 +1034,10 @@
           "anchor": "como-disparar"
         },
         {
+          "heading": "53b. Sticky — Recovery de CC Recusado e Refund (R1.53.0)",
+          "anchor": "53b-sticky-recovery-de-cc-recusado-e-refund-r1530"
+        },
+        {
           "heading": "54. Arranjo de Pagamentos (Payment Arrangement)",
           "anchor": "54-arranjo-de-pagamentos-payment-arrangement"
         },
@@ -1067,6 +1124,10 @@
         {
           "heading": "Logica de Determinacao",
           "anchor": "logica-de-determinacao"
+        },
+        {
+          "heading": "72. Recibo de Pagamento — Balance e \"You Save\" (R1.53.0)",
+          "anchor": "72-recibo-de-pagamento-balance-e-you-save-r1530"
         }
       ]
     },
@@ -1835,7 +1896,7 @@
       "domain": "business-rules",
       "status": "stable",
       "volatility": "volatile",
-      "last_verified": "2026-06-18",
+      "last_verified": "2026-06-23",
       "covers": [
         "buddy-insurance",
         "tax-calculation",
@@ -1844,7 +1905,8 @@
         "kornerstone",
         "proget",
         "skit-ai",
-        "fraud-vendors"
+        "fraud-vendors",
+        "integrations"
       ],
       "sources": [
         {
@@ -1855,6 +1917,7 @@
           "type": "db",
           "value": "uown_sv_protection_plan"
         },
+        "svc-source: config/rightfoot/RightFootConfig.java",
         {
           "type": "env",
           "value": "qa2"
@@ -2080,6 +2143,62 @@
         {
           "heading": "Tratamento de Erros",
           "anchor": "tratamento-de-erros"
+        },
+        {
+          "heading": "Milestone",
+          "anchor": "milestone"
+        },
+        {
+          "heading": "48. RightFoot (Verificacao de Saldo Bancario ACH) — R1.53.0",
+          "anchor": "48-rightfoot-verificacao-de-saldo-bancario-ach-r1530"
+        },
+        {
+          "heading": "O Que e",
+          "anchor": "o-que-e"
+        },
+        {
+          "heading": "Para Que Serve",
+          "anchor": "para-que-serve"
+        },
+        {
+          "heading": "Escopo (Quando Roda)",
+          "anchor": "escopo-quando-roda"
+        },
+        {
+          "heading": "Fluxo (3 Etapas)",
+          "anchor": "fluxo-3-etapas"
+        },
+        {
+          "heading": "Sweeps",
+          "anchor": "sweeps"
+        },
+        {
+          "heading": "Gating do ACH (`DailyRerunACHCreate.sql`)",
+          "anchor": "gating-do-ach-dailyrerunachcreatesql"
+        },
+        {
+          "heading": "Webhook & Batch",
+          "anchor": "webhook-batch"
+        },
+        {
+          "heading": "Status & Failure",
+          "anchor": "status-failure"
+        },
+        {
+          "heading": "Configuracoes",
+          "anchor": "configuracoes"
+        },
+        {
+          "heading": "Tabelas",
+          "anchor": "tabelas"
+        },
+        {
+          "heading": "Observacoes para o Time (R1.53.0)",
+          "anchor": "observacoes-para-o-time-r1530"
+        },
+        {
+          "heading": "Fontes (svc R1.53.0)",
+          "anchor": "fontes-svc-r1530"
         },
         {
           "heading": "Milestone",
@@ -2984,7 +3103,7 @@
       "domain": "business-rules",
       "status": "stable",
       "volatility": "stable",
-      "last_verified": "2026-06-18",
+      "last_verified": "2026-06-23",
       "covers": [
         "integrations",
         "fraud-vendors",
@@ -2994,13 +3113,17 @@
         "fraud-vendors",
         "fraud-vendors",
         "tax-calculation",
-        "sweeps"
+        "sweeps",
+        "integrations",
+        "gowsign-routing"
       ],
       "sources": [
         {
           "type": "code",
           "value": "src/data/merchant-config-contract.ts#offerInsurance"
         },
+        "svc-source: config/rightfoot/RightFootConfig.java",
+        "external-doc: https://documenter.getpostman.com/view/28884504/2sBXcEizW5",
         {
           "type": "env",
           "value": "qa2"
@@ -3014,6 +3137,10 @@
         {
           "heading": "Apendice A: Integracoes com Terceiros",
           "anchor": "apendice-a-integracoes-com-terceiros"
+        },
+        {
+          "heading": "GowSign Vendor API",
+          "anchor": "gowsign-vendor-api"
         }
       ]
     },
@@ -3024,20 +3151,24 @@
       "domain": "business-rules",
       "status": "stable",
       "volatility": "volatile",
-      "last_verified": "2026-06-18",
+      "last_verified": "2026-06-23",
       "covers": [
         "integration-api",
         "sweeps",
         "payments",
         "account-status",
         "admin-panel",
-        "merchant-config"
+        "merchant-config",
+        "integrations",
+        "customer-journey"
       ],
       "sources": [
         {
           "type": "code",
           "value": "src/api/clients/scheduled-task.client.ts#triggerScheduledTask"
         },
+        "svc-source: rest/svc/RightFootWebhookController.java",
+        "svc-source: analytics/controller/CustomerEventController.java",
         {
           "type": "env",
           "value": "qa2"
@@ -3071,6 +3202,14 @@
         {
           "heading": "Administracao",
           "anchor": "administracao"
+        },
+        {
+          "heading": "RightFoot — Verificacao de Saldo ACH (R1.53.0)",
+          "anchor": "rightfoot-verificacao-de-saldo-ach-r1530"
+        },
+        {
+          "heading": "Customer Journey Tracking — Ingest (R1.53.0)",
+          "anchor": "customer-journey-tracking-ingest-r1530"
         }
       ]
     },
@@ -3081,14 +3220,16 @@
       "domain": "business-rules",
       "status": "stable",
       "volatility": "volatile",
-      "last_verified": "2026-06-18",
+      "last_verified": "2026-06-23",
       "covers": [
         "db-tables",
         "db-tables",
         "db-tables",
         "db-tables",
         "troubleshooting",
-        "merchant-snapshot"
+        "merchant-snapshot",
+        "integrations",
+        "customer-journey"
       ],
       "sources": [
         {
@@ -3102,6 +3243,14 @@
         {
           "type": "db",
           "value": "uown_scheduled_task"
+        },
+        {
+          "type": "db",
+          "value": "uown_right_foot_balance_check"
+        },
+        {
+          "type": "db",
+          "value": "uown_customer_journey"
         },
         {
           "type": "env",
@@ -3156,6 +3305,18 @@
         {
           "heading": "Merchant Settings Snapshot (R1.53.0 — Flyway 20260609155406)",
           "anchor": "merchant-settings-snapshot-r1530-flyway-20260609155406"
+        },
+        {
+          "heading": "Scores de Underwriting: npm_segment & tam_score (R1.53.0 — Flyway 20260603054943)",
+          "anchor": "scores-de-underwriting-npm_segment-tam_score-r1530-flyway-20260603054943"
+        },
+        {
+          "heading": "RightFoot — Verificacao de Saldo ACH (R1.53.0 — Flyway 20260612102430 / 20260616122043 / 20260619131000)",
+          "anchor": "rightfoot-verificacao-de-saldo-ach-r1530-flyway-20260612102430-20260616122043-20260619131000"
+        },
+        {
+          "heading": "Customer Journey / Session / Event — Analytics de Funil (R1.53.0 — Flyway 20260611054944/45/46)",
+          "anchor": "customer-journey-session-event-analytics-de-funil-r1530-flyway-202606110549444546"
         }
       ]
     },
@@ -3166,14 +3327,17 @@
       "domain": "business-rules",
       "status": "stable",
       "volatility": "volatile",
-      "last_verified": "2026-06-18",
+      "last_verified": "2026-06-23",
       "covers": [
         "enums",
         "enums",
         "status",
         "funding-queue",
         "lead-status",
-        "enums"
+        "enums",
+        "merchant-management",
+        "integrations",
+        "customer-journey"
       ],
       "sources": [
         {
@@ -3184,6 +3348,8 @@
           "type": "code",
           "value": "src/types/enums.ts#LeadStatus"
         },
+        "svc-source: enumeration/ClientType.java",
+        "svc-source: analytics/enumeration/JourneyStatus.java",
         {
           "type": "env",
           "value": "qa2"
@@ -3333,6 +3499,22 @@
         {
           "heading": "D.34 Tipo de Taxa Cobravel (FeeType) — Visao Completa",
           "anchor": "d34-tipo-de-taxa-cobravel-feetype-visao-completa"
+        },
+        {
+          "heading": "D.35 Tipo de Processo ACH (ACHProcessType)",
+          "anchor": "d35-tipo-de-processo-ach-achprocesstype"
+        },
+        {
+          "heading": "D.36 Status do Balance Check RightFoot (R1.53.0)",
+          "anchor": "d36-status-do-balance-check-rightfoot-r1530"
+        },
+        {
+          "heading": "D.37 Status da Jornada do Cliente (JourneyStatus) — R1.53.0",
+          "anchor": "d37-status-da-jornada-do-cliente-journeystatus-r1530"
+        },
+        {
+          "heading": "D.38 Tipos de Evento de Customer Journey (event_type) — R1.53.0",
+          "anchor": "d38-tipos-de-evento-de-customer-journey-event_type-r1530"
         }
       ]
     },
@@ -3343,20 +3525,22 @@
       "domain": "business-rules",
       "status": "stable",
       "volatility": "stable",
-      "last_verified": "2026-06-18",
+      "last_verified": "2026-06-23",
       "covers": [
         "underwriting",
         "underwriting",
         "merchant-management",
         "underwriting",
         "underwriting",
-        "underwriting"
+        "underwriting",
+        "segment-limits"
       ],
       "sources": [
         {
           "type": "code",
           "value": "src/api/bodies/program-info.body.ts#peakCampaignId"
         },
+        "svc-source: service/LeadRiskService.java",
         {
           "type": "env",
           "value": "qa2"
@@ -3370,6 +3554,10 @@
         {
           "heading": "Apendice E: Referencia de Campanhas de Underwriting",
           "anchor": "apendice-e-referencia-de-campanhas-de-underwriting"
+        },
+        {
+          "heading": "Mapeamento Campanha -> riskType (R1.53.0)",
+          "anchor": "mapeamento-campanha---risktype-r1530"
         }
       ]
     },
@@ -3981,6 +4169,205 @@
         {
           "heading": "9. Fontes e Referências Cruzadas",
           "anchor": "9-fontes-e-referências-cruzadas"
+        }
+      ]
+    },
+    {
+      "file": "appendix-h-epo-template-registry.md",
+      "path": "docs/business-rules/appendix-h-epo-template-registry.md",
+      "title": "Apendice H: Registro de Templates EPO 16 Meses",
+      "domain": "business-rules",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-23",
+      "covers": [
+        "epo",
+        "template-rendering",
+        "gowsign-routing",
+        "16m-lease",
+        "state-rules"
+      ],
+      "sources": [
+        "external-doc: https://gitlab.com/groups/uown/-/wikis/gow-sign/EPO-SECTIONS"
+      ],
+      "sections": [
+        {
+          "heading": "UOwn Leasing - SVC Platform",
+          "anchor": "uown-leasing---svc-platform"
+        },
+        {
+          "heading": "H.1 Legenda de status do diagnostico",
+          "anchor": "h1-legenda-de-status-do-diagnostico"
+        },
+        {
+          "heading": "H.2 Baselines 16 meses validados (R1–R5)",
+          "anchor": "h2-baselines-16-meses-validados-r1r5"
+        },
+        {
+          "heading": "R1 — `current_date_promo` (Item 4 — daily fees ate a data corrente)",
+          "anchor": "r1-current_date_promo-item-4-daily-fees-ate-a-data-corrente"
+        },
+        {
+          "heading": "R1 — `exercise_date_promo` (Item 4 — daily fees ate a data de exercicio)",
+          "anchor": "r1-exercise_date_promo-item-4-daily-fees-ate-a-data-de-exercicio"
+        },
+        {
+          "heading": "R2 — `exercise_date_epo_fl` (Item 4a — exercise date + nextPaymentDueAmount / salesTax)",
+          "anchor": "r2-exercise_date_epo_fl-item-4a-exercise-date-nextpaymentdueamount-salestax"
+        },
+        {
+          "heading": "R2 — `current_date_epo_tx` (Item 4a — current date + Total Cost / application fee)",
+          "anchor": "r2-current_date_epo_tx-item-4a-current-date-total-cost-application-fee"
+        },
+        {
+          "heading": "R2 — `current_date_epo_ca` (Item 4a — current date + Total of Payments / Processing Fee)",
+          "anchor": "r2-current_date_epo_ca-item-4a-current-date-total-of-payments-processing-fee"
+        },
+        {
+          "heading": "R3 — `shared_16month_appendix` (Appendix — pagina de formula 16-meses compartilhada)",
+          "anchor": "r3-shared_16month_appendix-appendix-pagina-de-formula-16-meses-compartilhada"
+        },
+        {
+          "heading": "R4 — `shared_footnote` (Footnote do plano de lease — opcao Promotional Payoff)",
+          "anchor": "r4-shared_footnote-footnote-do-plano-de-lease-opcao-promotional-payoff"
+        },
+        {
+          "heading": "R5 — `ca_chart` (Chart de payoff EPO)",
+          "anchor": "r5-ca_chart-chart-de-payoff-epo"
+        },
+        {
+          "heading": "H.3 Diagnostico dos templates SAC por estado",
+          "anchor": "h3-diagnostico-dos-templates-sac-por-estado"
+        },
+        {
+          "heading": "AL — `AL_2025_SAC.html` — **Reuse TX**",
+          "anchor": "al-al_2025_sachtml-reuse-tx"
+        },
+        {
+          "heading": "GA — `GA_2025_SAC.html` — **Reuse TX**",
+          "anchor": "ga-ga_2025_sachtml-reuse-tx"
+        },
+        {
+          "heading": "LA — `LA_2025_SAC.html` — **Reuse TX — adjustments**",
+          "anchor": "la-la_2025_sachtml-reuse-tx-adjustments"
+        },
+        {
+          "heading": "NC — `NC_2025_SAC.html` — **Reuse TX**",
+          "anchor": "nc-nc_2025_sachtml-reuse-tx"
+        },
+        {
+          "heading": "NY — `NY_2025_SAC.html` — **New baseline ⚠**",
+          "anchor": "ny-ny_2025_sachtml-new-baseline-"
+        },
+        {
+          "heading": "OH — `OH_2025_SAC.html` — **Reuse TX**",
+          "anchor": "oh-oh_2025_sachtml-reuse-tx"
+        },
+        {
+          "heading": "PA — `PA_2025_SAC.html` — **Reuse TX**",
+          "anchor": "pa-pa_2025_sachtml-reuse-tx"
+        },
+        {
+          "heading": "TN — `TN_2025_SAC.html` — **Reuse TX**",
+          "anchor": "tn-tn_2025_sachtml-reuse-tx"
+        },
+        {
+          "heading": "H.4 Matriz de validacao (16-meses)",
+          "anchor": "h4-matriz-de-validacao-16-meses"
+        },
+        {
+          "heading": "H.5 Glossario de tokens",
+          "anchor": "h5-glossario-de-tokens"
+        },
+        {
+          "heading": "H.6 QA testing note — render NAO-vazio por estado",
+          "anchor": "h6-qa-testing-note-render-nao-vazio-por-estado"
+        },
+        {
+          "heading": "Cross-links",
+          "anchor": "cross-links"
+        }
+      ]
+    },
+    {
+      "file": "appendix-i-merchant-leasing-api.md",
+      "path": "docs/business-rules/appendix-i-merchant-leasing-api.md",
+      "title": "Apendice I: API de Integracao do Merchant (UOWN Leasing Full API)",
+      "domain": "business-rules",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-23",
+      "covers": [
+        "integration-api",
+        "settlement",
+        "additional-lease",
+        "fraud-vendors",
+        "enums",
+        "webhooks"
+      ],
+      "sources": [
+        "external-doc: https://documenter.getpostman.com/view/13272666/2sAYX9o1C6",
+        {
+          "type": "code",
+          "value": "src/api/clients"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "UOwn Leasing - SVC Platform",
+          "anchor": "uown-leasing---svc-platform"
+        },
+        {
+          "heading": "I.1 Os dois fluxos de aplicacao",
+          "anchor": "i1-os-dois-fluxos-de-aplicacao"
+        },
+        {
+          "heading": "I.2 Autenticacao",
+          "anchor": "i2-autenticacao"
+        },
+        {
+          "heading": "I.3 `sendApplication` — campos",
+          "anchor": "i3-sendapplication-campos"
+        },
+        {
+          "heading": "Campos requeridos (selecao chave — formatos)",
+          "anchor": "campos-requeridos-selecao-chave-formatos"
+        },
+        {
+          "heading": "Campos opcionais relevantes (formatos)",
+          "anchor": "campos-opcionais-relevantes-formatos"
+        },
+        {
+          "heading": "Estrutura `lineItem` (cart embutido)",
+          "anchor": "estrutura-lineitem-cart-embutido"
+        },
+        {
+          "heading": "I.4 `sendInvoice` — operacoes via `orderType`",
+          "anchor": "i4-sendinvoice-operacoes-via-ordertype"
+        },
+        {
+          "heading": "I.5 `getApplicationStatus` — response + enums",
+          "anchor": "i5-getapplicationstatus-response-enums"
+        },
+        {
+          "heading": "I.6 `settleApplication` — funding",
+          "anchor": "i6-settleapplication-funding"
+        },
+        {
+          "heading": "I.7 `addLease` — lease adicional",
+          "anchor": "i7-addlease-lease-adicional"
+        },
+        {
+          "heading": "I.7.1 ⚠ Regras de sandbox — CAVEAT VOLATILE",
+          "anchor": "i71-regras-de-sandbox-caveat-volatile"
+        },
+        {
+          "heading": "I.8 Notificacoes de finalizacao + SEON",
+          "anchor": "i8-notificacoes-de-finalizacao-seon"
+        },
+        {
+          "heading": "Cross-links",
+          "anchor": "cross-links"
         }
       ]
     }

@@ -9,10 +9,19 @@
  *     As of 2026-06-17 the live qa2 map has GowSign templates for AL, CA, FL, GA, LA, NC, NY,
  *     OH, PA (see docs/knowledge-base/16m-lease-and-gowsign-signwell-routing-qa2.md). Only the
  *     CA, AL and TX rows below have been re-verified against the live DB (2026-06-18). The
- *     remaining states (FL/GA/LA/NC/PA still marked SIGNWELL here) are UNVERIFIED and
+ *     remaining states (FL/GA/NC/PA still marked SIGNWELL here) are UNVERIFIED and
  *     likely stale — re-confirm with getGowSignTemplatesForState() before trusting them.
  *     NY confirmed GOWSIGN 2026-06-18 (lead 16651, template NY_2025_SAC 13m).
  *     OH: 13m=SIGNWELL (no template), 16m=GOWSIGN via Kornerstone (OH_2025_16_MONTHS).
+ *     LA: [confirmed] live stg 2026-06-23 (read-only + API) — stg HAS GowSign LA templates
+ *     LA_2025_SAC (pk 27, 13m) + LA_2025_SAC_16_MONTHS (pk 28, 16m), client_type=null. LA-16m
+ *     is reachable via an ONLINE Kornerstone merchant (KS10150 "Paramount Jewelers", valid_states
+ *     incl. LA) + customer state=LA + bankData → ABB EligibleTerms [16,13], 16m planId=WK16,
+ *     routes GowSign LA_2025_SAC_16_MONTHS at CONTRACT_CREATED (lead 7218072, shortCode 6fX8HLUp).
+ *     The TireAgent+GDS (SSN 100000053) route is anchored to a CA profile in stg → ADDRESS_MISMATCH
+ *     if sent with LA; use the Kornerstone (fresh-profile/ABB) route for LA-16m in stg.
+ *     The row below still reads SIGNWELL for the default/TerraceFinance path — routing logic
+ *     unchanged; re-list with getGowSignTemplatesForState() (table uown_gow_sign_template).
  *
  * Env-specific overrides (PROVIDER_ENV_OVERRIDES):
  *   - In stg the GoSign template for CA is NOT yet deployed (2026-04-29).
@@ -199,6 +208,12 @@ export const STATE_MATRIX: readonly StateMatrixRow[] = [
   {
     state: 'LA',
     allowed: true,
+    // SIGNWELL applies to this default TerraceFinance/Mollie path (no GowSign on that merchant route).
+    // NB: a GowSign LA template DOES exist — [confirmed] live stg 2026-06-23: LA_2025_SAC (pk27,13m) +
+    // LA_2025_SAC_16_MONTHS (pk28,16m), client_type=null. LA-16m → GOWSIGN when driven through an
+    // ONLINE Kornerstone merchant (KS10150, state=LA, +bankData; lead 7218072). That is a separate
+    // fixture/route, not this TerraceFinance row — left SIGNWELL for the default path. Re-list via
+    // getGowSignTemplatesForState() (table uown_gow_sign_template) before asserting.
     expectedProvider: 'SIGNWELL',
     lessor: 'Mollie, LLC, dba Uown',
     validMerchant: 'TerraceFinance',

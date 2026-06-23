@@ -3,13 +3,15 @@ title: "Apendice C: Tabelas de Banco Importantes"
 domain: business-rules
 status: stable
 volatility: volatile
-last_verified: 2026-06-18
+last_verified: 2026-06-23
 sources:
   - db: uown_los_lead
   - db: uown_sv_account
   - db: uown_scheduled_task
+  - db: uown_right_foot_balance_check
+  - db: uown_customer_journey
   - env: qa2
-covers: [tabelas, schema, postgres, indexes, troubleshooting, merchant-snapshot]
+covers: [tabelas, schema, postgres, indexes, troubleshooting, merchant-snapshot, rightfoot, customer-journey]
 ---
 
 # Apendice C: Tabelas de Banco Importantes
@@ -40,6 +42,10 @@ Tabelas PostgreSQL mais importantes para verificacao e troubleshooting.
 | `uown_frequency_mods` | Mudancas de frequencia | Auditoria de mudancas |
 | `uown_due_date_moves` | Movimentacoes de due date | Auditoria de ajustes |
 | `uown_sv_payment_arrangement` | Arranjos de pagamento (Task #446) | Verificar status (NOT_STARTED/IN_PROGRESS/SUCCESS/FAILED), tipo (NORMAL/SETTLEMENT), FK com transacoes CC/ACH |
+| `uown_right_foot_balance_check` | Resultado de saldo bancario RightFoot (R1.53.0) | Decide se o rerun ACH e criado (`status=SUCCESS` + saldo); ver secao RightFoot abaixo |
+| `uown_right_foot_batch` | Auditoria de batch/webhook RightFoot (R1.53.0) | Verificar `status`, `webhook_payload`, `batch_complete_event_fired` |
+| `uown_right_foot_outbound_api_log` | Log de chamadas externas RightFoot (R1.53.0) | Troubleshooting de integracao |
+| `uown_customer_journey` / `uown_customer_session` / `uown_customer_event` | Telemetria do funil de originacao (R1.53.0, origination#1308) | Analise de drop-off/friccao; ver secao Customer Journey abaixo |
 | `qrtz_*` | Quartz scheduler | Estado dos jobs agendados |
 
 ---
@@ -201,20 +207,64 @@ ORDER BY row_created_timestamp DESC;
 
 ## Merchant Settings Snapshot (R1.53.0 — Flyway 20260609155406)
 
-Tabelas criadas pela release 1.53.0 (deploy qa2 2026-06-15) para preservar a configuracao do merchant no momento da aprovacao UW. Garante que mudancas posteriores no merchant nao afetam contas ja criadas.
+Tabelas criadas pela release 1.53.0 (deploy qa2 2026-06-15) para preservar a configuracao de underwriting do merchant no momento da aprovacao. Garante que mudancas posteriores no merchant nao afetam leads/contas ja aprovados.
 
-| Tabela | Propósito |
-|--------|-----------|
-| `uown_los_lead_merchant_settings_snapshot` | Snapshot das configuracoes do merchant gravado no momento de `UW_APPROVED` (LOS) |
-| `uown_sv_account_merchant_settings_snapshot` | Snapshot herdado do lead, gravado na criacao da conta SVC (Servicing) |
+| Tabela | Propósito | Chave unica |
+|--------|-----------|-------------|
+| `uown_los_lead_merchant_settings_snapshot` | Snapshot gravado na aprovacao UW do lead (LOS) | `lead_pk` UNIQUE |
+| `uown_sv_account_merchant_settings_snapshot` | Snapshot herdado do lead, gravado na criacao da conta (SVC) | `account_pk` UNIQUE |
 
-**Ciclo de vida:**
-- Snapshot LOS criado quando `lead_status` transiciona para `UW_APPROVED`
-- Snapshot SVC herdado diretamente do lead — NAO consulta o merchant live no momento do funding
-- Leads/contas anteriores a R1.53.0 (pre-2026-06-15) NAO possuem snapshot (Path A para testes de ausencia)
-- Mudancas de config do merchant apos UW_APPROVED NAO retroagem para o snapshot existente
+**Colunas de negocio (ambas, confirmadas no DDL):** `merchant_pk`, `program_pk` (nullable), `epo5` BOOLEAN (EPO 5%), `epo10` BOOLEAN (EPO 10%), `uw_pipeline` VARCHAR(10) (valores `GDS` / `ABBR` / `TAKTILE`), `fraud_threshold` INTEGER. A tabela de account adiciona `lead_pk`. (+ audit: `tenant_id`, `web_user_id`, `agent`, `row_created/updated_timestamp`.)
 
-**Verificar DDL completo:** `\d uown_los_lead_merchant_settings_snapshot` e `\d uown_sv_account_merchant_settings_snapshot` (colunas exatas dependem da implementacao — verificar via pg no env alvo).
+**Ciclo de vida (confirmado em codigo R1.53.0):**
+- **Snapshot LOS (lead):** escrito por `MerchantSettingsSnapshotListener` em **nova transacao, AFTER_COMMIT**, ao receber `ApplicationApprovedEvent` — publicado por `ApplicationProcessor` apenas quando `isUwApproved` (status `UW_APPROVED`) **E** `maxApprovalAmount > 0`. Falha do snapshot **nao** falha a aplicacao (excecao engolida).
+- **Snapshot SVC (account):** escrito inline no import LOS→SVC (`LosToSvcImportService`) **copiando os dados do snapshot do lead** — NAO reconsulta o merchant live. Se nao existir snapshot do lead, o snapshot da conta e **pulado**.
+- Ambas as escritas sao **idempotentes** (skip se ja existe linha para o `lead_pk`/`account_pk`).
+- `merchant_pk`/`program_pk` resolvidos via `findByLeadPk`; `epo5`/`epo10`/`uw_pipeline`/`fraud_threshold` vem de `MerchantInfo` (colunas GDS-config, Flyway `V20260312100000`).
+- Leads/contas anteriores a R1.53.0 (pre-2026-06-15) NAO possuem snapshot (Path A para testes de ausencia).
+
+**Fontes:** `service/MerchantSettingsSnapshotService.java`, `service/application/sendApp/listener/MerchantSettingsSnapshotListener.java`, `service/application/sendApp/ApplicationProcessor.java`, `service/LosToSvcImportService.java`, `pojo/MerchantInfo.java`. Entidades em JARs de dependencia (`los-common`/`svc-common`) — mapeamento `@Table` inferido por convencao JPA, **[HIPOTESE]**.
+
+---
+
+## Scores de Underwriting: npm_segment & tam_score (R1.53.0 — Flyway 20260603054943)
+
+Colunas `npm_segment INTEGER` e `tam_score INTEGER` adicionadas a **`uown_los_uwdata`** (lead) E **`uown_sv_uwdata`** (account), ambas nullable.
+
+- Origem: parseadas da resposta GDS (`out.npm_segment` / `out.tam_score`) -> `UWInfo` -> `uown_los_uwdata`; copiadas para `uown_sv_uwdata` no import LOS->SVC (mesmo objeto `UWInfo`).
+- Significado: **[HIPOTESE]** — `tam_score` (modelo TireAgent, live 475 em stg per memoria), `npm_segment` (segmento de risco); pass-through de chaves JSON do GDS, svc nao filtra por client-type.
+- Detalhe: [02-originacao-pipeline.md §40](02-originacao-pipeline.md).
+
+---
+
+## RightFoot — Verificacao de Saldo ACH (R1.53.0 — Flyway 20260612102430 / 20260616122043 / 20260619131000)
+
+| Tabela | Propósito | Colunas-chave |
+|--------|-----------|---------------|
+| `uown_right_foot_balance_check` | 1 linha por request de balance check | `authorizer_unique_id` UNIQUE (`RFBC-{accountPk}-{snowflake}`), `account_pk`, `batch_id`, `routing_number`, `account_number`, `requested_amount`, `balance`, `status`, `failure_reason`, `process_type` |
+| `uown_right_foot_batch` | Audit do webhook/batch | `batch_id`, `status`, `webhook_payload`, `errors`, `process_type`, `batch_complete_event_fired` |
+| `uown_right_foot_outbound_api_log` | Log de chamadas de saida | `json_api_endpoint`, `request_url`, `http_method`, `request/response_body`, `http_status`, `stack_trace` |
+
+- `uown_sv_achpayment.right_foot_balance_check_pk` (BIGINT) — FK do ACH criado para o balance check aprovado.
+- `status` confirmado: `SUCCESS` (gate). Demais valores na lib `com.uownleasing:rightfoot` — **[HIPOTESE]**.
+- Cleanup: `CleanupService.deleteOldEntries` purga linhas antigas. Regra completa: [09-integracoes-externas.md §48](09-integracoes-externas.md).
+
+---
+
+## Customer Journey / Session / Event — Analytics de Funil (R1.53.0 — Flyway 20260611054944/45/46)
+
+Rastreamento do funil de aplicacao do cliente (abandono, refreshes, timing por pagina). Alimentado pelo **frontend** (Website/origination, iframe-embeddable) via `POST /api/journeys/...`. `journey_id` = `leadPk`.
+
+| Tabela | Propósito | Colunas-chave |
+|--------|-----------|---------------|
+| `uown_customer_journey` | 1 por jornada | `journey_id` UNIQUE, `status`, `current_step`, `total_sessions`, `total_refreshes`, `total_submit_attempts`, `started_at`, `completed_at`, `last_activity_at`, `source`, `application_id`, `merchant_id`, `shortcode` |
+| `uown_customer_session` | N por jornada | `session_id` UNIQUE, `journey_id`, `status`, `browser`, `device_type`, `operating_system`, `iframe_ind`, `embedder_origin`, `refresh_count` |
+| `uown_customer_event` | N por sessao | `event_id` UNIQUE, `session_id`, `journey_id`, `event_type`, `page_name`, `api_duration_ms`, `render_duration_ms`, `page_duration_ms`, `error_code`, `error_message` |
+
+- **JourneyStatus:** `IN_PROGRESS` -> `COMPLETED` (evento `REDIRECT_COMPLETED`); `ABANDONED` declarado mas **nunca setado** em codigo ([OBSERVACAO]).
+- **event_type** com branch: `PAGE_REFRESHED` (incrementa refreshes), `REDIRECT_COMPLETED` (completa); demais = texto livre. **Session status** (texto livre): `ACTIVE`/`ENDED`.
+- **[OBSERVACAO]** `total_submit_attempts`, `application_id`, `merchant_id`, `shortcode`, `source` declarados mas nunca populados em codigo svc R1.53.0; possivel no-op de persistencia em `CustomerJourneyService.complete()`. Confirmar com produto.
+- Fontes: pacote `svc/analytics/`. Detalhe: [02-originacao-pipeline.md](02-originacao-pipeline.md) · [appendix-d D.37](appendix-d-constantes-enums.md).
 
 ---
 

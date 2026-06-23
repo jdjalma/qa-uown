@@ -119,24 +119,32 @@ export class ServicingBasePage extends BasePage {
     const bankOnFile = this.page.locator("text=Use existing bank information");
     let usedExisting = false;
     if (await bankOnFile.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      if (await useExistingRadio.isVisible({ timeout: 1_000 }).catch(() => false)) {
+      // The "use existing bank" radio can be present but DISABLED when there is no
+      // reusable bank account on file (a fresh account — the contract-phase bank
+      // info isn't persisted as a selectable servicing bank). Checking a disabled
+      // radio just times out, so only take the existing-bank path when the radio
+      // is actually enabled; otherwise fall through to the new-bank fields below.
+      const radioVisible = await useExistingRadio.isVisible({ timeout: 1_000 }).catch(() => false);
+      const radioEnabled = radioVisible && await useExistingRadio.isEnabled().catch(() => false);
+      if (radioEnabled) {
         await useExistingRadio.check();
-      }
-      const accountSelect = this.page.locator(SELECTORS.existingBankAccountSelect).first();
-      const selectVisible = await accountSelect.waitFor({ state: 'visible', timeout: 5_000 }).then(() => true).catch(() => false);
-      if (selectVisible) {
-        const optionValues = await accountSelect.locator('option').evaluateAll(opts =>
-          opts.map(o => (o as HTMLOptionElement).value).filter(v => v !== ''),
-        );
-        if (optionValues.length > 0) {
-          await accountSelect.selectOption(optionValues[0]);
-          usedExisting = true;
+        const accountSelect = this.page.locator(SELECTORS.existingBankAccountSelect).first();
+        const selectVisible = await accountSelect.waitFor({ state: 'visible', timeout: 5_000 }).then(() => true).catch(() => false);
+        if (selectVisible) {
+          const optionValues = await accountSelect.locator('option').evaluateAll(opts =>
+            opts.map(o => (o as HTMLOptionElement).value).filter(v => v !== ''),
+          );
+          if (optionValues.length > 0) {
+            await accountSelect.selectOption(optionValues[0]);
+            usedExisting = true;
+          }
         }
       }
     }
     if (!usedExisting) {
       const useOneTimeRadio = this.page.getByRole('radio', { name: /one-time/i });
-      if (await useOneTimeRadio.isVisible({ timeout: 1_000 }).catch(() => false)) {
+      const oneTimeVisible = await useOneTimeRadio.isVisible({ timeout: 1_000 }).catch(() => false);
+      if (oneTimeVisible && await useOneTimeRadio.isEnabled().catch(() => false)) {
         await useOneTimeRadio.check();
       }
       await this.bankInstitute.fill(bankDetails.institute || 'Test Bank');

@@ -374,6 +374,13 @@ test.describe(`Unified Flow - ${testData.state}/${testData.merchant}`, { tag: te
     });
 
     await test.step('Test merchant portal quick search methods', async () => {
+      // The stg origination session is short-lived (~60-90s) — shorter than this
+      // 5-search loop, so the session dies mid-loop and the SPA drops to "Merchant
+      // Login" (reproducible: a single pre-loop re-login only carried search #1).
+      // Refresh the session before EACH search via the reauth hook: unconditional
+      // re-login (the page.goto reload wipes the stale in-memory JWT, surfacing the
+      // login form → fresh token) + re-navigate to land authenticated with the
+      // navbar present. Same proven pattern as the post-e-sign re-login (Phase 3).
       const searchPage = new SearchPage(page);
       await searchPage.testQuickSearchMethods({
         leadPk: ctx.leadPk,
@@ -381,7 +388,33 @@ test.describe(`Unified Flow - ${testData.state}/${testData.merchant}`, { tag: te
         email: applicant.email,
         firstName: applicant.firstName,
         lastName: applicant.lastName,
+      }, async () => {
+        await loginToPortalWithOptions(page, env.originationUrl, env);
+        await navigateToOriginationCustomer(page, ctx.leadPk);
       });
+    });
+
+    await test.step('Capture servicing account number from origination summary', async () => {
+      // The servicing customer lookup needs the real account number. A single
+      // flaky read in Phase 4 leaves accountPk empty when the summary's account
+      // link renders late, and the servicing quick-search cannot resolve the lead
+      // by its origination UUID (it lands on /search → no "Add Card" button).
+      // Re-establish a fresh session and retry reading the summary link until it
+      // yields a value distinct from the leadPk (getAccountNumberFromSummary
+      // falls back to the leadPk-from-URL when the link is absent).
+      if (ctx.accountPk) return;
+      for (let attempt = 1; attempt <= 3 && !ctx.accountPk; attempt++) {
+        await loginToPortalWithOptions(page, env.originationUrl, env);
+        const cp = await navigateToOriginationCustomer(page, ctx.leadPk);
+        await cp.waitForSpinner();
+        const acct = await cp.getAccountNumberFromSummary();
+        if (acct && acct !== ctx.leadPk) ctx.accountPk = acct;
+        else await sleep(2_000);
+      }
+      console.log(`[AccountPk] After reauth+retry: "${ctx.accountPk}"`);
+      if (ctx.accountPk) {
+        test.info().annotations.push({ type: 'accountPk', description: ctx.accountPk });
+      }
     });
 
     // ═══════════════════════════════════════════════════════════════

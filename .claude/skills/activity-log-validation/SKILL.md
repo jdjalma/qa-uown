@@ -164,6 +164,20 @@ expect(settleNote).toBeDefined;
 expect(settleNote.notes).not.toContain('termnull'); // confirma NPD não nulo
 ```
 
+## Sticky cancel/refund — log SYSTEM_GENERATED em `uown_sv_activity_log` (R1.53.0)
+
+Diferente dos logs human/UI (`DUE_DATE_MOVES`, `created_by`=usuário), as ações Sticky do R1.53.0 gravam logs **gerados pelo sistema**. Ao assertir, NÃO espere `created_by` humano nem `lead_pk`:
+
+| Campo | Valor (sticky cancel/refund) |
+|-------|------------------------------|
+| `log_type` | `INTERNAL` |
+| `created_by` | `SYSTEM` |
+| `creation_source` | `SYSTEM_GENERATED` |
+| `lead_pk` | `null` (log é account-level) |
+| `notes` (ex.) | `"Sticky recovery marked CANCELED locally — Sticky rejected cancel: <erro>"`; refund grava `"Sticky refund submitted…"` (sync) + `"Sticky refund confirmed via webhook…"` |
+
+Fonte: KB `559-sticky-recover-cancel-sweep.md` (pk10961637) + `sticky-payment-refund.md`. Regra de produto: [[payment-flows]] · `05-pagamentos.md §53b`.
+
 ## Gaps conhecidos (ações que NÃO geram log atualmente)
 
 Catálogo de actions que confirmadamente **não** produzem nota — abrir ticket de observabilidade se o teste depender:

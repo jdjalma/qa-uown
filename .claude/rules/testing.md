@@ -8,11 +8,13 @@ paths:
 ## Naming Convention (task tests from GitLab issues)
 
 ```
-Pattern:   {milestone}_{camelCaseTitle}_{taskNumber}
-Example:   R1.49.1_separateShortCodeInANewEntity_469
+Pattern:   {milestone}_{camelCaseTitle}
+Example:   R1.49.1_separateShortCodeInANewEntity
 Location:  docs/taskTestingUown/{testName}/{testName}.spec.ts
 Project:   task-testing-origination  OR  task-testing-servicing  (tag-selected — see below)
 ```
+
+> Test/dir names carry the milestone + a descriptive camelCase title only — **do not append the GitLab task number** (task IDs are not committed). Track the source task in your tracker, not in the filename.
 
 Non-task tests: `tests/e2e/{portal}/` or `tests/api/`
 
@@ -118,7 +120,7 @@ Antes de marcar um teste como pronto:
 >
 > **Estados com template GowSign em qa2 (28-04-2026):** somente **CA**. Todos os outros caem no fallback Signwell.
 >
-> **🔄 SUPERADO (2026-06-21, #1317):** templates GowSign foram distribuídos para MAIS estados desde abril. Live-proven: TerraceFinance (`OL90202-0001`, ONLINE) com **customer state NY** assina via **GowSign** (`uown_esign_document.client='GOWSIGN'`, status SIGNED via `[EsignRedirectService][updateSignStatus]` + `[ContractService][isLeaseOrLeaseModSigned]`), NÃO o fallback Signwell. → **NÃO assumir `state != 'CA' → Signwell`**; verificar `uown_esign_document.client` real para o estado/env alvo antes de escolher merchant para cobertura GowSign vs Signwell. Nota: na cerimônia GowSign, `signGowSignInFrame` loga `completedMessage=false` (postMessage "completed" não capturado) mas o backend AINDA transiciona para SIGNED via redirect — **não é falha**. Ver [[volatile-knowledge-registry]] (GowSign state-routing drift).
+> **🔄 SUPERADO (2026-06-21):** templates GowSign foram distribuídos para MAIS estados desde abril. Live-proven: TerraceFinance (`OL90202-0001`, ONLINE) com **customer state NY** assina via **GowSign** (`uown_esign_document.client='GOWSIGN'`, status SIGNED via `[EsignRedirectService][updateSignStatus]` + `[ContractService][isLeaseOrLeaseModSigned]`), NÃO o fallback Signwell. → **NÃO assumir `state != 'CA' → Signwell`**; verificar `uown_esign_document.client` real para o estado/env alvo antes de escolher merchant para cobertura GowSign vs Signwell. Nota: na cerimônia GowSign, `signGowSignInFrame` loga `completedMessage=false` (postMessage "completed" não capturado) mas o backend AINDA transiciona para SIGNED via redirect — **não é falha**. Ver [[volatile-knowledge-registry]] (GowSign state-routing drift).
 >
 > **⚠️ INSTORE merchant exception (descoberto 2026-05-06:** para merchants com `merchant_type='INSTORE'`, o backend usa `merchant.state` (estado da loja física) ao invés do customer state para o lookup de template. Verificado em `EsignService.loadLeadEsignContext()` linhas 194-197 (svc R1.51.1):
 >

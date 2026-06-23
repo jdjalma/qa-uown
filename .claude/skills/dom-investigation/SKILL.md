@@ -60,7 +60,10 @@ browser_navigate → URL alvo
  browser_snapshot → identificar campos de login
  browser_fill_form → preencher username/password do .env
  browser_click → LOG IN
+ → CAPTURAR o status do XHR POST /login (browser_network_requests)
 ```
+
+> **Heurística de auth (ANTES de culpar o selector):** se a página caiu numa tela de login (ex. "Merchant Login", title `Uown | Merchant`) e o input que você procura "não existe", a causa provável é **autenticação rejeitada, não DOM**. Capture o status do `POST origination-{env}/login`: **423 = conta de agente LOCKED** (env issue) — NÃO é mismatch de selector, e aumentar timeout/retry não resolve. Cross-check logando com uma 2ª conta de agente (`supervisor` → 200 no mesmo host confirma que o portal está saudável e só a conta está locked). Unblock = desbloquear a conta no agent auth service + verificar a senha do `.env` (stale re-locka). O lock NÃO está no svc DB. Origem: F-001 stg 2026-06-22. Cross-link: [[application-lifecycle]] #137, [[volatile-knowledge-registry]] §6.
 
 ### Passo 2 — Definir viewport por portal
 

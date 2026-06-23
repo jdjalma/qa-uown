@@ -1,5 +1,5 @@
 ---
-title: Sticky Payment Refund (svc#552)
+title: Sticky Payment Refund
 domain: knowledge-base
 status: stable
 volatility: volatile
@@ -8,18 +8,18 @@ sources:
   - env: sandbox (happy-path executed live)
   - account: 6168 / payment 2190284 / cc 69253 / sticky 31 — REVERSED+REFUNDED live 2026-06-21
   - env: qa2 (modal surface on account 9549; schema present, uown_sticky empty)
-  - code: uown/backend/svc!1465 RefundPaymentService.java + StickyRefundPaymentService.java + StickyRefundCompletionService.java
-  - code: uown/frontend/servicing!696 reverse-payment-modal/index.tsx + utils/data-table-columns.tsx
-  - code: uown/backend/sticky.io!8 RefundService + StickyRestClient.postRefund + StickyRecoveryStatus(REFUND_SUBMITTED/REFUND_FAILED/REFUNDED)
+  - gitlab: uown/backend/svc!1465 RefundPaymentService.java + StickyRefundPaymentService.java + StickyRefundCompletionService.java
+  - gitlab: uown/frontend/servicing!696 reverse-payment-modal/index.tsx + utils/data-table-columns.tsx
+  - gitlab: uown/backend/sticky.io!8 RefundService + StickyRestClient.postRefund + StickyRecoveryStatus(REFUND_SUBMITTED/REFUND_FAILED/REFUNDED)
   - db: sandbox uown_sticky (RECOVERED/REFUNDED rows) · uown_sticky_outbound_log.source=STICKY_REFUND · uown_sv_payment STICKY
 covers: [sticky-refund, reverse-payment, payment-history, sticky-recovery]
-promoted_to: []
+promoted_to: [05-pagamentos]
 ---
 
-# Sticky Payment Refund (svc#552)
+# Sticky Payment Refund
 
-> Charter: Explore the Servicing Reverse/Refund flow with Playwright MCP + the #552 merged code to discover how a Sticky-recovered payment is refunded, and which business rules it touches.
-> Origin: GitLab task [uown/backend/svc#552](https://gitlab.com/uown/backend/svc/-/work_items/552) — milestone RU06.26.1.53.0 (release 2026-06-23, dev2/qa2). · Overall confidence: **high** (full happy-path executed live in sandbox 2026-06-21 — see Confirmed Run).
+> Charter: Explore the Servicing Reverse/Refund flow with Playwright MCP + the merged code to discover how a Sticky-recovered payment is refunded, and which business rules it touches.
+> Origin: GitLab task in uown/backend/svc — milestone RU06.26.1.53.0 (release 2026-06-23, dev2/qa2). · Overall confidence: **high** (full happy-path executed live in sandbox 2026-06-21 — see Confirmed Run).
 
 ## Confirmed Run — happy path executed live (sandbox, 2026-06-21)
 
@@ -38,7 +38,7 @@ Two-phase status: the synchronous refund only reaches **REFUND_SUBMITTED** (Stic
 
 ## Purpose
 
-Lets a Servicing agent **refund a payment that was captured by Sticky.io** (the dunning/recovery vendor, svc#485). A recovered payment's money sits on **Sticky's gateway**, not UOWN's native gateway (Channel Payments), so the normal refund path (`RefundPaymentService` → ACH/CC) cannot return it. #552 adds a Sticky-specific refund branch that calls **Sticky's Refund API** (`POST processing-hub/v1/api/payment/refund`). Actor: Servicing agent with `RefundPayments:modify` permission.
+Lets a Servicing agent **refund a payment that was captured by Sticky.io** (the dunning/recovery vendor, svc#485). A recovered payment's money sits on **Sticky's gateway**, not UOWN's native gateway (Channel Payments), so the normal refund path (`RefundPaymentService` → ACH/CC) cannot return it. This feature adds a Sticky-specific refund branch that calls **Sticky's Refund API** (`POST processing-hub/v1/api/payment/refund`). Actor: Servicing agent with `RefundPayments:modify` permission.
 
 ## Available Operations
 
@@ -102,8 +102,8 @@ State transitions:
 
 1. **Sandbox DB tunnel** — `127.0.0.1:**5445**` (kubectl port-forward; the `.env` `UOWN_DB_URL_SBX` says 5446 but the live tunnel is **5445** — stale .env). Don't edit `.env` (security rule); override at runtime: `export DB_CONNECTION_STRING="postgresql://${UOWN_DB_USER_SBX}:${UOWN_DB_PASS_SBX}@127.0.0.1:5445/svc"` (precedence over resolve, env.ts:96). Ask the user to bring up the tunnel.
 2. **Env/URLs** — Servicing sandbox `https://svc-website-sandbox.uownleasing.com` (portal is internet-reachable even with the DB tunnel down). Login = role `manager` (`DEFAULT_MANAGER_*`), email/username + password, **no OTP**. Viewport `1440×900` (regra #15).
-3. **Find a refund candidate (read-only, no manufacturing needed)** — sandbox has real RECOVERED sessions. `export DB_CONNECTION_STRING=…5445…; npx tsx src/scripts/_probe_552_refund.ts sandbox` lists candidates; `_probe_552_candidate.ts sandbox <ccPk,…>` verifies a candidate is refundable (needs: `uown_sticky.recovery_status=RECOVERED` + a `uown_sticky_retry_attempt` with `retry_status=APPROVED`, `amount` cents, `gateway_transaction_id`; + `uown_sv_payment` STICKY/PAID whose `cc_pk`=the sticky's `cc_transaction_pk`). Capture baseline with `_probe_552_verify.ts sandbox <acct> <cc> <pay> <stickyPk>`. Reusing an existing RECOVERED record is a **justified test-data exception** (a RECOVERED session is not creatable via automation — #485 never produced one organically).
-4. **Drive the refund** — `…/payment-history/{accountPk}` → STICKY/PAID row → `fa-arrow-rotate-left` icon → modal (STICKY ⇒ only "Fully Refund", no fee checkbox) → required comment → SAVE. Verify with `_probe_552_verify.ts` (outbound_log `STICKY_REFUND`, sticky `REFUNDED`, payment `REVERSED`, two activity-log lines). The webhook completion lands ~secs later.
+3. **Find a refund candidate (read-only, no manufacturing needed)** — sandbox has real RECOVERED sessions. `export DB_CONNECTION_STRING=…5445…; npx tsx src/scripts/_probe_refund.ts sandbox` lists candidates; `_probe_candidate.ts sandbox <ccPk,…>` verifies a candidate is refundable (needs: `uown_sticky.recovery_status=RECOVERED` + a `uown_sticky_retry_attempt` with `retry_status=APPROVED`, `amount` cents, `gateway_transaction_id`; + `uown_sv_payment` STICKY/PAID whose `cc_pk`=the sticky's `cc_transaction_pk`). Capture baseline with `_probe_verify.ts sandbox <acct> <cc> <pay> <stickyPk>`. Reusing an existing RECOVERED record is a **justified test-data exception** (a RECOVERED session is not creatable via automation — #485 never produced one organically).
+4. **Drive the refund** — `…/payment-history/{accountPk}` → STICKY/PAID row → `fa-arrow-rotate-left` icon → modal (STICKY ⇒ only "Fully Refund", no fee checkbox) → required comment → SAVE. Verify with `_probe_verify.ts` (outbound_log `STICKY_REFUND`, sticky `REFUNDED`, payment `REVERSED`, two activity-log lines). The webhook completion lands ~secs later.
 5. **MCP click gotcha** — sandbox Servicing throws persistent Toastify toasts + animated progressbars that make MCP `browser_click` fail the "stable" actionability check (5s timeout). Workaround that worked: remove toasts via `browser_evaluate` (`.Toastify__toast*`), and for the row icon / SAVE submit, dispatch the click via `browser_evaluate` (`el.dispatchEvent(new MouseEvent('click',{bubbles:true}))`). Login: submit with Enter (`browser_type … submit:true`) instead of clicking LOG IN.
 
 ## Gaps / To Investigate

@@ -3,12 +3,14 @@ title: "Apendice D: Constantes de Negocio e Enumeracoes"
 domain: business-rules
 status: stable
 volatility: volatile
-last_verified: 2026-06-18
+last_verified: 2026-06-23
 sources:
   - code: src/types/enums.ts#FundingQueueStatus
   - code: src/types/enums.ts#LeadStatus
+  - svc-source: enumeration/ClientType.java
+  - svc-source: analytics/enumeration/JourneyStatus.java
   - env: qa2
-covers: [enums, constantes, status, funding-queue, lead-status, approval-status]
+covers: [enums, constantes, status, funding-queue, lead-status, approval-status, magwitch, rightfoot, customer-journey]
 ---
 
 # Apendice D: Constantes de Negocio e Enumeracoes
@@ -129,6 +131,9 @@ Todos os enums, constantes e valores de referencia do sistema.
 | `SUCCESS` | Verificacao comportamental concluida |
 | `PROFILE_NOT_FOUND` | Perfil nao encontrado (JS desabilitado) |
 | `ERROR` | Erro na verificacao |
+| `NOT_ENOUGH_INTERACTION_DATA` | **(R1.53.0)** Dados comportamentais insuficientes — tratado como **pass-through nao-bloqueante** (`success=true`); fraude segue por outros sinais. Toggle de simulacao: `...NeuroIdVerificationService.simulate.not.enough.interaction.data` (default false) |
+
+> **[ATENCAO — drift]** O guard "prevent repeated NeuroID calls" (`preventRepeatedNeuroIdCallsSigningRetry`) **NAO esta merge na R1.53.0** (branch `R1.53.0_neuro_id`, revertido). Detalhe em [02-originacao-pipeline.md §5.5](02-originacao-pipeline.md).
 
 ### D.12 Status de Settlement (SettlementTransactionStatus)
 
@@ -299,7 +304,7 @@ Classifica os tipos de documentos que podem ser anexados a um lead ou conta no p
 
 ### D.27 Tipos de Cliente Integrados (ClientType)
 
-O sistema suporta 34 tipos de clientes/merchants, cada um com campanhas e configuracoes proprias:
+O sistema suporta 35 tipos de clientes/merchants, cada um com campanhas e configuracoes proprias (fonte: `svc ClientType.java`):
 
 | ClientType | Nome | Segmento |
 |------------|------|----------|
@@ -336,7 +341,10 @@ O sistema suporta 34 tipos de clientes/merchants, cada um com campanhas e config
 | `CONECTA_MOBILE` | Conecta Mobile | Telecom |
 | `KORNERSTONE` | Kornerstone | Senior Living |
 | `BIG_HORN_GOLF` | Big Horn Golf | Esporte/Lazer |
+| `MAGWITCH` | Magwitch | A confirmar (novo em R1.53.0) |
 | `OTHER` | Outros | Catch-all |
+
+> **`MAGWITCH` (R1.53.0, svc#566)** — adicionado em `ClientType.java` imediatamente antes de `OTHER`. Comportamento 100% genérico: usa `PayTomorrowClient` (sem subclasse própria), campanha peak/off-peak **142** (faixa "Core Furniture", sem distinção peak/off-peak), classificação de risco `DEFAULT`, **roda underwriting normalmente** (sem skip-UW), sem roteamento especial de programa (13m/16m), sem cap de aprovação ou provider de assinatura próprios. Difere dos demais brands genéricos (EPC_VIP, FORM_PIPER, FLEXX_BUY, etc.) apenas pelos campos de identidade: `username=magwitch`, `apiKey=U0wn_Magwitch_K7pN4x`, `clientUrl=https://magwitch.com/`. Segmento de negócio ainda não definido no código — confirmar com produto.
 
 ---
 
@@ -431,6 +439,49 @@ Tipos de taxa que podem ser adicionados manualmente por agentes no portal Servic
 - Valor > $0
 - Comentario obrigatorio (max 500 caracteres)
 - `baseAmount = totalAmount = feeAmount` (sem calculo de imposto adicional)
+
+---
+
+### D.35 Tipo de Processo ACH (ACHProcessType)
+
+Enum em `common` (`enumeration/ACHProcessType.java`). Indica a origem/natureza de cada linha `uown_sv_achpayment`.
+
+| Valor | Significado |
+|-------|-------------|
+| `SCHEDULED` | Debito agendado regular do cronograma |
+| `RERUN` | Retentativa de ACH retornado/revertido (sweep semanal) |
+| `RERUN_NSF` | Retentativa especifica de NSF |
+| `REQUEST` | ACH solicitado pontualmente (inclui arranjos SETTLEMENT) |
+| `REFUND` | Estorno/reembolso ACH |
+| `DAILY_RERUN_DELINQUENT` | **(R1.53.0, svc#540)** ACH criado pelo fluxo RightFoot apos confirmacao de saldo bancario suficiente -- ver secao 48 de [09-integracoes-externas.md](09-integracoes-externas.md) |
+
+> **[OBSERVACAO]** O valor `DAILY_RERUN_DELINQUENT` vive na branch `R1.53.0` de `common` (commit `bfad466`); o checkout `master` local nao o contem.
+
+### D.36 Status do Balance Check RightFoot (R1.53.0)
+
+Coluna `uown_right_foot_balance_check.status`. Unico valor confirmado em codigo svc e o que o gate do ACH consome:
+
+| Valor | Significado |
+|-------|-------------|
+| `SUCCESS` | Saldo confirmado pelo RightFoot; habilita a criacao do ACH se `exposure + amount + $100 <= balance` |
+
+> **[HIPOTESE]** Demais valores (PENDING/FAILED/etc.) e o parser do webhook vivem na lib `com.uownleasing:rightfoot` (nao disponivel em disco). Nao assumir valores alem de `SUCCESS` sem inspecao live.
+
+### D.37 Status da Jornada do Cliente (JourneyStatus) — R1.53.0
+
+Enum `svc analytics/enumeration/JourneyStatus.java` (telemetria do funil de originacao, origination#1308). Coluna `uown_customer_journey.status`.
+
+| Valor | Significado |
+|-------|-------------|
+| `IN_PROGRESS` | Jornada aberta (estado inicial) |
+| `COMPLETED` | Cliente concluiu e foi redirecionado ao merchant (set apenas no evento `REDIRECT_COMPLETED`, idempotente) |
+| `ABANDONED` | **Declarado mas nunca atribuido por codigo svc** -- nenhum sweep/job o seta em R1.53.0 (drop-off teria de ser derivado de `last_activity_at`). **[OBSERVACAO]** |
+
+### D.38 Tipos de Evento de Customer Journey (event_type) — R1.53.0
+
+`uown_customer_event.event_type` e **VARCHAR livre** na svc -- o vocabulario (~50 valores) vive no frontend `origination` (`lib/analytics/events.ts`, mapa `EV`). A svc interpreta apenas dois server-side: `PAGE_REFRESHED` (incrementa contadores de refresh) e `REDIRECT_COMPLETED` (marca a jornada como `COMPLETED`).
+
+Grupos de eventos (frontend): page-views (`*_PAGE_VIEWED`), protection-plan (`PROTECTION_PLAN_OPTED_IN/OUT/SUBMITTED/SUBMIT_ERROR`), acoes do cliente (`ID_SCAN_*`, `SUBMIT_CLICKED`, `RETRY_CLICKED`), submit (`SUBMIT_RESPONSE_RECEIVED/ERROR`), friccao (`ERROR_DISPLAYED`, `PAGE_REFRESHED`, `RAGE_CLICK`, `LONG_RUNNING_API`), iframe (`IFRAME_LOAD_STARTED/COMPLETED/FAILED`), esign (`ESIGN_OPENED/COMPLETED/CLOSED/DECLINED/ERROR/OPEN_FAILED`), integracao merchant (`POSTMESSAGE_SENT/RECEIVED`, `REDIRECT_STARTED`, `REDIRECT_COMPLETED`).
 
 ---
 

@@ -128,6 +128,33 @@ Cross-links: application-lifecycle pitfalls #82 (Arrangement Type UI explicito),
 
 **`@blocked-by-missing-log` em paths sinteticos.** Os logs de finalizacao (`Arrangement finalized as SUCCESS`/`FAILED`) so sao emitidos pelo `PaymentArrangementACHListener` em callback REAL do processor - **nunca** pelos paths sinteticos (`recalculateAchArrangementStatus` / UPDATE + recalc), que escrevem direto na tabela do arranjo sem executar o listener Java. Em testes nesses paths: assert HARD do estado DB (status + is_active) e do log de CRIACAO ("ACH Arrangement created", organico pre-sweep); marcar o log de FINALIZACAO como `@blocked-by-missing-log` (NAO remover - documenta divida vs rule #13). Prova cruzada: o path CC SETTLEMENT sincrono REAL **gera** o log de finalizacao - confirma que o log vem da execucao backend, nao do recalc helper.
 
+## RightFoot ACH balance-check rerun (R1.53.0)
+
+Fornecedor de verificacao de saldo bancario que **gateia o rerun de ACH** para contas delinquentes (auto-pay ACH). Cadeia:
+
+| Sweep / Service | Schedule | Efeito |
+|-----------------|----------|--------|
+| `DailyAchBalanceCheckSweep` | `0 0 15 * * ?` | submete balance-checks (`process_type=DAILY_RERUN_DELINQUENT`) ao RightFoot |
+| `RerunAchBalanceCheckSweep` | `0 0 9 ? * THU` | balance-check para reruns (`process_type=RERUN`) |
+| `DailyRerunAchCreationService` | evento `RightFootBatchCompleteEvent` (AFTER_COMMIT), **nao-Quartz** | cria os ACH apos o webhook do RightFoot |
+
+ACH so e criado quando o balance check tem `status='SUCCESS'`, mesmo routing+account number, e `exposure + amount + $100 <= balance`; o ACH carrega FK `right_foot_balance_check_pk`. Guard de duplicidade: nenhum novo ACH se ja houver um in-flight. Cliente: `scheduledTask.dailyAchBalanceCheckSweep()` / `.rerunAchBalanceCheckSweep()` (constantes `SCHEDULED_TASK_NAMES`). Regra completa: `09-integracoes-externas.md §48`.
+
+## Sticky — Recovery / Cancel / Refund (R1.53.0)
+
+Motor de recovery/dunning de CC recusado (`uown_sticky.recovery_status`). Mudancas R1.53.0 (code-confirmed):
+
+- **Cancel nao-cancelavel:** `StickyRecoverCancelSweep` so cancela nao-terminais (`recovery_status NOT IN ('RECOVERED','FAILED','CANCELED')`); se o Sticky responde "Cannot cancel transaction", svc marca CANCELED **localmente** + grava log INTERNAL/SYSTEM (ver [[activity-log-validation]]).
+- **Prior attempts (svc#564):** envia historico de declines + contagem via `StickyPriorAttempts.sql`. ⚠️ **timezone**: o tempo da transacao original e resolvido como **`America/New_York`** (apesar do commit dizer "UTC") — verificar no DB antes de asserir horarios.
+- **Duplicate payment:** >1 SvPayment PAID por `ccPk` => WARN + usa o mais recente (**nao bloqueia**).
+- **Refund idempotente:** sem chave dedicada — protege via maquina de estado PAID (refund so se `STICKY`+`PAID`; reverter remove PAID → 2a tentativa rejeitada). Refund/recovery happy-path = **sandbox-only** (KB `sticky-payment-refund.md`).
+
+Regra de produto: `05-pagamentos.md §53b`.
+
+## Recibo de pagamento — Balance & "You Save" (R1.53.0)
+
+`balance` no recibo agora **inclui todas as fees** (PP/NSF/reinstatement/misc); "You Save" (`balance - payoffBeforeEPOExpiry`) so renderiza quando `> 0`. Corrige balance negativo/corrompido com fees. **ExtBrand**: logo PayNearMe email/SMS = `company.name().toLowerCase()+".png"`. Detalhe: `05-pagamentos.md §72`.
+
 ## Email Sweep validation + selection conditions (dev3 2026-06-02)
 
 Sweeps de email (`settledInFullAccountEmailSweep`, `RecurringPaymentReminderSweep`, `FirstPaymentReminderSweep`) escrevem em `uown_email_queue` e `uown_correspondence_logs`. Validados em `email-sweeps-servicing.spec.ts` (3 cenarios, 5/5 PASS).

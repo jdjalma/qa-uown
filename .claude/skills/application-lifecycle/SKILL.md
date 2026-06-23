@@ -14,7 +14,7 @@ disable-model-invocation: true
 
 > Detalhes completos dos steps: [references/canonical-sequence-detail.md](references/canonical-sequence-detail.md)
 >
-> Catalogo completo de pitfalls (#1 a #90): [references/pitfalls.md](references/pitfalls.md)
+> Catalogo completo de pitfalls (#1 a #137, indice + fatias): [references/pitfalls.md](references/pitfalls.md)
 
 ---
 
@@ -125,21 +125,22 @@ disable-model-invocation: true
 | 124 | Origination "Set to Expired" confirm clica nada — modal abre mas `changeLeadStatus` nunca dispara (lead não expira) | A ação abre o modal **"Add a Comment"** dentro de `.modal.fade.show` (`role="dialog"`). O botão de confirmar é **"Save"** (`button[type='submit']`) — NÃO "CONFIRM"/"Yes" e SEM classe `.submit-button`. Campo comment (`input[name='comment']`, placeholder "Type here...") é **OPCIONAL** (Save fica habilitado vazio), mas o texto digitado VAI para o activity log (`uown_los_activity_log.notes` = "ChangeLeadStatus requested from X to EXPIRED. Reason : {comment}"). Selector antigo (`CONFIRM`/`Yes`/`.submit-button`) casava 0 elementos; a espera de visibilidade tinha `.catch(()=>false)` → falha silenciosa, método retornava sem clicar. Fix: `setToExpiredConfirm` ancora em `button[type='submit']`+`Save`; método preenche o comment opcional e remove o swallow. **NÃO confundir** com o "Move Contract to Signed" modal (CT-02), que tem comment OBRIGATÓRIO e botão CONFIRM. (qa2 lead 16728, 2026-06-18, #1315 — `[CONFIRMADO]` via DOM live + XHR 200 + status UW_APPROVED→EXPIRED + `uown_lead_modifications.mod_type=LEAD_STATUS_CHANGE`. Ver [[selector-hardening]]) |
 | 125 | Modification Report (`/modificationReport`) filtra e a tabela volta com o set inteiro (filtro ignorado), OU a linha do lead recém-criado "não aparece" | Dois requisitos implícitos do painel de filtros: **(a)** os campos `input#agentName`, `input#from`, `input#to` são **React/Formik-controlled** — `page.fill()` é **no-op silencioso** (sem `TimeoutError`); o `onChange` nunca dispara e a busca roda com o campo vazio. Setar via native-setter (`forceReactInputValue`): prototype value setter + `input`/`change`/`blur`. Datas em `MM/DD/YYYY`. **(b)** a tabela é **rdt paginada em 10 linhas/página** — `getRowByLeadPk` DEVE caminhar as páginas (`goToNextPage` até Next desabilitar); um `getAllRows().find(...)` de página única perde silenciosamente o lead em page 2+. `filterByAgentName`/`filterByDateRange`/`getRowByLeadPk` já encapsulam ambos. (qa2 `jmendes.gow`, 2026-06-18, #1315 — `[CONFIRMADO]` via DOM live, CT-03/CT-04 PASS. Ver [[selector-hardening]] "React-controlled date/text input" + [[page-object-pattern]] catálogo `ModificationReportPage`) |
 
-> Catalogo completo com 90 pitfalls + observacoes cross-cutting: [references/pitfalls.md](references/pitfalls.md)
+> Catalogo completo (132 pitfalls, #1–#137) + observacoes cross-cutting: [references/pitfalls.md](references/pitfalls.md) — indice navegavel; conteudo fatiado em [references/pitfalls/](references/pitfalls/) (cada fatia cabe numa leitura `Read`).
 
 ---
 
 ## 6. Contribution Template
 
-Per CLAUDE.md rule #12, quando um agent descobre requisito implicito NAO documentado, e **obrigacao** adiciona-lo em [references/pitfalls.md](references/pitfalls.md) antes de fechar o pipeline.
+Per CLAUDE.md rule #12, quando um agent descobre requisito implicito NAO documentado, e **obrigacao** adiciona-lo ao catalogo (via [references/pitfalls.md](references/pitfalls.md)) antes de fechar o pipeline.
 
 ### Passo-a-passo
 
 1. Identificar sintoma exato (copy-paste da mensagem de erro)
-2. Adicionar linha na tabela de pitfalls (proximo numero sequencial)
-3. Se o fix exige mudanca na sequencia: anotar inline com `**[pitfall #N]**`
-4. Se exige helper novo: atualizar secao 3 Helpers acima
-5. Incluir referencia de descoberta (task/pipeline/data)
+2. Adicionar a linha na **ultima fatia** em [references/pitfalls/](references/pitfalls/) usando o **proximo numero global** (maior atual + 1); se a fatia ja estiver > ~50 KB, criar a proxima `NN-pitfalls-LLL-HHH.md`
+3. Acrescentar a linha-indice correspondente em [references/pitfalls.md](references/pitfalls.md) (numero + sintoma + fatia)
+4. Se o fix exige mudanca na sequencia: anotar inline com `**[pitfall #N]**`
+5. Se exige helper novo: atualizar secao 3 Helpers acima
+6. Incluir referencia de descoberta (task/pipeline/data)
 
 ### Nao documentar aqui
 

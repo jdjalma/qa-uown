@@ -102,7 +102,7 @@ export interface TokenRow {
 export type KountTokenRow = TokenRow;
 export type GdsTokenRow = TokenRow;
 
-// ── UW scores snapshot (task #1313 — npm_segment / tam_score) ───────────
+// ── UW scores snapshot (npm_segment / tam_score) ───────────
 // `uown_los_uwdata` (lead side) and `uown_sv_uwdata` (account side) gained
 // `npm_segment` + `tam_score` (both integer) in migration V20260603054943_1.53.0.
 // The GDS parser writes them on the 16m approval branch; `tam_score` is
@@ -122,6 +122,32 @@ export interface SvUwScoresRow {
   tam_score: number | null;
   decided_by_agent: string | null;
   eligible_terms: string | null;
+}
+
+// ── Merchant-settings snapshot (immutable UW-config snapshot) ──
+// On UW approval the system writes an immutable LEAD snapshot of the merchant's
+// UW config; on funding/account creation it copies that into an immutable ACCOUNT
+// snapshot. Columns are authoritative per Flyway V20260609155406 (the snapshot
+// tables themselves), confirmed read-only against information_schema in qa2 (probe
+// src/scripts/probe-merchant-settings-snapshot-rows.ts, 2026-06-16):
+//   uown_los_lead_merchant_settings_snapshot — keyed by lead_pk (UNIQUE)
+//   uown_sv_account_merchant_settings_snapshot — same + account_pk (UNIQUE) + lead_pk
+// `epo5`/`epo10` are BOOLEAN; `uw_pipeline` is VARCHAR(10) [GDS|ABBR|TAKTILE]
+// (qa2 fixture carries the literal 'Test'); `fraud_threshold` is INTEGER;
+// `program_pk` is nullable. Read-only — SELECT only.
+export interface LeadMerchantSettingsSnapshotRow {
+  pk: number;
+  lead_pk: number;
+  merchant_pk: number;
+  program_pk: number | null;
+  epo5: boolean;
+  epo10: boolean;
+  uw_pipeline: string | null;
+  fraud_threshold: number;
+  row_created_timestamp: Date;
+}
+export interface AccountMerchantSettingsSnapshotRow extends LeadMerchantSettingsSnapshotRow {
+  account_pk: number;
 }
 
 // Raw row shape returned by pg for MerchantProgram SELECT *
@@ -155,7 +181,7 @@ export class DatabaseHelpers {
     // client's socket dies (qa2 SSH-tunnel hiccup, server idle-drop). With NO
     // listener, Node treats it as an unhandled 'error' event and CRASHES the
     // worker — which tore down the Playwright context mid-test and surfaced as a
-    // bogus "Target page/context/browser has been closed" elsewhere (svc#546
+    // bogus "Target page/context/browser has been closed" elsewhere (the OH
     // MONTHLY render, 2026-06-22). Swallow it: the Pool discards the dead client
     // and lazily creates a fresh one for the next query, so reads transparently
     // recover. Do NOT rethrow here.
@@ -460,7 +486,7 @@ export class DatabaseHelpers {
   }
 
   /**
-   * UW scores snapshot row for a lead (task #1313 — npm_segment / tam_score).
+   * UW scores snapshot row for a lead (npm_segment / tam_score).
    * Projects only the columns under test, confirmed against information_schema in
    * qa2 (uown_los_uwdata has 32 cols; these are real column names, not entity fields).
    * `npm_segment`/`tam_score` are nullable integers; `decided_by_agent` is the engine
@@ -479,7 +505,7 @@ export class DatabaseHelpers {
   }
 
   /**
-   * Same projection for the Servicing-side snapshot (task #1313 CT-04, funding copy).
+   * Same projection for the Servicing-side snapshot (CT-04, funding copy).
    * `uown_sv_uwdata` carries `account_pk`; the migration touched BOTH tables.
    */
   async getSvUwScoresByAccountPk(accountPk: string): Promise<SvUwScoresRow | null> {
@@ -524,6 +550,80 @@ export class DatabaseHelpers {
       },
       timeoutMs,
       'waitForLambdaSegment',
+    );
+  }
+
+  /**
+   * Latest LEAD merchant-settings snapshot row for a lead. Projects
+   * the snapshot table's OWN columns (Flyway V20260609155406), confirmed against
+   * information_schema in qa2 — not entity field names. The snapshot is written
+   * once on UW approval and is immutable; ORDER BY pk DESC LIMIT 1 returns the
+   * latest in the (idempotent, expected COUNT=1) case. Read-only.
+   */
+  async getLeadMerchantSettingsSnapshot(leadPk: string): Promise<LeadMerchantSettingsSnapshotRow | null> {
+    return this.queryOne<LeadMerchantSettingsSnapshotRow>(
+      `SELECT pk, lead_pk, merchant_pk, program_pk, epo5, epo10,
+              uw_pipeline, fraud_threshold, row_created_timestamp
+         FROM uown_los_lead_merchant_settings_snapshot
+        WHERE lead_pk = $1
+        ORDER BY pk DESC
+        LIMIT 1`,
+      [leadPk],
+    );
+  }
+
+  /**
+   * Latest ACCOUNT merchant-settings snapshot row for an account.
+   * The account snapshot is a copy of the lead snapshot, written on funding/account
+   * creation; `uown_sv_account_merchant_settings_snapshot` adds `account_pk` (UNIQUE)
+   * alongside the lead-table columns. Read-only.
+   */
+  async getAccountMerchantSettingsSnapshot(accountPk: string): Promise<AccountMerchantSettingsSnapshotRow | null> {
+    return this.queryOne<AccountMerchantSettingsSnapshotRow>(
+      `SELECT pk, account_pk, lead_pk, merchant_pk, program_pk, epo5, epo10,
+              uw_pipeline, fraud_threshold, row_created_timestamp
+         FROM uown_sv_account_merchant_settings_snapshot
+        WHERE account_pk = $1
+        ORDER BY pk DESC
+        LIMIT 1`,
+      [accountPk],
+    );
+  }
+
+  /**
+   * Poll until the LEAD merchant-settings snapshot row exists for a lead.
+   * The snapshot write is async (UW approval branch), so use this instead
+   * of a single query + sleep ([[db-polling-pattern]]). Returns the row or null on
+   * timeout. Read-only. Mirror of waitForUwNpmSegment.
+   */
+  async waitForLeadMerchantSettingsSnapshot(
+    leadPk: string,
+    timeoutMs: number = TIMEOUTS.DB_WAIT,
+  ): Promise<LeadMerchantSettingsSnapshotRow | null> {
+    return this.pollUntil<LeadMerchantSettingsSnapshotRow>(
+      async () => {
+        return this.getLeadMerchantSettingsSnapshot(leadPk);
+      },
+      timeoutMs,
+      'waitForLeadMerchantSettingsSnapshot',
+    );
+  }
+
+  /**
+   * Poll until the ACCOUNT merchant-settings snapshot row exists for an account.
+   * The funding→account-snapshot copy is async; poll instead of
+   * single query + sleep. Returns the row or null on timeout. Read-only.
+   */
+  async waitForAccountMerchantSettingsSnapshot(
+    accountPk: string,
+    timeoutMs: number = TIMEOUTS.DB_WAIT,
+  ): Promise<AccountMerchantSettingsSnapshotRow | null> {
+    return this.pollUntil<AccountMerchantSettingsSnapshotRow>(
+      async () => {
+        return this.getAccountMerchantSettingsSnapshot(accountPk);
+      },
+      timeoutMs,
+      'waitForAccountMerchantSettingsSnapshot',
     );
   }
 
@@ -1539,11 +1639,11 @@ export class DatabaseHelpers {
   }
 
   /**
-   * Count NeuroID verification rows for a lead (svc#554 — prevent repeated
+   * Count NeuroID verification rows for a lead (prevent repeated
    * NeuroID calls during signing retries).
    *
    * IMPLEMENTATION CHOICE — Option B (uown_neuro_id_verification by lead_pk).
-   * Decided after the svc#554 discovery probe (src/scripts/probe-neuroid-554.ts,
+   * Decided after the NeuroID discovery probe (src/scripts/probe-neuroid.ts,
    * run against qa2 2026-06-15):
    *   - `uown_sv_outbound_api_log` does have NeuroID rows
    *     (url ILIKE '%neuro%', e.g. https://api.neuro-id.com/v4.1/sites/.../profiles/{id}),
@@ -1555,7 +1655,7 @@ export class DatabaseHelpers {
    *     backend NeuroID verification attempt for the lead. This is the
    *     correlatable source of truth for "was NeuroID called again?".
    *
-   * The svc#554 assertion model: a backend NeuroID call materializes a row here.
+   * The NeuroID assertion model: a backend NeuroID call materializes a row here.
    * "No new NeuroID call on retry" ⇒ this COUNT does not increase between the
    * first submit and the post-retry observation.
    *

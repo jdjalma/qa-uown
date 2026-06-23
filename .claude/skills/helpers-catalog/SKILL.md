@@ -48,7 +48,7 @@ disable-model-invocation: true
 | `datetime.helpers.ts` | `src/helpers/` | TZ-tolerant assertion for Java LocalDateTime vs DB timestamptz |
 | `search-sql-explain.helpers.ts` | `src/helpers/` | EXPLAIN ANALYZE runner for SQLs in `uown_sv_sql_config` |
 
-## INFRA — `database.helpers.ts` pg.Pool hardening (svc#546, 2026-06-22)
+## INFRA — `database.helpers.ts` pg.Pool hardening (2026-06-22)
 
 > **Benefits ALL tests** — not domain-specific. Catalogued so future DB flakiness isn't misdiagnosed as a browser crash.
 
@@ -88,9 +88,13 @@ For asserting a downloaded CSV's column SET and row count against the portal tot
 | `updateMerchantProgramDates(pk, dates, authorizedBy)` | Authorized date mutation |
 | `waitForProgramActiveState(pk, expected, timeout?)` | Poll is_active flag |
 | `waitForValueChange(sql, params, oldValue, timeout?)` | Poll until value changes |
-| `getUwScoresByLeadPk(leadPk)` | Read-only projection of `npm_segment, tam_score, decided_by_agent, eligible_terms, uw_status` from `uown_los_uwdata` (latest). #1313. **Guard `decided_by_agent='GDS'` + `eligible_terms~'16'` before asserting the GDS-snapshot fields, else false-bug.** |
-| `getSvUwScoresByAccountPk(accountPk)` | Same projection from Servicing-side `uown_sv_uwdata` by `account_pk` (#1313 CT-04, funded lead → account snapshot) |
-| `waitForUwNpmSegment(leadPk, timeout?)` | Poll-with-backoff until the UW decision row exists AND `npm_segment` is non-null (the GDS snapshot write is async). Read-only. #1313 |
+| `getUwScoresByLeadPk(leadPk)` | Read-only projection of `npm_segment, tam_score, decided_by_agent, eligible_terms, uw_status` from `uown_los_uwdata` (latest). **Guard `decided_by_agent='GDS'` + `eligible_terms~'16'` before asserting the GDS-snapshot fields, else false-bug.** |
+| `getSvUwScoresByAccountPk(accountPk)` | Same projection from Servicing-side `uown_sv_uwdata` by `account_pk` (CT-04, funded lead → account snapshot) |
+| `waitForUwNpmSegment(leadPk, timeout?)` | Poll-with-backoff until the UW decision row exists AND `npm_segment` is non-null (the GDS snapshot write is async). Read-only. |
+| `getLeadMerchantSettingsSnapshot(leadPk)` | Read-only row from `uown_los_lead_merchant_settings_snapshot` (`merchant_pk, program_pk, epo5, epo10, uw_pipeline, fraud_threshold`). |
+| `getAccountMerchantSettingsSnapshot(accountPk)` | Same from `uown_sv_account_merchant_settings_snapshot` (account-side snapshot, copiado do lead no import LOS→SVC). |
+| `waitForLeadMerchantSettingsSnapshot(leadPk, timeout?)` | Poll until the lead snapshot exists (escrito AFTER_COMMIT na aprovacao UW). Read-only. |
+| `waitForAccountMerchantSettingsSnapshot(accountPk, timeout?)` | Poll until the account snapshot exists (escrito no import LOS→SVC). Read-only. |
 
 > Full signatures and detailed usage: [references/methods.md](references/methods.md)
 

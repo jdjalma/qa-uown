@@ -122,7 +122,7 @@ Listados para fechar o gap da Regra #2 (auditoria 2026-06-18). Leia `src/api/cli
 | `invoice.client.ts` | Invoices (sendInvoice / modificação) |
 | `los-partner-auth.client.ts` | Auth de partner LOS (`postWithOverride` vive aqui) |
 | `payment-arrangement.client.ts` | Arranjos de pagamento (Task #446) |
-| `scheduled-task.client.ts` | `triggerScheduledTask`/resume — sweeps admin |
+| `scheduled-task.client.ts` | `triggerScheduledTask`/resume — sweeps admin; métodos nomeados `dailyAchBalanceCheckSweep()` / `rerunAchBalanceCheckSweep()` + constantes `SCHEDULED_TASK_NAMES` para os sweeps RightFoot ACH (R1.53.0) |
 | `seon.client.ts` | Fraud vendor SEON |
 | `sticky-recover.client.ts` | Sticky recovery (webhooks/retry) |
 

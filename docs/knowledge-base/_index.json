@@ -3,112 +3,13 @@
   "domain": "knowledge-base",
   "docs": [
     {
-      "file": "1313-npm-segment-tam-score-snapshot-routing.md",
-      "path": "docs/knowledge-base/1313-npm-segment-tam-score-snapshot-routing.md",
-      "title": "1313 — npm_segment / tam_score snapshot: env & engine routing",
-      "domain": "knowledge-base",
-      "status": "stable",
-      "volatility": "volatile",
-      "last_verified": "2026-06-21",
-      "covers": [
-        "underwriting",
-        "underwriting",
-        "underwriting",
-        "underwriting"
-      ],
-      "sources": [
-        {
-          "type": "env",
-          "value": "qa2"
-        },
-        {
-          "type": "db",
-          "value": "uown_los_uwdata"
-        },
-        {
-          "type": "db",
-          "value": "uown_sv_uwdata"
-        },
-        {
-          "type": "mr",
-          "value": "svc!1469 (migration V20260603054943_1.53.0)"
-        }
-      ],
-      "sections": [
-        {
-          "heading": "Pergunta",
-          "anchor": "pergunta"
-        },
-        {
-          "heading": "Achados (qa2, 2026-06-19) — `[CONFIRMADO]` por dados",
-          "anchor": "achados-qa2-2026-06-19-confirmado-por-dados"
-        },
-        {
-          "heading": "1. Colunas existem em qa2",
-          "anchor": "1-colunas-existem-em-qa2"
-        },
-        {
-          "heading": "2. `npm_segment` POPULA em qa2 — via GDS, 16m, **não-TireAgent**",
-          "anchor": "2-npm_segment-popula-em-qa2-via-gds-16m-não-tireagent"
-        },
-        {
-          "heading": "3. `tam_score` NUNCA popula em qa2 — `[CONFIRMADO]` 0/6046",
-          "anchor": "3-tam_score-nunca-popula-em-qa2-confirmado-06046"
-        },
-        {
-          "heading": "4. Engine distribution (qa2, todo `uown_los_uwdata`)",
-          "anchor": "4-engine-distribution-qa2-todo-uown_los_uwdata"
-        },
-        {
-          "heading": "Resolução das open questions do SPEC",
-          "anchor": "resolução-das-open-questions-do-spec"
-        },
-        {
-          "heading": "Implicação para o SPEC 1313",
-          "anchor": "implicação-para-o-spec-1313"
-        },
-        {
-          "heading": "Experimento via API 2026-06-21 — `[CONFIRMADO por dados]` (qa2, túnel `127.0.0.1:5445`)",
-          "anchor": "experimento-via-api-2026-06-21-confirmado-por-dados-qa2-túnel-1270015445"
-        },
-        {
-          "heading": "(a) Merchant-config NÃO é o lever do cap 13m — `[CONFIRMADO por dados]`",
-          "anchor": "a-merchant-config-não-é-o-lever-do-cap-13m-confirmado-por-dados"
-        },
-        {
-          "heading": "(b) SSN sufixo `916` é mock-only (BlackBox, qa1/sandbox) — `[CONFIRMADO por dados]`",
-          "anchor": "b-ssn-sufixo-916-é-mock-only-blackbox-qa1sandbox-confirmado-por-dados"
-        },
-        {
-          "heading": "(c) Lead 15945 — único TireAgent `eligible_terms=16` histórico, pré-migration — `[CONFIRMADO por dados]`",
-          "anchor": "c-lead-15945-único-tireagent-eligible_terms16-histórico-pré-migration-confirmado-por-dados"
-        },
-        {
-          "heading": "(d) Second Look `0053` continua DENIED em qa2 — `[CONFIRMADO por dados]`",
-          "anchor": "d-second-look-0053-continua-denied-em-qa2-confirmado-por-dados"
-        },
-        {
-          "heading": "(e) Tabela — tentado × `eligible_terms` resultante (TireAgent qa2, apps frescas 2026-06-21)",
-          "anchor": "e-tabela-tentado-×-eligible_terms-resultante-tireagent-qa2-apps-frescas-2026-06-21"
-        },
-        {
-          "heading": "Conclusão fechada",
-          "anchor": "conclusão-fechada"
-        },
-        {
-          "heading": "Corrige/atualiza",
-          "anchor": "corrigeatualiza"
-        }
-      ]
-    },
-    {
       "file": "16m-lease-and-gowsign-signwell-routing-qa2.md",
       "path": "docs/knowledge-base/16m-lease-and-gowsign-signwell-routing-qa2.md",
       "title": "Creating a 16-Month Lease & Controlling GowSign vs Signwell Routing (qa2)",
       "domain": "knowledge-base",
       "status": "snapshot",
       "volatility": "volatile",
-      "last_verified": "2026-06-17",
+      "last_verified": "2026-06-23",
       "covers": [
         "16m-lease",
         "gowsign-routing",
@@ -120,6 +21,10 @@
         {
           "type": "env",
           "value": "qa2"
+        },
+        {
+          "type": "env",
+          "value": "stg"
         },
         {
           "type": "code",
@@ -172,6 +77,10 @@
           "anchor": "completing-the-signing-ceremony-in-the-browser-route-a-current-blocker"
         },
         {
+          "heading": "stg — Kornerstone 16m + LA (2026-06-23)",
+          "anchor": "stg-kornerstone-16m-la-2026-06-23"
+        },
+        {
           "heading": "Related: dual 13m + 16m offering (what the user is testing next)",
           "anchor": "related-dual-13m-16m-offering-what-the-user-is-testing-next"
         },
@@ -181,92 +90,6 @@
         },
         {
           "heading": "Gaps / to investigate",
-          "anchor": "gaps-to-investigate"
-        }
-      ]
-    },
-    {
-      "file": "559-sticky-recover-cancel-sweep.md",
-      "path": "docs/knowledge-base/559-sticky-recover-cancel-sweep.md",
-      "title": "Sticky Recover Cancel Sweep (svc#559)",
-      "domain": "knowledge-base",
-      "status": "stable",
-      "volatility": "volatile",
-      "last_verified": "2026-06-21",
-      "covers": [],
-      "sources": [
-        {
-          "type": "env",
-          "value": "sandbox (DB tunnel 127.0.0.1:5445 → cluster sandbox, SELECT-only)"
-        },
-        {
-          "type": "db",
-          "value": "uown_scheduled_task pk=81 StickyRecoverCancelSweep (sql_to_pick_accounts confirmed live)"
-        },
-        {
-          "type": "db",
-          "value": "account 5084 / sticky pk 36 — recovery_status=CANCELED via the fix, 2026-06-17 20:00:02Z (canonical confirmed run)"
-        },
-        {
-          "type": "db",
-          "value": "uown_sv_activity_log pk=10961637 (log_type=INTERNAL, created_by=SYSTEM, creation_source=SYSTEM_GENERATED)"
-        },
-        {
-          "type": "db",
-          "value": "uown_sticky_outbound_log pk=32 source=STICKY_RECOVER (cancel request, response=null)"
-        },
-        {
-          "type": "code",
-          "value": "uown/backend/svc!1483 \"Handle non-cancelable transactions\" (StickyRecoverCancelService + StickyRecoverCancelSweepService)"
-        },
-        {
-          "type": "code",
-          "value": "uown/backend/sticky.io!9 \"Add markRecoveryCanceled method"
-        },
-        {
-          "type": "task",
-          "value": "gitlab svc#559 (description + Gustavo Martins QA comment, milestone RU06.26.1.53.0)"
-        }
-      ],
-      "sections": [
-        {
-          "heading": "Confirmed Run — the fix already fired live (sandbox, 2026-06-17 20:00:02Z)",
-          "anchor": "confirmed-run-the-fix-already-fired-live-sandbox-2026-06-17-200002z"
-        },
-        {
-          "heading": "Confirmed Run #2 — fresh end-to-end reproduction (sandbox, 2026-06-21 22:35:43Z)",
-          "anchor": "confirmed-run-2-fresh-end-to-end-reproduction-sandbox-2026-06-21-223543z"
-        },
-        {
-          "heading": "Purpose",
-          "anchor": "purpose"
-        },
-        {
-          "heading": "Available Operations",
-          "anchor": "available-operations"
-        },
-        {
-          "heading": "Flow and States (step by step)",
-          "anchor": "flow-and-states-step-by-step"
-        },
-        {
-          "heading": "Business Rules",
-          "anchor": "business-rules"
-        },
-        {
-          "heading": "Logic and Exceptions (DB contract)",
-          "anchor": "logic-and-exceptions-db-contract"
-        },
-        {
-          "heading": "Connections with What Was Already Known",
-          "anchor": "connections-with-what-was-already-known"
-        },
-        {
-          "heading": "How to test next time (the PROCESS)",
-          "anchor": "how-to-test-next-time-the-process"
-        },
-        {
-          "heading": "Gaps / To Investigate",
           "anchor": "gaps-to-investigate"
         }
       ]
@@ -915,8 +738,8 @@
           "anchor": "business-rules"
         },
         {
-          "heading": "🔴 BR-06 / Defect — `epoDays` token blank in the NY contract (customer-visible)",
-          "anchor": "-br-06-defect-epodays-token-blank-in-the-ny-contract-customer-visible"
+          "heading": "✅ BR-06 / Defect (RESOLVED 2026-06-21) — `epoDays` token blank in the NY contract (customer-visible)",
+          "anchor": "-br-06-defect-resolved-2026-06-21-epodays-token-blank-in-the-ny-contract-customer-visible"
         },
         {
           "heading": "Logic and Exceptions — dynamic values (source of truth = `uown_esign_document.request` pk13851)",
@@ -941,6 +764,105 @@
         {
           "heading": "Evidence / Artifacts",
           "anchor": "evidence-artifacts"
+        }
+      ]
+    },
+    {
+      "file": "npm-segment-tam-score-snapshot-routing.md",
+      "path": "docs/knowledge-base/npm-segment-tam-score-snapshot-routing.md",
+      "title": "1313 — npm_segment / tam_score snapshot: env & engine routing",
+      "domain": "knowledge-base",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-21",
+      "covers": [
+        "underwriting",
+        "underwriting",
+        "underwriting",
+        "underwriting"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "qa2"
+        },
+        {
+          "type": "db",
+          "value": "uown_los_uwdata"
+        },
+        {
+          "type": "db",
+          "value": "uown_sv_uwdata"
+        },
+        {
+          "type": "mr",
+          "value": "svc!1469 (migration V20260603054943_1.53.0)"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Pergunta",
+          "anchor": "pergunta"
+        },
+        {
+          "heading": "Achados (qa2, 2026-06-19) — `[CONFIRMADO]` por dados",
+          "anchor": "achados-qa2-2026-06-19-confirmado-por-dados"
+        },
+        {
+          "heading": "1. Colunas existem em qa2",
+          "anchor": "1-colunas-existem-em-qa2"
+        },
+        {
+          "heading": "2. `npm_segment` POPULA em qa2 — via GDS, 16m, **não-TireAgent**",
+          "anchor": "2-npm_segment-popula-em-qa2-via-gds-16m-não-tireagent"
+        },
+        {
+          "heading": "3. `tam_score` NUNCA popula em qa2 — `[CONFIRMADO]` 0/6046",
+          "anchor": "3-tam_score-nunca-popula-em-qa2-confirmado-06046"
+        },
+        {
+          "heading": "4. Engine distribution (qa2, todo `uown_los_uwdata`)",
+          "anchor": "4-engine-distribution-qa2-todo-uown_los_uwdata"
+        },
+        {
+          "heading": "Resolução das open questions do SPEC",
+          "anchor": "resolução-das-open-questions-do-spec"
+        },
+        {
+          "heading": "Implicação para o SPEC 1313",
+          "anchor": "implicação-para-o-spec-1313"
+        },
+        {
+          "heading": "Experimento via API 2026-06-21 — `[CONFIRMADO por dados]` (qa2, túnel `127.0.0.1:5445`)",
+          "anchor": "experimento-via-api-2026-06-21-confirmado-por-dados-qa2-túnel-1270015445"
+        },
+        {
+          "heading": "(a) Merchant-config NÃO é o lever do cap 13m — `[CONFIRMADO por dados]`",
+          "anchor": "a-merchant-config-não-é-o-lever-do-cap-13m-confirmado-por-dados"
+        },
+        {
+          "heading": "(b) SSN sufixo `916` é mock-only (BlackBox, qa1/sandbox) — `[CONFIRMADO por dados]`",
+          "anchor": "b-ssn-sufixo-916-é-mock-only-blackbox-qa1sandbox-confirmado-por-dados"
+        },
+        {
+          "heading": "(c) Lead 15945 — único TireAgent `eligible_terms=16` histórico, pré-migration — `[CONFIRMADO por dados]`",
+          "anchor": "c-lead-15945-único-tireagent-eligible_terms16-histórico-pré-migration-confirmado-por-dados"
+        },
+        {
+          "heading": "(d) Second Look `0053` continua DENIED em qa2 — `[CONFIRMADO por dados]`",
+          "anchor": "d-second-look-0053-continua-denied-em-qa2-confirmado-por-dados"
+        },
+        {
+          "heading": "(e) Tabela — tentado × `eligible_terms` resultante (TireAgent qa2, apps frescas 2026-06-21)",
+          "anchor": "e-tabela-tentado-×-eligible_terms-resultante-tireagent-qa2-apps-frescas-2026-06-21"
+        },
+        {
+          "heading": "Conclusão fechada",
+          "anchor": "conclusão-fechada"
+        },
+        {
+          "heading": "Corrige/atualiza",
+          "anchor": "corrigeatualiza"
         }
       ]
     },
@@ -1093,12 +1015,17 @@
     {
       "file": "sticky-payment-refund.md",
       "path": "docs/knowledge-base/sticky-payment-refund.md",
-      "title": "Sticky Payment Refund (svc#552)",
+      "title": "Sticky Payment Refund",
       "domain": "knowledge-base",
       "status": "stable",
       "volatility": "volatile",
       "last_verified": "2026-06-21",
-      "covers": [],
+      "covers": [
+        "sticky",
+        "sticky",
+        "allocation",
+        "sticky"
+      ],
       "sources": [
         {
           "type": "env",
@@ -1113,15 +1040,15 @@
           "value": "qa2 (modal surface on account 9549; schema present, uown_sticky empty)"
         },
         {
-          "type": "code",
+          "type": "gitlab",
           "value": "uown/backend/svc!1465 RefundPaymentService.java + StickyRefundPaymentService.java + StickyRefundCompletionService.java"
         },
         {
-          "type": "code",
+          "type": "gitlab",
           "value": "uown/frontend/servicing!696 reverse-payment-modal/index.tsx + utils/data-table-columns.tsx"
         },
         {
-          "type": "code",
+          "type": "gitlab",
           "value": "uown/backend/sticky.io!8 RefundService + StickyRestClient.postRefund + StickyRecoveryStatus(REFUND_SUBMITTED/REFUND_FAILED/REFUNDED)"
         },
         {
@@ -1161,6 +1088,98 @@
         {
           "heading": "How to run this discovery / test next time (the PROCESS)",
           "anchor": "how-to-run-this-discovery-test-next-time-the-process"
+        },
+        {
+          "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "sticky-recover-cancel-sweep.md",
+      "path": "docs/knowledge-base/sticky-recover-cancel-sweep.md",
+      "title": "Sticky Recover Cancel Sweep",
+      "domain": "knowledge-base",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-21",
+      "covers": [
+        "sticky",
+        "sticky",
+        "sweeps",
+        "account-status",
+        "activity-log"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "sandbox (DB tunnel 127.0.0.1:5445 → cluster sandbox, SELECT-only)"
+        },
+        {
+          "type": "db",
+          "value": "uown_scheduled_task pk=81 StickyRecoverCancelSweep (sql_to_pick_accounts confirmed live)"
+        },
+        {
+          "type": "db",
+          "value": "account 5084 / sticky pk 36 — recovery_status=CANCELED via the fix, 2026-06-17 20:00:02Z (canonical confirmed run)"
+        },
+        {
+          "type": "db",
+          "value": "uown_sv_activity_log pk=10961637 (log_type=INTERNAL, created_by=SYSTEM, creation_source=SYSTEM_GENERATED)"
+        },
+        {
+          "type": "db",
+          "value": "uown_sticky_outbound_log pk=32 source=STICKY_RECOVER (cancel request, response=null)"
+        },
+        {
+          "type": "gitlab",
+          "value": "uown/backend/svc!1483 \"Handle non-cancelable transactions\" (StickyRecoverCancelService + StickyRecoverCancelSweepService)"
+        },
+        {
+          "type": "gitlab",
+          "value": "uown/backend/sticky.io!9 \"Add markRecoveryCanceled method"
+        },
+        {
+          "type": "task",
+          "value": "gitlab task in uown/backend/svc (description + Gustavo Martins QA comment, milestone RU06.26.1.53.0)"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Confirmed Run — the fix already fired live (sandbox, 2026-06-17 20:00:02Z)",
+          "anchor": "confirmed-run-the-fix-already-fired-live-sandbox-2026-06-17-200002z"
+        },
+        {
+          "heading": "Confirmed Run #2 — fresh end-to-end reproduction (sandbox, 2026-06-21 22:35:43Z)",
+          "anchor": "confirmed-run-2-fresh-end-to-end-reproduction-sandbox-2026-06-21-223543z"
+        },
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Available Operations",
+          "anchor": "available-operations"
+        },
+        {
+          "heading": "Flow and States (step by step)",
+          "anchor": "flow-and-states-step-by-step"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Logic and Exceptions (DB contract)",
+          "anchor": "logic-and-exceptions-db-contract"
+        },
+        {
+          "heading": "Connections with What Was Already Known",
+          "anchor": "connections-with-what-was-already-known"
+        },
+        {
+          "heading": "How to test next time (the PROCESS)",
+          "anchor": "how-to-test-next-time-the-process"
         },
         {
           "heading": "Gaps / To Investigate",

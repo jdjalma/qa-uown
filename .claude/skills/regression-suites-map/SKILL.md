@@ -73,6 +73,8 @@ NAO aplicar para: bug fixes locais sem alcance (typo em log, refactor de fixture
 - Email sweeps: `email-sweeps-servicing.spec.ts` (S1 settledInFull / S2 RecurringPaymentReminder / S3 FirstPaymentReminder)
 - **Evidencia primaria = `uown_email_queue` (PK monotonico), NAO `uown_sweep_logs.number_of_records_processed`** (escrito DEPOIS do processamento; leitura imediata retorna 0). Ver [[payment-flows]] secao "Email Sweep validation" + [[application-lifecycle]] pitfalls #87-#90
 - `FirstPaymentReminderSweep` exige `sched_summary.first_payment_due_date` E `receivable.due_date` alinhados; `settledInFull` deduplica same-day (Java)
+- **Familia de sweeps de Servicing (em disco, alem de email):** `business-sweeps-`, `cc-rerun-sweeps-`, `document-dispatch-sweeps-`, `external-sync-sweeps-`, `payment-scheduling-sweeps-`, `report-sweeps-`, `funding-refund-report-content-sweeps-servicing.spec.ts`
+- **RightFoot ACH balance-check (R1.53.0):** sweeps `DailyAchBalanceCheckSweep` / `RerunAchBalanceCheckSweep` (criacao de ACH via `DailyRerunAchCreationService`, event-driven). Disparar via `scheduledTask.dailyAchBalanceCheckSweep()` / `.rerunAchBalanceCheckSweep()`; evidencia em `uown_right_foot_balance_check` (`status=SUCCESS`) + `uown_sv_achpayment.right_foot_balance_check_pk`. Ver [[payment-flows]] secao RightFoot
 
 ### 9. Mudou Servicing payments / allocation
 
@@ -90,6 +92,17 @@ NAO aplicar para: bug fixes locais sem alcance (typo em log, refactor de fixture
 ### 12. Mudou merchant config / preflight
 
 - Smoke por brand (UOWN + Kornerstone) + validate `ensureMerchantReady`
+
+### 13. Mudou snapshot / NeuroID-retry / sticky / receipt / RightFoot (R1.53.0)
+
+| Sinal | Suite / spec | Evidencia |
+|-------|--------------|-----------|
+| Merchant-settings snapshot | `RU05.26.1.53.0_merchantSettingsSnapshotTracking` | `uown_los_lead_merchant_settings_snapshot` / `uown_sv_account_merchant_settings_snapshot` — preflight ANTES da aprovacao ([[merchant-preflight]]); helpers `getLeadMerchantSettingsSnapshot`/`getAccountMerchantSettingsSnapshot` |
+| npm_segment / tam_score | task UW scores | `uown_los_uwdata`/`uown_sv_uwdata` (helpers `getUwScoresByLeadPk`/`getSvUwScoresByAccountPk`) |
+| NeuroID retry/simulate | `RU06.26.1.53.0_preventRepeatedNeuroIdCallsSigningRetry.spec.ts` | ⚠️ guard de chamada repetida **NAO mergeado** em R1.53.0 — nao assumir skip |
+| Sticky cancel/refund | sticky specs (sandbox-only) | `uown_sticky.recovery_status` + log INTERNAL/SYSTEM ([[activity-log-validation]]) |
+| Receipt fees / You Save | task receipt | recibo: balance inclui fees, "You Save" > 0 |
+| RightFoot ACH rerun (#540) | ver secao 8 | `uown_right_foot_balance_check` |
 
 ## Pitfalls
 
