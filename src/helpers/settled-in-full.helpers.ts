@@ -22,7 +22,6 @@
  *     - settled_in_full_date_time is `timestamp without time zone`
  */
 
-import { TIMEOUTS } from '../config/constants.js';
 import { sleep, pollUntil as pollUntilShared } from './common.helpers.js';
 import type { DatabaseHelpers } from './database.helpers.js';
 

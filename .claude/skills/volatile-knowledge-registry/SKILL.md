@@ -18,6 +18,7 @@ disable-model-invocation: true
 2. Cite a fonte com tag de proveniência (ver [[test-report-standard]] seção 9)
 3. Se a memória conflita com a fonte primária atual, **atualize a memória** (não confie em memória stale)
 4. Se a fonte primária é inacessível, classificar finding como `[HIPÓTESE]` no máximo (nunca `[CONFIRMADO]`)
+5. Para verificar a **volatilidade atual** de um arquivo específico, leia `docs/business-rules/_index.md` ou `docs/knowledge-base/_index.md` (coluna `Volatilidade`, regenerada por `node scripts/docs-tooling.mjs index`) — não confie na lista estática desta skill como fonte de volatilidade corrente
 
 ---
 

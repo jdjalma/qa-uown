@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 # User Journey Perspective — sair da cabeça do dev, entrar na do usuário
 
+> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **HOW TO FRAME THE TEST** — perspectiva de persona, jornada narrativa, distinção de portais. Para nomes canônicos de portais e fluxos, rode `node scripts/docs-tooling.mjs resolve customer-portal` ou leia `docs/business-rules/01-fundamentos.md` (portal naming está em [[volatile-knowledge-registry]] — cross-check obrigatório). **Não duplique nomes de portal aqui** — eles driftam.
+
 > "Website" no UOWN é o portal do CLIENTE; "Servicing" é o portal do AGENT (`feedback_portal_naming`). Errar essa distinção em planejamento de teste gera testes que não cobrem o que o cliente realmente faz.
 
 ## Quando aplicar
@@ -185,75 +187,6 @@ Documento de jornada por persona (template acima). 50–150 linhas dependendo da
 - Esquecer email/SMS como passos da jornada — são touchpoints reais.
 - Não consultar `jornada-completa-lease.md` quando aplicável — reinventa passos com erro.
 - Misturar agent e customer no mesmo "user" sem distinguir.
-
-## Exemplos curtos (domínio UOWN)
-
-### Exemplo 1 — Cenário "Customer assina e merchant é notificado"
-
-Personas: Customer (Website mobile) + Merchant agent (Servicing desktop) + Admin (AMS, observa).
-
-Jornada Customer (mobile):
-1. Email "Sign your lease" chega → clica link (não usar URL da API — `feedback_email_imap_click_link`).
-2. Website abre signing page. Vê resumo + iframe GoSign (com read mode toggle se merchant configurado).
-3. Lê, scrolla, assina.
-4. Vê confirmation page.
-
-Jornada Merchant agent (desktop):
-1. Já estava em Servicing/lead/{id}. Status era LEASED.
-2. Page atualiza (manual refresh ou polling) → status agora SIGNED.
-3. Badge "SIGNED" visível, activity log atualizado.
-
-Cross-portal assertion: lead.status mudou de LEASED → SIGNED em ambos os portais; activity log `uown_los_lead_notes` tem row SIGNATURE_COMPLETED.
-
-Pontos de quebra:
-- Customer fecha browser depois do "assinar" — sessão GoSign continua processando? Status correto eventualmente?
-- Customer no mobile pequeno (375px) — iframe GoSign legível? Read mode disponível?
-
-### Exemplo 2 — "Agent edita invoice e customer re-submete"
-
-Personas: Agent (Origination desktop) + Customer (Website mobile).
-
-Jornada Agent:
-1. Em Origination/lead/{id}. Clica "Create new invoice" / edit existing.
-2. Modifica amount.
-3. Sistema gera novo redirectUrl. Agent vê confirmação.
-
-Jornada Customer:
-1. (Antes — está em Complete page antiga). Talvez já tentou submit e falhou.
-2. Recebe novo link (email ou direto) → abre NOVA Complete page com novo amount.
-3. Submit.
-
-Cross-portal: count de `submitApplication` chamadas = 1 por submit; `[CONFIRMADO]` regra dual-brand + lease-edit (`feedback_qa_flow_scope_dual_brand_lease_edit`).
-
-### Exemplo 3 — "Customer abandona em signing, volta dia seguinte"
-
-Jornada do customer:
-1. (D-1) Recebe email signing, clica, abre Website. Vê iframe, ABANDONA.
-2. (D+0) Volta — usa link do email de novo? Email ainda válido? Lead state ainda permite signing?
-3. Assina.
-
-Pontos de quebra:
-- Link tem TTL? Customer vê erro útil se expirou?
-- Lead state poderia ter mudado (timeout server-side, cancellation by ops)?
-- Activity log do D-1 (started_signing) presente? D+0 (completed_signing) presente?
-
-### Exemplo 4 — "Refund flow"
-
-Personas: Agent (Servicing) inicia; Customer (Website) NÃO vê fluxo direto, mas vê side-effect (refund creditado, email).
-
-Jornada Agent:
-1. Em Servicing/account/{id}/payments.
-2. Identifica payment a refund.
-3. Clica "Refund", confirma amount.
-4. Sistema dispara vendor (Repay/Tilled). Tarefa abre.
-
-Customer NÃO vê tela — só:
-- Email "Your refund has been processed"
-- Account portal mostra crédito.
-
-Assertion: agent UI mostra status atualizado; customer email enviado; activity log com refund_initiated + refund_completed.
-
-Quando NÃO aplicar fluxo "customer só recebe email": refund parcial complexo, customer talvez precise confirmar — checar AC.
 
 ## Referências
 

@@ -19,7 +19,7 @@
  *   - Servicing credentials configured (env.getCredentials('manager'))
  */
 import { test as ctxTest, expect } from '@fixtures/test-context.fixture.js';
-import { buildTestData } from '@helpers/index.js';
+import { buildTestData, findLeadNoteContaining } from '@helpers/index.js';
 import { createPreQualifiedApplication, driveLeadToFunding } from '@helpers/api-setup.helpers.js';
 import {
   installPostMessageRecorder,
@@ -160,19 +160,17 @@ ctxTest.describe(
           // The Servicing operator can audit the signing journey via the
           // Activity Log — backed by uown_los_lead_notes. We assert the key
           // notes are present so the operator's portal view has substance.
-          const docNote = await db.queryOne<{ notes: string }>(
-            `SELECT notes FROM uown_los_lead_notes
-             WHERE lead_pk=$1 AND notes ILIKE '%Sent Contract to customer%'
-             ORDER BY pk DESC LIMIT 1`,
-            [Number(ctx.leadPk)],
+          const docNote = await findLeadNoteContaining(
+            db,
+            Number(ctx.leadPk),
+            'Sent Contract to customer',
           );
           expect(docNote, 'Sent Contract note must exist for the signed lead').not.toBeNull();
 
-          const signedNote = await db.queryOne<{ notes: string }>(
-            `SELECT notes FROM uown_los_lead_notes
-             WHERE lead_pk=$1 AND notes ILIKE '%status%instantly from CONTRACT_CREATED to SIGNED%'
-             ORDER BY pk DESC LIMIT 1`,
-            [Number(ctx.leadPk)],
+          const signedNote = await findLeadNoteContaining(
+            db,
+            Number(ctx.leadPk),
+            'status%instantly from CONTRACT_CREATED to SIGNED',
           );
           expect(signedNote, 'Servicing operator audit log should record SIGNED transition').not.toBeNull();
         });

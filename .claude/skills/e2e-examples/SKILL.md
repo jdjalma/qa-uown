@@ -8,6 +8,84 @@ disable-model-invocation: true
 
 > Real code examples from the project. Reference when implementing new tests.
 
+## 0. Prefer state fixtures over inline setup (REACH FOR THESE FIRST)
+
+A teste precisa de uma aplicação **aprovada** ou de uma conta **fundeada**? NÃO reescreva Phase 1..4 inline. As fixtures `approvedApplication` / `fundedAccount` (em `src/support/base-test.ts`) já compõem `buildTestData` + `createPreQualifiedApplication` (+ `driveLeadToFunding`), rodam merchant preflight (regra #12) e geram dados frescos por teste (regra #9). São **lazy** — só executam quando o teste destrutura a fixture, então o custo é zero para quem não usa.
+
+**BEFORE — ~150 linhas de Phase 1..4 inline (NÃO faça isto):**
+
+```typescript
+test('settle a funded lease', async ({ page, api, db, testEnv }) => {
+  test.setTimeout(300_000);
+  const ctx: TestContext = {
+    leadPk: '', leadUuid: '', accountPk: '', accountNumber: '',
+    contractStatus: '', contractUrl: '', websiteAccountPk: '', achAdded: 0, ccAdded: 0,
+    reportKeys: new Map(),
+  };
+
+  // Phase 1 — merchant preflight + fresh applicant
+  const { merchant, applicant } = buildTestData({ env: testEnv.env, state: 'NY', merchant: 'TireAgent', orderTotal: '800' });
+  await ensureMerchantReady(api, merchant);
+
+  // Phase 2 — send application, verify, invoice, CC auth (≈40 linhas)
+  const sendRes = await api.application.sendApplication(merchant, applicant, order);
+  expect(sendRes.ok).toBeTruthy();
+  ctx.leadPk = /* parse */; ctx.leadUuid = /* parse */;
+  await api.invoice.createInvoice(/* ... */);
+  await api.creditCard.authorize(/* ... */);
+  // ... verify UW_APPROVED, submit payment info, capture esignClient/iframe ...
+
+  // Phase 3 — drive to FUNDING (sign → settle → funding → funded) (≈50 linhas)
+  await driveLeadToFunding(api, merchant, ctx);
+
+  // Phase 4 — resolve servicing accountPk
+  const accountPk = await db.waitForAccountByLeadPk(ctx.leadPk);
+  ctx.accountPk = accountPk;
+
+  // ...finalmente o domínio do teste começa aqui, ~150 linhas depois...
+  await page.goto(/* servicing */);
+});
+```
+
+**AFTER — fixture entrega o estado; o teste começa no domínio:**
+
+```typescript
+// fundedAccount: FundedAccountResult = { leadPk, leadUuid, accountPk, contractUrl?, esignClient? }
+test('settle a funded lease', async ({ page, fundedAccount, db }) => {
+  test.setTimeout(300_000);
+
+  // Estado pronto: lease em FUNDING/FUNDED, accountPk já resolvido. Vá direto ao domínio.
+  await test.step('Open settlement modal in Servicing', async () => {
+    const servicing = new ServicingCustomerPage(page);
+    await servicing.openByAccountPk(fundedAccount.accountPk);
+    // ...assertion do teste...
+  });
+});
+```
+
+Para um teste que só precisa de aprovação (sem fundear), destrutura `approvedApplication`:
+
+```typescript
+// approvedApplication: ApprovedApplicationResult = { leadPk, leadUuid, approvedAmount, contractUrl?, esignClient? }
+test('contract renders approved amount', async ({ page, approvedApplication }) => {
+  // lead já em UW_APPROVED / CONTRACT_CREATED; esignClient = 'GOWSIGN' | 'SIGNWELL'
+  await page.goto(approvedApplication.contractUrl!);
+  // ...assert no contrato...
+});
+```
+
+**Parametrizar estado/merchant/total/payment** por describe — sem reescrever a setup:
+
+```typescript
+// Default: state 'NY', merchant 'TireAgent', orderTotal '800', paymentMode 'submitApi'.
+test.use({ setup: { state: 'CA', merchant: 'TerraceFinance', orderTotal: '1200', paymentMode: 'submitApi' } });
+```
+
+**Regras:**
+- `db` e `email` são **worker-scoped** (um pool pg / sessão IMAP por worker) — destrutura `{ db }` direto, não crie `new DatabaseHelpers`.
+- `paymentMode`: `'submitApi'` (default, → CONTRACT_CREATED, captura `esignClient`+iframe) · `'ccAuth'` (→ CC_AUTH_PASSED) · `'none'` (fica em UW_APPROVED). `fundedAccount` força `'submitApi'` upstream independente do `setup`.
+- Hand-escrever Phase 1..4 quando a fixture já entrega o estado = retrabalho e drift; é o anti-pattern que estas fixtures existem para matar.
+
 ## 1. Standard E2E Test Structure
 
 ```typescript
@@ -15,7 +93,8 @@ import { test, expect } from '@fixtures/test-context.fixture.js';
 import { TestTag, buildTags, splitTags } from '@ptypes/enums.js';
 import { SELECTORS } from '@selectors/index.js';
 import { OriginationCustomerPage } from '@pages/origination/index.js';
-import { setupApplicationViaApi } from '@helpers/api-setup.helpers.js';
+// Runtime helpers ALWAYS via the barrel — never the individual module path.
+import { setupApplicationViaApi } from '@helpers/index.js';
 import type { TestContext } from '@support/base-test.js';
 
 const testData = [
@@ -70,7 +149,7 @@ for (const data of testData) {
 ```typescript
 import { test, expect } from '@fixtures/test-context.fixture.js';
 import { TestTag, buildTags, splitTags } from '@ptypes/enums.js';
-import { buildTestData } from '@helpers/test-data.helpers.js';
+import { buildTestData } from '@helpers/index.js';
 
 const testData = [
  { env: 'sandbox', merchant: 'TerraceFinance', tag: buildTags(TestTag.REGRESSION) },
@@ -188,7 +267,7 @@ await withAgedAccount(db, 4353, 91, async  => {
 
 Canonical example of **API setup + UI-only action + DB assert** where the UI step is NOT optional: the value under test (`uown_lead_modifications.agent_username`) is derived from the `username` HTTP header that ONLY the portal SPA sends. A direct API `changeLeadStatus` call drops the header → the row records "SYSTEM" → reproduces the artifact instead of the fix. Rule #14 (UI-first) is load-bearing here, not stylistic.
 
-**File:** `tests/e2e/origination/R1.53.0_fixSystemAgentUsernameInModificationReport_1315.spec.ts`
+**File:** `tests/e2e/origination/R1.53.0_fixSystemAgentUsernameInModificationReport.spec.ts`
 
 Pattern shape:
 1. **Setup via API (fresh lead per CT, rule #9):** `createPreQualifiedApplication(api, merchant, applicant, ctx, { skipPaymentInfo: true })` → lead parks at UW_APPROVED (no CC submit). CT-02 uses `{ submitPaymentInfoViaApi: true }` to reach the INVOICE_CREATED/CC_AUTH_PASSED internal path. Merchant preflight runs automatically (rule #12).
@@ -205,13 +284,13 @@ Takeaways to copy:
 ## 6. Worker-Scoped Unique IDs
 
 ```typescript
-import { uniqueEmail, uniqueName, getWorkerRunId } from '@helpers/index.js';
+import { uniqueEmail, getWorkerRunId } from '@helpers/index.js';
 
-// Parallel-safe unique data
+// Parallel-safe unique data. Real worker-id exports: uniqueEmail, getWorkerRunId, RUN_ID.
+// There is NO `uniqueName` helper — build a unique name from the worker run id.
 const email = uniqueEmail('fresh.member'); // fresh.member_003120_1710583_0@e2e.test
-const name = uniqueName('Test Company'); // Test Company 003120
-const runId = getWorkerRunId; // 003120
+const name = `Test Company ${getWorkerRunId()}`; // Test Company 003120 — getWorkerRunId is a FUNCTION, call it
 
-// In logs for diagnosis
-console.log(`[worker=${getWorkerRunId}] Creating application...`);
+// In logs for diagnosis (note the () — it's a function, not a value)
+console.log(`[worker=${getWorkerRunId()}] Creating application...`);
 ```

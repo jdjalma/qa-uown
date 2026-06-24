@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 # Regression Suites Map
 
+> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **WHICH SUITE TO RUN** — activation criteria, decision matrix. Para regras canônicas de produto que embasam o escopo de regressão (signing routing, payment states, merchant config), rode `node scripts/docs-tooling.mjs resolve gowsign-routing` (ou `payments`, `merchant-config`) conforme a área de mudança. **Não duplique critérios de produto aqui** — eles driftam.
+
 > Criterios de ativacao por tipo de mudanca. Para inventario detalhado de suites, custos, e spec file listings, ver [references/suites.md](references/suites.md).
 
 ## Quando aplicar

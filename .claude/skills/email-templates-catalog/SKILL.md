@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 # Email Templates Catalog — fatos confirmados via probe DB
 
+> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **fatos confirmados de email** — template names, schemas de tabelas, gaps de observabilidade. As **regras canônicas de comunicação** (portal, SMS, consentimento, notificações) NÃO moram aqui — é fonte única em `docs/business-rules/10-portal-comunicacoes.md`. Para resolver um tópico, rode `node scripts/docs-tooling.mjs resolve email`. **Não duplique regras de produto aqui** — elas driftam.
+
 > Fonte das confirmações: probe direto em qa1 (`scripts/probe_welcome.ts`, `scripts/probe_notes_schema.ts`). Atualize esta skill sempre que um novo fato for confirmado por probe (responsabilidade do `qa-doc-keeper`).
 
 ## 1. Tabela `uown_email_queue` — schema canônico

@@ -1,6 +1,6 @@
 export { SELECTORS } from './common.selectors.js';
+export type { AppSelectors } from './common.selectors.js';
 export type {
-  AppSelectors,
   SpinnerSelectors,
   ToastSelectors,
   PaginationSelectors,

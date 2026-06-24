@@ -1,5 +1,5 @@
 /**
- * Sticky Recover Transactions — svc#485 (RU05.26.1.52.0) — backend regression.
+ * RU05.26.1.52.0 — Sticky Recover Transactions — backend regression.
  *
  * SPEC: docs/taskTestingUown/RU05.26.1.52.0_stickyRecoverTransactions_485/
  *       RU05.26.1.52.0_stickyRecoverTransactions_485-spec.md
@@ -30,8 +30,6 @@ import {
   waitForStickySession,
   waitForStickyTransactionId,
   waitForStickyOutboundLog,
-  waitForStickyInboundEvent,
-  waitForStickyRetryAttempt,
   assertStickyDedupeUnique,
   getStickySweepSqlSnapshot,
   getStickyCancelSweepSqlSnapshot,
@@ -84,7 +82,7 @@ function parseJsonColumn(value: unknown, columnLabel: string): Record<string, un
 }
 
 test.describe.serial(
-  'svc#485 — Sticky Recover Transactions (R1..R9 backend regression)',
+  'Sticky Recover Transactions (R1..R9 backend regression)',
   { tag: splitTags(testData.tag) },
   () => {
     // Per CLAUDE.md: ctx is per-test only. We share discovery between tests in
@@ -102,7 +100,7 @@ test.describe.serial(
     });
 
     // ── CT-01 ────────────────────────────────────────────────────────────
-    test(`CT-01 — Sweep detects eligible CCT and creates Sticky session ${SMOKE_TAG}`, async ({ api, db, ctx }) => {
+    test(`CT-01 — Sweep detects eligible CCT and creates Sticky session ${SMOKE_TAG}`, async ({ api, db }) => {
       test.setTimeout(600_000);
 
       // Check if a sticky session already exists from a prior run
@@ -449,7 +447,7 @@ test.describe.serial(
 
       let cancelResponseStatus = 0;
       await test.step('POST /processing-hub/v2/api/recovery/cancel (reason=CANCELED)', async () => {
-        const resp = await api.stickyRecover.cancelRecovery(stickyTxnId, 'CANCELED', 'svc#485 CT-09');
+        const resp = await api.stickyRecover.cancelRecovery(stickyTxnId, 'CANCELED', 'CT-09');
         cancelResponseStatus = resp.status;
         if (resp.status === 404) {
           console.log(`[CT-09] cancel endpoint returned 404 — not deployed/routed in this env`);

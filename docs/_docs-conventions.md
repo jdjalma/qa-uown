@@ -115,7 +115,7 @@ Link bidirecional = rastreabilidade: dá pra ir do fato consolidado até a inves
 
 Todo agente/skill que precisa de conhecimento de produto carrega **nesta ordem**:
 
-1. **`node scripts/docs-tooling.mjs resolve <tópico>`** — preferível: resolve o tópico no arquivo canônico + seção (deep-link) + frescor + KB relacionado, sem ler nada especulativamente. Fallback: ler o `_index.md` da pasta.
+1. **`node scripts/docs-tooling.mjs resolve <tópico>`** — obrigatório (protocolo mandatório em CLAUDE.md §Signal → docs canônicos): resolve o tópico no arquivo canônico + seção (deep-link) + frescor + KB relacionado, sem ler nada especulativamente. Fallback: ler o `_index.md` da pasta.
 2. **`docs/business-rules/`** primeiro (base consolidada) — abra a seção que o `resolve` apontou, não o capítulo inteiro.
 3. **`docs/knowledge-base/`** depois (investigações específicas, mais frescas — cross-check obrigatório).
 

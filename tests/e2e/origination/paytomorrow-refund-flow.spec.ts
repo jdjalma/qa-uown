@@ -180,14 +180,8 @@ test.describe(`PayTomorrow Refund Flow E2E - ${testData.merchant}`, { tag: split
     await test.step('Wait for lead status to reach Funding or beyond', async () => {
       const customerPage = new OriginationCustomerPage(uownPage);
 
-      // Click "Get Document Status" to trigger backend check before polling
-      const getDocStatusBtn = uownPage.locator("xpath=//*[text()='Get Document Status']");
-      if (await getDocStatusBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-        await getDocStatusBtn.click({ force: true });
-        console.log('[Phase 7] Clicked "Get Document Status"');
-        await sleep(5_000);
-        await customerPage.waitForSpinner();
-      }
+      // Trigger backend check before polling — encapsulated in the page object
+      await customerPage.clickGetDocumentStatus();
 
       await customerPage.pollForLeadStatus(
         ['signed', 'fund', 'settled'], 20, 5_000,

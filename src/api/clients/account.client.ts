@@ -1,6 +1,5 @@
 import { BaseClient } from './base.client.js';
 import type { ApiResponse } from '../responses/api-response.js';
-import { parseResponse } from '../responses/api-response.js';
 import type {
   CancelAccountResponseBody,
   FrequencyModsResponse,

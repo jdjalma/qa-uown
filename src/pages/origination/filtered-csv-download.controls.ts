@@ -20,7 +20,7 @@ export class FilteredCsvDownloadControls {
   constructor(
     private readonly page: Page,
     /** `overview-csv-download` (Overview) or `leads-csv-download` (Leads). */
-    private readonly tooltipIdPrefix: string,
+    _tooltipIdPrefix: string,
   ) {}
 
   // ── Download CSV — state ──────────────────────────────────────────────

@@ -241,7 +241,7 @@ test.describe(
               console.log(`[GowSign OPS-11] test_mode=${row!.test_mode}`);
               expect(
                 row!.test_mode,
-                `In ${testData.env} every GowSign document must be flagged test_mode=true`,
+                `In ${process.env.ENV ?? 'sandbox'} every GowSign document must be flagged test_mode=true`,
               ).toBe(true);
             });
           },

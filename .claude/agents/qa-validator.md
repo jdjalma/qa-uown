@@ -1,10 +1,10 @@
 ---
 name: qa-validator
 description: QA Reviewer — runs test, validates results against task requirements (AC, DoR, DoD), evaluates coverage adequacy for the risk, and produces the task report at docs/taskTestingUown/{testName}/{testName}-report.md. Does NOT write production code.
-model: opus
+model: sonnet
 color: green
 maxTurns: 30
-effort: high
+effort: medium
 tools:
   - Read
   - Glob
@@ -63,6 +63,42 @@ Qualquer outro path (`src/`, `tests/`, `.claude/skills/`, `.claude/agents/`) e *
 ### UI quality review
 - [[qa-lens]] — evaluate tested screen from user's perspective (usability, consistency, special states); load when feature touches UI
 - [[check-points]] — verify that every business action has an observable consequence assertion (persistence, side effects, derived values); load when reviewing Then steps
+
+### Read business rules and knowledge-base files (mandatory when domain matches)
+
+**Protocol:** `Read` the matching files in full — same rule as skills. Coverage can only be assessed adequately against the real state machine and enum values; do not rely on SPEC alone. For section-level navigation within a file, use `node scripts/docs-tooling.mjs resolve <topic>` — it returns `file.md#anchor`. `_index.md` is file-level only. For a chapter map, `Read docs/business-rules/BUSINESS_RULES.md` (not in `_index.md` — navigation hub only).
+
+**`docs/business-rules/` — read when validation touches:**
+
+_(⚠️ volatile = cross-check against primary source after reading; no marker = stable)_
+
+| File | When to read |
+|---|---|
+| `01-fundamentos.md` | general platform concepts, onboarding ⚠️ volatile |
+| `02-originacao-pipeline.md` | application pipeline, UW decision, lead lifecycle ⚠️ volatile |
+| `03-contratos-esign.md` | contracts, e-sign, GowSign/SignWell ⚠️ volatile |
+| `04-calculos-financeiros.md` | financial calculations, EPO, payment schedules |
+| `05-pagamentos.md` | payments, ACH, CC, NSF ⚠️ volatile |
+| `06-conta-ciclo-vida.md` | account lifecycle, status transitions ⚠️ volatile |
+| `07-modificacoes-conta.md` | Modification Reports, invoice modification, frequency change, due-date move ⚠️ volatile |
+| `08-funding-merchants.md` | Funding Queue, funding state machine, sweeps, merchant management ⚠️ volatile |
+| `09-integracoes-externas.md` | external vendor integrations (Kount, SEON, TaxCloud) ⚠️ volatile |
+| `10-portal-comunicacoes.md` | portal communications, email templates |
+| `11-administracao.md` | MMH, full sweeps catalog, admin panel ⚠️ volatile |
+| `12-produto-lease-deep-dive.md` | deep lease product rules |
+| `appendix-a-integracoes.md` | vendor integrations: Sentilink, Neustar, LexisNexis, SEON, Plaid, TaxCloud, GowSign routing |
+| `appendix-b-endpoints.md` | quick endpoint reference — sweeps, payments, accounts, admin ⚠️ volatile |
+| `appendix-c-tabelas-banco.md` | DB table schemas, indexes, troubleshooting, merchant-snapshot ⚠️ volatile |
+| `appendix-d-constantes-enums.md` | enums and constants ⚠️ volatile — **always read when findings reference status values** |
+| `appendix-e-campanhas-uw.md` | UW campaigns, client-type, peak/off-peak, segment-limits |
+| `appendix-f-sql-reference.md` | DB validation queries ⚠️ volatile — read when assessing DB assertion coverage |
+| `appendix-g-cenarios-risco.md` | lease risk scenarios, state routing, blocked states ⚠️ volatile |
+| `appendix-h-epo-template-registry.md` | EPO template registry for 16m leases ⚠️ volatile |
+| `appendix-i-merchant-leasing-api.md` | merchant leasing full API, settlement, additional-lease, webhooks ⚠️ volatile |
+
+**`docs/knowledge-base/`** — `Read docs/knowledge-base/_index.md` first (has title, covers, status, volatility, verified date per file), then open the files that match the feature area. Knowledge-base contains confirmed live-portal rules used to assess whether coverage is genuinely adequate.
+
+**These files must appear in the final `Skills loaded:` declaration** alongside SKILL.md files.
 
 ### Output
 - [[e2e-checklist]] — final gate verification

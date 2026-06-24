@@ -1,7 +1,6 @@
 import { expect } from '@playwright/test';
 import { BasePage } from './base.page.js';
 import { SELECTORS } from '../selectors/common.selectors.js';
-import { sleep } from '../helpers/common.helpers.js';
 
 export class LoginPage extends BasePage {
   readonly emailInput = this.page.locator(SELECTORS.loginEmail);
@@ -13,7 +12,17 @@ export class LoginPage extends BasePage {
     await this.emailInput.waitFor({ state: 'visible', timeout: 15_000 });
     await this.emailInput.fill(username);
     await this.passwordInput.fill(password);
-    await this.clickAndWaitForSpinner(this.loginButton);
+    await this.loginButton.click();
+    // Wait for the post-login redirect to fully settle before returning.
+    // waitForSpinner() has a 1.5s race window that can miss the login spinner and
+    // return while the SPA is still on the login URL, causing the next caller to see
+    // the "Merchant Login" shell instead of the authenticated navbar.
+    // #search-input is only mounted in the authenticated navbar → its presence
+    // confirms the SPA route-guard accepted the new session token.
+    await this.page.locator(SELECTORS.searchInput)
+      .waitFor({ state: 'visible', timeout: 20_000 })
+      .catch(() => {});
+    await this.waitForSpinner();
   }
 
   async isLoginPage(): Promise<boolean> {

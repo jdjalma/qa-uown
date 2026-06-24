@@ -1,4 +1,3 @@
-import { type Locator } from '@playwright/test';
 import { ServicingBasePage } from './servicing-base.page.js';
 import { SELECTORS } from '../../selectors/common.selectors.js';
 

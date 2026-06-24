@@ -63,6 +63,42 @@ Your code must compile (`tsc` clean), follow project conventions, and respect ev
 - [[payment-flows]] — EPO, CC, allocation, settlement
 - [[fraud-vendors-knowledge]] — Kount, SEON, DV360 timing & DB
 
+### Read business rules and knowledge-base files (mandatory when domain matches)
+
+**Protocol:** `Read` the matching files in full — same rule as skills. Do NOT skip because a skill covers the area; business rules contain enum values, state-machine transitions, endpoint names, and SQL that skills do not duplicate. For section-level navigation within a file, use `node scripts/docs-tooling.mjs resolve <topic>` — it returns `file.md#anchor`. `_index.md` is file-level only. For a chapter map, `Read docs/business-rules/BUSINESS_RULES.md` (not in `_index.md` — navigation hub only).
+
+**`docs/business-rules/` — read when implementation touches:**
+
+_(⚠️ volatile = cross-check against primary source after reading; no marker = stable)_
+
+| File | When to read |
+|---|---|
+| `01-fundamentos.md` | general platform concepts, onboarding ⚠️ volatile |
+| `02-originacao-pipeline.md` | application pipeline, UW decision, lead lifecycle ⚠️ volatile |
+| `03-contratos-esign.md` | contracts, e-sign, GowSign/SignWell ⚠️ volatile |
+| `04-calculos-financeiros.md` | financial calculations, EPO, payment schedules |
+| `05-pagamentos.md` | payments, ACH, CC, NSF ⚠️ volatile |
+| `06-conta-ciclo-vida.md` | account lifecycle, status transitions ⚠️ volatile |
+| `07-modificacoes-conta.md` | Modification Reports, invoice modification, frequency change, due-date move ⚠️ volatile |
+| `08-funding-merchants.md` | Funding Queue, funding state machine, sweeps, merchant management ⚠️ volatile |
+| `09-integracoes-externas.md` | external vendor integrations (Kount, SEON, TaxCloud) ⚠️ volatile |
+| `10-portal-comunicacoes.md` | portal communications, email templates |
+| `11-administracao.md` | MMH, full sweeps catalog, admin panel ⚠️ volatile |
+| `12-produto-lease-deep-dive.md` | deep lease product rules |
+| `appendix-a-integracoes.md` | vendor integrations: Sentilink, Neustar, LexisNexis, SEON, Plaid, TaxCloud, GowSign routing |
+| `appendix-b-endpoints.md` | quick endpoint reference — sweeps, payments, accounts, admin ⚠️ volatile |
+| `appendix-c-tabelas-banco.md` | DB table schemas, indexes, troubleshooting, merchant-snapshot ⚠️ volatile |
+| `appendix-d-constantes-enums.md` | enums and constants (FundingQueueStatus, LeadStatus, PaymentStatus, etc.) ⚠️ volatile — **always read when code references status values or enums** |
+| `appendix-e-campanhas-uw.md` | UW campaigns, client-type, peak/off-peak, segment-limits |
+| `appendix-f-sql-reference.md` | DB validation queries ⚠️ volatile — read when writing DB assertion helpers |
+| `appendix-g-cenarios-risco.md` | lease risk scenarios, state routing, blocked states ⚠️ volatile |
+| `appendix-h-epo-template-registry.md` | EPO template registry for 16m leases ⚠️ volatile |
+| `appendix-i-merchant-leasing-api.md` | merchant leasing full API, settlement, additional-lease, webhooks ⚠️ volatile |
+
+**`docs/knowledge-base/`** — `Read docs/knowledge-base/_index.md` first (has title, covers, status, volatility, verified date per file), then open the files that match the feature area. Knowledge-base documents live-portal discoveries and confirmed rules that avoid re-hitting known gotchas.
+
+**These files must appear in the final `Skills loaded:` declaration** alongside SKILL.md files.
+
 ### Output validation
 - [[e2e-checklist]] — final gate before declaring test done
 
@@ -126,13 +162,29 @@ test.describe("R1.49.1_separateShortCodeInANewEntity_469", () => {
 });
 ```
 
+## Reuse-first gate (BEFORE you write any setup, log assertion, or locator)
+
+Hand-writing what a fixture / oracle / page object already provides is a **violation**, not a style choice — it re-inlines logic that exists, drifts from the source of truth, and is exactly the retrabalho these surfaces exist to kill. Run this gate before each category:
+
+| Vais escrever… | PARE — usa primeiro | Onde |
+|---|---|---|
+| Setup de lead (Phase 1..4: send → invoice → CC → sign → fund) | fixture `approvedApplication` (→ UW_APPROVED/CONTRACT_CREATED) ou `fundedAccount` (→ FUNDING/FUNDED, `accountPk` resolvido) | `src/support/base-test.ts` — destrutura `{ approvedApplication }` / `{ fundedAccount, db }`; parametriza por `test.use({ setup: { state, merchant, orderTotal, paymentMode } })`. São **lazy** (custo zero se não destruturadas). Detalhe + before/after em [[e2e-examples]] §0 |
+| Asserção de activity log (regra #13) | oracle: `waitForActivityLogSubstring` / `findActivityLogContaining` / `countActivityLogContaining` (tabela `uown_los_activity_log`) · `waitForLeadNoteSubstring` / `findLeadNoteContaining` (tabela `uown_los_lead_notes`) | `src/helpers/activity-log.helpers.ts` via `@helpers/index.js`. Helpers RETORNAM a row — a asserção é tua. NUNCA `SELECT` cru destas tabelas num spec. Ver [[common-operations]] § Activity-log assertions |
+| Locator inline (`page.locator(...)` / `page.getByRole(...)`) | método do page object existente | Grep `src/pages/{portal}/` ANTES de escrever locator inline — se o método existe, chama; se a área é coberta, adiciona o método ao page object. Ver [[selector-hardening]] |
+
+Se a fixture/oracle/page-object não cobre exatamente o caso, **estende** o existente (delegation gate acima) — não reinventa inline.
+
 ## Anti-patterns
 
 - ❌ Inline selector strings in tests (must be in `src/selectors/common.selectors.ts`)
+- ❌ Re-derive in a spec a locator/action that a page object already covers — **Grep `src/pages/{portal}/` for an existing method BEFORE writing `page.locator(...)`/`page.getByRole(...)` inline.** If the method exists, call it; if the element belongs to a covered area, add the method to the page object. Duplicating a page-object locator across specs = violation ([[selector-hardening]] "checar page object ANTES de escrever locator inline").
+- ❌ Import a runtime helper via its individual module path (`@helpers/foo.helpers.js`) — use the barrel `@helpers/index.js` (only `import type` may target the specific module). Same for `@data/index.js`.
 - ❌ `try/catch` to mask flaky locator — investigate DOM instead
 - ❌ `page.waitForTimeout(N)` to "fix" flakiness — use `waitFor*` with conditions
 - ❌ `UPDATE` directly in DB for test setup — viola regra #9 + Exception 3
 - ❌ Creating helper that already exists (run `helpers-catalog` first)
+- ❌ Hand-writing Phase 1..4 setup inline when `approvedApplication`/`fundedAccount` fixture already delivers the state (viola Reuse-first gate)
+- ❌ Raw `SELECT ... FROM uown_los_lead_notes`/`uown_los_activity_log` in a spec when the activity-log oracle already covers it (viola Reuse-first gate + regra #13)
 - ❌ API-only when feature has UI (viola regra #14)
 - ❌ Skipping activity log assertion on business action (viola regra #13)
 - ❌ Skipping merchant preflight on new application (viola regra #12)

@@ -27,7 +27,13 @@
     "report:allure": "ALLURE=true npx playwright test && npx allure generate reports/allure-results -o reports/allure-report --clean && npx allure open reports/allure-report",
     "report:summary": "cat reports/test-summary.json",
     "report:clean": "rm -rf reports/* playwright-report test-results",
-    "lint": "tsc --noEmit",
+    "lint": "npm run lint:all",
+    "lint:types": "bash scripts/check-types.sh",
+    "lint:es": "eslint .",
+    "lint:all": "npm run lint:types && npm run lint:es",
+    "dup": "jscpd tests src --threshold 10 --min-lines 5 --min-tokens 50",
+    "prepush": "bash scripts/hooks/pre-push.sh",
+    "hooks:enable": "git config core.hooksPath scripts/hooks",
     "docs:check": "node scripts/docs-tooling.mjs check",
     "docs:index": "node scripts/docs-tooling.mjs index",
     "docs:resolve": "node scripts/docs-tooling.mjs resolve",
@@ -38,15 +44,21 @@
     "postinstall": "npx playwright install chromium"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/mcp": "^0.0.68",
     "@playwright/test": "^1.50.0",
     "@postman/postman-mcp-server": "^2.7.0",
     "@types/pg": "^8.11.0",
     "allure-playwright": "^3.1.0",
     "dotenv": "^16.4.0",
+    "eslint": "^10.5.0",
+    "eslint-plugin-playwright": "^2.10.4",
+    "globals": "^17.7.0",
+    "jscpd": "^5.0.11",
     "pg": "^8.13.0",
     "sonarqube-scanner": "^4.3.4",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.62.0"
   },
   "dependencies": {
     "@types/pdf-parse": "^1.1.5",

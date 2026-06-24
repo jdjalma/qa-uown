@@ -35,7 +35,7 @@ const testData = {
 test.describe(`Protection Plan Cancellation - ${testData.merchant}`, { tag: splitTags(testData.tag) }, () => {
   test('Full protection plan cancellation flow with sweep', async ({ page, api, ctx, merchantConfig: mConfig }) => {
     test.setTimeout(600_000); // 10 min — full FUNDED flow + sweep
-    const { env, merchant, applicant, address, merchantConfig } = buildTestData({
+    const { env, merchant, applicant, address } = buildTestData({
       state: testData.state,
       merchant: testData.merchant,
       orderTotal: testData.orderTotal,

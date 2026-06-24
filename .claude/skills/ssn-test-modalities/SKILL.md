@@ -10,6 +10,8 @@ disable-model-invocation: true
 >
 > **Mandatario para:** `qa-planner`, `qa-implementer`, `qa-debugger`, e `/qa-flow`.
 
+> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **HOW TO TEST** — SSN catalog, modality recipes, brand coverage matrix. O **comportamento canônico do produto** (regras de elegibilidade, enums de UW, routing de templates por estado) NÃO mora aqui — é fonte única em `docs/business-rules/02-originacao-pipeline.md` + `appendix-e-campanhas-uw.md` e `src/config/constants.ts` (`generateTestSSN`). Para resolver um tópico, rode `node scripts/docs-tooling.mjs resolve underwriting` (ou `ssn`, `gowsign-routing`). Investigações recentes: `docs/knowledge-base/underwriting-and-funding-test-data-paths.md`. **Não duplique regras de produto aqui** — elas driftam.
+
 > Catalogo completo de SSN values, ambientes, e brand coverage: [references/ssn-values.md](references/ssn-values.md)
 
 ---

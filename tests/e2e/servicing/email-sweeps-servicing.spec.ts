@@ -100,39 +100,6 @@ async function settledSweepHasEligibleAccounts(db: DatabaseHelpers): Promise<boo
   return count > 0;
 }
 
-/**
- * COUNT(*) of the recurring-reminder eligibility join for a single account.
- * > 0 means the recurring sweep would select this account today.
- */
-async function isFreshAccountRecurringEligible(
-  db: DatabaseHelpers,
-  accountPk: string,
-): Promise<number> {
-  return db.getSingleNumber(
-    `SELECT COUNT(*) FROM uown_sv_account a
-     JOIN uown_sv_receivable r ON r.account_pk = a.pk
-       AND r.allocation_status IN ('PARTIALLY_PAID','UNPAID') AND r.status = 'ACTIVE'
-     JOIN uown_sv_sched_summary s ON s.account_pk = a.pk
-     JOIN uown_sv_email e ON e.account_pk = a.pk AND COALESCE(e.do_not_email, false) = false
-     WHERE a.pk = $1 AND a.account_status = 'ACTIVE'`,
-    [accountPk],
-  );
-}
-
-/** An existing account the recurring sweep would select today. Returns null when none. */
-async function findEligibleRecurringAccount(db: DatabaseHelpers): Promise<string | null> {
-  const row = await db.queryOne<{ pk: string }>(
-    `SELECT a.pk FROM uown_sv_account a
-     JOIN uown_sv_receivable r ON r.account_pk = a.pk
-       AND r.allocation_status IN ('PARTIALLY_PAID','UNPAID') AND r.status = 'ACTIVE'
-     JOIN uown_sv_sched_summary s ON s.account_pk = a.pk
-     JOIN uown_sv_email e ON e.account_pk = a.pk AND COALESCE(e.do_not_email, false) = false
-     WHERE a.account_status = 'ACTIVE'
-     LIMIT 1`,
-  );
-  return row?.pk ?? null;
-}
-
 const TAGS = buildTags(TestTag.REGRESSION);
 
 test.describe('Email Sweeps — Servicing', { tag: splitTags(TAGS) }, () => {

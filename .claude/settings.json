@@ -45,7 +45,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /home/jose/projects/uown/automation/.claude/scripts/session-start.sh"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/scripts/session-start.sh\""
           }
         ]
       }
@@ -56,11 +56,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /home/jose/projects/uown/automation/.claude/scripts/pre-write-validate.sh"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/scripts/pre-write-validate.sh\""
           },
           {
             "type": "command",
-            "command": "bash /home/jose/projects/uown/automation/.claude/scripts/lock-selectors.sh"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/scripts/lock-selectors.sh\""
           }
         ]
       }
@@ -71,11 +71,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /home/jose/projects/uown/automation/.claude/scripts/auto-review.sh"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/scripts/auto-review.sh\""
           },
           {
             "type": "command",
-            "command": "bash /home/jose/projects/uown/automation/.claude/scripts/unlock-selectors.sh"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/scripts/unlock-selectors.sh\""
           }
         ]
       }
@@ -85,7 +85,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /home/jose/projects/uown/automation/.claude/scripts/subagent-log.sh"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/scripts/subagent-log.sh\""
           }
         ]
       }
@@ -95,7 +95,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /home/jose/projects/uown/automation/.claude/scripts/subagent-log.sh"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/scripts/subagent-log.sh\""
           },
           {
             "type": "command",
@@ -109,7 +109,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /home/jose/projects/uown/automation/.claude/scripts/session-review.sh"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/scripts/session-review.sh\""
           }
         ]
       }

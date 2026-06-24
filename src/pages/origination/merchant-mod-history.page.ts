@@ -37,6 +37,6 @@ export class MerchantModHistoryPage extends OriginationBasePage {
   listAvailableLocations(): Promise<string[]> { return this.report.listAvailableLocations(); }
   getMerchantColumnValues(): Promise<string[]> { return this.report.getMerchantColumnValues(); }
   getVisiblePageInfo(): Promise<string> { return this.report.getVisiblePageInfo(); }
-  goToNextPage(): Promise<void> { return this.report.goToNextPage(); }
+  async goToNextPage(): Promise<boolean> { await this.report.goToNextPage(); return true; }
   goToPreviousPage(): Promise<void> { return this.report.goToPreviousPage(); }
 }

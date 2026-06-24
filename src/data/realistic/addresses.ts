@@ -5,7 +5,7 @@
  * blacklist poisoning that the static `STATE_ADDRESSES` suffer from
  * (see `buildTestData` `uniqueAddress` note / app-lifecycle blacklist pitfall).
  */
-import { int, pick, chance } from './random.js';
+import { int, pick } from './random.js';
 import { getAddressForState, type AddressData } from '../state-address-mapper.js';
 
 export interface RealisticAddress {
@@ -272,8 +272,6 @@ const STREET_NAMES: readonly string[] = [
 const STREET_TYPES: readonly string[] = [
   'St', 'Ave', 'Blvd', 'Rd', 'Ln', 'Dr', 'Ct', 'Way', 'Pl', 'Ter',
 ];
-
-const UNIT_TYPES: readonly string[] = ['Apt', 'Unit', 'Ste', '#'];
 
 /**
  * Random, valid, unique US address for a state. The (city, ZIP) is a real pair

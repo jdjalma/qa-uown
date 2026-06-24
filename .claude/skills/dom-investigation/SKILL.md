@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 # DOM Investigation Protocol — UOWN Leasing
 
+> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **HOW TO INSPECT** — DOM protocol, viewport selection, snapshot commands, root-cause table. As **regras de viewport por portal** e a **lista canônica de portais** têm origem em CLAUDE.md Rule #15 + `docs/business-rules/01-fundamentos.md` (portal naming, volatile — em [[volatile-knowledge-registry]]). **Não duplique regras de viewport aqui** — elas driftam.
+
 > **Propósito:** quando um seletor falha (`TimeoutError`, `not visible`, `not found`, `strict mode violation`), inspecionar o DOM real do portal via **MCP Playwright** ANTES de propor fix. Heurística (aumentar timeout, adicionar retry, `force: true`, `waitForTimeout`) é PROIBIDA como primeiro recurso — mascara a causa real e perpetua tech-debt no page object.
 >
 > **Aplicável a:** `qa-debugger`, `qa-implementer`, `qa-implementer`, e análises diretas do Claude. **Não é opcional.**

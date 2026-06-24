@@ -8,10 +8,34 @@ disable-model-invocation: true
 
 ## Princípios
 
-1. **Centralizar** em `src/selectors/common.selectors.ts` — nada de inline em page objects ou testes.
-2. **Semântico primeiro** — `getByRole`, `getByLabel`, `getByTestId` antes de CSS.
-3. **DOM-first** (regra inviolável #15) — inspecionar DOM real via MCP Playwright **antes** de propor selector novo ou mudar um quebrado.
-4. **Sem XPath**, sem `nth-child` posicional.
+1. **Page object PRIMEIRO** — antes de escrever QUALQUER `page.locator(...)` / `page.getByRole(...)` / `page.getByText(...)` inline num spec, procure no page object do portal (`src/pages/{portal}/`) um método que já cubra esse elemento/ação. Um locator num spec que duplica um método de page object existente é **violação**, não estilo. Veja a regra dedicada abaixo.
+2. **Co-locar ou centralizar (não inline em spec)** — selector dono-de-página vive CO-LOCADO no page object (getter `readonly` semântico) ou em `SELECTORS`; selector cross-cutting (≥2 páginas) vai pra `src/selectors/common.selectors.ts` (tipo `AppSelectors` é derivado do objeto, atualiza sozinho). A ação (clique + espera + retry) mora no page object; o spec só orquestra — **nunca** define locator inline.
+3. **Semântico primeiro** — `getByRole`, `getByLabel`, `getByTestId` antes de CSS.
+4. **DOM-first** (regra inviolável #15) — inspecionar DOM real via MCP Playwright **antes** de propor selector novo ou mudar um quebrado.
+5. **Sem XPath**, sem `nth-child` posicional.
+
+## Regra — checar page object ANTES de escrever locator inline no spec (anti-duplicação)
+
+O erro de DRY mais comum nos specs do projeto: re-derivar no `.spec.ts` um locator (e a lógica de clique/retry em volta dele) que **já existe** como método de page object. Isso espalha o mesmo selector por N specs — quando o DOM muda, N arquivos quebram em vez de 1.
+
+**Protocolo obrigatório antes de digitar `page.locator(...)`/`page.getByRole(...)`/`page.getByText(...)` num spec:**
+
+1. Identifique o portal do elemento (Origination / Servicing / Website / AMS).
+2. `Grep` no page object correspondente (`src/pages/{portal}/`) pelo texto/role/acessível do elemento.
+3. **Se já existe método** → chame o método. NÃO re-derive o locator.
+4. **Se NÃO existe mas o elemento pertence a uma área coberta por um page object** → adicione o método nesse page object (selector em `common.selectors.ts`), e o spec chama o método.
+5. **Só crie locator inline no spec** se for genuinamente efêmero e específico daquele único teste (raríssimo — e mesmo aí, prefira `common.selectors.ts`).
+
+```ts
+// ❌ Locator + retry loop inline no spec — duplicado em 6 specs (Get Document Status)
+const btn = page.locator("xpath=//*[text()='Get Document Status']");
+for (let i = 0; i < 3; i++) { await btn.click(); await page.waitForTimeout(2000); /* ... */ }
+
+// ✅ Ação encapsulada no page object; spec só orquestra
+await contractPage.clickGetDocumentStatus();
+```
+
+**Como detectar (auditoria):** `grep -rn "page.locator\|page.getBy" tests/` → para cada hit, o mesmo texto/role aparece num método de `src/pages/`? Se sim, é duplicação a refatorar. Origem: auditoria DRY 2026-06-23 — "Get Document Status" e `sideBarContainer__item` duplicados inline em até 6 specs apesar de já existirem (ou caberem) em page objects.
 
 ## Hierarquia de prioridade
 

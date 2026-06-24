@@ -64,7 +64,7 @@ Run this checklist before saving the `.md`:
 
 ## Output
 
-Save (or update) **one file per feature/entity** in `docs/knowledge-base/<topic>.md` (kebab-case). Check with Glob if a file for the topic already exists and **update it** instead of duplicating. Report the path at the end.
+Save (or update) **one file per feature/entity** in `docs/knowledge-base/<topic>.md` (kebab-case). Check with Glob if a file for the topic already exists and **update it** instead of duplicating. Report the path at the end. After saving, run `node scripts/docs-tooling.mjs index` to regenerate `docs/knowledge-base/_index.md` — agents read this index first; a file not in the index is invisible to the next pipeline step.
 
 File structure (frontmatter per [`docs/_docs-conventions.md`](../../../docs/_docs-conventions.md) §2 is **mandatory** — `domain: knowledge-base`, `status` from your confidence, `sources` from the leads/code/DB you touched, `last_verified` = today):
 

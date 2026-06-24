@@ -137,7 +137,8 @@ export class OverviewPage extends OriginationBasePage {
         if (!fiberKey) throw new Error(`setFormikDate: no React props on ${sel}`);
         const nativeSet = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
         nativeSet.call(el, val);
-        (el as Record<string, unknown>)[fiberKey].onChange({ target: el, currentTarget: el });
+        (el as unknown as Record<string, { onChange: (e: unknown) => void }>)[fiberKey]
+          .onChange({ target: el, currentTarget: el });
         // Let React flush the state update before the next field is set.
         await new Promise(r => setTimeout(r, 150));
       },

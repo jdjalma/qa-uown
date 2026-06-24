@@ -549,15 +549,16 @@ export class FundingPage extends OriginationBasePage {
     return match ? match[1]! : text;
   }
 
-  /** Advances to the next page if the Next button is enabled. */
-  async goToNextPage(): Promise<void> {
+  /** Advances to the next page if the Next button is enabled. Returns whether it advanced. */
+  async goToNextPage(): Promise<boolean> {
     const nextBtn = this.page.locator(SELECTORS.paginationNext);
     const enabled = await nextBtn.isEnabled().catch(() => false);
-    if (!enabled) return;
+    if (!enabled) return false;
     await nextBtn.click();
     await this.waitForSpinner();
     await this.page.locator(SELECTORS.tableRow).first()
       .waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {});
+    return true;
   }
 
   // ── CSV export (task #1321) ──────────────────────────────────────────

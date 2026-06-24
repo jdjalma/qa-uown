@@ -85,6 +85,7 @@ Pergunta-checklist obrigatória, varrendo dimensões que costumam esconder bug n
 10. **Email / SMS**: dispara comunicação? IMAP polling necessário? Template name?
 11. **Money / float**: valores monetários no path? Float repr (`18.46` vs `18.459999...` — `feedback_float_repr_not_bug`) precisa de tolerância?
 12. **Feature flags / SQL config**: comportamento depende de `uown_sv_sql_config`? Qual key? (`reference_sqlconfig_admin_endpoint`)
+13. **Submit idempotência**: path inclui `submitApplication` ou re-submit (lease-edit)? `single-flight ref` precisa resetar entre invoices — double-submit guard obrigatório (`feedback_qa_flow_scope_dual_brand_lease_edit`).
 
 Cada "sim" vira testable unit candidata; cada "não sei" vira pergunta pro PO.
 
@@ -163,33 +164,6 @@ Markdown estruturado (template acima) que o orquestrador anexa ao SPEC. Tamanho 
 - Tratar features adjacentes como OUT sem checar se compartilham código com a feature em escopo (caso clássico: submitApplication handler).
 - Pular hunting list "porque a feature é pequena" — features pequenas são onde requisitos implícitos mais escondem.
 - Misturar análise de escopo com design de cenário (cenário é trabalho do `test-design-techniques` + `risk-based-prioritization`).
-
-## Exemplos curtos (domínio UOWN)
-
-### Exemplo 1 — Bug fix "OTP não chega para customer FL"
-
-Análise rápida:
-- Declarado: customer no FL não recebe OTP no email.
-- Não-óbvio: e SMS? e customer em outros estados? mudança de provider Twilio? template diferente? rate-limit?
-- IN: FL email, FL SMS (regressão), 1 outro estado (regressão), reenvio (rate-limit edge)
-- OUT: locales não-EN (não suportados), portal Servicing (agent não consome OTP)
-- Open Q: Twilio config foi tocada? template ID mudou?
-
-### Exemplo 2 — Feature "Edit invoice on Origination Complete page"
-
-- Entry points: agent edita invoice via Origination, customer reabre Complete page, customer re-submete.
-- Hunting hits: lease-edit é cenário UOWN-real (`feedback_qa_flow_scope_dual_brand_lease_edit`); dual-brand obrigatório; activity log para invoice change esperado; single-flight ref no `submitApplication` precisa resetar entre invoices.
-- IN: feliz UOWN, feliz KS, lease-edit UOWN, lease-edit KS, double-submit guard.
-- OUT: criação de invoice inicial (já coberto).
-- Open Q: novo `paymentDetailsList[].redirectUrl` gera novo shortCode ou reusa? activity log esperado tem que conteúdo?
-
-### Exemplo 3 — "Adicionar coluna preço no PDF Georgia"
-
-- Declarado: GA template ganha coluna preço.
-- Não-óbvio: regressão de TODOS outros templates (CA, CO, FL, NY...) — caso Daniel's Jewelers CA mostra que diff de coluna em página 1 é alto-impacto silencioso (`project_gosign_rollout`).
-- IN: GA visual diff, CA diff (regressão), 1 KS template diff, placeholders resolvidos em todos.
-- OUT: states sem GoSign ativo (ainda SignWell-only) — listar mas justificar.
-- Open Q: GA tem alinhamento de coluna padrão? coluna preço é currency-formatted?
 
 ## Referências cruzadas
 

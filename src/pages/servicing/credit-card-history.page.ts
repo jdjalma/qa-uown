@@ -164,7 +164,6 @@ export class CreditCardHistoryPage extends ServicingBasePage {
   /** Get the "Pending Payment?" column value for a row */
   async getRowPendingPayment(txPk: string | number): Promise<string> {
     const row = this.getRowByTxPk(txPk);
-    const cells = row.locator(SELECTORS.tableCell);
     // "Pending Payment?" is second to last column — find by text content instead
     const allText = await row.textContent() || '';
     return allText.includes('Yes') ? 'Yes' : 'No';

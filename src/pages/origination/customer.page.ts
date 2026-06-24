@@ -53,6 +53,9 @@ export class OriginationCustomerPage extends OriginationBasePage {
   // We anchor on getByRole + exact name to avoid partial-text collisions.
   readonly signContractButton = this.page.getByRole('button', { name: /^E[-\s]?Sign$/i });
   readonly fundButton = this.page.locator("button:has-text('Fund')");
+  // Customer summary shortcut that triggers a backend e-sign/document status sync.
+  // Semantic exact-text match (no XPath) — element may render as <a>/<button>/<div>.
+  readonly getDocumentStatusButton = this.page.getByText('Get Document Status', { exact: true });
   readonly customerSummary = this.page.locator(SELECTORS.customerSummary);
   readonly confirmSettlement = this.page.locator(SELECTORS.isConfirmedForSettlement);
   readonly chargeProcessingFee = this.page.locator("input[name='chargeProcessingFeeBeforeEsign']");
@@ -108,6 +111,34 @@ export class OriginationCustomerPage extends OriginationBasePage {
     }
     console.log(`[Customer] Clicked "${buttonText}"`);
     await this.waitForSpinner();
+  }
+
+  /**
+   * Clicks the "Get Document Status" shortcut in the customer summary to trigger a
+   * backend e-sign/document status sync (Java original: shortcut action). No-op when
+   * the button is absent — the lead already advanced past the contract phase.
+   *
+   * Encapsulates the `xpath=//*[text()='Get Document Status']` + force-click + settle
+   * pattern that was duplicated inline across 6 specs (DRY audit 2026-06-23). The
+   * "final attempt" call sites pass `{ timeout: 3_000, settleMs: 10_000, waitSpinner: false }`.
+   *
+   * @param options.timeout     visibility probe timeout (default 5000ms)
+   * @param options.settleMs    backend-propagation wait after the click (default 5000ms)
+   * @param options.waitSpinner await the page spinner after settling (default true)
+   * @returns true if the button was present and clicked, false if it was absent
+   */
+  async clickGetDocumentStatus(
+    options: { timeout?: number; settleMs?: number; waitSpinner?: boolean } = {},
+  ): Promise<boolean> {
+    const { timeout = 5_000, settleMs = 5_000, waitSpinner = true } = options;
+    if (!(await this.getDocumentStatusButton.isVisible({ timeout }).catch(() => false))) {
+      return false;
+    }
+    await this.getDocumentStatusButton.click({ force: true });
+    console.log('[Customer] Clicked "Get Document Status"');
+    if (settleMs > 0) await sleep(settleMs);
+    if (waitSpinner) await this.waitForSpinner();
+    return true;
   }
 
   async getLeadStatus(): Promise<string> {
@@ -738,8 +769,6 @@ export class OriginationCustomerPage extends OriginationBasePage {
     // Dismiss alert bar first — it can overlap the Cancel Lease button
     await this.dismissAlertBar();
 
-    let confirmed = false;
-
     for (let attempt = 1; attempt <= 5; attempt++) {
       console.log(`[CancelLease] Attempt ${attempt}/5`);
 
@@ -748,7 +777,6 @@ export class OriginationCustomerPage extends OriginationBasePage {
         .isVisible({ timeout: 1_000 }).catch(() => false);
       if (earlyToast) {
         console.log('[CancelLease] Toast already visible — cancel succeeded');
-        confirmed = true;
         break;
       }
 
@@ -780,7 +808,6 @@ export class OriginationCustomerPage extends OriginationBasePage {
           .isVisible({ timeout: 3_000 }).catch(() => false);
         if (toastAlready) {
           console.log('[CancelLease] Direct cancel — toast appeared without modal');
-          confirmed = true;
           break;
         }
         console.log(`[CancelLease] No cancel modal on attempt ${attempt}`);
@@ -828,7 +855,6 @@ export class OriginationCustomerPage extends OriginationBasePage {
         console.log('[CancelLease] Clicking "Cancel Lease" confirm button');
         try {
           await confirmBtn.click({ force: true });
-          confirmed = true;
         } catch (confirmErr) {
           console.log(`[CancelLease] Confirm click failed: ${confirmErr}`);
           await this.page.keyboard.press('Escape');
@@ -846,7 +872,6 @@ export class OriginationCustomerPage extends OriginationBasePage {
           const btnText = await lastBtn.textContent().catch(() => '?');
           console.log(`[CancelLease] Clicking last button: "${btnText?.trim()}"`);
           await lastBtn.click({ force: true });
-          confirmed = true;
         } else {
           // No usable buttons — dismiss and retry
           console.log('[CancelLease] No usable buttons — dismissing modal and retrying');

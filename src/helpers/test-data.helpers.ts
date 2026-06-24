@@ -24,8 +24,8 @@ export interface BuildTestDataOptions {
   state: string;
   /** Merchant key from merchants.ts (e.g. 'TireAgent', 'ProgressMobility') */
   merchant: string;
-  /** Order total as string (e.g. '621', '6000') */
-  orderTotal: string;
+  /** Order total as string (e.g. '621', '6000'). Optional — defaults to '1000'. */
+  orderTotal?: string;
   /** Order description prefix (default: 'Test') */
   orderDescription?: string;
   /** Whether the SSN should produce an APPROVED result (default: true) */
@@ -103,7 +103,7 @@ export function buildTestData(options: BuildTestDataOptions): TestData {
     env: envOverride,
     state,
     merchant: merchantName,
-    orderTotal,
+    orderTotal = '1000',
     orderDescription = 'Test',
     approved = true,
     emailOverride,

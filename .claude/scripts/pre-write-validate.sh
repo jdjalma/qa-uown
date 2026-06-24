@@ -22,7 +22,7 @@ fi
 ERRORS=()
 
 # ── Rule 1: Page objects must extend a base class ─────────────────
-if [[ "$FILE_PATH" == src/pages/**/*.ts || "$FILE_PATH" =~ src/pages/.*\.ts$ ]]; then
+if [[ "$FILE_PATH" =~ src/pages/.*\.ts$ ]]; then
   # Check if file defines a class
   if echo "$TEXT" | grep -q "^export class "; then
     # Must extend BasePage or a portal base

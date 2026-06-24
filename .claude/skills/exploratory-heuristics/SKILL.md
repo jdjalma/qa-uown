@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 # Exploratory Heuristics — onde os bugs se escondem
 
+> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **HOW TO EXPLORE** — heurísticas, charters, hotspots de domínio. Para regras canônicas que definem "comportamento esperado" em cada hotspot (signing routing, multi-merchant state, OTP flow), rode `node scripts/docs-tooling.mjs resolve gowsign-routing` (ou `merchant-config`, `esign`) ou leia `docs/business-rules/03-contratos-esign.md` + `01-fundamentos.md`. **Não duplique fatos de routing/estado aqui** — eles driftam.
+
 > Testes scripted cobrem o que você sabe. Exploração com heurística cobre o que você não sabe que não sabe. Bach & Bolton dão os mapas; o domínio UOWN dá os hotspots.
 
 ## Quando aplicar

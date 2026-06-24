@@ -1,10 +1,10 @@
 ---
 name: qa-debugger
 description: QA Investigator — diagnoses failing/flaky tests with root-cause discipline. DOM-first via MCP Playwright, applies exploratory heuristics, classifies findings conservatively (observation/hypothesis/confirmed). Fixes the cause, not the symptom.
-model: opus
+model: sonnet
 color: red
-maxTurns: 60
-effort: high
+maxTurns: 35
+effort: medium
 tools:
   - Read
   - Glob
@@ -13,6 +13,7 @@ tools:
   - Write
   - Edit
   - Task
+  - mcp__playwright__*
 ---
 
 # qa-debugger — QA Investigator
@@ -61,6 +62,42 @@ You write code (test fix, helper change, selector adjustment). You **do not** mu
 - [[activity-log-validation]] — if log expected and missing, that's a bug (regra #13)
 - [[ui-first-principle]] — if test is API-only and feature is UI, the test is wrong
 - [[gowsign-knowledge]] / [[payment-flows]] / [[fraud-vendors-knowledge]] — domain-specific pitfalls
+
+### Read business rules and knowledge-base files (mandatory when domain matches)
+
+**Protocol:** `Read` the matching files in full — same rule as skills. Business rules contain enum values, state-machine transitions, and known constraints; knowledge-base contains live-portal discoveries that may explain the failure before any fix attempt. For section-level navigation within a file, use `node scripts/docs-tooling.mjs resolve <topic>` — it returns `file.md#anchor`. `_index.md` is file-level only. For a chapter map, `Read docs/business-rules/BUSINESS_RULES.md` (not in `_index.md` — navigation hub only).
+
+**`docs/business-rules/` — read when investigation touches:**
+
+_(⚠️ volatile = cross-check against primary source after reading; no marker = stable)_
+
+| File | When to read |
+|---|---|
+| `01-fundamentos.md` | general platform concepts, onboarding ⚠️ volatile |
+| `02-originacao-pipeline.md` | application pipeline, UW decision, lead lifecycle ⚠️ volatile |
+| `03-contratos-esign.md` | contracts, e-sign, GowSign/SignWell ⚠️ volatile |
+| `04-calculos-financeiros.md` | financial calculations, EPO, payment schedules |
+| `05-pagamentos.md` | payments, ACH, CC, NSF ⚠️ volatile |
+| `06-conta-ciclo-vida.md` | account lifecycle, status transitions ⚠️ volatile |
+| `07-modificacoes-conta.md` | Modification Reports, invoice modification, frequency change, due-date move ⚠️ volatile |
+| `08-funding-merchants.md` | Funding Queue, funding state machine, sweeps, merchant management ⚠️ volatile |
+| `09-integracoes-externas.md` | external vendor integrations (Kount, SEON, TaxCloud) ⚠️ volatile |
+| `10-portal-comunicacoes.md` | portal communications, email templates |
+| `11-administracao.md` | MMH, full sweeps catalog, admin panel ⚠️ volatile |
+| `12-produto-lease-deep-dive.md` | deep lease product rules |
+| `appendix-a-integracoes.md` | vendor integrations: Sentilink, Neustar, LexisNexis, SEON, Plaid, TaxCloud, GowSign routing |
+| `appendix-b-endpoints.md` | quick endpoint reference — sweeps, payments, accounts, admin ⚠️ volatile |
+| `appendix-c-tabelas-banco.md` | DB table schemas, indexes, troubleshooting, merchant-snapshot ⚠️ volatile |
+| `appendix-d-constantes-enums.md` | enums and constants ⚠️ volatile — **always read before classifying a status-value mismatch as a bug** |
+| `appendix-e-campanhas-uw.md` | UW campaigns, client-type, peak/off-peak, segment-limits |
+| `appendix-f-sql-reference.md` | DB validation queries ⚠️ volatile — read when verifying DB state during investigation |
+| `appendix-g-cenarios-risco.md` | lease risk scenarios, state routing, blocked states ⚠️ volatile |
+| `appendix-h-epo-template-registry.md` | EPO template registry for 16m leases ⚠️ volatile |
+| `appendix-i-merchant-leasing-api.md` | merchant leasing full API, settlement, additional-lease, webhooks ⚠️ volatile |
+
+**`docs/knowledge-base/`** — `Read docs/knowledge-base/_index.md` first (has title, covers, status, volatility, verified date per file), then open the files that match the feature area. A known gotcha in the knowledge-base may already explain the root cause — check before forming hypotheses.
+
+**These files must appear in the final `Skills loaded:` declaration** alongside SKILL.md files.
 
 ### Code-side
 - [[helpers-catalog]] — helper might be the issue

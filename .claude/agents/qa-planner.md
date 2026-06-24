@@ -82,28 +82,37 @@ You decide which skills to load based on context signals. Each skill's `descript
 
 ### Read business rules and knowledge-base files (mandatory when domain matches)
 
-**Protocol:** `Read` the matching files in full — same rule as skills. Do NOT skip because a skill covers the area; business rules contain enum values, state-machine transitions, endpoint names, SQL, and pitfalls that skills do not duplicate.
+**Protocol:** `Read` the matching files in full — same rule as skills. Do NOT skip because a skill covers the area; business rules contain enum values, state-machine transitions, endpoint names, SQL, and pitfalls that skills do not duplicate. For section-level navigation within a file, use `node scripts/docs-tooling.mjs resolve <topic>` — it returns `file.md#anchor`. `_index.md` is file-level only. For a chapter map, `Read docs/business-rules/BUSINESS_RULES.md` (not in `_index.md` — navigation hub only).
 
 **`docs/business-rules/` — read when task touches:**
 
+_(⚠️ volatile = cross-check against primary source after reading; no marker = stable)_
+
 | File | When to read |
 |---|---|
-| `01-fundamentos.md` | general platform concepts, onboarding |
-| `02-originacao-pipeline.md` | application pipeline, UW decision, lead lifecycle |
-| `03-contratos-esign.md` | contracts, e-sign, GowSign/SignWell |
+| `01-fundamentos.md` | general platform concepts, onboarding ⚠️ volatile |
+| `02-originacao-pipeline.md` | application pipeline, UW decision, lead lifecycle ⚠️ volatile |
+| `03-contratos-esign.md` | contracts, e-sign, GowSign/SignWell ⚠️ volatile |
 | `04-calculos-financeiros.md` | financial calculations, EPO, payment schedules |
-| `05-pagamentos.md` | payments, ACH, CC, NSF |
-| `06-conta-ciclo-vida.md` | account lifecycle, status transitions |
-| `07-modificacoes-conta.md` | Modification Reports, invoice modification, frequency change, due-date move |
-| `08-funding-merchants.md` | Funding Queue, funding state machine, sweeps (34.46–34.51), merchant management |
-| `09-integracoes-externas.md` | external vendor integrations (Kount, SEON, TaxCloud) |
+| `05-pagamentos.md` | payments, ACH, CC, NSF ⚠️ volatile |
+| `06-conta-ciclo-vida.md` | account lifecycle, status transitions ⚠️ volatile |
+| `07-modificacoes-conta.md` | Modification Reports, invoice modification, frequency change, due-date move ⚠️ volatile |
+| `08-funding-merchants.md` | Funding Queue, funding state machine, sweeps, merchant management ⚠️ volatile |
+| `09-integracoes-externas.md` | external vendor integrations (Kount, SEON, TaxCloud) ⚠️ volatile |
 | `10-portal-comunicacoes.md` | portal communications, email templates |
-| `11-administracao.md` | MMH (Merchant Modification History), full sweeps catalog (all 74), admin panel |
+| `11-administracao.md` | MMH (Merchant Modification History), full sweeps catalog (all 74), admin panel ⚠️ volatile |
 | `12-produto-lease-deep-dive.md` | deep lease product rules |
-| `appendix-d-constantes-enums.md` | enums and constants (FundingQueueStatus, LeadStatus, PaymentStatus, etc.) — **always read when scenarios reference status values** |
-| `appendix-f-sql-reference.md` | DB validation queries — read when SPEC needs DB assertion examples |
+| `appendix-a-integracoes.md` | vendor integrations: Sentilink, Neustar, LexisNexis, SEON, Plaid, TaxCloud, GowSign routing |
+| `appendix-b-endpoints.md` | quick endpoint reference — sweeps, payments, accounts, admin ⚠️ volatile |
+| `appendix-c-tabelas-banco.md` | DB table schemas, indexes, troubleshooting, merchant-snapshot ⚠️ volatile |
+| `appendix-d-constantes-enums.md` | enums and constants (FundingQueueStatus, LeadStatus, PaymentStatus, etc.) ⚠️ volatile — **always read when scenarios reference status values** |
+| `appendix-e-campanhas-uw.md` | UW campaigns, client-type, peak/off-peak, segment-limits |
+| `appendix-f-sql-reference.md` | DB validation queries ⚠️ volatile — read when SPEC needs DB assertion examples |
+| `appendix-g-cenarios-risco.md` | lease risk scenarios, state routing, blocked states ⚠️ volatile |
+| `appendix-h-epo-template-registry.md` | EPO template registry for 16m leases ⚠️ volatile |
+| `appendix-i-merchant-leasing-api.md` | merchant leasing full API, settlement, additional-lease, webhooks ⚠️ volatile |
 
-**`docs/knowledge-base/`** — run `ls docs/knowledge-base/` and read ALL files that match the feature area. Knowledge-base documents live-portal discoveries and confirmed rules not yet in the formal business-rules folder.
+**`docs/knowledge-base/`** — `Read docs/knowledge-base/_index.md` first (has title, covers, status, volatility, verified date per file), then open the files that match the feature area. Knowledge-base documents live-portal discoveries and confirmed rules not yet in the formal business-rules folder.
 
 **These files must appear in the final `Skills loaded:` declaration** alongside SKILL.md files.
 
@@ -117,7 +126,7 @@ You decide which skills to load based on context signals. Each skill's `descript
 6. **Design scenarios** — load `test-design-techniques`. Apply equivalence/BVA/decision-table per scenario.
 7. **Domain reflexes** — load `qa-domain-reflexes` + `activity-log-validation`. Add validation steps per scenario.
 8. **User perspective** — load `user-journey-perspective`. Add persona/journey notes.
-9. **Pitfalls** — load relevant domain skills. Reference known pitfalls (lifecycle, merchant config, etc.). Read matching `docs/business-rules/` files and `docs/knowledge-base/` entries (see table above) — enum values, state-machine transitions, endpoint names, and sweep oracle rules are authoritative in those files and not duplicated in skills.
+9. **Pitfalls** — load relevant domain skills. Reference known pitfalls (lifecycle, merchant config, etc.). Read matching `docs/business-rules/` files and `docs/knowledge-base/` entries (see table above) — enum values, state-machine transitions, endpoint names, and sweep oracle rules are authoritative in those files and not duplicated in skills. Prefer `node scripts/docs-tooling.mjs resolve <topic>` for targeted lookups (returns section anchor + related KB + freshness in one command); use the table for broad multi-file reads.
 10. **Write SPEC** — load `test-plan-template`. Produce final document.
 
 ## Output

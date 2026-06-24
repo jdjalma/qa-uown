@@ -8,6 +8,8 @@ disable-model-invocation: true
 
 > SEON, Kount, DV360 — quando cada um ativa no fluxo, como simular respostas em teste, DB tables tocadas, schemas de bypass, e o outage corrente do DV360 UAT.
 
+> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **HOW TO TEST** — bypass patterns, pitfalls, DB tables. O **comportamento canônico do produto** (quando cada vendor ativa, enums de status, regras de decisão) NÃO mora aqui — é fonte única em `docs/business-rules/09-integracoes-externas.md` + `appendix-a-integracoes.md` e `src/data/merchant-config-contract.ts`. Para resolver um tópico, rode `node scripts/docs-tooling.mjs resolve fraud-vendors`. Investigações recentes: `docs/knowledge-base/*neuroid*` · `docs/knowledge-base/*seon*`. **Não duplique regras de vendor aqui** — elas driftam.
+
 ## Quando aplicar
 
 - Teste de aplicação envolvendo merchant com `isSeonIdCheckRequired=true` (Kornerstone family, e.g. KS3015).
@@ -107,6 +109,18 @@ ORDER BY pk DESC LIMIT 1;
 ```
 
 Expected após bypass: `status='APPROVED' AND success=true AND id_verify_success=true`. Ver `tests/api/seon-id-verification-bypass.spec.ts:141-160`.
+
+#### `SEON_ID_FAILED` — internal_status, NÃO lead_status (confirmado 2026-06-23)
+
+`SEON_ID_FAILED` é valor de **`internal_status`** (coluna `internal_status` em `uown_los_lead`), nunca de `lead_status`. `IdVerificationService.java:254` chama `updateLeadStatus(lead, null /*leadStatus*/, SEON_ID_FAILED /*internalStatus*/, ...)` — com `leadStatus=null`, `LeadInfo.setLeadStatus` escreve **apenas** `internal_status`; `lead_status` permanece `UW_APPROVED`. Live proof: leads 97950/97951 (sandbox 2026-06-23) — name-mismatch SEON record + `submitApplication` → `internal_status=SEON_ID_FAILED`, `lead_status=UW_APPROVED`. Assertiva correta:
+
+```sql
+SELECT internal_status FROM uown_los_lead WHERE pk = $1;
+-- esperado: 'SEON_ID_FAILED'
+-- NUNCA checar lead_status para este estado
+```
+
+Reachable via API (sem câmera): inject `idVerifySuccess=false` + `nameMatchCheckResult=FAIL` + `status=REJECTED` via `createOrUpdate` → `submitApplication` → `internal_status=SEON_ID_FAILED`. Coberto em `tests/api/seon-negative-scenarios.spec.ts` CT-02/CT-03 (8/8 verde). **Exception:** se não houver nenhum registro SEON (`SeonIdVerificationStep` retorna STOP "No SEON record found"), `internal_status` fica `UW_APPROVED` (ex: lead 97955).
 
 #### UI flow com SEON ativo
 
@@ -309,6 +323,22 @@ Se response contém `Apache/2.4.58 (Ubuntu)` ou similar → ENV-GAP, não bug.
 
 `isSeonIdCheckRequired`, `useLexisNexis`, `useSentilink` etc estão em `mustBeFalse` para UOWN base (`merchant-config-contract.ts:51-75`). Setar manualmente via portal → `ensureMerchantReady` no próximo teste vai resetar (auto-heal default). Para testar com flag ON: configurar `AUTO_HEAL_MERCHANT=false` no .env OU usar merchant que já legitimamente tem flag ON (e.g. FifthAveFurnitureNY tem `isSeonIdCheckRequired=true` por design de produto).
 
+### Pitfall #11 — SEON cancel UX não funciona em sandbox (OBSERVACAO S3/P2)
+
+**Sintoma:** `SeonWidgetComponent.closeSeonWidget()` (click no X real via frameLocator) é executado sem erro, mas o widget permanece visível. Reproduzido 2× (probe standalone + CT-03 do `seon-widget-user-behavior.spec.ts`). Nenhuma nota de cancel aparece em `uown_los_lead_notes` (possível gap da Regra #13 para o evento de cancel SEON).
+
+**Root cause (hipótese):** SEON SDK em sandbox-mode não implementa o handler de close, OU o click não propaga via postMessage cross-origin para o host page. Não é bug confirmado — comportamento de widget de vendor em iframe cross-origin pode ser intencional em ambiente sandbox.
+
+**Classificação:** `[OBSERVACAO]` S3/P2 — confirmar com dev/PO antes de abrir ticket.
+
+**O que NÃO fazer:** não aumentar timeout, não usar `force: true`, não tentar `page.evaluate` (bloqueado cross-origin). O comportamento é do SDK, não do teste.
+
+**Impacto em testes:** cenários CT-03 (Cancel via X) e CT-05 (Restart after cancel) ficam como `[PENDENTE-MANUAL]` até confirmação do comportamento esperado em sandbox. CT-01, CT-02, CT-04, CT-07 (backend gate, consent gate, gate-blocks-form, internal_status) passam normalmente (7/7 PASS confirmados).
+
+**Detection:** tentar `seonWidget.closeSeonWidget(); await expect(page.locator(SeonWidgetComponent.OUTER_IFRAME)).not.toBeVisible()` — falha (widget ainda visível). Confirma ausência de dismiss.
+
+**Reference:** `tests/e2e/origination/seon-widget-user-behavior.spec.ts` CT-03; `docs/knowledge-base/seon-idv-widget-user-behavior.md` SEON-UB-03.
+
 ### Pitfall #7 — Confundir SEON status com lead status
 
 `response.body.status` do SEON é `"APPROVED"|"REJECTED"|...` para a verificação de identidade. **NÃO** é o `uwStatus` do lead. Lead status vem de `api.application.getApplicationStatus`.
@@ -381,3 +411,5 @@ A tabela tem linhas de chamadas NeuroID (`url ILIKE '%neuro-id.com%'`) mas, para
 - [ ] Falha 500 com Apache HTML classificada como `[ENV-GAP] DV360 UAT instability`, não `[CONFIRMADO] bug`
 - [ ] SSN escolhido respeita catalog (não inventou aleatório, fora os patterns `≠9`/`=9`/`888880916`/`100000053`)
 - [ ] Activity log validado em `uown_los_lead_notes` (CLAUDE.md regra 13)
+- [ ] `SEON_ID_FAILED` assertado em `internal_status` (NÃO `lead_status`) — ver Pitfall #11 e seção `internal_status` acima
+- [ ] Cancel via X (`closeSeonWidget`) em sandbox: comportamento atual = widget permanece visível (Pitfall #11, OBSERVACAO S3/P2 — não é falha do teste)

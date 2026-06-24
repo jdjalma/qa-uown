@@ -1,5 +1,5 @@
 import { BaseClient } from './base.client.js';
-import { type ApiResponse, parseResponse } from '../responses/api-response.js';
+import { type ApiResponse } from '../responses/api-response.js';
 import type { GowSignTemplate } from '../responses/gowsign-template.response.js';
 import type {
   GowSignTemplateCreateBody,

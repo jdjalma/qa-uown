@@ -50,7 +50,7 @@ test.describe(`TireAgent Unified Flow - ${baseTestData.state}/${baseTestData.mer
       await mSetup.configureByName(baseTestData.merchant, 'lifecycle');
     });
 
-    const { env, address, merchant, applicant, order } = buildTestData({
+    const { env, address, applicant } = buildTestData({
       state: baseTestData.state,
       merchant: baseTestData.merchant,
       orderTotal: String(DEFAULT_TIRE_AGENT_PRODUCT.price + DEFAULT_TIRE_AGENT_PRODUCT.taxAmount),

@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 # Test Design Techniques — sair de "happy + 1 erro" para cobertura desenhada
 
+> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **HOW TO DESIGN** — techniques, partition tables, examples. Os **enums e estados canônicos** usados nos exemplos (LeadStatus, lease term boundaries, merchant config flags) NÃO moram aqui — rode `node scripts/docs-tooling.mjs resolve enums` (ou `originacao`) ou leia `docs/business-rules/appendix-d-constantes-enums.md` + `02-originacao-pipeline.md`. **Não duplique valores de enum aqui** — eles driftam.
+
 > Cenário desenhado >> cenário improvisado. Esta skill empacota técnicas clássicas adaptadas ao domínio UOWN.
 
 ## Quando aplicar
@@ -246,35 +248,6 @@ Bloco markdown com tabelas por técnica + casos consolidados. Tamanho proporcion
 - State Transition só com transições válidas — perde os bloqueios de transições inválidas.
 - Pairwise sem seed para bug histórico conhecido — perde regressão.
 - Inventar "valores aleatórios" em vez de boundaries — random ≠ desenhado.
-
-## Exemplos curtos (domínio UOWN)
-
-### Exemplo 1 — Validação de cash price input
-
-Técnica: EP + BVA.
-- Partições: <min, [min..max], >max, negativo, zero, string, unicode.
-- Boundaries: min-0.01, min, min+0.01, max-0.01, max, max+0.01.
-- Total: ~10 casos representativos vs infinitos valores possíveis.
-
-### Exemplo 2 — Roteamento de template de contrato
-
-Técnica: Decision Table.
-- Causas: state, merchant.uses_gosign, sql_config.gosign_enabled, lease.term.
-- Efeitos: template_id resolved.
-- 4 causas × 2 valores = 16 combinações; decisões iguais colapsam para ~6 colunas únicas.
-
-### Exemplo 3 — Pagamento NSF, retry, e dunning
-
-Técnica: State Transition.
-- Estados: SCHEDULED → ATTEMPTED → FAILED → RETRY_QUEUED → ATTEMPTED → ... → DUNNING → CHARGED_OFF.
-- Transições inválidas: SCHEDULED → CHARGED_OFF direto; FAILED → SUCCESS sem retry; etc.
-- Activity log assertion em cada transição (regra #13).
-
-### Exemplo 4 — Combinação brand × state × portal
-
-Técnica: Pairwise.
-- Params: brand {UOWN, KS}, state {CA, FL, NY, TX, GA}, portal {Origination, Servicing, Website}.
-- Pairwise gera ~10 casos vs 30 totais; seed adicional: (KS, CA, Website) se há bug histórico.
 
 ## Referências
 

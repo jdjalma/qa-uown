@@ -908,68 +908,10 @@ export interface AmsUserSelectors {
   amsUserMerchantsSearchbox: string;
 }
 
-/** Composite type of all selectors */
-export interface AppSelectors extends
-  SpinnerSelectors,
-  ToastSelectors,
-  PaginationSelectors,
-  SidebarSelectors,
-  FilterSelectors,
-  ModalSelectors,
-  ButtonSelectors,
-  TableSelectors,
-  LoginSelectors,
-  SearchSelectors,
-  CustomerSummarySelectors,
-  PaymentSelectors,
-  CreditCardSelectors,
-  BankSelectors,
-  FormSelectors,
-  PandaDocsSelectors,
-  SignwellSelectors,
-  SigningProviderSelectors,
-  FundingSelectors,
-  PaymentTransactionSelectors,
-  AddCardSelectors,
-  TopBarSelectors,
-  MenuSelectors,
-  CancellationSelectors,
-  ModifyLeaseSelectors,
-  PayTomorrowPortalSelectors,
-  PayPairPortalSelectors,
-  ContractSelectors,
-  PaymentProgramSelectors,
-  CompletionScreenSelectors,
-  InsuranceSelectors,
-  WebsiteSelectors,
-  NewApplicationSelectors,
-  MerchantSettingSelectors,
-  ServicingInformationSelectors,
-  SettlementAmountSelectors,
-  PaymentArrangementSelectors,
-  ErrorLogSelectors,
-  MoveDueDateSelectors,
-  AmsUserSelectors,
-  AmsMerchantsSelectors,
-  InvitationSelectors,
-  OptOutAiSelectors,
-  LeadsTableSelectors,
-  SalesRepPanelSelectors,
-  LeasePanelSelectors,
-  OpenToBuySelectors,
-  CcHistorySelectors,
-  CcBinSelectors,
-  MerchantAddEditSelectors,
-  ProgramGroupsSelectors,
-  ProgramsListSelectors,
-  ProgramDetailsSelectors,
-  MerchantProgramsSectionSelectors,
-  BankAccountModalSelectors,
-  ServicingDocumentsSelectors,
-  GowSignDocumentViewerSelectors,
-  ColumnOrderSelectors,
-  ServicingEpoPanelSelectors,
-  CustomerPortalOverviewSelectors {}
+// `AppSelectors` is now DERIVED from the SELECTORS object in common.selectors.ts
+// (`export type AppSelectors = typeof SELECTORS`) — single source of truth, so the
+// type can never drift from the object again. The section interfaces above are kept
+// for documentation/reference; they are no longer composed into AppSelectors.
 
 export interface AmsUserSelectors {
   amsRdtTable: string;

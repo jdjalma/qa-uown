@@ -162,39 +162,6 @@ Documento markdown de 40–120 linhas anexado ao SPEC (ou retornado ao orquestra
 - Pular o passo 4 (implícitos) — esse é o passo onde a maioria dos bugs futuros nasce.
 - Aprovar AC porque "o PO escreveu, deve estar certo" — review é review.
 
-## Exemplos curtos (domínio UOWN)
-
-### Exemplo 1 — AC original ruim
-
-> "Quando o customer assina, sistema deve avançar a lead."
-
-Buracos: que portal? que vendor (SignWell/GoSign)? avançar para que status? activity log? email pro merchant?
-
-Reformat:
-```
-Given lease em estado `LEASED`, signing via GoSign (state CA), customer no Website portal
-And merchant TireAgent configurado para OEP 60-day
-When customer clica "I agree" no iframe GoSign e completa todos os campos obrigatórios
-Then lead avança para status `SIGNED` em uown_los_lead.status
-And uown_los_lead_notes recebe linha com note_type='SIGNATURE_COMPLETED'
-And merchant recebe email com template `signing-completed-merchant`
-And customer vê página de confirmação com link para Account Portal
-```
-
-Implícitos detectados: activity log, email merchant, redirect destination, dual-vendor (SignWell parity?).
-
-### Exemplo 2 — AC sem error path
-
-> "Customer recebe OTP por email."
-
-Open Question: e se IMAP demora? e se email cai em spam? e se customer pede reenvio? rate-limit? Twilio fallback para SMS? Lembrar `feedback_email_imap_click_link` — o teste deve clicar no link, não usar URL do payload.
-
-### Exemplo 3 — AC com float
-
-> "Total do schedule deve bater com o cash price."
-
-Buraco: tolerância? `feedback_float_repr_not_bug` — `18.46` vs `18.459999...` é arredondamento, não bug. AC refinado: "total agregado deve bater com cash price com tolerância de ±$0.01 (toBeCloseTo precision 2)".
-
 ## Referências
 
 - `.claude/rules/testing.md`

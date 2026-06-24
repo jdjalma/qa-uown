@@ -32,7 +32,7 @@
     "auto-pay": ["autopay"],
     "rating-letters": ["rating", "rating-letter"],
     "delinquency": ["collections", "inadimplencia"],
-    "account-status": ["contas", "account-status-transition"],
+    "account-status": ["contas", "account-status-transition", "account-lifecycle", "lease-lifecycle"],
     "lead-status": ["lead-status-change"],
     "cancellation": ["cancelamento"],
     "paid-out": ["auto-paid-out", "paid-in-full"],

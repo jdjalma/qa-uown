@@ -44,8 +44,8 @@ export * from './api/index.js';
 // ── Helpers ────────────────────────────────────────────────────────
 // Utility functions: common, date, downloads, email, table, validation,
 // template-engine, test-data, auth, navigation, api-setup.
-// NOTE: DatabaseHelpers is NOT in the helpers barrel — import directly
-// from '@helpers/database.helpers.js'.
+// NOTE: DatabaseHelpers is now re-exported from the helpers barrel
+// (src/helpers/index.ts) — prefer '@helpers/index.js' over the module.
 export * from './helpers/index.js';
 
 // ── Selectors ──────────────────────────────────────────────────────

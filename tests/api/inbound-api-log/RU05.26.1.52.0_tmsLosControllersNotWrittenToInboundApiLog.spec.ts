@@ -443,7 +443,6 @@ test.describe(
     // CT-05 — Universe coverage: count = 1 per representative endpoint
     // ──────────────────────────────────────────────────────────────
     test('CT-05 — universe coverage: exactly ONE row per controller class probed', async ({
-      api,
       db,
       request,
     }) => {
@@ -620,7 +619,6 @@ test.describe(
     // CT-08 — Regression: previously-logged LOS controllers count=1
     // ──────────────────────────────────────────────────────────────
     test('CT-08 — pre-fix LOS controllers still produce exactly 1 row (no regression)', async ({
-      api,
       db,
       request,
     }) => {
@@ -675,7 +673,6 @@ test.describe(
     // CT-09 — Exception path / duplicate-row hypothesis (Q-A2)
     // ──────────────────────────────────────────────────────────────
     test('CT-09 — [HIPÓTESE] exception path row-count observation (Q-A2)', async ({
-      api,
       db,
       request,
     }) => {

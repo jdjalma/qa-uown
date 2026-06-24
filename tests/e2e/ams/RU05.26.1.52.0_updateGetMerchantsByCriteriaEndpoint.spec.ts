@@ -1,5 +1,5 @@
 /**
- * RU05.26.1.52.0 — Update getMerchantByCriteria endpoint (svc#504).
+ * RU05.26.1.52.0 — Update getMerchantByCriteria endpoint.
  *
  * SPEC: docs/taskTestingUown/RU05.26.1.52.0_updateGetMerchantsByCriteriaEndpoint_504/spec.md
  * MRs:  uown/backend/svc!1430 + uown/frontend/ams-website!170 (merged 2026-05-15).
@@ -91,7 +91,7 @@ interface MerchantPageEnvelope {
 }
 
 test.describe(
-  'RU05.26.1.52.0_updateGetMerchantsByCriteriaEndpoint_504',
+  'RU05.26.1.52.0_updateGetMerchantsByCriteriaEndpoint',
   { tag: splitTags(TAG) },
   () => {
     // Fix the AMS Bootstrap d-lg-block breakpoint trap (rule #16 — viewport ≥1440×900).

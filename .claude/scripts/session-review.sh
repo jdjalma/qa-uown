@@ -24,7 +24,7 @@ MODIFIED_TS=$(git status --short 2>/dev/null \
 FILE_COUNT=$(echo "$MODIFIED_TS" | grep -c "." || echo "0")
 
 # ── Rodar tsc --noEmit ──────────────────────────────────────────────
-TSC_ERRORS=$(npx --no-install tsc --noEmit 2>&1 \
+TSC_ERRORS=$(npx --no-install tsc --noEmit --incremental 2>&1 \
   | grep -E "error TS[0-9]+" \
   | head -20 \
   || true)

@@ -421,7 +421,8 @@ function runResolve() {
     const guess = [...set].filter((t) => t.includes(raw) || raw.includes(t)).slice(0, 5);
     console.log(`\n❓ Tópico desconhecido: '${raw}'`);
     if (guess.length) console.log(`   Você quis dizer: ${guess.join(', ')}?`);
-    console.log('   Tópicos canônicos: docs/_topics.json\n');
+    console.log('   Tópicos canônicos: docs/_topics.json');
+    console.log('   Fallback: rode `node scripts/docs-tooling.mjs index` e leia docs/business-rules/_index.md para localizar o capítulo relevante.\n');
     process.exitCode = 1;
     return;
   }
@@ -442,7 +443,8 @@ function runResolve() {
   console.log(`\n🎯 resolve '${raw}' → tópico canônico: ${canonical}\n`);
 
   if (!brHits.length && !kbHits.length) {
-    console.log('   Nenhum doc cobre este tópico ainda (covers vazio para ele).\n');
+    console.log('   Nenhum doc cobre este tópico ainda (covers vazio para ele).');
+    console.log('   Fallback: leia docs/business-rules/_index.md para identificar o capítulo mais próximo. Se o achado for novo, documente via /discovery antes de testar.\n');
     return;
   }
 

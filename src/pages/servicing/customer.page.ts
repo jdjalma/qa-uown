@@ -32,26 +32,77 @@ export class ServicingCustomerPage extends ServicingBasePage {
     await searchPage.quickSearchInput.clear();
     await searchPage.quickSearchInput.fill(searchTerm);
 
-    // Try autocomplete first.
-    // Only match the dedicated autocomplete item class — NOT "nav a[href*='/customer-information/']"
-    // which can falsely match persistent sidebar links in STG and navigate to the wrong page.
-    const autocompleteLink = this.page.locator('[class*="searchBarQuickSearchResultItem"]').first();
-    if (await autocompleteLink.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await autocompleteLink.click();
+    // Try autocomplete first. The autocomplete result is rendered as an <a href="/customer-information/{pk}">.
+    // Before Enter is pressed, no search-results table exists so this is the only such link in the DOM
+    // (sidebar nav items are generics with onClick, not <a> tags). Class-based selectors are avoided
+    // because the class name changed between portal versions.
+    // Timeout 20s: stg autocomplete API can take 8–12s under load (bumped from 7s after stg run evidence).
+    const autocompleteLink = this.page.locator('a[href*="/customer-information/"]').first();
+    if (await autocompleteLink.isVisible({ timeout: 20_000 }).catch(() => false)) {
+      // Use page.goto(href) instead of click() to avoid target="_blank" opening a new tab.
+      const autocompleteHref = await autocompleteLink.getAttribute('href') ?? '';
+      const autocompleteBase = this.page.url().split('/').slice(0, 3).join('/');
+      await this.page.goto(autocompleteHref.startsWith('http') ? autocompleteHref : `${autocompleteBase}${autocompleteHref}`);
       await this.waitForSpinner();
     }
 
     // If autocomplete didn't land on a customer page, fall back to Enter + first result link.
     if (!this.page.url().includes('/customer-information/')) {
       await searchPage.quickSearchInput.press('Enter');
+      // stg quick search may route directly to the customer page on an exact-ID match
+      // (no separate results table). waitForURL covers that path; if the URL doesn't
+      // change within the timeout, the code falls through to the table-link approach.
+      // NOTE: do NOT race with waitForLoadState('networkidle') — the SPA debounces
+      // the Enter keypress (~200-400ms) before issuing the search API request, so
+      // networkidle fires during the debounce gap (0 pending requests) and resolves
+      // before the navigation actually starts, causing a false "not at customer page"
+      // result on the URL check at line below.
+      await this.page.waitForURL('**/customer-information/**', { timeout: 10_000 }).catch(() => {});
       await this.waitForSpinner();
 
-      // IMPORTANT: Click the "Account #" column link (first <a> in each row, href="/customer-information/...")
-      // NOT the "Ref Account" link which points to the origination portal!
-      const firstAccountLink = this.page.locator('a[href*="/customer-information/"]').first();
-      await firstAccountLink.waitFor({ state: 'visible', timeout: 10_000 });
-      await firstAccountLink.click();
-      await this.waitForSpinner();
+      // Enter can navigate directly to the customer page (e.g. via keyboard-selected autocomplete)
+      // without going through the search results table. Re-check before looking for a table link.
+      if (!this.page.url().includes('/customer-information/')) {
+        // IMPORTANT: Click the "Account #" column link (first <a> in each row, href="/customer-information/...")
+        // NOT the sidebar nav "Customer Information" link (no numeric id in href) or
+        // the "Ref Account" link which points to the origination portal.
+        // Filter by hasText: /^\d+$/ so we only match numeric account-id links (table results).
+        const firstAccountLink = this.page
+          .locator('a[href*="/customer-information/"]')
+          .filter({ hasText: /^\d+$/ })
+          .first();
+
+        // In stg the search may auto-navigate to the customer page (Enter on exact match)
+        // with a delay >10s from debounce + API latency. Race: either the search results
+        // table shows a numeric link OR the URL changes to the customer page.
+        await Promise.race([
+          firstAccountLink.waitFor({ state: 'visible', timeout: 15_000 }),
+          this.page.waitForURL('**/customer-information/**', { timeout: 15_000 }),
+        ]).catch(() => {});
+
+        // If the URL already changed to customer page (direct navigation via Enter), done.
+        if (this.page.url().includes('/customer-information/')) {
+          await this.waitForSpinner();
+        } else {
+          // Fallback A: search-results table link (digit-only text) — target="_blank" in stg, navigate via href.
+          const hrefFromTable = await firstAccountLink.getAttribute('href', { timeout: 3_000 }).catch(() => null);
+          if (hrefFromTable) {
+            const base = this.page.url().split('/').slice(0, 3).join('/');
+            await this.page.goto(hrefFromTable.startsWith('http') ? hrefFromTable : `${base}${hrefFromTable}`);
+            await this.waitForSpinner();
+          } else {
+            // Fallback B: the autocomplete may have appeared late with full-text rows (not digit-only).
+            // Re-check the any-customer-information link (no digit filter) one more time.
+            const lateAutocomplete = this.page.locator('a[href*="/customer-information/"]').first();
+            const lateHref = await lateAutocomplete.getAttribute('href', { timeout: 5_000 }).catch(() => null);
+            if (lateHref) {
+              const base = this.page.url().split('/').slice(0, 3).join('/');
+              await this.page.goto(lateHref.startsWith('http') ? lateHref : `${base}${lateHref}`);
+              await this.waitForSpinner();
+            }
+          }
+        }
+      }
     }
 
     console.log(`[ServicingCustomer] Navigated to customer page. URL: ${this.page.url()}`);

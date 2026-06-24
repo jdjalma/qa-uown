@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 # Bug Classification Rules — UOWN Leasing
 
+> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **HOW TO CLASSIFY** — regras de evidência, fresh repro, taxonomia. Para enums e estados canônicos (`arrangement=SUCCESS`, `BLOCKED_ACCOUNT`, status codes), rode `node scripts/docs-tooling.mjs resolve enums` (ou `payments`, `account-status`) ou leia `docs/business-rules/appendix-d-constantes-enums.md`. **Não reescreva regras de estado aqui** — elas driftam.
+
 > **Propósito:** prevenir classificação prematura de "Bug de Aplicação" por agents e flows diretos. Uma observação isolada num dado pré-existente é HIPÓTESE, não bug. Bug só depois de reprodução + checagem de task existente.
 >
 > **Aplicável a:** `qa-validator`, `qa-debugger`, `/qa-flow`, `/new-*` commands, e análises diretas do Claude. **Não é opcional.**

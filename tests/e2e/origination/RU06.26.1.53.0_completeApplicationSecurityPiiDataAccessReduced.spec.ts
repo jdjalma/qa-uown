@@ -55,7 +55,7 @@ import type { Page, BrowserContext, Response } from '@playwright/test';
 import { ContractPage, TermsOfAgreementPage } from '@pages/origination/index.js';
 import { TestTag, buildTags, splitTags } from '@ptypes/enums.js';
 import { TEST_CARDS, TEST_BANK } from '@config/index.js';
-import { buildTestData, sleep } from '@helpers/index.js';
+import { buildTestData, sleep, findActivityLogContaining } from '@helpers/index.js';
 import type { DatabaseHelpers } from '@helpers/database.helpers.js';
 
 // ── PII field NAMES we still scan for as a SECONDARY signal (key-based) ────────
@@ -1000,12 +1000,7 @@ test.describe(
           '%initiated protection plan with Buddy%',
         ]);
         expect(ppNote, 'expected a positive Buddy opt-in activity log entry (rule #13)').not.toBeNull();
-        const notOffered = await db.queryOne<{ pk: number }>(
-          `SELECT pk FROM uown_los_activity_log
-            WHERE lead_pk = $1 AND notes ILIKE '%Protection plan was not offered%'
-            ORDER BY pk DESC LIMIT 1`,
-          [setup.leadPk],
-        );
+        const notOffered = await findActivityLogContaining(db, setup.leadPk, 'Protection plan was not offered');
         expect(notOffered, 'opt-in flow must not log "Protection plan was not offered"').toBeNull();
         // Progression log (UW notes live in uown_los_lead_notes) without a missing-data error.
         await assertProgressionLogNoMissingData(db, setup.leadPk, 'CT-03');

@@ -1,7 +1,7 @@
 /**
- * R1.52.0_fixRecordingLinkSameTabReuse_1291
+ * R1.52.0_fixRecordingLinkSameTabReuse
  *
- * Issue:    https://gitlab.com/uown/frontend/origination/-/work_items/1291
+ * Issue:    GitLab uown/frontend/origination work item (private)
  * Title:    Fix opening multiple applications in same tab loose recording link
  * MR:       !1448 (frontend/origination) — merged 2026-05-11
  * Spec:     ./R1.52.0_fixRecordingLinkSameTabReuse_1291-spec.md
@@ -124,7 +124,7 @@ async function setupFreshLeadWithCompleteUrl(
     state,
     merchant: MERCHANT_KEY,
     orderTotal: ORDER_TOTAL,
-    orderDescription: `recording-link-#1291 ${state}`,
+    orderDescription: `recording-link ${state}`,
     uniqueAddress: true, // dodge static CA address blacklist (654 Sunset Blvd/90028, pk:2165)
   });
 
@@ -185,11 +185,11 @@ async function navigateToCompleteAndPreflight(
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-test.describe('R1.52.0_fixRecordingLinkSameTabReuse_1291', { tag: TAGS }, () => {
+test.describe('R1.52.0_fixRecordingLinkSameTabReuse', { tag: TAGS }, () => {
   test.beforeEach(() => {
     test.info().annotations.push(
       { type: 'env', description: process.env.ENV ?? 'unknown' },
-      { type: 'spec', description: 'R1.52.0 issue #1291 (MR !1448)' },
+      { type: 'spec', description: 'R1.52.0 (MR !1448)' },
       {
         type: 'disclaimer',
         description:

@@ -38,6 +38,9 @@ disable-model-invocation: true
 | `program-test-data.helper.ts` | `src/helpers/` | Test data lifecycle for merchant programs |
 | `correspondence.helpers.ts` | `src/helpers/` | DB queries for approval email template routing |
 | `gowsign-template-db.helpers.ts` | `src/helpers/` | DB queries for GowSign template routing |
+| `esign-db.helpers.ts` | `src/helpers/` | DB queries for `uown_esign_document`/events/lead-notes — status, client (GOWSIGN/SIGNWELL/PANDADOC), `waitForEsignDocumentStatus`, `waitForEsignClient`, `waitForLeadStatus`, `findLeadNoteContaining` |
+| `activity-log.helpers.ts` | `src/helpers/` | **ACTIVITY-LOG ORACLE** — single surface for rule #13 log assertions. NEW coverage of `uown_los_activity_log` (Buddy Protection Plan + other LOS structured-log events live here, NOT `lead_notes`): `findActivityLogContaining`, `countActivityLogContaining`, `waitForActivityLogSubstring` (alias `waitForActivityNote`), keyable by `lead_pk` or `account_pk`. **RE-EXPORTS** the `lead_notes` helpers from `esign-db` (`findLeadNoteContaining`, `countLeadNotesContaining`, `waitForLeadNoteSubstring` / alias `waitForLeadNote`, `getLeadNotesByLeadPk`) so every activity-log check imports from ONE place. STOP writing raw `SELECT ... FROM uown_los_activity_log` in specs |
+| `gowsign-signing.helper.ts` | `src/helpers/` | GowSign iframe signing — `signGowSignInFrame`, `installPostMessageRecorder`, `waitForPostMessage` |
 | `redirect.helpers.ts` | `src/helpers/` | URL-redirect assertions for `/getApplication/{code}` |
 | `settled-in-full.helpers.ts` | `src/helpers/` | DB queries for Settled In Full email sweep |
 | `settlement.helpers.ts` | `src/helpers/` | Settlement Amount calculation oracle |
@@ -157,8 +160,6 @@ Listados para fechar o gap da Regra #2 (auditoria 2026-06-18). Leia o `src/helpe
 | Helper | Propósito |
 |--------|-----------|
 | `contract-pdf.helper.ts` | Extração/validação de conteúdo do PDF de contrato |
-| `esign-db.helpers.ts` | Queries de `uown_esign_document` (status, client GOWSIGN/SIGNWELL) — 22 imports |
-| `gowsign-signing.helper.ts` | `signGowSignInFrame` — assinatura no iframe GowSign — 19 imports |
 | `merchant-config.helper.ts` | Leitura/preflight de config de merchant |
 | `merchant-location-report.helper.ts` | `MerchantLocationReportControls` — filtro Merchant/Location + paginação + leitura de coluna compartilhados (composição). NOTA: a página `FundingPage` (`src/pages/origination/funding.page.ts`) NÃO usa o componente compartilhado `MerchantLocationFilters` — tem DOM custom (labels `<div>` + IDs estáveis). Sua API pública de filtro (`listAvailableLocations()`, `filterByLocations`, `filterByStatuses`, …) vive no page object, catalogada em [[page-object-pattern]] `FundingPage`. NÃO usar `MerchantLocationFilterPO` no Funding Queue. |
 | `merchant-program-toggle.helpers.ts` | Toggle de programas 13m/16m do merchant |

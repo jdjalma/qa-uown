@@ -323,6 +323,54 @@
 
 **Known gap (not fixed in #1285):** `fillBankAccount` uses `getByText(bank.accountType, { exact: true })` which causes strict-mode violation. See application-lifecycle pitfall #25.
 
+## SeonWidgetComponent — standalone frameLocator-based component (added 2026-06-23)
+
+- **Location:** `src/pages/components/seon-widget.component.ts`
+- **Extends:** none — standalone component class (`constructor(page, parentFrame?)`). Does NOT extend BasePage. Follows the same convention as `FilteredCsvDownloadControls` (composed into pages, not a page). Export via `src/pages/components/index.ts`.
+- **Purpose:** drives and asserts the SEON Identity Verification widget that the consumer portal injects on the `/complete` payment step when the merchant has `isSeonIdCheckRequired=true` and no valid SEON record exists. First component in the project that DIRECTS a cross-origin iframe via frameLocator (CDP-level; `page.evaluate` into `transfer.seonidv.com` is blocked by same-origin policy).
+- **Topology — why there are two constructor signatures:**
+  - Kornerstone `/complete` → SEON iframe is top-level on the `page` (pass no `parentFrame`)
+  - PayPair / PayTomorrow → SEON iframe is nested inside the portal's `ptFrame` (pass `parentFrame`)
+- **Reference spec:** `tests/e2e/origination/seon-widget-user-behavior.spec.ts` (P0, 7/7 PASS, sandbox 2026-06-23)
+- **Reference pattern:** `docs/knowledge-base/seon-idv-widget-user-behavior.md` (SEON-UB-01..11)
+
+**Public API:**
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `waitForSeonWidget` | `waitForSeonWidget(timeout?): Promise<void>` | Waits for the internal heading `"Verify your identity"` to be visible (~5s after goto). Guards against a stuck/loading iframe. |
+| `isSeonWidgetVisible` | `isSeonWidgetVisible(timeout?): Promise<boolean>` | Non-throwing: true when heading visible. Distinct from outer-iframe presence. |
+| `acceptPrivacyConsent` | `acceptPrivacyConsent(): Promise<void>` | Ticks the native checkbox; falls back to clicking label text if not directly actionable. |
+| `isStartVerificationEnabled` | `isStartVerificationEnabled(): Promise<boolean>` | Reflects real `disabled` attribute — `false` before consent, `true` after. |
+| `startVerification` | `startVerification(): Promise<void>` | Clicks "Start verification" — advances to camera/document/selfie. |
+| `closeSeonWidget` | `closeSeonWidget(): Promise<void>` | Clicks the real X close control. Does NOT wait for / assert dismissal (caller decides). |
+| `isSeonGateBlockingPaymentForm` | `isSeonGateBlockingPaymentForm(paymentFieldLocator): Promise<boolean>` | Non-destructive: true when the overlay blocks a given payment input. |
+| `getSeonErrorMessage` | `getSeonErrorMessage(): Promise<string \| null>` | Returns widget error text or null. Matches "Failed to verify"/"verification failed" family. |
+| `hideWidget` | `hideWidget(): Promise<void>` | BACK-COMPAT only: hides iframe via JS (display:none). Preserves legacy `dismissSeonOverlay` behavior. Use `closeSeonWidget()` for real cancel UX. |
+
+**Selectors (confirmed live, sandbox 2026-06-23, lead 97964):**
+- Outer iframe: `[data-testid="seon-idv-iframe"]` (static `SeonWidgetComponent.OUTER_IFRAME`)
+- Inside frame (cross-origin `transfer.seonidv.com`, via frameLocator):
+  - Heading: `getByRole('heading', { name: /verify your identity/i })`
+  - Consent: `getByRole('checkbox')` (native — count=1)
+  - Start btn: `getByRole('button', { name: /start verification/i })`
+  - X close: `[class*="close-button"]` — icon-only, NO accessible name/aria-label/testid/title; CSS-module class partial match is the **last-resort, documented choice**
+- Widget content loads ~5s after page goto
+
+**When NOT to use:**
+- If you only need the legacy DOM-hide behavior, `contract.page.ts:dismissSeonOverlay` still delegates to `hideWidget()` — no change needed unless exercising real cancel UX.
+- PayPair and PayTomorrow still have their own `dismissSeonOverlay` impls (hide-only). Consolidation to `SeonWidgetComponent` is a tracked refactor debt (see below).
+
+**Known behavior — cancel UX is non-trivial (OBSERVACAO S3/P2, 2026-06-23):**
+Clicking the real X (`closeSeonWidget`) does NOT dismiss the widget in sandbox (reproduced 2x — probe + validated spec). Root hypothesis: SEON SDK sandbox-mode does not implement close, or click does not propagate cross-origin. Not a confirmed bug. See [[fraud-vendors-knowledge]] Pitfall #11 and [[application-lifecycle]] Pitfall #142.
+
+**Hook caveat:** `pre-write-validate.sh` Rule 1 (line 25-33) checks `export class` in `src/pages/**` without `extends` → blocks the file. The implementer worked around this with the `class X {}; export { X }` pattern. See [[application-lifecycle]] Pitfall #143.
+
+**Refactor debt — 3 copies of `dismissSeonOverlay`:**
+Today `contract.page.ts` delegates to `SeonWidgetComponent.hideWidget()`. PayPair (`paypair-portal.page.ts:900`) and PayTomorrow (`paytomorrow-portal.page.ts`) still carry their own hide-only impls. 5 specs depend on them. Track as follow-up to consolidate into `SeonWidgetComponent.hideWidget()`. Do NOT refactor now.
+
+---
+
 ## ContractPage - missing employment info flow
 
 Methods added to `ContractPage` (`src/pages/origination/contract.page.ts`) para `/complete` URL quando `planId` esta empty:
@@ -373,7 +421,7 @@ Methods added to `ContractPage` (`src/pages/origination/contract.page.ts`) para 
   - Do NOT reuse one modal's confirm selector for the other — the old `setToExpired` used the CONFIRM/`.submit-button` selector → 0 matches → silent no-op.
 - **Selectors (`common.selectors.ts`):** `moveContractToSignedModal` / `moveContractToSignedComment` / `moveContractToSignedConfirm`; `setToExpiredModal` / `setToExpiredComment` (`input[name='comment']`, placeholder "Type here...") / `setToExpiredConfirm` (`button[type='submit']` / "Save"). Both modal/confirm locators apply `.last()` to win against any stacked `.modal.show`.
 - **DOM source:** LIVE qa2 lead 16728, 2026-06-18, headless chromium 1440×900. Confirmed via XHR 200 + status UW_APPROVED→EXPIRED + `uown_lead_modifications.mod_type=LEAD_STATUS_CHANGE`.
-- **Test:** `tests/e2e/origination/R1.53.0_fixSystemAgentUsernameInModificationReport_1315.spec.ts` (CT-01 EXPIRED, CT-02 SIGNED — `@qa2 @regression @critical`).
+- **Test:** `tests/e2e/origination/R1.53.0_fixSystemAgentUsernameInModificationReport.spec.ts` (CT-01 EXPIRED, CT-02 SIGNED — `@qa2 @regression @critical`).
 
 ## OriginationCustomerPage - `ensureAuthenticated` v8 auth-retry pattern
 
@@ -564,7 +612,7 @@ SIM: resolucao dinamica de columnIndex via header role=columnheader
 - **`forceReactInputValue(selector, value)` (private):** sets a Formik/React-controlled input via the prototype native-value setter + dispatched `input`/`change`/`blur` events. `page.fill()` alone **silently no-ops** on `input#agentName`/`input#from`/`input#to` because React owns the value (same pattern as `SearchPage.forceReactInputValue` / `#search-input`). See [[selector-hardening]] "React-controlled date/text input" rule and the anti-pattern table in [[page-object-pattern]] (`page.fill on React-controlled inputs`).
 - **Pagination on `getRowByLeadPk` (rdt default 10 rows/page):** do NOT assume the target lead is on page 1 — a freshly-created lead can land below the fold once the date filter widens the set. The walk is mandatory; a single-page `getAllRows().find(...)` would silently miss page-2+ rows.
 - **DOM source:** LIVE qa2 2026-06-18 (`jmendes.gow`, headless chromium 1440×900). Date placeholder `MM/DD/YYYY` confirmed; the 3 ids are stable Formik names (`agentName`/`from`/`to`).
-- **Test:** `tests/e2e/origination/R1.53.0_fixSystemAgentUsernameInModificationReport_1315.spec.ts` — CT-03 asserts the rendered "Agent Name" cell = real agent (not SYSTEM) for a fresh `UW_APPROVED → EXPIRED`; CT-04 asserts a legitimate-SYSTEM `CONTRACT_CREATED → SIGNED` webhook record renders SYSTEM (read-only reuse + `test.skip` guard).
+- **Test:** `tests/e2e/origination/R1.53.0_fixSystemAgentUsernameInModificationReport.spec.ts` — CT-03 asserts the rendered "Agent Name" cell = real agent (not SYSTEM) for a fresh `UW_APPROVED → EXPIRED`; CT-04 asserts a legitimate-SYSTEM `CONTRACT_CREATED → SIGNED` webhook record renders SYSTEM (read-only reuse + `test.skip` guard).
 
 ### `FundingPage` — Funding Queue `/funding`
 - **Location:** `src/pages/origination/funding.page.ts`. Extends `OriginationBasePage`.

@@ -13,7 +13,7 @@ sources:
   - gitlab: uown/backend/svc!1483 "Handle non-cancelable transactions" (StickyRecoverCancelService + StickyRecoverCancelSweepService)
   - gitlab: uown/backend/sticky.io!9 "Add markRecoveryCanceled method"
   - task: gitlab task in uown/backend/svc (description + Gustavo Martins QA comment, milestone RU06.26.1.53.0)
-covers: [sticky-recovery, sticky-recover-cancel-sweep, scheduled-task-sweep, account-status-transition, activity-log]
+covers: [sticky-recovery, sticky-recover-cancel-sweep, scheduled-task-sweep, account-status-transition, activity-log, cc-payments, payments]
 promoted_to: [05-pagamentos, 06-conta-ciclo-vida]
 ---
 

@@ -1,5 +1,5 @@
 /**
- * Task #1295 — Origination | Reorder Customer Name Columns to Improve Visibility.
+ * RU05.26.1.52.0 — Origination | Reorder Customer Name Columns to Improve Visibility.
  *
  * SPEC: docs/taskTestingUown/RU05.26.1.52.0_reorderCustomerNameColumnsToImproveVisibility_1295/
  *
@@ -33,7 +33,7 @@
  * to the default user (`DEFAULT_USERNAME` / `DEFAULT_PASSWORD`).
  *
  * Pre-implementation blocking item recorded in SPEC § 11: confirm with Marcus/Yuri
- * whether the qa1 ordering observed on 2026-05-20 is the result of the #1295 fix
+ * whether the qa1 ordering observed on 2026-05-20 is the result of this fix
  * (regression-style validation) or pre-existing layout. This test asserts the
  * target state regardless of cause; `qa-validator` should flag if no env differs.
  */
@@ -121,10 +121,10 @@ async function probeCustomerHeaderViewport(
 }
 
 // ─────────────────────────────────────────────────────────────────────
-//  describe — task #1295
+//  describe
 // ─────────────────────────────────────────────────────────────────────
 test.describe(
-  'RU05.26.1.52.0_reorderCustomerNameColumnsToImproveVisibility_1295',
+  'RU05.26.1.52.0_reorderCustomerNameColumnsToImproveVisibility',
   { tag: testData.tag.split(' ') },
   () => {
     test.beforeEach(async ({ page }) => {

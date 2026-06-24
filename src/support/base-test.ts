@@ -46,6 +46,8 @@ import { TmsPaymentClient } from '../api/clients/tms-payment.client.js';
 import { StickyRecoverClient } from '../api/clients/sticky-recover.client.js';
 import { SimpleSearchClient } from '../api/clients/simple-search.client.js';
 import { MerchantConfigurator } from './merchant-configurator.js';
+import { buildTestData } from '../helpers/test-data.helpers.js';
+import { createPreQualifiedApplication, driveLeadToFunding } from '../helpers/api-setup.helpers.js';
 import {
   disableCssAnimations,
   captureConsoleLogs,
@@ -72,6 +74,21 @@ export interface TestContext {
   /** Provider chosen by backend routing — 'GOWSIGN' | 'SIGNWELL'. */
   esignClient?: string;
   [key: string]: unknown;
+}
+
+/**
+ * Build a fully-typed TestContext with sensible empty defaults. Use this instead of
+ * `{} as TestContext` / `{ reportKeys: new Map() } as unknown as TestContext` when a
+ * spec or helper needs a standalone ctx outside the `ctx` fixture. Pass overrides to
+ * seed known fields.
+ */
+export function makeTestContext(overrides: Partial<TestContext> = {}): TestContext {
+  return {
+    leadPk: '', leadUuid: '', accountPk: '', accountNumber: '',
+    contractStatus: '', contractUrl: '', websiteAccountPk: '',
+    achAdded: 0, ccAdded: 0, reportKeys: new Map<string, string>(),
+    ...overrides,
+  };
 }
 
 export interface ApiClients {
@@ -102,8 +119,67 @@ export interface ApiClients {
   simpleSearch: SimpleSearchClient;
 }
 
+/**
+ * Parametrization for the high-level setup fixtures (`approvedApplication`,
+ * `fundedAccount`). Override per-describe with `test.use({ setup: { ... } })`.
+ *
+ * Defaults: state 'NY', merchant 'TireAgent', orderTotal '800'. These mirror the
+ * low-risk tier (see testing.md § Risk Tier Selection) and resolve to GowSign on
+ * states with a template (rule §E-sign routing) — pick CA for GowSign-CA coverage.
+ *
+ * The fixtures build fresh applicant data per test via `buildTestData` (rule #9 —
+ * fresh data is DEFAULT) and honor merchant preflight (rule #12) transparently,
+ * because `createPreQualifiedApplication` calls `ensureMerchantReady` internally.
+ */
+export interface SetupFixtureOptions {
+  /** US state code (e.g. 'NY', 'CA', 'FL'). Default: 'NY'. */
+  state: string;
+  /** Merchant key from merchants.ts (e.g. 'TireAgent', 'TerraceFinance'). Default: 'TireAgent'. */
+  merchant: string;
+  /** Order total as string (drives approvedAmount fallback / invoice). Default: '800'. */
+  orderTotal: string;
+  /**
+   * How the approved state reaches a payment-bearing status:
+   *  - 'submitApi' (default): submit CC + bank via `submitApplication` → CONTRACT_CREATED,
+   *    captures `esignClient` + iframe URL. Required upstream of `fundedAccount`.
+   *  - 'ccAuth': authorizeCreditCard only → CC_AUTH_PASSED.
+   *  - 'none': stay at UW_APPROVED (no payment info submitted).
+   */
+  paymentMode: 'submitApi' | 'ccAuth' | 'none';
+}
+
+/** Result of the `approvedApplication` fixture — a lead at UW_APPROVED/CC_AUTH_PASSED. */
+export interface ApprovedApplicationResult {
+  /** Lead primary key (numeric, as string). */
+  leadPk: string;
+  /** Lead UUID (accountNumber). */
+  leadUuid: string;
+  /** Underwriting-approved amount (> 0). */
+  approvedAmount: number;
+  /** Contract redirect URL when available (consumer flow). */
+  contractUrl?: string;
+  /** E-sign provider chosen by backend routing — 'GOWSIGN' | 'SIGNWELL' (paymentMode 'submitApi'). */
+  esignClient?: string;
+}
+
+/** Result of the `fundedAccount` fixture — a lease driven to FUNDING/FUNDED, account resolved. */
+export interface FundedAccountResult {
+  /** Lead primary key (numeric, as string). */
+  leadPk: string;
+  /** Lead UUID (accountNumber). */
+  leadUuid: string;
+  /** Servicing account primary key (uown_sv_account.pk) resolved from leadPk. */
+  accountPk: string;
+  /** Contract redirect URL when available. */
+  contractUrl?: string;
+  /** E-sign provider chosen by backend routing — 'GOWSIGN' | 'SIGNWELL'. */
+  esignClient?: string;
+}
+
 export interface TestFixtureOptions {
   envName: string;
+  /** Parametrization for `approvedApplication` / `fundedAccount`. See SetupFixtureOptions. */
+  setup: SetupFixtureOptions;
 }
 
 /** Test-scoped fixtures (re-created per test). */
@@ -113,6 +189,18 @@ export interface BaseTestFixtures {
   merchantConfig: MerchantConfigurator;
   ctx: TestContext;
   consoleLogs: () => string[];
+  /**
+   * Lazy high-level fixture: a fresh application at UW_APPROVED/CC_AUTH_PASSED.
+   * COMPOSES `buildTestData` + `createPreQualifiedApplication`. Only runs when a
+   * test destructures `{ approvedApplication }` — existing tests are unaffected.
+   */
+  approvedApplication: ApprovedApplicationResult;
+  /**
+   * Lazy high-level fixture: builds on the approved state, then COMPOSES
+   * `driveLeadToFunding` and resolves the servicing accountPk. Only runs when a
+   * test destructures `{ fundedAccount }` — existing tests are unaffected.
+   */
+  fundedAccount: FundedAccountResult;
 }
 
 /**
@@ -156,6 +244,13 @@ export const test = base.extend<BaseTestFixtures & TestFixtureOptions, BaseWorke
 
   // --- Fixture option: per-describe environment override ---
   envName: ['', { option: true }],
+
+  // --- Fixture option: per-describe setup parametrization (state/merchant/etc.) ---
+  // Override with `test.use({ setup: { state: 'CA', merchant: 'TerraceFinance' } })`.
+  setup: [
+    { state: 'NY', merchant: 'TireAgent', orderTotal: '800', paymentMode: 'submitApi' },
+    { option: true },
+  ],
 
   // --- Environment ---
   testEnv: async ({ envName }, use) => {
@@ -203,17 +298,77 @@ export const test = base.extend<BaseTestFixtures & TestFixtureOptions, BaseWorke
 
   // --- Test context (shared state) ---
   ctx: async ({}, use) => {
+    await use(makeTestContext());
+  },
+
+  // --- High-level setup: approved application (UW_APPROVED / CC_AUTH_PASSED) ---
+  // LAZY: Playwright only runs this fixture when a test destructures
+  // `{ approvedApplication }`. Existing tests that do not reference it pay zero cost.
+  // COMPOSES the existing helpers (no reinlining of sendApplication→invoice→CC):
+  //   buildTestData(...)  → fresh applicant/merchant per run (rule #9)
+  //   createPreQualifiedApplication(...) → ensureMerchantReady (rule #12) + send/verify/invoice/CC
+  approvedApplication: async ({ api, ctx, setup, testEnv }, use, testInfo) => {
+    const { merchant, applicant } = buildTestData({
+      env: testEnv.env,
+      state: setup.state,
+      merchant: setup.merchant,
+      orderTotal: setup.orderTotal,
+    });
+    const { approvedAmount } = await createPreQualifiedApplication(
+      api,
+      merchant,
+      applicant,
+      ctx,
+      {
+        submitPaymentInfoViaApi: setup.paymentMode === 'submitApi',
+        skipPaymentInfo: setup.paymentMode === 'none',
+      },
+      testInfo,
+    );
     await use({
-      leadPk: '',
-      leadUuid: '',
-      accountPk: '',
-      accountNumber: '',
-      contractStatus: '',
-      contractUrl: '',
-      websiteAccountPk: '',
-      achAdded: 0,
-      ccAdded: 0,
-      reportKeys: new Map(),
+      leadPk: ctx.leadPk,
+      leadUuid: ctx.leadUuid,
+      approvedAmount,
+      contractUrl: ctx.contractUrl || undefined,
+      esignClient: ctx.esignClient,
+    });
+  },
+
+  // --- High-level setup: funded account (FUNDING/FUNDED, accountPk resolved) ---
+  // LAZY: only runs when a test destructures `{ fundedAccount }`.
+  // Builds on the approved state (depends on `approvedApplication`), then COMPOSES
+  // driveLeadToFunding(api, merchant, ctx) and resolves the servicing accountPk.
+  // Forces paymentMode 'submitApi' upstream (a lead must be CONTRACT_CREATED before
+  // SIGNED→settle→FUNDING) regardless of the `setup.paymentMode` chosen for approved-only tests.
+  fundedAccount: async ({ api, db, ctx, setup, testEnv }, use, testInfo) => {
+    const { merchant, applicant } = buildTestData({
+      env: testEnv.env,
+      state: setup.state,
+      merchant: setup.merchant,
+      orderTotal: setup.orderTotal,
+    });
+    await createPreQualifiedApplication(
+      api,
+      merchant,
+      applicant,
+      ctx,
+      { submitPaymentInfoViaApi: true },
+      testInfo,
+    );
+    await driveLeadToFunding(api, merchant, ctx);
+
+    const accountPk = (await db.waitForAccountByLeadPk(ctx.leadPk)) ?? '';
+    if (accountPk) {
+      ctx.accountPk = accountPk;
+      testInfo.annotations.push({ type: 'accountPk', description: accountPk });
+    }
+
+    await use({
+      leadPk: ctx.leadPk,
+      leadUuid: ctx.leadUuid,
+      accountPk,
+      contractUrl: ctx.contractUrl || undefined,
+      esignClient: ctx.esignClient,
     });
   },
 

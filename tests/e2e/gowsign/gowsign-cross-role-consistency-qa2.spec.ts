@@ -26,7 +26,7 @@
  *   - Servicing + Origination credentials available via env.getCredentials('manager')
  */
 import { test, expect } from '@fixtures/test-context.fixture.js';
-import { buildTestData } from '@helpers/index.js';
+import { buildTestData, findLeadNoteContaining } from '@helpers/index.js';
 import { createPreQualifiedApplication, driveLeadToFunding } from '@helpers/api-setup.helpers.js';
 import {
   installPostMessageRecorder,
@@ -321,19 +321,17 @@ test.describe(
         await test.step('Origination DB: lead notes back the UI Activity Log entries', async () => {
           // DB assertion as backup — same data the UI surfaces should be in
           // uown_los_lead_notes. Order: UI first, DB second.
-          const sentContractNote = await db.queryOne<{ notes: string }>(
-            `SELECT notes FROM uown_los_lead_notes
-             WHERE lead_pk=$1 AND notes ILIKE '%Sent Contract to customer%'
-             ORDER BY pk DESC LIMIT 1`,
-            [Number(ctx.leadPk)],
+          const sentContractNote = await findLeadNoteContaining(
+            db,
+            Number(ctx.leadPk),
+            'Sent Contract to customer',
           );
           expect(sentContractNote, 'lead_notes must record Sent Contract event').not.toBeNull();
 
-          const signedTransition = await db.queryOne<{ notes: string }>(
-            `SELECT notes FROM uown_los_lead_notes
-             WHERE lead_pk=$1 AND notes ILIKE '%instantly from CONTRACT_CREATED to SIGNED%'
-             ORDER BY pk DESC LIMIT 1`,
-            [Number(ctx.leadPk)],
+          const signedTransition = await findLeadNoteContaining(
+            db,
+            Number(ctx.leadPk),
+            'instantly from CONTRACT_CREATED to SIGNED',
           );
           expect(signedTransition, 'lead_notes must record SIGNED transition').not.toBeNull();
         });

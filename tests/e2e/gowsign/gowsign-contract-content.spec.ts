@@ -369,7 +369,7 @@ test.describe(
         let numberOfPaymentsApi: number | null = null;
 
         await test.step('Setup: fresh lead + capture API numberOfPayments', async () => {
-          const { merchant, applicant, order } = buildTestData({
+          const { merchant, applicant } = buildTestData({
             state: data.state,
             merchant: data.merchant,
             orderTotal: data.orderTotal,

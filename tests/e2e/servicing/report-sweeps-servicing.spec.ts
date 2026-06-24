@@ -32,7 +32,6 @@
  *        tests/e2e/servicing/report-sweeps-servicing.spec.ts --reporter=list --timeout=300000
  */
 import { test, expect } from '@support/base-test.js';
-import type { DatabaseHelpers } from '@helpers/database.helpers.js';
 import { sweepLogBaseline } from '@helpers/sweep-fixture.helpers.js';
 import { TestTag, buildTags, splitTags } from '@ptypes/enums.js';
 

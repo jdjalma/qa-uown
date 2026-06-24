@@ -5,9 +5,13 @@
     "moduleResolution": "NodeNext",
     "strict": true,
     "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "incremental": true,
+    "tsBuildInfoFile": ".tsbuildinfo",
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "declaration": true,
@@ -33,5 +37,6 @@
     }
   },
   "include": ["src/**/*.ts", "tests/**/*.ts", "playwright.config.ts"],
-  "exclude": ["node_modules", "dist"]
+  "// exclude note": "src/scripts = ~300 standalone tsx-run probe/diagnostic scripts (no framework imports them). They are NOT framework code and must not gate compilation; 2 are intentionally non-TS (a markdown report, a draft). tests/**/_*.spec.ts and __*.spec.ts are gitignored local scratch specs. All excluded so `tsc --noEmit` is the real quality signal.",
+  "exclude": ["node_modules", "dist", "src/scripts", "tests/api/_sticky_multi_fresh.spec.ts", "tests/api/__scratch_la_signing_url.spec.ts"]
 }

@@ -2,11 +2,11 @@
  * Centralized CSS/XPath selectors — single source of truth for all UI elements.
  * All selectors must be referenced via this const; never hardcode in page objects or tests.
  *
- * @see selector.types.ts for type definitions
+ * @see selector.types.ts for the per-section interfaces (documentation).
+ * The `AppSelectors` type is DERIVED from this object (bottom of file) — single
+ * source of truth, so the type can never drift from the keys defined here.
  */
-import type { AppSelectors } from './selector.types.js';
-
-export const SELECTORS: AppSelectors = {
+export const SELECTORS = {
   // ── Spinner / Loading ──────────────────────────────────────────────
   spinnerBorder: '.spinner-border',
   spinnerGrow: '.spinner-grow',
@@ -1047,3 +1047,12 @@ export const SELECTORS: AppSelectors = {
   svcDocumentsRowEditTrigger: '#edit',
   svcDocumentsRowResendTrigger: '#resend',
 } as const;
+
+/**
+ * AppSelectors is DERIVED from the SELECTORS object — single source of truth.
+ * Adding a key to SELECTORS auto-updates the type; there is no parallel interface
+ * to keep in sync. (The old hand-maintained `interface AppSelectors` in
+ * selector.types.ts drifted out of sync and caused ~41 phantom TS2339 errors —
+ * fixed by deriving 2026-06-23.)
+ */
+export type AppSelectors = typeof SELECTORS;

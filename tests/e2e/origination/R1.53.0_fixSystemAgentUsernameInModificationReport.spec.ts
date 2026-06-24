@@ -1,5 +1,5 @@
 /**
- * R1.53.0 — Fix "SYSTEM" in Modification Report agent_username (#1315)
+ * R1.53.0 — Fix "SYSTEM" in Modification Report agent_username
  *
  * Bug: `uown_lead_modifications.agent_username` recorded "SYSTEM" for
  * LEAD_STATUS_CHANGE transitions that were in fact triggered by a human agent in
@@ -35,7 +35,7 @@
  *          no fresh lead) located by DB SELECT; skips if QA2 has none.
  *
  * Run: node node_modules/.bin/playwright test \
- *   tests/e2e/origination/R1.53.0_fixSystemAgentUsernameInModificationReport_1315.spec.ts
+ *   tests/e2e/origination/R1.53.0_fixSystemAgentUsernameInModificationReport.spec.ts
  */
 import { test, expect } from '@fixtures/test-context.fixture.js';
 import { OriginationCustomerPage, ModificationReportPage } from '@pages/origination/index.js';
@@ -50,6 +50,7 @@ import {
   driveLeadToSigned,
   calculateDate,
   formatDate,
+  findLeadNoteContaining,
   sleep,
 } from '@helpers/index.js';
 
@@ -64,7 +65,7 @@ const testData = {
   env: 'qa2',
   state: 'CA',
   merchant: 'TireAgent',
-  orderDescription: 'fix SYSTEM agent_username #1315',
+  orderDescription: 'fix SYSTEM agent_username',
   tag: buildTags(TestTag.QA2, TestTag.REGRESSION, TestTag.CRITICAL),
 };
 
@@ -126,13 +127,13 @@ async function waitForLatestStatusChange(
     await sleep(1_000);
   }
   throw new Error(
-    `[#1315] No LEAD_STATUS_CHANGE→${newStatus} row for lead ${leadPk} within ${timeoutMs}ms`,
+    `No LEAD_STATUS_CHANGE→${newStatus} row for lead ${leadPk} within ${timeoutMs}ms`,
   );
 }
 
 for (const data of [testData]) {
   test.describe(
-    `R1.53.0_fixSystemAgentUsernameInModificationReport_1315 - ${data.env}/${data.merchant}`,
+    `R1.53.0_fixSystemAgentUsernameInModificationReport - ${data.env}/${data.merchant}`,
     { tag: splitTags(data.tag) },
     () => {
       test.use({ envName: data.env });
@@ -206,12 +207,7 @@ for (const data of [testData]) {
         });
 
         await test.step('Activity log: status-change note present (rule #13)', async () => {
-          const note = await db.queryOne<{ pk: number; notes: string }>(
-            `SELECT pk, notes FROM uown_los_lead_notes
-             WHERE lead_pk = $1 AND notes ILIKE '%EXPIRED%'
-             ORDER BY pk DESC LIMIT 1`,
-            [ctx.leadPk],
-          );
+          const note = await findLeadNoteContaining(db, ctx.leadPk, 'EXPIRED');
           expect(note, 'an activity-log note for the EXPIRED transition must exist').toBeTruthy();
           expect(note!.notes).toMatch(/EXPIRED/i);
         });
@@ -263,7 +259,7 @@ for (const data of [testData]) {
         });
 
         await test.step('Click "Change to Signed", fill required comment, CONFIRM (UI — sends username header)', async () => {
-          await customerPage.changeToSigned('Automated - #1315 Change to Signed');
+          await customerPage.changeToSigned('Automated - Change to Signed');
         });
 
         await test.step('UI: status transitions to Signed', async () => {
@@ -288,12 +284,7 @@ for (const data of [testData]) {
         });
 
         await test.step('Activity log: status-change note present (rule #13)', async () => {
-          const note = await db.queryOne<{ pk: number; notes: string }>(
-            `SELECT pk, notes FROM uown_los_lead_notes
-             WHERE lead_pk = $1 AND notes ILIKE '%SIGNED%'
-             ORDER BY pk DESC LIMIT 1`,
-            [ctx.leadPk],
-          );
+          const note = await findLeadNoteContaining(db, ctx.leadPk, 'SIGNED');
           expect(note, 'an activity-log note for the SIGNED transition must exist').toBeTruthy();
           expect(note!.notes).toMatch(/SIGNED/i);
         });
@@ -378,12 +369,7 @@ for (const data of [testData]) {
         });
 
         await test.step('Activity log: status-change note present (rule #13)', async () => {
-          const note = await db.queryOne<{ pk: number; notes: string }>(
-            `SELECT pk, notes FROM uown_los_lead_notes
-             WHERE lead_pk = $1 AND notes ILIKE '%EXPIRED%'
-             ORDER BY pk DESC LIMIT 1`,
-            [ctx.leadPk],
-          );
+          const note = await findLeadNoteContaining(db, ctx.leadPk, 'EXPIRED');
           expect(note, 'an activity-log note for the EXPIRED transition must exist').toBeTruthy();
           expect(note!.notes).toMatch(/EXPIRED/i);
         });
@@ -591,12 +577,7 @@ for (const data of [testData]) {
         });
 
         await test.step('Activity log: status-change note present (rule #13)', async () => {
-          const note = await db.queryOne<{ pk: number; notes: string }>(
-            `SELECT pk, notes FROM uown_los_lead_notes
-             WHERE lead_pk = $1 AND notes ILIKE '%EXPIRED%'
-             ORDER BY pk DESC LIMIT 1`,
-            [ctx.leadPk],
-          );
+          const note = await findLeadNoteContaining(db, ctx.leadPk, 'EXPIRED');
           expect(note, 'an activity-log note for the EXPIRED transition must exist').toBeTruthy();
           expect(note!.notes).toMatch(/EXPIRED/i);
         });

@@ -1,4 +1,4 @@
-# Test Scenarios — #1315 Fix "SYSTEM" in Modification Report Agent Name
+# Test Scenarios — Fix "SYSTEM" in Modification Report Agent Name
 
 > Origin: https://gitlab.com/uown/frontend/origination/-/work_items/1315 (HTTP 403 — private, not fetchable here)
 > Milestone: R1.53.0 · Fix: `svc!1464` + `svc!1470` · Target env: qa2
@@ -90,7 +90,7 @@ Feature: Modification Report — accurate agent attribution for lead status chan
 
 Backward trace (no orphans): every scenario maps to ≥1 AC — the two human-action scenarios → AC-01/AC-04; the system-action outline → AC-02; the report-detail scenario → AC-03.
 
-Traceability to the implemented suite (`tests/e2e/origination/R1.53.0_fixSystemAgentUsernameInModificationReport_1315.spec.ts`): scenario 1 ↔ CT-01; outline "change to signed" ↔ CT-02; report-detail ↔ CT-03; system-action outline (Contract Created→Signed row) ↔ CT-04. The "expire a signed lease" (`SIGNED → EXPIRED`) row and the "Signed→Signed re-sign" row are **scenario-only coverage** documented in the knowledge-base but not yet automated (see Pending items).
+Traceability to the implemented suite (`tests/e2e/origination/R1.53.0_fixSystemAgentUsernameInModificationReport.spec.ts`): scenario 1 ↔ CT-01; outline "change to signed" ↔ CT-02; report-detail ↔ CT-03; system-action outline (Contract Created→Signed row) ↔ CT-04. The "expire a signed lease" (`SIGNED → EXPIRED`) row and the "Signed→Signed re-sign" row are **scenario-only coverage** documented in the knowledge-base but not yet automated (see Pending items).
 
 ## Pending items
 

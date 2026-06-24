@@ -76,13 +76,23 @@ for (const line of rawLines) {
 const sidechain = entries.filter((e) => e.isSidechain === true);
 const scope = sidechain.length > 0 ? sidechain : entries;
 
-// Fallback agent detection: scan transcript text for qa-* agent markers.
+// Fallback agent detection: scan structured JSON fields only — never raw text blob.
+// Blob scanning caused false positives when agents Read .claude/agents/*.md files
+// (those files contain `name: qa-planner` in their content, matching non-qa agents).
 if (!agent) {
-  const blob = rawLines.join("\n");
-  agent =
-    QA_AGENTS.find(
-      (a) => blob.includes(`${a} —`) || blob.includes(`"name":"${a}"`) || blob.includes(`name: ${a}`)
-    ) || null;
+  for (const entry of entries) {
+    const msg = entry.message;
+    if (!msg) continue;
+    // Check structured message-level fields
+    const candidate = [
+      entry.agent_name,
+      entry.agent_type,
+      entry.subagent_type,
+      msg.agent_name,
+      msg.agent_type,
+    ].find((v) => typeof v === "string" && QA_AGENTS.includes(v));
+    if (candidate) { agent = candidate; break; }
+  }
 }
 if (!agent) {
   allow(`not a qa-* agent (keys: ${Object.keys(input).join(",")})`);

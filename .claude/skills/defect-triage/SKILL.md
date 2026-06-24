@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 # Defect Triage — classificar com rigor antes de reportar
 
+> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **HOW TO TRIAGE** — severity×priority matrix, classification protocol. Para estados e enums de domínio que embasam severity (account states, payment states, funding states), rode `node scripts/docs-tooling.mjs resolve enums` (ou `account-status`, `payments`) ou leia `docs/business-rules/appendix-d-constantes-enums.md` + `appendix-g-cenarios-risco.md`. **Não duplique regras de domínio aqui** — elas driftam.
+
 > Regra inviolável #10: observação isolada em dado pré-existente NÃO é bug. Bug só depois de fresh repro + checagem de issue existente + descarte de artefato.
 
 ## Quando aplicar

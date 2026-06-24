@@ -71,7 +71,7 @@ const SIGNWELL_NY_BASELINE = [
 /** Drive a fresh NY 13m lead through CC pre-auth + Terms until the GowSign modal opens. */
 async function openNyGowSignContract(
   page: Page,
-  api: import('@helpers/api-setup.helpers.js').ApiClients,
+  api: import('@support/base-test.js').ApiClients,
   ctx: import('@fixtures/test-context.fixture.js').TestContext,
   testInfo: import('@playwright/test').TestInfo,
 ): Promise<{ frame: FrameLocator; applicant: { firstName: string; lastName: string } }> {

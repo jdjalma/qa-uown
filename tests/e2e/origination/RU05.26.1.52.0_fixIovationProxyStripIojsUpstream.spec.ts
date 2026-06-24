@@ -1,7 +1,7 @@
 /**
- * RU05.26.1.52.0 - Fix iovation proxy: strip /iojs upstream (#1304)
+ * RU05.26.1.52.0 - Fix iovation proxy: strip /iojs upstream
  *
- * Issue: GitLab Origination #1304
+ * Issue: GitLab Origination
  * SPEC:  qa-planner handoff (in-conversation, not on disk)
  *
  * What changed in production (svc/nginx config):
@@ -51,7 +51,7 @@
  *   - Known risk: memory `project_dv360_uat_qa1_outage_2026_05_18` reports qa1
  *     `sendApplication` 500 outage. If reproduced here (during phase that
  *     materializes the lead row), the test annotates `[ENV-GAP]` and does not
- *     mis-classify as bug of #1304. qa-validator decides whether to fallback
+ *     mis-classify as a regression of this fix. qa-validator decides whether to fallback
  *     to qa2/sandbox manually.
  *   - IOVATION_KEY status: if the network response URL contains the literal
  *     `IOVATION_KEY` placeholder and returns 4xx, treat as env-config issue
@@ -159,11 +159,11 @@ const BRAND_FIXTURES: BrandFixture[] = [
   },
 ];
 
-test.describe('RU05.26.1.52.0 - Fix iovation proxy: strip /iojs upstream (#1304)', { tag: TAGS }, () => {
+test.describe('RU05.26.1.52.0 - Fix iovation proxy: strip /iojs upstream', { tag: TAGS }, () => {
   test.beforeEach(async ({ testEnv }) => {
     test.skip(testEnv.env !== 'qa1', 'iovation proxy spec uses qa1-only merchants and getApplication URLs — skip in other environments');
     annotate('env', process.env.ENV || 'qa1');
-    annotate('spec', 'RU05.26.1.52.0 issue #1304');
+    annotate('spec', 'RU05.26.1.52.0');
   });
 
   for (const fixture of BRAND_FIXTURES) {
@@ -200,7 +200,7 @@ test.describe('RU05.26.1.52.0 - Fix iovation proxy: strip /iojs upstream (#1304)
           state: fixture.applicantState,
           merchant: fixture.merchantKey,
           orderTotal: '800',
-          orderDescription: `iovation #1304 ${fixture.label}`,
+          orderDescription: `iovation ${fixture.label}`,
           approved: true,
         });
         const applicant = testData.applicant;
@@ -315,10 +315,10 @@ test.describe('RU05.26.1.52.0 - Fix iovation proxy: strip /iojs upstream (#1304)
           // qa1 sendApplication 500 outage surfaces as no lead row materializing.
           annotate(
             'observation',
-            `Lead not materialized for email=${applicant.email} within 60s. Possible qa1 sendApplication outage (memory project_dv360_uat_qa1_outage_2026_05_18). Not a #1304 regression.`,
+            `Lead not materialized for email=${applicant.email} within 60s. Possible qa1 sendApplication outage (memory project_dv360_uat_qa1_outage_2026_05_18). Not a regression of this fix.`,
           );
           throw new Error(
-            `[ENV-GAP] Lead not materialized within 60s. Check qa1 sendApplication health before classifying as #1304 bug. Underlying: ${msg}`,
+            `[ENV-GAP] Lead not materialized within 60s. Check qa1 sendApplication health before classifying as a regression. Underlying: ${msg}`,
           );
         }
 
@@ -364,14 +364,14 @@ test.describe('RU05.26.1.52.0 - Fix iovation proxy: strip /iojs upstream (#1304)
           // Env-config classification: if either URL still contains the literal
           // IOVATION_KEY placeholder AND comes back 4xx, the nginx variable
           // substitution failed at proxy startup. That is an env issue, not a
-          // #1304 regression. Surface as observation and skip the strict assert.
+          // regression of this fix. Surface as observation and skip the strict assert.
           const placeholderInUrl = iojsResponses.some(
             (r) => r.url.includes(IOVATION_KEY_PLACEHOLDER) && r.status >= 400,
           );
           if (placeholderInUrl) {
             annotate(
               'observation',
-              `One or more /iojs URLs returned 4xx WITH literal IOVATION_KEY in URL. Classified as env-config drift (nginx var not substituted), NOT a #1304 bug.`,
+              `One or more /iojs URLs returned 4xx WITH literal IOVATION_KEY in URL. Classified as env-config drift (nginx var not substituted), NOT a regression of this fix.`,
             );
             test.skip(true, '[OBSERVAÇÃO] IOVATION_KEY placeholder leaked into request URL with 4xx response');
             return;

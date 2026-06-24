@@ -6,17 +6,25 @@ paths:
 
 # Selector Rules
 
-## Centralization
+## Onde mora o selector (política reconciliada 2026-06-23)
+
+A regra antiga "TODO selector em `common.selectors.ts`" não escala (1.110 locators já vivem co-locados nos page objects) e brigava com a coesão. Política real:
+
+- **Selector dono-de-página → CO-LOCADO no page object** que o usa, como `readonly x = this.page.getByRole(...)` (getter semântico) ou referenciando `SELECTORS.x`. Co-locação é COESÃO, não violação. Um selector usado por UMA página não precisa ir pro arquivo global.
+- **Selector cross-cutting (≥2 page objects / portais)** → `src/selectors/common.selectors.ts`, consumido via `SELECTORS.x`. O tipo `AppSelectors` é **derivado** do objeto (`typeof SELECTORS`) — fonte única, não há interface paralela pra sincronizar.
+- **Spec NUNCA define selector inline** — chama o método do page object. Essa é a fronteira que o ESLint cobre (locator inline em `tests/**` = warn).
+- A hierarquia semântica (abaixo) vale ONDE QUER que o selector esteja.
 
 ```
-❌ Selectors defined inline in page objects or tests
-❌ XPath selectors (xpath=//...) — prefer CSS or semantic locators
-❌ Positional CSS selectors (div:nth-child(3)) — fragile DOM coupling
-❌ Class-based selectors when ID or role is available
+❌ Spec com page.locator(...)/getBy* inline duplicando método de page object
+❌ XPath (xpath=//...) — preferir CSS/semântico (sibling `~`/`:has-text` quando estrutural)
+❌ Positional CSS (div:nth-child(3)) — acoplamento frágil ao DOM
+❌ Class-based quando id/role disponível
 
-✅ ALL selectors in src/selectors/common.selectors.ts
+✅ Page object co-loca seus próprios selectors (semânticos primeiro)
+✅ common.selectors.ts só pro que é compartilhado entre páginas
+✅ Spec chama método de page object, nunca o locator cru
 ✅ Prefer semantic: getByRole(), getByLabel(), getByTestId()
-✅ Use data-testid attributes when available
 ✅ CSS sibling combinators (label:has-text("X") ~ div) over XPath
 ```
 
@@ -32,9 +40,10 @@ paths:
 
 ## Adding a New Selector
 
-1. Add to `SELECTORS` object in `src/selectors/common.selectors.ts`
-2. Use as `SELECTORS.myNewSelector` in the page object
-3. Never inline the selector string in tests
+1. **Usado por 1 página** → defina no próprio page object (getter `readonly` semântico) OU em `SELECTORS` — co-locação é OK.
+2. **Compartilhado por ≥2 páginas** → adicione ao `SELECTORS` object em `src/selectors/common.selectors.ts`. O tipo `AppSelectors` é DERIVADO do objeto (`typeof SELECTORS`), então atualiza sozinho — não há interface paralela pra editar.
+3. Use como `SELECTORS.myNewSelector` no page object.
+4. **Nunca** inline a string num spec — exponha um método no page object.
 
 ## DOM-First antes de criar/mudar seletor (MANDATORY — CLAUDE.md #16)
 

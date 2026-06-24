@@ -66,7 +66,15 @@ When you receive a task, classify the **signal** and dispatch to agents. No slas
 
 ### Signal → docs canônicos (injetar no prompt da Task)
 
-Além das skills (`[[slug]]`), o orquestrador resolve os **docs canônicos** do sinal e injeta no prompt da Task — o agente começa na fonte certa em vez de redescobrir relevância. Use `node scripts/docs-tooling.mjs resolve <tópico>` para obter arquivo + seção + frescor (protocolo em [`docs/_docs-conventions.md`](docs/_docs-conventions.md) §5–§7).
+Além das skills (`[[slug]]`), o orquestrador **deve** resolver os docs canônicos do sinal e injetá-los no prompt da Task — o agente começa na fonte certa em vez de redescobrir relevância.
+
+**Protocolo obrigatório antes de despachar qualquer agent:**
+1. Para cada sinal da task, rodar `node scripts/docs-tooling.mjs resolve <tópico>` (usar tabela abaixo).
+2. Copiar o output no prompt da Task sob a seção `## Docs canônicos relevantes`.
+3. Sem resolve = agent redescobre conhecimento já documentado.
+4. Se `resolve` retornar tópico desconhecido ou "nenhum doc cobre": ler `docs/business-rules/BUSINESS_RULES.md` como mapa de capítulos e `docs/business-rules/_index.md` para identificar o capítulo mais próximo.
+
+(protocolo completo em [`docs/_docs-conventions.md`](docs/_docs-conventions.md) §5–§7)
 
 | Sinal da task | `resolve <tópico>` sugeridos |
 |---------------|------------------------------|

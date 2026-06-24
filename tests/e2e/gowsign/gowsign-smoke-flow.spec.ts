@@ -170,7 +170,7 @@ test.describe(
       async ({ page, api, db, ctx, merchantConfig: mSetup }, testInfo) => {
         test.setTimeout(420_000);
 
-        const { merchant, applicant, order } = buildTestData({
+        const { merchant, applicant } = buildTestData({
           state: testData.state,
           merchant: testData.merchant,
           orderTotal: testData.orderTotal,
@@ -427,7 +427,7 @@ test.describe(
     test(
       'CT-04 Download contract emits a valid PDF',
       { tag: ['@priority-medium'] },
-      async ({ page, api, db, ctx, merchantConfig: mSetup }, testInfo) => {
+      async ({ page, api, ctx, merchantConfig: mSetup }, testInfo) => {
         test.setTimeout(420_000);
 
         const { merchant, applicant, order } = buildTestData({

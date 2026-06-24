@@ -256,14 +256,8 @@ test.describe(`Smoke - Portal Flow`, { tag: testData.tag.split(' ') }, () => {
       const customerPage = new OriginationCustomerPage(page);
       await customerPage.waitForSpinner();
 
-      // Click "Get Document Status" if present (triggers Signwell webhook poll)
-      const getDocStatusBtn = page.getByText('Get Document Status', { exact: true });
-      if (await getDocStatusBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-        await getDocStatusBtn.click({ force: true });
-        console.log('[PortalFlow] Clicked "Get Document Status"');
-        await sleep(5_000);
-        await customerPage.waitForSpinner();
-      }
+      // Trigger Signwell webhook poll if present — encapsulated in the page object
+      await customerPage.clickGetDocumentStatus();
 
       // Poll until status is SIGNED (or already further along)
       const { status: signedStatus } = await customerPage.pollForLeadStatus(

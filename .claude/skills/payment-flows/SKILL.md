@@ -8,6 +8,8 @@ disable-model-invocation: true
 
 > Tudo que um teste de payment precisa saber. Para tabelas detalhadas de endpoints, DB columns, enums, e activity log patterns, ver [references/endpoints-tables.md](references/endpoints-tables.md).
 
+> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **HOW TO TEST** — patterns, sequências, pitfalls. O **comportamento canônico do produto** (enums `PaymentStatus`/`AllocationStrategy`, máquina de estado, regras de sweep) NÃO mora aqui — é fonte única em `docs/business-rules/05-pagamentos.md` + `04-calculos-financeiros.md` e `src/api/clients/payment-arrangement.client.ts`. Para resolver um tópico, rode `node scripts/docs-tooling.mjs resolve cc-payments` (ou `ach-payments`, `nsf-fee`, `sweeps`). Investigações recentes: `docs/knowledge-base/*sticky*`. **Não duplique regras de produto aqui** — elas driftam.
+
 ## Quando aplicar
 
 Aplicar quando teste/PR toca:

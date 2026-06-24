@@ -12,7 +12,7 @@ sources:
   - gitlab: uown/frontend/servicing!696 reverse-payment-modal/index.tsx + utils/data-table-columns.tsx
   - gitlab: uown/backend/sticky.io!8 RefundService + StickyRestClient.postRefund + StickyRecoveryStatus(REFUND_SUBMITTED/REFUND_FAILED/REFUNDED)
   - db: sandbox uown_sticky (RECOVERED/REFUNDED rows) · uown_sticky_outbound_log.source=STICKY_REFUND · uown_sv_payment STICKY
-covers: [sticky-refund, reverse-payment, payment-history, sticky-recovery]
+covers: [sticky-refund, reverse-payment, payment-history, sticky-recovery, cc-payments, payments]
 promoted_to: [05-pagamentos]
 ---
 

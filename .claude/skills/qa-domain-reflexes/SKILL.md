@@ -11,6 +11,8 @@ disable-model-invocation: true
 > **Como usar (agents):** `qa-planner` DEVE carregar este arquivo antes de fechar o spec. Para cada passo do cenário, consultar o catálogo — se a ação tiver reflexo listado, incluir as validações no spec como passos obrigatórios.
 >
 > **Como alimentar (humanos):** toda vez que um bug escapar porque faltou uma validação óbvia, adicione aqui. Sem alimentação o arquivo morre.
+>
+> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **HOW TO VALIDATE** — checklist de reflexos por tipo de ação. Para regras de produto (quando cada ação gera log, quais tabelas, quais enums) rode `node scripts/docs-tooling.mjs resolve <topic>` (ex: `cc-payments`, `pipeline`, `gowsign-routing`) antes de adicionar um reflex que depende de comportamento canônico.
 
 ---
 

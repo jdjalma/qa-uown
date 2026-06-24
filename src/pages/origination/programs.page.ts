@@ -1,7 +1,7 @@
 import { type Locator, expect } from '@playwright/test';
 import { OriginationBasePage } from './origination-base.page.js';
 import { SELECTORS } from '../../selectors/common.selectors.js';
-import { getTableHeaders, selectMaxRowsPerPage, goToNextPage } from '../../helpers/table.helpers.js';
+import { getTableHeaders } from '../../helpers/table.helpers.js';
 
 /**
  * Programs page — Origination portal (/programs).

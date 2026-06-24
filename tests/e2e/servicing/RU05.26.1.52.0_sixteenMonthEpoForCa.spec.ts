@@ -1,5 +1,5 @@
 /**
- * svc#531 — 16-month EPO for CA (R1.52.0).
+ * RU05.26.1.52.0 — 16-month EPO for CA (R1.52.0).
  *
  * SPEC: docs/taskTestingUown/RU05.26.1.52.0_sixteenMonthEpoForCa_531/
  *       RU05.26.1.52.0_sixteenMonthEpoForCa_531-spec.md
@@ -46,7 +46,7 @@
  *     Servicing + Portal + API cross-validation remains hard-assertions.
  */
 import { test, expect } from '@support/base-test.js';
-import type { ApiClients } from '@support/base-test.js';
+import type { ApiClients, TestContext } from '@support/base-test.js';
 import type { Page } from '@playwright/test';
 import {
   buildTestData,
@@ -125,7 +125,7 @@ interface SetupResult {
 async function setupActiveLease(
   api: ApiClients,
   db: DatabaseHelpers,
-  ctx: { leadPk?: string; leadUuid?: string; accountPk?: string },
+  ctx: TestContext,
   options: SetupOptions,
   testInfo: import('@playwright/test').TestInfo,
 ): Promise<SetupResult> {
@@ -210,7 +210,7 @@ async function setupActiveLease(
       api,
       merchant,
       applicant,
-      ctx as any,
+      ctx,
       {
         submitPaymentInfoViaApi: true,
         ...(isKornerstone && {
@@ -239,7 +239,7 @@ async function setupActiveLease(
     }
   }
 
-  await driveLeadToFunding(api, merchant, ctx as any);
+  await driveLeadToFunding(api, merchant, ctx);
 
   const fundedResp = await api.lead.updateFundingStatus([Number(ctx.leadPk)], 'FUNDED');
   expect(fundedResp.ok, `updateFundingStatus FUNDED: ${fundedResp.status}`).toBeTruthy();
@@ -292,7 +292,7 @@ async function readApiSurface(
 async function readServicingSurface(
   page: Page,
   servicingUrl: string,
-  testEnv: { servicingUrl: string },
+  _testEnv: { servicingUrl: string },
   accountPk: number,
 ): Promise<SurfaceReadings['servicing']> {
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -350,7 +350,7 @@ async function readCustomerPortalSurface(
  * `epoBreakdown` payload returned by `getServicingInfo`.
  *
  * The breakdown is a tabular `string[][]` with row[0] = header column names
- * and row[1] = data values. The shape DIFFERS between regimes (qa1 svc#531,
+ * and row[1] = data values. The shape DIFFERS between regimes (qa1,
  * accounts 4936/4937 inspected 2026-05-24):
  *
  *   CA regime (within 90d):
@@ -433,7 +433,7 @@ function expectNotCaFormula(
 test.beforeEach(() => {
   test.skip(
     CURRENT_ENV !== 'qa1' && CURRENT_ENV !== 'stg',
-    'svc#531 requires qa1 or stg — KS merchants (KS5936/KS3015) are not available in this environment',
+    'requires qa1 or stg — KS merchants (KS5936/KS3015) are not available in this environment',
   );
 });
 
@@ -442,7 +442,7 @@ test.beforeEach(() => {
 // ═══════════════════════════════════════════════════════════════════════
 
 test.describe(
-  'svc#531 — 16-month EPO for CA — Group A primary',
+  '16-month EPO for CA — Group A primary',
   { tag: splitTags(PRIMARY_TAG) },
   () => {
     test('CT-A1 — UOWN+CA+16m within 90d follows CA formula and excludes Total Contract Amount', async (
@@ -615,7 +615,7 @@ test.describe(
 // ═══════════════════════════════════════════════════════════════════════
 
 test.describe(
-  'svc#531 — 16-month EPO for CA — Group B regression',
+  '16-month EPO for CA — Group B regression',
   { tag: splitTags(PRIMARY_TAG) },
   () => {
     test('CT-B1 — UOWN+CA+13m has not regressed (still follows CA formula)', async (
@@ -693,7 +693,7 @@ test.describe(
 // ═══════════════════════════════════════════════════════════════════════
 
 test.describe(
-  'svc#531 — 16-month EPO for CA — Group C boundary',
+  '16-month EPO for CA — Group C boundary',
   { tag: splitTags(BOUNDARY_TAG) },
   () => {
     test('CT-C1 — today == earlyPayoffDateExpiry still inside window (CA formula stays)', async (
@@ -784,7 +784,7 @@ test.describe(
       // (both reduce to `cashPrice + tax`). Asserting numeric divergence is
       // therefore impossible without aging the lease. Instead we assert the
       // FORMULA STRING inside `epoBreakdown` flipped from the CA shape to the
-      // 16-month legacy shape — that is what the svc#531 fix actually changes.
+      // 16-month legacy shape — that is what the fix actually changes.
       const preInfo = await api.svcPayoff.getServicingInfo(setup.accountPk);
       expect(preInfo.ok, `getServicingInfo pre-shift: ${preInfo.status}`).toBeTruthy();
       const preRegime = detectEpoRegime(preInfo.body?.epoBreakdown ?? []);

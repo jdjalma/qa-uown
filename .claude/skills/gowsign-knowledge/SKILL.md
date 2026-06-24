@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # GowSign / SignWell Knowledge
 
-> **Papel desta skill (fronteira de autoridade — `docs/_docs-conventions.md` §7):** esta skill cobre **COMO TESTAR** signing — suites, regressão obrigatória, diff visual, helpers. O **comportamento canônico do produto** (routing GowSign/SignWell por estado, matriz de provider, conteúdo de template) NÃO mora aqui — é fonte única em `docs/business-rules/03-contratos-esign.md` e `src/data/state-merchant-matrix.ts`. Para resolver "qual provider para o estado X", rode `node scripts/docs-tooling.mjs resolve gowsign-routing` (retorna o canônico + KB fresco). Investigações recentes por estado: `docs/knowledge-base/*gowsign*`. **Não duplique fatos de routing aqui** — eles driftam (foi o caso NY/OH).
+> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **COMO TESTAR** signing — suites, regressão obrigatória, diff visual, helpers. O **comportamento canônico do produto** (routing GowSign/SignWell por estado, matriz de provider, conteúdo de template) NÃO mora aqui — é fonte única em `docs/business-rules/03-contratos-esign.md` e `src/data/state-merchant-matrix.ts`. Para resolver "qual provider para o estado X", rode `node scripts/docs-tooling.mjs resolve gowsign-routing` (retorna o canônico + KB fresco). Investigações recentes por estado: `docs/knowledge-base/*gowsign*`. **Não duplique fatos de routing aqui** — eles driftam (foi o caso NY/OH).
 
 ## Estado do rollout (2026-05-20)
 

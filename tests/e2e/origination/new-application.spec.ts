@@ -371,13 +371,7 @@ test.describe(`New Application - ${testData.state}/${testData.merchant}`, { tag:
       const customerPage = new OriginationCustomerPage(page);
       await customerPage.waitForSpinner();
 
-      const getDocStatusBtn = page.locator("xpath=//*[text()='Get Document Status']");
-      if (await getDocStatusBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-        await getDocStatusBtn.click({ force: true });
-        console.log('[Status Wait] Clicked "Get Document Status"');
-        await sleep(5_000);
-        await customerPage.waitForSpinner();
-      }
+      await customerPage.clickGetDocumentStatus();
 
       const { status: signedStatus } = await customerPage.pollForLeadStatus(
         ['signed', 'fund', 'settled'], 10, 5_000,

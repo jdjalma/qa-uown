@@ -202,13 +202,13 @@ export class WebsiteBasePage extends BasePage {
     await this.navigateBySidebarUrlFallback(normalizedOption);
   }
 
-  /** Try to find and click a sidebar item (fast — 500ms timeout) */
+  /** Try to find and click a sidebar item. Uses waitFor (not isVisible) for reliable DOM-ready check. */
   private async findAndClickSidebarItem(desiredOption: string): Promise<boolean> {
     const item = this.page
       .locator('[class*="sideBarContainer__item"]')
       .filter({ hasText: new RegExp(`^\\s*${desiredOption}\\s*$`, 'i') })
       .first();
-    if (await item.isVisible({ timeout: 500 }).catch(() => false)) {
+    if (await item.waitFor({ state: 'visible', timeout: 3_000 }).then(() => true).catch(() => false)) {
       await item.click();
       return true;
     }
@@ -229,13 +229,15 @@ export class WebsiteBasePage extends BasePage {
         .locator('[class*="sideBarContainer__item"]')
         .filter({ hasText: new RegExp(`^\\s*${parentLabel}\\s*$`, 'i') })
         .first();
-      if (await parentEl.isVisible({ timeout: 500 }).catch(() => false)) {
+      // waitFor (not isVisible) ensures we wait for the element to enter the DOM and become visible.
+      // isVisible returns false immediately if element is not in DOM; waitFor retries until timeout.
+      if (await parentEl.waitFor({ state: 'visible', timeout: 10_000 }).then(() => true).catch(() => false)) {
         await parentEl.click();
         // Wait for sub-item to appear after dropdown expansion
         const subItem = this.page.locator('[class*="sideBarContainer__item"]')
           .filter({ hasText: new RegExp(`^\\s*${desiredOption}\\s*$`, 'i') })
           .first();
-        if (await subItem.waitFor({ state: 'visible', timeout: 2_000 }).then(() => true).catch(() => false)) {
+        if (await subItem.waitFor({ state: 'visible', timeout: 5_000 }).then(() => true).catch(() => false)) {
           await subItem.click();
           await this.waitForPageTransition(normalizedOption);
           return true;
@@ -252,7 +254,7 @@ export class WebsiteBasePage extends BasePage {
         .locator('[class*="sideBarContainer__item"]')
         .filter({ hasText: new RegExp(`^\\s*${dropdown}\\s*$`, 'i') })
         .first();
-      if (await dropdownEl.isVisible({ timeout: 1_000 }).catch(() => false)) {
+      if (await dropdownEl.waitFor({ state: 'visible', timeout: 3_000 }).then(() => true).catch(() => false)) {
         await dropdownEl.click();
         await this.page.waitForLoadState('domcontentloaded').catch(() => {});
       }
@@ -278,7 +280,7 @@ export class WebsiteBasePage extends BasePage {
         .locator('[class*="sideBarContainer__item"]')
         .filter({ hasText: /^\s*Account Summary\s*$/i })
         .first();
-      if (await overviewLink.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      if (await overviewLink.waitFor({ state: 'visible', timeout: 2_000 }).then(() => true).catch(() => false)) {
         console.log(`[Website] Sidebar fallback: returning to overview before retrying "${normalizedOption}"`);
         await overviewLink.click();
         await this.waitForPageTransition('account summary');
@@ -292,8 +294,21 @@ export class WebsiteBasePage extends BasePage {
 
     const baseUrl = this.page.url().split('/').slice(0, 3).join('/');
     console.log(`[Website] Sidebar fallback: navigating directly to ${baseUrl}${path}`);
-    await this.page.goto(`${baseUrl}${path}`);
+    await this.page.goto(`${baseUrl}${path}`, { waitUntil: 'domcontentloaded' });
+    // Wait for SPA data fetch to complete before interacting with the page.
+    // Without networkidle, waitForSpinner() can return before the spinner appears
+    // (1.5s check window misses the async load) and the form is still loading.
+    await this.page.waitForLoadState('networkidle').catch(() => {});
     await this.waitForSpinner();
+    // If the SPA redirected to login/root, auth was lost upstream (OBS-WS-DOCS-LOGOUT pitfall #99).
+    // Fail immediately with a clear message instead of silently returning and confusing the caller.
+    const finalPathname = new URL(this.page.url()).pathname;
+    if (/^\/?$|\/login\/?$|^\/\s*$/.test(finalPathname)) {
+      throw new Error(
+        `[Website] Sidebar fallback for "${normalizedOption}" landed on login/root (${this.page.url()}). ` +
+        `Auth was likely lost before this step — check for force-logout upstream (OBS-WS-DOCS-LOGOUT pitfall #99).`,
+      );
+    }
   }
 
   /**
@@ -390,6 +405,9 @@ export class WebsiteBasePage extends BasePage {
     await saveBtn.waitFor({ state: 'visible', timeout: 5_000 });
     await saveBtn.click();
     await this.waitForSpinner();
+    // Wait for sidebar to re-render after SPA transition post-save (avoids 500ms miss on next goToSidebarLink)
+    const sidebarAnchor = this.page.locator('[class*="sideBarContainer__item"]').first();
+    await sidebarAnchor.waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {});
     console.log(`[Website] Changed email to "${newEmail}"`);
   }
 

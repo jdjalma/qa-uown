@@ -12,6 +12,8 @@ disable-model-invocation: true
 >
 > **Quem consulta:** `qa-planner`, `qa-implementer`, `qa-debugger`, `/qa-flow`, e analises diretas.
 
+> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **HOW TO TEST** — canonical sequence, pitfalls catalog, helpers list. O **comportamento canônico do produto** (máquina de estado do lease, enums de `LeadStatus`, regras de UW) NÃO mora aqui — é fonte única em `docs/business-rules/02-originacao-pipeline.md` + `06-conta-ciclo-vida.md` e `src/helpers/api-setup.helpers.ts`. Para resolver um tópico, rode `node scripts/docs-tooling.mjs resolve pipeline` (ou `account-lifecycle`, `underwriting`). Investigações recentes: `docs/knowledge-base/underwriting-and-funding-test-data-paths.md`. **Não duplique regras de produto aqui** — elas driftam.
+
 > Detalhes completos dos steps: [references/canonical-sequence-detail.md](references/canonical-sequence-detail.md)
 >
 > Catalogo completo de pitfalls (#1 a #137, indice + fatias): [references/pitfalls.md](references/pitfalls.md)

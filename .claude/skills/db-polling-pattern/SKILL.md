@@ -126,6 +126,31 @@ Never assume column names from entity field names, DTO names, or issue title wor
 ### 5. Conexão DB exposta no teste
 Use o helper. Não abrir `pg.Client` direto no spec — viola layering e quebra connection pool.
 
+### 8. Loop `while/for` + `sleep()` re-implementa `pollUntil`/`waitForRecord` (DRY)
+
+O `sleep()` (`@helpers/index.js`) é o helper do projeto que vira substituto de `page.waitForTimeout` — e por isso escapa do ban de `waitForTimeout`. Mas **`sleep()` dentro de um loop que espera uma condição é o mesmo anti-pattern**: re-implementa à mão o `pollUntil` (cujo próprio docstring diz "Primitivo compartilhado — antes reimplementado em database/esign-db/settled-in-full").
+
+```ts
+// ❌ Hand-rolled poll loop — re-implementa pollUntil, cadência fixa, polui o spec
+while (Date.now() < deadline) {
+  await sleep(5_000);
+  const row = await db.getSingleRow('SELECT ... WHERE pk=$1', [pk]);
+  if (row) break;
+}
+
+// ✅ Helper compartilhado — backoff exponencial, um lugar para ajustar timing
+const row = await pollUntil(
+  () => db.getSingleRow('SELECT ... WHERE pk=$1', [pk]),
+  { timeoutMs: 120_000, logPrefix: 'sticky-recover' },
+);
+// ✅ ou, para uma row de tabela conhecida:
+const note = await db.waitForRecord('SELECT ... WHERE lead_pk=$1 ORDER BY pk DESC LIMIT 1', [leadPk]);
+```
+
+**`sleep()` nu (fora de loop de condição) só é aceitável** para um delay de propagação externa que NÃO tem condição observável (ex: dar tempo a um webhook de vendor antes da PRIMEIRA query, sweep async sem flag de status) — e sempre com comentário de uma linha justificando. Retry de navegação (`for (attempt) { try goto; catch { await sleep(backoff) } }`) é uso legítimo de sleep como backoff entre tentativas, não espera condicional.
+
+**Como detectar (auditoria):** `grep -rn -B6 "await sleep(" tests/` → todo `sleep` precedido por `while (`/`for (` que consulta DB/estado é candidato a `pollUntil`/`waitForRecord`. Origem: auditoria DRY 2026-06-23 — ~30 loops hand-rolled re-implementando o primitivo em specs de domínio (sticky, seon, gowsign).
+
 ## Output esperado
 
 Cada step que valida efeito async tem:

@@ -256,33 +256,6 @@ async function isWizardOpen(frame: FrameLocator): Promise<boolean> {
 }
 
 /**
- * Executa um ciclo do wizard: completa o step ativo clicando font + advance button.
- * Retorna true se algo foi feito; false quando wizard fechou ou nao esta presente.
- */
-async function signNextWizardCycle(
-  page: Page,
-  frame: FrameLocator,
-  fontIndex: number,
-): Promise<boolean> {
-  // Tenta abrir wizard se nao estiver aberto
-  if (!(await isWizardOpen(frame))) {
-    // Pode ser que precise clicar no header "Sign" pra reabrir wizard
-    const signBtn = frame.getByRole('button', { name: /^Sign( All)?$/i });
-    const visible = await signBtn.first().isVisible().catch(() => false);
-    if (!visible) return false;
-    try {
-      await signBtn.first().click({ timeout: 5_000 });
-      await page.waitForTimeout(1_500);
-    } catch {
-      return false;
-    }
-    if (!(await isWizardOpen(frame))) return false;
-  }
-
-  return await completeCurrentStep(page, frame, fontIndex);
-}
-
-/**
  * Completa o step ativo do wizard (Signature → Next, Initials → Save).
  * - Garante Type mode ativo
  * - Clica na fonte indicada

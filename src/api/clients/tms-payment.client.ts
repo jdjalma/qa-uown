@@ -29,7 +29,7 @@
  *    key is supplied per-request via the `tmsHeaders` helper, matching
  *    `TmsAuditClient`.
  */
-import type { APIRequestContext, APIResponse } from '@playwright/test';
+import type { APIRequestContext } from '@playwright/test';
 import { BaseClient } from './base.client.js';
 import { parseResponse, type ApiResponse } from '../responses/api-response.js';
 import type { ConfigEnvironment } from '../../config/environment.js';

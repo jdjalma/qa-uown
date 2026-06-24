@@ -45,7 +45,7 @@ test.describe('Refund Payment via Servicing Portal', { tag: splitTags(REFUND_DAT
 
   test.beforeEach(async ({ api, ctx, db }) => {
     test.setTimeout(420_000);
-    const { env, merchant, applicant } = buildTestData({
+    const { merchant, applicant } = buildTestData({
       state: REFUND_DATA.state,
       merchant: REFUND_DATA.merchant,
       orderTotal: '800',

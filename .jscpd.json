@@ -1,0 +1,17 @@
+{
+  "$comment": "Duplication ratchet. The prompt cited an 8.84% baseline, but jscpd (this version) measured by line-percentage on `tests src` with min-lines=5/min-tokens=50 reports 9.09% (2026-06-23 — clones live almost entirely in tests/, not src/scripts|data|selectors). Threshold set to 10 so the red-free build stays green while still capping new duplication just above current debt. LOWER this toward 9 then 8 as duplicated test blocks are extracted into helpers/page objects.",
+  "threshold": 10,
+  "reporters": ["console"],
+  "absolute": true,
+  "gitignore": true,
+  "ignore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/reports/**",
+    "src/scripts/**",
+    "src/data/**",
+    "src/selectors/**"
+  ],
+  "min-lines": 5,
+  "min-tokens": 50
+}

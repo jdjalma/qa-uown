@@ -21,7 +21,6 @@ import {
   buildTestData,
   loginToPortal,
   navigateToOriginationCustomer,
-  sleep,
   createPreQualifiedApplication,
   driveLeadToSigned,
   driveLeadToFunding,

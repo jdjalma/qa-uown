@@ -150,6 +150,8 @@
 | 139 | **Sticky resolve tempo da transacao original como America/New_York apesar do commit dizer "UTC".**… | [03-pitfalls-138-141.md](pitfalls/03-pitfalls-138-141.md) |
 | 140 | **Guard "prevent repeated NeuroID calls" NAO mergeado em R1.53.0 — nao assumir skip.**… | [03-pitfalls-138-141.md](pitfalls/03-pitfalls-138-141.md) |
 | 141 | **Customer Journey: JourneyStatus.ABANDONED + varios campos nunca setados em codigo (R1.53.0) — asserir = false-fail.**… | [03-pitfalls-138-141.md](pitfalls/03-pitfalls-138-141.md) |
+| 142 | **SeonWidgetComponent.closeSeonWidget() (X real via frameLocator) NAO dismissa o widget em sandbox** — reproduced 2x; cancel UX nao-trivial; nenhuma nota de cancel em lead_notes; OBSERVACAO S3/P2 (confirmar com dev/PO). | [03-pitfalls-138-141.md](pitfalls/03-pitfalls-138-141.md) |
+| 143 | **pre-write-validate.sh Rule 1 bloqueia componentes standalone legitimos (*.component.ts / *.controls.ts) em src/pages/**  — hook exige `extends` em todo `export class`; workaround: `class X {}; export { X }` (sem keyword export na declaracao).** | [03-pitfalls-138-141.md](pitfalls/03-pitfalls-138-141.md) |
 
 
 ---

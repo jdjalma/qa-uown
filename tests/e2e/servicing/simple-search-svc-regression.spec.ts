@@ -232,21 +232,6 @@ async function resolveSvcHappyLead(db: DatabaseHelpers): Promise<SvcHappyLead> {
   return buildFixture(fallback);
 }
 
-/**
- * Resolve phone for the SVC happy lead. Prefer the value already loaded by
- * `resolveSvcHappyLead`; fall back to a known qa1 lead if null.
- *
- * Source-tag (regra #16): tabela canônica é `uown_los_phone` — pitfall
- * application-lifecycle #55 (F-09 Exec 2 2026-05-24).
- */
-function resolveHappyPhone(): { leadPk: number; phone: string } {
-  const digits = (KAREN.phone ?? '').replace(/\D/g, '');
-  if (digits.length >= 10) {
-    return { leadPk: KAREN.leadPk, phone: digits.slice(-10) };
-  }
-  return { leadPk: KAREN.fallbackPhoneLeadPk, phone: KAREN.fallbackPhone };
-}
-
 async function waitForResults(
   search: SearchPage,
   timeoutMs = 8_000,

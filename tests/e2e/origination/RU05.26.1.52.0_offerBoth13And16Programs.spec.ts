@@ -1,5 +1,5 @@
 /**
- * svc#537 - Offer Both 13 and 16 Programs (R1.52.0).
+ * RU05.26.1.52.0 — Offer Both 13 and 16 Programs (R1.52.0).
  *
  * SPEC: docs/taskTestingUown/RU05.26.1.52.0_offerBoth13And16Programs_537/
  *       RU05.26.1.52.0_offerBoth13And16Programs_537-spec.md
@@ -25,7 +25,7 @@ import { test, expect } from '@support/base-test.js';
 import { buildTestData, sleep, calculateDate } from '@helpers/index.js';
 import { ApplicationWizardPage } from '@pages/origination/application-wizard.page.js';
 import { SELECTORS } from '@selectors/common.selectors.js';
-import { TEST_BANK, TEST_CARDS } from '@config/constants.js';
+import { TEST_BANK } from '@config/constants.js';
 import { TestTag, buildTags } from '@ptypes/enums.js';
 import type { DatabaseHelpers } from '@helpers/database.helpers.js';
 
@@ -78,10 +78,10 @@ async function assertLeadProgramServiceLog(
 
 // ── Test suite ───────────────────────────────────────────────────────────
 
-test.describe('RU05.26.1.52.0_offerBoth13And16Programs_537', { tag: TAG.split(' ') }, () => {
+test.describe('RU05.26.1.52.0_offerBoth13And16Programs', { tag: TAG.split(' ') }, () => {
   test.setTimeout(600_000);
   test.beforeEach(({ testEnv }) => {
-    test.skip(testEnv.env !== 'qa1', 'svc#537 uses KS3015 (Kornerstone) + qa1-only 16m SSN routing — skip in other environments');
+    test.skip(testEnv.env !== 'qa1', 'uses KS3015 (Kornerstone) + qa1-only 16m SSN routing — skip in other environments');
   });
 
   test('16m-eligible via new-application wizard + email validation + 13m/16m tab verification', async ({
@@ -167,8 +167,6 @@ test.describe('RU05.26.1.52.0_offerBoth13And16Programs_537', { tag: TAG.split(' 
     });
 
     // ── Phase 4: sendInvoice to get redirect URLs + trigger email ───────
-    const sinceUid = await email.snapshotInboxUid();
-
     let redirectUrl = '';
     let paymentDetailsList: Array<{ redirectUrl?: string; termInMonths?: number; planId?: string }> = [];
 
@@ -356,7 +354,7 @@ test.describe('RU05.26.1.52.0_offerBoth13And16Programs_537', { tag: TAG.split(' 
 
       expect(
         result.found,
-        '[BUG-CONFIRMED] regra #13 violated - fix #537 nao persiste log da decisao de programa. ' +
+        '[BUG-CONFIRMED] regra #13 violated - fix nao persiste log da decisao de programa. ' +
         'LeadProgramService log not found in uown_los_lead_notes.notes nor uown_los_lead.notes for leadPk=' + leadPk,
       ).toBeTruthy();
     });

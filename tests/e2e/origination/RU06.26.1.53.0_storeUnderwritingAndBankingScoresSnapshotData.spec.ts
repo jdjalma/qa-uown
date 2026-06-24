@@ -44,8 +44,8 @@
  */
 import { test, expect } from '@fixtures/test-context.fixture.js';
 import { TestTag, buildTags, splitTags } from '@ptypes/enums.js';
-import type { TestContext } from '@support/base-test.js';
-import type { DatabaseHelpers, UwScoresRow } from '@helpers/database.helpers.js';
+import { makeTestContext, type TestContext } from '@support/base-test.js';
+import type { UwScoresRow } from '@helpers/database.helpers.js';
 import { buildTestData } from '@helpers/test-data.helpers.js';
 import { createPreQualifiedApplication } from '@helpers/api-setup.helpers.js';
 import { TEST_BANK } from '@config/constants.js';
@@ -107,7 +107,7 @@ test.describe(`${TEST_NAME} - qa2/Kornerstone/KS16775`, { tag }, () => {
     await api.scheduledTask.refreshKountAccessTokenSweep().catch(() => {});
 
     const td = buildTestData({ env: 'qa2', state: STATE, merchant: KS16775.key, approved: true });
-    const ctx = { reportKeys: new Map() } as unknown as TestContext;
+    const ctx = makeTestContext();
     await createPreQualifiedApplication(
       api,
       td.merchant,

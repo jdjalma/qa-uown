@@ -52,7 +52,10 @@ import { test, expect } from '@fixtures/test-context.fixture.js';
 import type { Page } from '@playwright/test';
 import { TestTag, splitTags } from '@ptypes/enums.js';
 import { NeuroIdStatus } from '@ptypes/enums.js';
+import { SELECTORS } from '@selectors/index.js';
 import { buildTestData } from '@helpers/test-data.helpers.js';
+import { findLeadNoteContaining } from '@helpers/index.js';
+import type { LeadNote } from '@helpers/index.js';
 import { createPreQualifiedApplication } from '@helpers/api-setup.helpers.js';
 import { signGowSignInFrame } from '@helpers/gowsign-signing.helper.js';
 import { completeSignwellFlow, clickSignAllViaLink } from '@helpers/signwell.helpers.js';
@@ -149,13 +152,8 @@ async function neuroIdEnabled(db: DatabaseHelpers, refCode: string): Promise<boo
 async function latestNeuroIdNote(
   db: DatabaseHelpers,
   leadPk: string | number,
-): Promise<{ pk: number; notes: string } | null> {
-  return db.queryOne<{ pk: number; notes: string }>(
-    `SELECT pk, notes FROM uown_los_lead_notes
-      WHERE lead_pk = $1 AND notes ILIKE '%neuro%'
-      ORDER BY pk DESC LIMIT 1`,
-    [Number(leadPk)],
-  );
+): Promise<LeadNote | null> {
+  return findLeadNoteContaining(db, Number(leadPk), 'neuro');
 }
 
 interface SetupParams {
@@ -746,12 +744,7 @@ test.describe('RU06.26.1.53.0 — Prevent Repeated NeuroID Calls During Signing 
     });
 
     await test.step('Activity log: signing completion note (Rule #13)', async () => {
-      const note = await db.queryOne<{ pk: number; notes: string }>(
-        `SELECT pk, notes FROM uown_los_lead_notes
-          WHERE lead_pk = $1 AND notes ILIKE '%[ContractService]%'
-          ORDER BY pk DESC LIMIT 1`,
-        [Number(setup.leadPk)],
-      );
+      const note = await findLeadNoteContaining(db, Number(setup.leadPk), '[ContractService]');
       if (signedProvider === 'SIGNWELL' && !note) {
         annotate('env-gap', '[ENV-GAP] no [ContractService] note yet — SignWell stg completion did not finalize headless; AC-05 core still validated');
       } else {

@@ -50,7 +50,7 @@ class CustomReporter implements Reporter {
     this.outputDir = options?.outputDir || path.resolve(process.cwd(), 'reports');
   }
 
-  onBegin(config: FullConfig, suite: Suite): void {
+  onBegin(_config: FullConfig, _suite: Suite): void {
     this.startTime = Date.now();
     this.tests = [];
   }
@@ -76,7 +76,7 @@ class CustomReporter implements Reporter {
     this.tests.push(entry);
   }
 
-  async onEnd(result: FullResult): Promise<void> {
+  async onEnd(_result: FullResult): Promise<void> {
     const totalDuration = Date.now() - this.startTime;
 
     const summary: TestSummaryReport = {

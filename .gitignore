@@ -44,3 +44,4 @@ tests/api/_sticky_multi_fresh.spec.ts
 
 # Local working spreadsheets
 qa-sla.xlsx
+.tsbuildinfo

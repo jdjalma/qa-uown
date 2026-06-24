@@ -1,5 +1,5 @@
 import { BaseClient } from './base.client.js';
-import { parseResponse, type ApiResponse } from '../responses/api-response.js';
+import { type ApiResponse } from '../responses/api-response.js';
 import type { FindCustomerBody } from '../bodies/customer.body.js';
 import type {
   FindCustomerResponse,

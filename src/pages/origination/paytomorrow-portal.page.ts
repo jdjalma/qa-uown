@@ -770,7 +770,7 @@ export class PayTomorrowPortalPage extends BasePage {
   }
 
   /** Complete T&C page: check all checkboxes, handle Protection Plan if offered, click PROCEED TO SIGNATURE */
-  private async completeTermsAndConditions(ptPage: Page, frame: FrameLocator): Promise<void> {
+  private async completeTermsAndConditions(_ptPage: Page, frame: FrameLocator): Promise<void> {
     const anyCheckbox = frame.locator(SELECTORS.checkboxInput).first();
     const tcVisible = await anyCheckbox.waitFor({ state: 'visible', timeout: 30_000 }).then(() => true).catch(() => false);
 
@@ -922,59 +922,6 @@ export class PayTomorrowPortalPage extends BasePage {
     await ptPage.screenshot({ path: 'scripts/pt-contract-post-sign.png', fullPage: true }).catch(() => {});
     console.log(`[PT Contract] Post-signing URL: ${ptPage.url()}`);
     console.log('[PT Contract] Contract page handling complete');
-  }
-
-  /**
-   * Remove the SEON IDV fraud detection overlay iframe from the UOWN iframe.
-   * SEON injects a full-page transparent iframe that intercepts all pointer events
-   * and mutates form elements (sets tabindex=-1, aria-hidden=true). We remove the
-   * iframe and restore original attributes so the test can interact with the form.
-   */
-  /**
-   * Wait for SEON IDV identity verification to complete inside the UOWN iframe.
-   * SEON intercepts all pointer events and mutates form elements (tabindex=-1,
-   * aria-hidden=true) during its capture. Once verification completes, SEON
-   * restores the original attributes and stops blocking. The form cannot be
-   * submitted until SEON finishes (returns "failed to verify identification").
-   */
-  private async waitForSeonIdvCompletion(ptPage: Page, frame: FrameLocator): Promise<void> {
-    const seonIframe = frame.locator('iframe[data-testid="seon-idv-iframe"]');
-    const hasSeon = await seonIframe.isVisible({ timeout: 5_000 }).catch(() => false);
-    if (!hasSeon) return;
-
-    console.log('[PT Contract] SEON IDV overlay detected — waiting for verification to complete');
-
-    // SEON signals completion by restoring data-prevtabindex/data-prevariahidden
-    // on the Submit button (it removes tabindex=-1 and aria-hidden=true).
-    // Wait for the Submit button to have its original attributes restored.
-    const uownFrame = ptPage.frame({ url: /uownleasing\.com/ });
-    for (let i = 0; i < 60; i++) {
-      // Check if SEON iframe is gone
-      if (!await seonIframe.isVisible({ timeout: 1_000 }).catch(() => false)) {
-        console.log(`[PT Contract] SEON IDV iframe disappeared after ${i + 1}s`);
-        await sleep(1_000);
-        return;
-      }
-
-      // Check if SEON stopped mutating elements (no more data-prevtabindex attributes)
-      if (uownFrame) {
-        const mutatedCount = await uownFrame.evaluate(() =>
-          document.querySelectorAll('[data-prevtabindex]').length,
-        ).catch(() => 99);
-        if (mutatedCount === 0) {
-          console.log(`[PT Contract] SEON IDV completed — no mutated elements remain (${i + 1}s)`);
-          await sleep(1_000);
-          return;
-        }
-        if (i % 10 === 9) {
-          console.log(`[PT Contract] SEON IDV still active — ${mutatedCount} mutated elements (${i + 1}s)`);
-        }
-      }
-
-      await sleep(1_000);
-    }
-
-    console.log('[PT Contract] SEON IDV timeout (60s) — proceeding anyway');
   }
 
   /**
@@ -1201,7 +1148,7 @@ export class PayTomorrowPortalPage extends BasePage {
   /**
    * Complete PandaDocs e-sign inside the UOWN iframe (nested iframe).
    */
-  private async completePandaDocsInIframe(ptPage: Page, parentFrame: FrameLocator): Promise<void> {
+  private async completePandaDocsInIframe(_ptPage: Page, parentFrame: FrameLocator): Promise<void> {
     const pandaFrame = parentFrame.frameLocator(SELECTORS.pandaDocsIframe);
 
     // Close popup if present

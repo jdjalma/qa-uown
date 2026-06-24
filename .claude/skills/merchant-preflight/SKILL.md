@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 # Merchant Preflight Contract
 
+> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **HOW TO SET UP** — preflight procedure, contract validation, pitfalls. O **comportamento canônico do produto** (merchant config flags, funding state machine, enums) NÃO mora aqui — é fonte única em `docs/business-rules/08-funding-merchants.md` + `appendix-c-tabelas-banco.md` e `src/data/merchant-config-contract.ts`. Para resolver um tópico, rode `node scripts/docs-tooling.mjs resolve merchant-config`. **Não duplique regras de merchant aqui** — elas driftam.
+
 ## Quando aplicar
 
 Carregue esta skill **sempre que o teste cria uma application nova** — seja via UI (`new-application`) ou via API (`sendApplication`, `createPreQualifiedApplication`).

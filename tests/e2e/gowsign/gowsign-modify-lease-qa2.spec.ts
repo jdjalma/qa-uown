@@ -11,7 +11,7 @@
  * Pre-req: DB tunnel qa2 ativo (porta 5445).
  */
 import { test, expect } from '@fixtures/test-context.fixture.js';
-import { buildTestData, sleep } from '@helpers/index.js';
+import { buildTestData, sleep, findLeadNoteContaining } from '@helpers/index.js';
 import { createPreQualifiedApplication } from '@helpers/api-setup.helpers.js';
 import { installPostMessageRecorder, signGowSignInFrame } from '@helpers/gowsign-signing.helper.js';
 import {
@@ -119,12 +119,7 @@ test.describe(
         });
 
         await test.step('DB: original lead notes record the modify request', async () => {
-          const note = await db.queryOne<{ notes: string }>(
-            `SELECT notes FROM uown_los_lead_notes
-             WHERE lead_pk=$1 AND notes ILIKE '%modifyInvoice%'
-             ORDER BY pk DESC LIMIT 1`,
-            [originalLeadPk],
-          );
+          const note = await findLeadNoteContaining(db, originalLeadPk, 'modifyInvoice');
           expect(note, 'expected at least one note mentioning "modifyInvoice"').not.toBeNull();
           console.log(`[MOD-01.1] modify note: ${String(note!.notes).slice(0, 200)}`);
         });

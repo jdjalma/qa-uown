@@ -560,7 +560,7 @@ test.describe(
     test(
       'DOC-10.2 NJ-state application is rejected upstream — no GowSign contract created',
       { tag: ['@priority-medium'] },
-      async ({ api, ctx, db }, testInfo) => {
+      async ({ api, ctx, db }) => {
         test.setTimeout(180_000);
 
         const td = buildTestData({

@@ -6,7 +6,7 @@
 
 set -uo pipefail
 
-LOG_DIR="/home/jose/projects/automation/.claude/logs"
+LOG_DIR="${CLAUDE_PROJECT_DIR:-/home/jose/projects/qa-uown}/.claude/logs"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/session.log"
 
@@ -15,7 +15,7 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] SESSION START — pwd: $(pwd)" >> "$LOG_FIL
 # ── Sync application repos ────────────────────────────────────────
 # Repos listed in .claude/context/app-repos.md
 REPOS=(svc origination servicing website ams ams-website payment-gateway uwengine ccverification common los-common svc-common configuration)
-BASE_DIR="/home/jose/projects"
+BASE_DIR="/home/jose/projects/uown"
 SYNCED=0
 FAILED=()
 

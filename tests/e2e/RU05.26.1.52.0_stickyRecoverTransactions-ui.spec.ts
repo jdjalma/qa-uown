@@ -1,5 +1,5 @@
 /**
- * Sticky Recover Transactions — svc#485 (RU05.26.1.52.0) — UI + API contract (CT-11).
+ * RU05.26.1.52.0 — Sticky Recover Transactions — UI + API contract (CT-11).
  *
  * SPEC: docs/taskTestingUown/RU05.26.1.52.0_stickyRecoverTransactions_485/
  *       RU05.26.1.52.0_stickyRecoverTransactions_485-spec.md §CT-11
@@ -36,7 +36,7 @@ import { TestTag, buildTags, splitTags } from '../../src/types/enums.js';
 const TAG = `${buildTags(TestTag.REGRESSION, TestTag.SANDBOX)} @sticky-recover @svc-485 @sticky-recover-smoke @e2e`;
 
 test.describe(
-  'svc#485 — Sticky Recover UI + API contract (CT-11)',
+  'Sticky Recover UI + API contract (CT-11)',
   { tag: splitTags(TAG) },
   () => {
     test('CT-11 — Servicing CC Transactions grid renders Sticky columns + API contract snapshot', async ({

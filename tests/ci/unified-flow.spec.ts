@@ -197,25 +197,15 @@ test.describe(`Unified Flow - ${testData.state}/${testData.merchant}`, { tag: te
       await loginToPortalWithOptions(page, env.originationUrl, env);
       const customerPage = await navigateToOriginationCustomer(page, ctx.leadPk);
 
-      // Click "Get Document Status" to trigger backend sync (Java: shortcut action)
-      const getDocStatusBtn = page.locator("xpath=//*[text()='Get Document Status']");
-      if (await getDocStatusBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-        await getDocStatusBtn.click({ force: true });
-        console.log('[Status Wait] Clicked "Get Document Status"');
-        await sleep(5_000);
-        await customerPage.waitForSpinner();
-      }
+      // Trigger backend sync (Java: shortcut action) — encapsulated in the page object
+      await customerPage.clickGetDocumentStatus();
 
       const { status: signedStatus, matched } = await customerPage.pollForLeadStatus(
         ['signed', 'fund', 'settled'], 10, 5_000,
       );
       if (!matched) {
-        // Last resort: click "Get Document Status" one more time
-        if (await getDocStatusBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-          await getDocStatusBtn.click({ force: true });
-          console.log('[Status Wait] Clicked "Get Document Status" (final attempt)');
-          await sleep(10_000);
-        }
+        // Last resort: trigger the sync once more — longer settle, skip spinner wait
+        await customerPage.clickGetDocumentStatus({ timeout: 3_000, settleMs: 10_000, waitSpinner: false });
       }
       const sl = signedStatus.toLowerCase();
       if (sl.includes('settled') || sl.includes('funding') || sl.includes('funded')) {
@@ -624,22 +614,14 @@ test.describe(`Unified Flow - ${testData.state}/${testData.merchant}`, { tag: te
     await test.step('Navigate website sections', async () => {
       // Verify top-level sidebar sections. Dropdown sub-items (Make Payment, Payment Methods)
       // are tested via the payment steps below.
-      const sidebar = (text: string) => page.locator('[class*="sideBarContainer__item"]')
-        .filter({ hasText: new RegExp(`^\\s*${text}\\s*$`, 'i') }).first();
-      await sidebar('Documents').click({ timeout: 5_000 });
-      await page.waitForLoadState('domcontentloaded').catch(() => {});
-      await sidebar('Account Summary').click({ timeout: 5_000 });
-      await page.waitForLoadState('domcontentloaded').catch(() => {});
+      const websitePage = new WebsiteBasePage(page);
+      await websitePage.goToSidebarLink('documents');
+      await websitePage.goToSidebarLink('account summary');
     });
 
     await test.step('Verify servicing payments reflected on website', async () => {
-      // Navigate to Make Payment via dropdown expansion
-      const sidebar = (text: string) => page.locator('[class*="sideBarContainer__item"]')
-        .filter({ hasText: new RegExp(`^\\s*${text}\\s*$`, 'i') }).first();
-      await sidebar('Payments').click({ timeout: 3_000 });
-      await sidebar('Make Payment').waitFor({ state: 'visible', timeout: 3_000 });
-      await sidebar('Make Payment').click({ timeout: 3_000 });
-      await page.waitForLoadState('domcontentloaded').catch(() => {});
+      const websitePage = new WebsiteBasePage(page);
+      await websitePage.goToSidebarLink('make payment');
       if (testData.achPaymentAmount !== 'NA') {
         const achRow = page.locator(`text=${testData.achPaymentAmount}`).first();
         if (await achRow.isVisible({ timeout: 5_000 }).catch(() => false)) {
@@ -665,14 +647,7 @@ test.describe(`Unified Flow - ${testData.state}/${testData.merchant}`, { tag: te
 
       const websitePage = new WebsiteBasePage(page);
       await websitePage.waitForSpinner();
-      const sidebar = (text: string) => page.locator('[class*="sideBarContainer__item"]')
-        .filter({ hasText: new RegExp(`^\\s*${text}\\s*$`, 'i') }).first();
-      const makePayment = sidebar('Make Payment');
-      if (!await makePayment.isVisible({ timeout: 2_000 }).catch(() => false)) {
-        await sidebar('Payments').click({ timeout: 10_000 });
-      }
-      await makePayment.waitFor({ state: 'visible', timeout: 5_000 });
-      await makePayment.click({ timeout: 5_000 });
+      await websitePage.goToSidebarLink('make payment');
       await websitePage.waitForSpinner();
 
       await websitePage.makeCcPaymentFromCurrentPage(testData.ccPaymentAmount);
@@ -681,11 +656,7 @@ test.describe(`Unified Flow - ${testData.state}/${testData.merchant}`, { tag: te
     await test.step('Navigate to Update Contact Info and change email', async () => {
       const websitePage = new WebsiteBasePage(page);
       await websitePage.waitForSpinner();
-      const sidebar = (text: string) => page.locator('[class*="sideBarContainer__item"]')
-        .filter({ hasText: new RegExp(`^\\s*${text}\\s*$`, 'i') }).first();
-      await sidebar('Account Settings').click({ timeout: 10_000 });
-      await sidebar('Update Contact Info').waitFor({ state: 'visible', timeout: 5_000 });
-      await sidebar('Update Contact Info').click({ timeout: 5_000 });
+      await websitePage.goToSidebarLink('update contact info');
       await websitePage.waitForSpinner();
       await websitePage.changeEmailToGeneric();
     });
@@ -693,9 +664,7 @@ test.describe(`Unified Flow - ${testData.state}/${testData.merchant}`, { tag: te
     await test.step('Navigate to Contact Us', async () => {
       const websitePage = new WebsiteBasePage(page);
       await websitePage.waitForSpinner();
-      const sidebar = (text: string) => page.locator('[class*="sideBarContainer__item"]')
-        .filter({ hasText: new RegExp(`^\\s*${text}\\s*$`, 'i') }).first();
-      await sidebar('Contact Us').click({ timeout: 10_000 });
+      await websitePage.goToSidebarLink('contact us');
     });
   });
 });

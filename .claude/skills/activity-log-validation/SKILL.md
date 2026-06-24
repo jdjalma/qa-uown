@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 # Activity Log Validation — Regra Inviolável #13
 
+> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **HOW TO VALIDATE** — regras de log obrigatório, tabelas, assertion patterns. O **schema canônico de tabelas e queries SQL** NÃO mora aqui — é fonte única em `docs/business-rules/appendix-c-tabelas-banco.md` + `appendix-f-sql-reference.md`. Para resolver um tópico, rode `node scripts/docs-tooling.mjs resolve activity-log`. **Não duplique schema de tabela aqui** — ele drifta.
+
 ## O princípio
 
 > "If there is no activity log, that means nothing is happening."

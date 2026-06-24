@@ -317,3 +317,41 @@ test:ci:
     when:
       - runner_system_failure
   allow_failure: true
+
+# ══════════════════════════════════════════════════════════════
+#  QUALITY GATE — types + eslint ratchet + duplication ceiling
+# ══════════════════════════════════════════════════════════════
+# RATCHET: eslint runs with `--max-warnings 1775` — the 2026-06-23 baseline is
+# 1754 (after the dead-code cleanup); the +21 buffer absorbs an incidental
+# warning so a single unrelated MR isn't insta-blocked, while still catching
+# real regressions. Warnings may
+# SHRINK but never meaningfully grow — a burst of new inline locators, direct
+# helper imports, sleep-in-loops, XPath, `as any`, or playwright-hygiene
+# regressions pushes the count over the ceiling and FAILS this job. LOWER the
+# ceiling here toward the live count (target: 0) as debt is paid down; set it to
+# 1759 for a strict zero-slack ratchet. jscpd caps code duplication at 10%
+# (true measured baseline 9.09% on 2026-06-23 via `jscpd tests src`; the
+# prompt's 8.84% did not reproduce with this jscpd version/flags — the
+# duplication lives in tests/, not the ignored src dirs). LOWER toward 9 → 8
+# as duplicated test blocks are extracted. tsc must stay error-free outside
+# the 2 known-broken src/scripts probe files (filtered by scripts/check-types.sh).
+quality:
+  stage: test
+  image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy
+  dependencies:
+    - install
+  needs: ["install"]
+  before_script:
+    - echo "Running QUALITY gate (tsc + eslint ratchet + jscpd)"
+  script:
+    # tsc, ignoring the 2 known-broken src/scripts probe files (tracked separately).
+    - bash scripts/check-types.sh
+    - npx eslint . --max-warnings 1775
+    - npx jscpd tests src --threshold 10 --min-lines 5 --min-tokens 50
+  after_script:
+    - echo "Quality gate completed"
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
+  allow_failure: false

@@ -357,10 +357,13 @@ const testData = [{
 
 ```
 ❌ page.waitForTimeout() — use .waitFor({ state: 'visible' }) or db.waitForRecord()
+❌ await sleep(N) como espera condicional (loop while/for que checa DB/estado) — re-implementa pollUntil/waitForRecord; sleep() é o MESMO anti-pattern que waitForTimeout, só escapa pelo nome. Helper: pollUntil (@helpers/index.js) / db.waitForRecord / locator.waitFor. sleep() nu só p/ delay de propagação externa documentado + comentário. Ver [[db-polling-pattern]] pitfall #8
 ❌ Assertions in page objects — assert in test, return values from page objects
 ❌ Import from @playwright/test directly — use @support/base-test or @fixtures/test-context.fixture
+❌ Import de helper de runtime pelo módulo individual (@helpers/foo.helpers.js) — usar o barrel @helpers/index.js (só import type pode apontar o módulo)
 ❌ ctx shared across tests — ctx is per-test only
 ❌ Relative imports (../../../src/...) — always use path aliases (@support/base-test.js, @config/constants.js, etc.)
+❌ Locator inline no spec que duplica método de page object — Grep src/pages/{portal}/ antes; se existe método, chamar; ver [[selector-hardening]]
 ❌ body as never casts — use the correct typed builder (buildSendApplicationBody, buildSubmitApplicationBody) instead
 ```
 

@@ -1,4 +1,3 @@
-import { expect } from '@playwright/test';
 import { BasePage } from '../base.page.js';
 import { SELECTORS } from '../../selectors/common.selectors.js';
 
@@ -95,7 +94,22 @@ export class ServicingBasePage extends BasePage {
   }
 
   async selectPaymentType(paymentType: string): Promise<void> {
-    await this.paymentTypeDropdown.click();
+    // The sibling div of the "paymentType" label is the React Select container.
+    // "following-sibling::div[1]" is more specific than "/../div" which selects the
+    // first div child of the parent (may not be the React Select control itself).
+    const reactSelectContainer = this.page.locator(
+      "xpath=//label[@for='paymentType']/following-sibling::div[1]",
+    );
+
+    // If the modal opened with this type already selected, skip the interaction —
+    // avoids a false failure when the value container shows the correct type.
+    const currentText = await reactSelectContainer.textContent({ timeout: 3_000 }).catch(() => '');
+    if (currentText?.includes(paymentType)) {
+      console.log(`[Payment] Type already "${paymentType}" — skipping selection`);
+      return;
+    }
+
+    await reactSelectContainer.click();
     await this.page.locator(SELECTORS.filterOptionWithRole).filter({ hasText: paymentType }).first().click();
   }
 

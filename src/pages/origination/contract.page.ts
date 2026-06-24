@@ -10,6 +10,7 @@ import { TEST_BANK } from '../../config/constants.js';
 import type { TestCard } from '../../data/test-cards.js';
 import { AlternativeContractModalPage } from '../gowsign/index.js';
 import { signGowSignInFrame } from '../../helpers/gowsign-signing.helper.js';
+import { SeonWidgetComponent } from '../components/index.js';
 
 /**
  * Contract Page - consumer-facing payment form accessed via the contract/redirect URL.
@@ -29,6 +30,12 @@ export class ContractPage extends BasePage {
   readonly ccFirstName = this.page.locator(SELECTORS.ccFirstName);
   readonly ccLastName = this.page.locator(SELECTORS.ccLastName);
   readonly ccValue = this.page.locator(SELECTORS.ccValue);
+  /**
+   * Semantic "Card Number" textbox — exposed for callers that need the field as a
+   * Locator (e.g. SEON-gate "is the payment form blocked behind the overlay?" check).
+   * Confirmed accessible name "Card Number" (sandbox 2026-06-23).
+   */
+  readonly cardNumberField = this.page.getByRole('textbox', { name: /card number/i });
   readonly ccCvc = this.page.locator(SELECTORS.ccCvc);
   readonly ccExpInput = this.page.locator(SELECTORS.ptCcExpDateCombined);
 
@@ -821,18 +828,11 @@ export class ContractPage extends BasePage {
    * We hide the iframe element via JS since we cannot interact with the cross-origin iframe content.
    */
   async dismissSeonOverlay(): Promise<void> {
-    const seonIframe = this.page.locator('[data-testid="seon-idv-iframe"]');
-    const visible = await seonIframe.isVisible({ timeout: 3_000 }).catch(() => false);
-    if (!visible) return;
-
-    await this.page.evaluate(() => {
-      const el = document.querySelector('[data-testid="seon-idv-iframe"]') as HTMLElement | null;
-      if (el) {
-        el.style.display = 'none';
-        el.style.pointerEvents = 'none';
-        el.style.zIndex = '-9999';
-      }
-    });
+    // Delegates to the shared SeonWidgetComponent (back-compat hide path). The
+    // three near-duplicate dismissSeonOverlay impls (contract/paypair/paytomorrow)
+    // are consolidated onto this component; only ContractPage delegates here for
+    // now — PayPair/PayTomorrow consolidation is a follow-up (doc-keeper).
+    await new SeonWidgetComponent(this.page).hideWidget();
     console.log('[Contract] SEON overlay dismissed');
   }
 

@@ -16,7 +16,14 @@
  *   7. [UI]   Complete e-sign (Signwell/PandaDocs iframe)
  *   8. [UI]   Origination portal → verify lead status advanced
  *
- * Environment: stg (FifthAveFurnitureNY available with SEON enabled)
+ * Environment: sandbox. The setup uses sendApplication WITH order and reads
+ * `paymentDetailsList[].redirectUrl` for the contract URL — that field is only
+ * populated in sandbox. In stg, sendApplication-with-order returns an EMPTY
+ * paymentDetailsList (and sendInvoice 400s on an already-ordered lead), so this
+ * spec must run in sandbox. The pre-qualification + sendInvoice path used by
+ * seon-id-verification-bypass.spec.ts is the stg-compatible alternative.
+ * Verified live 2026-06-23: full flow (bypass → CC/bank → T&C → e-sign → SIGNED)
+ * passes 3/3 in sandbox (lead 97988); fails at setup in stg (empty paymentDetailsList).
  * Merchant: FifthAveFurnitureNY (KS3015, Kornerstone, isSeonIdCheckRequired=true)
  */
 import { test, expect } from '@fixtures/test-context.fixture.js';
@@ -112,6 +119,18 @@ test.describe(
         console.log(`[Phase 1] Confirmed APPROVED, leadPk=${ctx.leadPk}`);
       });
 
+      await test.step('CT-02b: Activity log — UW decision note (Rule #13)', async () => {
+        const note = await db.queryOne<{ pk: string; notes: string }>(
+          `SELECT pk, notes FROM uown_los_lead_notes
+           WHERE lead_pk = $1
+             AND (notes ILIKE '%APPROVED%' OR notes ILIKE '%UnderwritingService%')
+           ORDER BY pk DESC LIMIT 1`,
+          [Number(ctx.leadPk)],
+        );
+        console.log(`[CT-02b] Activity note: ${note?.notes ?? 'NOT FOUND'}`);
+        expect(note, '[Rule #13] UW decision note must exist in uown_los_lead_notes').not.toBeNull();
+      });
+
       // ═══════════════════════════════════════════════════════════════
       //  PHASE 2: SEON BYPASS via API
       // ═══════════════════════════════════════════════════════════════
@@ -140,8 +159,10 @@ test.describe(
           status: string;
           success: boolean;
           id_verify_success: boolean;
+          full_name: string;
+          birth_date: string;
         }>(
-          `SELECT status, success, id_verify_success
+          `SELECT status, success, id_verify_success, full_name, birth_date
            FROM uown_seon WHERE lead_pk = $1 ORDER BY pk DESC LIMIT 1`,
           [Number(ctx.leadPk)],
         );
@@ -149,6 +170,8 @@ test.describe(
         expect(seonRecord, 'SEON record should exist in database').not.toBeNull();
         expect(seonRecord!.status).toBe('APPROVED');
         expect(seonRecord!.success).toBe(true);
+        expect(seonRecord!.full_name, 'full_name should include applicant first name (V-02)').toContain(applicant.firstName);
+        expect(seonRecord!.birth_date, 'birth_date should be set in DB (V-02)').toBeTruthy();
         console.log(`[Phase 2] SEON DB record verified: status=APPROVED, success=true, id_verify_success=${seonRecord!.id_verify_success}`);
       });
 
@@ -166,6 +189,9 @@ test.describe(
         await contract.waitForSpinner();
 
         // Dismiss SEON overlay if present (shows QR code modal in some envs)
+        // V-04: annotate whether dismiss was attempted (overlay handling is conditional)
+        test.info().annotations.push({ type: 'seonOverlayDismissAttempted', description: 'true' });
+        console.log('[CT-05] Calling dismissSeonOverlay (handles absent overlay gracefully)');
         await contract.dismissSeonOverlay();
 
         // Fill CC info
@@ -208,6 +234,19 @@ test.describe(
         await contract.viewCompletedDocument();
       });
 
+      await test.step('CT-07b: Activity log — e-sign / contract signed (Rule #13)', async () => {
+        const note = await db.queryOne<{ pk: string; notes: string }>(
+          `SELECT pk, notes FROM uown_los_lead_notes
+           WHERE lead_pk = $1
+             AND (notes ILIKE '%signed%' OR notes ILIKE '%ContractService%'
+                  OR notes ILIKE '%contract%created%')
+           ORDER BY pk DESC LIMIT 1`,
+          [Number(ctx.leadPk)],
+        );
+        console.log(`[CT-07b] Signing activity note: ${note?.notes ?? 'NOT FOUND'}`);
+        expect(note, '[Rule #13] signing event log must be present in uown_los_lead_notes').not.toBeNull();
+      });
+
       // ═══════════════════════════════════════════════════════════════
       //  PHASE 4: ORIGINATION PORTAL — Verify lead status
       // ═══════════════════════════════════════════════════════════════
@@ -223,14 +262,8 @@ test.describe(
         const customerPage = new OriginationCustomerPage(page);
         await customerPage.waitForSpinner();
 
-        // Click "Get Document Status" to trigger backend sync
-        const getDocStatusBtn = page.locator("xpath=//*[text()='Get Document Status']");
-        if (await getDocStatusBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-          await getDocStatusBtn.click({ force: true });
-          console.log('[Phase 4] Clicked "Get Document Status"');
-          await sleep(5_000);
-          await customerPage.waitForSpinner();
-        }
+        // Trigger backend sync — encapsulated in the page object
+        await customerPage.clickGetDocumentStatus();
 
         // Poll for lead status to advance beyond contract
         const { status: finalStatus, matched } = await customerPage.pollForLeadStatus(
@@ -247,6 +280,17 @@ test.describe(
           validStatuses.some(s => statusLower.includes(s)),
           `Expected CONTRACT_CREATED or beyond, got: ${finalStatus}`,
         ).toBeTruthy();
+      });
+
+      await test.step('CT-08b: SEON record still APPROVED after signing (V-03)', async () => {
+        const seonRecord = await db.queryOne<{ status: string; id_verify_success: boolean }>(
+          `SELECT status, id_verify_success FROM uown_seon
+           WHERE lead_pk = $1 ORDER BY pk DESC LIMIT 1`,
+          [Number(ctx.leadPk)],
+        );
+        expect(seonRecord?.status, 'SEON status must remain APPROVED after signing').toBe('APPROVED');
+        expect(seonRecord?.id_verify_success, 'id_verify_success must remain true after signing').toBe(true);
+        console.log(`[CT-08b] SEON post-signing: status=${seonRecord?.status}, id_verify_success=${seonRecord?.id_verify_success}`);
       });
     });
   },

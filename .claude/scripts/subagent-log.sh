@@ -6,7 +6,7 @@
 
 set -uo pipefail
 
-LOG_DIR="/home/jose/projects/automation/.claude/logs"
+LOG_DIR="${CLAUDE_PROJECT_DIR:-/home/jose/projects/qa-uown}/.claude/logs"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/session.log"
 

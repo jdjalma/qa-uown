@@ -23,14 +23,14 @@ Quick base-class lookup:
 
 ```
 ❌ Page object without extending BasePage (or portal base)
-❌ Selectors hardcoded inline — all selectors MUST be in SELECTORS object
+❌ Selector inline num SPEC (use o método do page object); cross-cutting selector fora de common.selectors.ts
 ❌ expect() inside page object methods — return values, assert in tests
 ❌ waitForTimeout() — use waitFor({ state }) or polling helpers
 ❌ Import from internal files — use barrel exports via index.ts
 
 ✅ Placement: src/pages/{portal}/{name}.page.ts
 ✅ Barrel export in src/pages/{portal}/index.ts
-✅ All locators use SELECTORS from src/selectors/common.selectors.ts
+✅ Selector co-located in the page object (semantic getter) OR in SELECTORS; cross-cutting (≥2 pages) → src/selectors/common.selectors.ts
 ✅ Waiters for async operations (spinner, modal, network)
 ✅ Methods return values (strings, booleans) not assertions
 ```
@@ -38,7 +38,7 @@ Quick base-class lookup:
 ## Definition of Done
 
 - Extends correct base (BasePage or portal-specific)
-- All selectors referenced from `SELECTORS` constant
+- Selectors co-located in the page object or in `SELECTORS` (cross-cutting) — never inline in a spec
 - Barrel export added to `src/pages/{portal}/index.ts`
 - `tsc --noEmit` passes
 

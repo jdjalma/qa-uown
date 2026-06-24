@@ -240,7 +240,6 @@ test.describe('Document / Dispatch Sweeps — Servicing', { tag: splitTags(TAGS)
   // ──────────────────────────────────────────────────────────────────────────
   test('S6 — paymentGatewayFixSweep selects an orphaned ERROR CC SALE', async ({ api, db }) => {
     test.setTimeout(120_000);
-    const ACCOUNT = '220';
 
     let txPk = 0;
     await test.step('AUTHORIZED setup (Exc 3): seed ERROR CC SALE (no gateway id) posting today', async () => {

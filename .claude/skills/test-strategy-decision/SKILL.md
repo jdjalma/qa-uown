@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 # Test Strategy Decision — escolher o nível certo de teste
 
+> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **HOW TO CHOOSE** — E2E vs API vs híbrido, smoke vs full, ambiente, paralelização. Para **nomes canônicos de portais** (Website/Servicing/Origination/AMS) rode `node scripts/docs-tooling.mjs resolve customer-portal` ou leia `docs/business-rules/01-fundamentos.md` (portal naming está em [[volatile-knowledge-registry]] — cross-check obrigatório). Para **env URLs, variáveis e timeouts**, leia `docs/claude/environments.md`. **Não duplique configuração de env aqui** — ela drifta.
+
 > Regra inviolável #14 do projeto: feature com UI affordance OBRIGA browser test. API-only é exceção, não default.
 
 ## Quando aplicar
@@ -155,46 +157,6 @@ Bloco markdown estruturado por cenário (template acima). Tamanho proporcional a
 - Rodar testes em dev1/2/3 e reportar como evidência DoD — dev é instável.
 - Misturar Setup/Exercise/Assertion em uma única chamada borrando o que está sob teste.
 - Implementar smoke pesado (≥30min) — smoke é blocker rápido; pesado vira full.
-
-## Exemplos curtos (domínio UOWN)
-
-### Exemplo 1 — Bug "Coluna Items Purchased sumiu no PDF GA"
-
-Nível: UI obrigatório (PDF rendering).
-Setup: API `sendApplication` UOWN GA → lead pronto pra assinar.
-Exercise: UI Website → flow signing → trigger PDF preview no GoSign iframe.
-Assertion: screenshot do PDF + diff coluna por coluna vs baseline. Não bastam logs.
-Smoke: sim (P0 hotfix). Full: regressão CA + CO + outros estados ativos.
-Ambiente: qa2 + stg.
-Paralelização: por estado, OK — leads independentes.
-
-### Exemplo 2 — Endpoint admin `PATCH /uown/svc/gowsign-templates/{id}`
-
-Nível: API-only (admin, sem UI exposta).
-Justificativa: endpoint operacional, time de ops modifica via curl/Postman.
-Setup: nenhum (idempotent).
-Exercise: API client tipado.
-Assertion: response 200 + DB row updated.
-Smoke: não. Full: regression suite do svc.
-
-### Exemplo 3 — Flow "Customer assina contrato via OTP"
-
-Nível: híbrido + DB.
-Setup: API `sendApplication` para chegar em LEASED (caro fazer via UI, e UI não é o que está sob teste).
-Exercise: UI Website → recebe OTP por IMAP → clica link real → completa signing.
-Assertion: UI confirmation + `uown_los_lead.status=SIGNED` + `uown_los_lead_notes(note_type=SIGNATURE_COMPLETED)` + email merchant via IMAP.
-Smoke: 1 brand UOWN. Full: dual-brand + multi-state.
-Ambiente: qa2 (IMAP shared funciona) + stg.
-Paralelização: sim via plus-addressing por runId.
-
-### Exemplo 4 — Refactor de Complete page submit handler
-
-Nível: UI obrigatório (regra #14 + `feedback_qa_flow_scope_dual_brand_lease_edit`).
-Setup: API até criar invoice + redirectUrl.
-Exercise: UI Website → Complete page → submit. Depois UI Origination → edit invoice → cliente reabre Complete page → re-submit.
-Assertion: UI confirmation + count de `submitApplication` chamadas (1 por submit, sem double-fire) + DB lead.status.
-Smoke: dual-brand happy. Full: dual-brand + lease-edit.
-Ambiente: qa2 + stg.
 
 ## Referências
 

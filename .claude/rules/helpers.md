@@ -10,11 +10,14 @@ paths:
 Always use worker-scoped helpers for parallel-safe unique data:
 
 ```typescript
-import { uniqueEmail, uniqueName, getWorkerRunId, RUN_ID } from '@helpers/index.js';
+import { uniqueEmail, getWorkerRunId, RUN_ID } from '@helpers/index.js';
 ```
 
-These combine `process.pid` + `TEST_WORKER_INDEX` for uniqueness across parallel workers and terminals.
-`generateRunId()` and `generateUniqueEmailAlias()` already use `RUN_ID` internally.
+The real worker-id exports are exactly these three (`src/helpers/worker-id.helper.ts`): there is
+**no** `uniqueName` / `generateUniqueEmailAlias` helper — do not import them. They combine
+`process.pid` + `TEST_WORKER_INDEX` for uniqueness across parallel workers and terminals.
+`uniqueEmail()` derives a unique alias from `RUN_ID` internally; for a unique name build it from
+`getWorkerRunId()`. (`generateRunId()` is a separate helper in `@config/constants`, not here.)
 
 ## Lock Files (Multi-Terminal Coordination)
 

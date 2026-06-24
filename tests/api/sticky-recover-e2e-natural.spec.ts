@@ -1,15 +1,13 @@
 import { test, expect } from '@fixtures/test-context.fixture.js';
 import { buildTestData } from '@helpers/test-data.helpers.js';
-import { ensureMerchantReady } from '@helpers/merchant-config.helper.js';
 import {
   waitForStickyTransactionId,
-  waitForStickyOutboundLog,
   type StickySessionRow,
 } from '@helpers/sticky.helpers.js';
 import { sleep } from '@helpers/index.js';
 import { TEST_CARDS } from '@data/index.js';
 
-test('Sticky Recover E2E: approved card -> fund -> decline payment -> sweep -> recovery', async ({ api, db, ctx }) => {
+test('Sticky Recover E2E: approved card -> fund -> decline payment -> sweep -> recovery', async ({ api, db }) => {
   test.setTimeout(900_000);
 
   const approvedCard = TEST_CARDS.MASTERCARD_APPROVED;
