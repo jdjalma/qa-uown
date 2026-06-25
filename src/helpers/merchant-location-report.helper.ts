@@ -4,20 +4,20 @@ import { MerchantLocationFilterPO } from '../pages/origination/merchant-location
 import { waitForSpinner } from './common.helpers.js';
 import { getColumnValues } from './table.helpers.js';
 
-/** Empty-state message comum às tabelas rdt do Origination. */
+/** Empty-state message common to the Origination rdt tables. */
 const EMPTY_STATE = 'text=There are no records to display';
 
 /**
- * Controles compartilhados das report pages do Origination que usam o filtro
- * multi-select Merchant/Location (#1319) + paginação rdt + leitura de coluna.
+ * Shared controls for the Origination report pages that use the
+ * multi-select Merchant/Location filter (#1319) + rdt pagination + column reading.
  *
- * Extraído de ModificationReportPage ⇄ MerchantModHistoryPage (eram ~80%
- * idênticas — filtro/paginação/leitura byte-a-byte iguais). Pattern de
- * composição (mirror de `FilteredCsvDownloadControls`): os page objects compõem
- * esta classe via campo `report` e delegam, em vez de duplicar a lógica.
+ * Extracted from ModificationReportPage <-> MerchantModHistoryPage (they were ~80%
+ * identical — filter/pagination/reading byte-for-byte equal). Composition
+ * pattern (mirror of `FilteredCsvDownloadControls`): the page objects compose
+ * this class via a `report` field and delegate, instead of duplicating the logic.
  *
  * Single-select `filterByMerchant`/`filterByLocation`/`expandFilters`/
- * `submitFilters` mantidos por backward-compat (DEPRECATED — usar multi-select).
+ * `submitFilters` kept for backward-compat (DEPRECATED — use multi-select).
  */
 export class MerchantLocationReportControls {
   private readonly filter: MerchantLocationFilterPO;

@@ -1,5 +1,5 @@
 ---
-title: "Apendice F: Referencia de Consultas SQL Operacionais"
+title: "Appendix F: Operational SQL Queries Reference"
 domain: business-rules
 status: stable
 volatility: volatile
@@ -12,41 +12,41 @@ sources:
 covers: [sql, queries, troubleshooting, los, svc, sweeps, fraude, ams]
 ---
 
-# Apendice F: Referencia de Consultas SQL Operacionais
+# Appendix F: Operational SQL Queries Reference
 ## UOwn Leasing - SVC Platform
 
-Consultas SQL frequentes para investigacao, troubleshooting e operacao do sistema. Organizadas por dominio de negocio.
+Frequent SQL queries for investigation, troubleshooting, and system operation. Organized by business domain.
 
 ---
 
-## Indice
+## Index
 
-1. [LOS - Leads e Aplicacoes](#1-los---leads-e-aplicacoes)
-2. [LOS - Dados do Cliente](#2-los---dados-do-cliente)
-3. [LOS - Contratos e Invoices](#3-los---contratos-e-invoices)
-4. [LOS - Underwriting e Fraude](#4-los---underwriting-e-fraude)
-5. [SVC - Contas de Servicing](#5-svc---contas-de-servicing)
-6. [SVC - Dados do Cliente](#6-svc---dados-do-cliente)
-7. [SVC - Recebiveis e Cronograma](#7-svc---recebiveis-e-cronograma)
-7b. [SVC - Arranjos de Pagamento](#7b-svc---arranjos-de-pagamento-task-446)
-8. [SVC - Pagamentos CC](#8-svc---pagamentos-cc)
-9. [SVC - Pagamentos ACH](#9-svc---pagamentos-ach)
-10. [SVC - Pagamentos Gerais](#10-svc---pagamentos-gerais)
-11. [Merchants e Programas](#11-merchants-e-programas)
-12. [Correspondencia (Email/SMS)](#12-correspondencia-emailsms)
-13. [Sweeps e Tarefas Agendadas](#13-sweeps-e-tarefas-agendadas)
-14. [SQL dos Sweeps (Criterios de Selecao)](#14-sql-dos-sweeps-criterios-de-selecao)
-15. [Inadimplencia e Cobranca](#15-inadimplencia-e-cobranca)
-16. [Logs e Auditoria](#16-logs-e-auditoria)
-17. [Verificacoes de Fraude](#17-verificacoes-de-fraude)
-18. [Configuracoes e Templates](#18-configuracoes-e-templates)
-19. [AMS - Usuarios e Permissoes](#19-ams---usuarios-e-permissoes)
+1. [LOS - Leads and Applications](#1-los---leads-and-applications)
+2. [LOS - Customer Data](#2-los---customer-data)
+3. [LOS - Contracts and Invoices](#3-los---contracts-and-invoices)
+4. [LOS - Underwriting and Fraud](#4-los---underwriting-and-fraud)
+5. [SVC - Servicing Accounts](#5-svc---servicing-accounts)
+6. [SVC - Customer Data](#6-svc---customer-data)
+7. [SVC - Receivables and Schedule](#7-svc---receivables-and-schedule)
+7b. [SVC - Payment Arrangements](#7b-svc---payment-arrangements-task-446)
+8. [SVC - CC Payments](#8-svc---cc-payments)
+9. [SVC - ACH Payments](#9-svc---ach-payments)
+10. [SVC - General Payments](#10-svc---general-payments)
+11. [Merchants and Programs](#11-merchants-and-programs)
+12. [Correspondence (Email/SMS)](#12-correspondence-emailsms)
+13. [Sweeps and Scheduled Tasks](#13-sweeps-and-scheduled-tasks)
+14. [Sweep SQL (Selection Criteria)](#14-sweep-sql-selection-criteria)
+15. [Delinquency and Collections](#15-delinquency-and-collections)
+16. [Logs and Auditing](#16-logs-and-auditing)
+17. [Fraud Checks](#17-fraud-checks)
+18. [Configurations and Templates](#18-configurations-and-templates)
+19. [AMS - Users and Permissions](#19-ams---users-and-permissions)
 
 ---
 
-## 1. LOS - Leads e Aplicacoes
+## 1. LOS - Leads and Applications
 
-### Consultar lead por PK
+### Look up lead by PK
 ```sql
 SELECT
     ull.lead_status,
@@ -62,16 +62,16 @@ WHERE ull.pk IN (:leadPk)
 ORDER BY ull.pk DESC;
 ```
 
-### Consultar lead por short code (tabela nova: uown_los_lead_short_code)
+### Look up lead by short code (new table: uown_los_lead_short_code)
 ```sql
--- Apos migracao V20260226100000: short_code migrou de uown_los_lead para uown_los_lead_short_code
+-- After migration V20260226100000: short_code migrated from uown_los_lead to uown_los_lead_short_code
 SELECT ulsc.short_code, ulsc.lead_pk, ulsc.pk
 FROM uown_los_lead_short_code ulsc
 WHERE ulsc.lead_pk IN (:leadPk)
 ORDER BY ulsc.pk DESC;
 ```
 
-### Consultar lead por short code (lookup reverso)
+### Look up lead by short code (reverse lookup)
 ```sql
 SELECT ull.*, ulsc.short_code
 FROM uown_los_lead ull
@@ -80,7 +80,7 @@ WHERE ulsc.short_code IN (:shortCode)
 ORDER BY ull.pk DESC;
 ```
 
-### Consultar lead por periodo
+### Look up lead by period
 ```sql
 SELECT
     ull.lead_status,
@@ -93,7 +93,7 @@ WHERE ull.row_created_timestamp BETWEEN :startDate AND :endDate
 ORDER BY ull.pk DESC;
 ```
 
-### Consultar opcoes de pagamento do lead
+### Look up the lead's payment options
 ```sql
 SELECT
     ull.lead_pk,
@@ -105,54 +105,54 @@ WHERE ull.lead_pk IN (:leadPk)
 ORDER BY ull.pk DESC;
 ```
 
-### Consultar notas do lead
+### Look up the lead's notes
 ```sql
 SELECT * FROM uown_los_lead_notes ulln WHERE ulln.lead_pk IN (:leadPk);
 ```
 
 ---
 
-## 2. LOS - Dados do Cliente
+## 2. LOS - Customer Data
 
-### Consulta completa de dados do cliente (todos os dados de um lead)
+### Complete customer data query (all data of a lead)
 ```sql
--- Cliente
+-- Customer
 SELECT * FROM uown_los_customer WHERE lead_pk IN (:leadPk) ORDER BY pk DESC;
 
--- Enderecos
+-- Addresses
 SELECT * FROM uown_los_address WHERE lead_pk IN (:leadPk) ORDER BY pk DESC;
 
 -- Emails
 SELECT * FROM uown_los_email WHERE lead_pk IN (:leadPk);
 
--- Telefones
+-- Phones
 SELECT lead_pk, pk, do_not_call, reason_for_dnc, do_not_text, reason_for_dnt, *
 FROM uown_los_phone WHERE lead_pk IN (:leadPk);
 
--- Emprego
+-- Employment
 SELECT * FROM uown_los_employment WHERE lead_pk IN (:leadPk) ORDER BY pk DESC;
 
--- Contas bancarias
+-- Bank accounts
 SELECT * FROM uown_los_bank_account WHERE lead_pk IN (:leadPk) ORDER BY pk DESC;
 
--- Cartoes de credito
+-- Credit cards
 SELECT * FROM uown_los_credit_card WHERE lead_pk IN (:leadPk) ORDER BY pk DESC;
 ```
 
-### Emails duplicados (top 5 mais usados)
+### Duplicate emails (top 5 most used)
 ```sql
-SELECT ule.email_address, COUNT(*) AS total_registros
+SELECT ule.email_address, COUNT(*) AS total_records
 FROM uown_los_email ule
 GROUP BY ule.email_address
-ORDER BY total_registros DESC
+ORDER BY total_records DESC
 LIMIT 5;
 ```
 
 ---
 
-## 3. LOS - Contratos e Invoices
+## 3. LOS - Contracts and Invoices
 
-### Consultar contratos de um lead
+### Look up a lead's contracts
 ```sql
 SELECT
     ulc.lead_pk,
@@ -167,7 +167,7 @@ FROM uown_los_contract ulc
 WHERE ulc.lead_pk IN (:leadPk);
 ```
 
-### Historico de contratos
+### Contract history
 ```sql
 SELECT
     ulch.lead_pk,
@@ -180,7 +180,7 @@ FROM uown_los_contract_history ulch
 WHERE ulch.lead_pk IN (:leadPk);
 ```
 
-### Invoice e itens de um lead
+### Invoice and items of a lead
 ```sql
 SELECT * FROM uown_los_invoice WHERE lead_pk IN (:leadPk);
 
@@ -196,26 +196,26 @@ FROM uown_los_item uli
 WHERE uli.lead_pk IN (:leadPk);
 ```
 
-### Historico de invoice
+### Invoice history
 ```sql
 SELECT ulih.lead_pk, ulih.* FROM uown_los_invoice_history ulih WHERE ulih.lead_pk IN (:leadPk);
 ```
 
-### Schedule summary do lead
+### Lead schedule summary
 ```sql
 SELECT * FROM uown_los_sched_summary WHERE lead_pk IN (:leadPk) ORDER BY pk DESC;
 ```
 
-### Recebiveis do lead (LOS)
+### Lead receivables (LOS)
 ```sql
 SELECT * FROM uown_los_receivable WHERE lead_pk IN (:leadPk) ORDER BY pk DESC;
 ```
 
 ---
 
-## 4. LOS - Underwriting e Fraude
+## 4. LOS - Underwriting and Fraud
 
-### Dados de underwriting
+### Underwriting data
 ```sql
 SELECT
     uld.approval_amount,
@@ -232,17 +232,17 @@ WHERE uld.lead_pk IN (:leadPk)
 ORDER BY pk DESC;
 ```
 
-> **Nota:** A coluna `lambda_segment` e populada pelo processo de underwriting GDS. Para leads aprovados via GDS, este campo contem o segmento lambda atribuido. Pode ser NULL para leads processados por outros engines (Taktile, ABB).
+> **Note:** The `lambda_segment` column is populated by the GDS underwriting process. For leads approved via GDS, this field contains the assigned lambda segment. It may be NULL for leads processed by other engines (Taktile, ABB).
 
-### UW filtrado por engine (GDS, Taktile, ABB)
+### UW filtered by engine (GDS, Taktile, ABB)
 ```sql
 SELECT *
 FROM uown_los_uwdata
-WHERE decided_by_agent = 'GDS'  -- ou 'TAKTILE', 'ABB'
+WHERE decided_by_agent = 'GDS'  -- or 'TAKTILE', 'ABB'
 ORDER BY pk DESC;
 ```
 
-### Alertas do lead
+### Lead alerts
 ```sql
 SELECT
     ula.lead_pk,
@@ -256,9 +256,9 @@ WHERE ula.lead_pk IN (:leadPk);
 
 ---
 
-## 5. SVC - Contas de Servicing
+## 5. SVC - Servicing Accounts
 
-### Consultar conta por PK
+### Look up account by PK
 ```sql
 SELECT
     usa.account_status,
@@ -275,7 +275,7 @@ WHERE usa.pk IN (:accountPk)
 ORDER BY usa.pk DESC;
 ```
 
-### Buscar conta pelo merchant associado ao lead
+### Find the account by the merchant associated with the lead
 ```sql
 SELECT m.*
 FROM uown_merchant m
@@ -283,14 +283,14 @@ JOIN uown_los_lead l ON l.merchant_pk = m.pk
 WHERE l.pk = :leadPk;
 ```
 
-### Notas da conta
+### Account notes
 ```sql
 SELECT usan.account_pk, usan.*
 FROM uown_sv_account_notes usan
 WHERE usan.account_pk IN (:accountPk);
 ```
 
-### Alertas da conta
+### Account alerts
 ```sql
 SELECT
     usa.lead_pk,
@@ -304,30 +304,30 @@ WHERE usa.account_pk IN (:accountPk);
 
 ---
 
-## 6. SVC - Dados do Cliente
+## 6. SVC - Customer Data
 
-### Dados completos do cliente na conta
+### Complete customer data on the account
 ```sql
--- Cliente
+-- Customer
 SELECT account_pk, first_name, middle_name, last_name, *
 FROM uown_sv_customer WHERE account_pk IN (:accountPk);
 
--- Enderecos
+-- Addresses
 SELECT * FROM uown_sv_address WHERE account_pk IN (:accountPk);
 
 -- Emails
 SELECT account_pk, pk, do_not_email, reason_for_dnc, *
 FROM uown_sv_email WHERE account_pk IN (:accountPk);
 
--- Telefones
+-- Phones
 SELECT account_pk, phone_number, pk, do_not_call, do_not_text, *
 FROM uown_sv_phone WHERE account_pk IN (:accountPk);
 
--- Contas bancarias
+-- Bank accounts
 SELECT * FROM uown_sv_bank_account WHERE account_pk IN (:accountPk);
 ```
 
-### Cartoes de credito da conta
+### Account credit cards
 ```sql
 SELECT
     uscc.lead_pk,
@@ -346,9 +346,9 @@ ORDER BY uscc.pk DESC;
 
 ---
 
-## 7. SVC - Recebiveis e Cronograma
+## 7. SVC - Receivables and Schedule
 
-### Recebiveis de uma conta (cronograma completo)
+### Receivables of an account (complete schedule)
 ```sql
 SELECT
     usr.account_pk,
@@ -363,7 +363,7 @@ WHERE usr.account_pk IN (:accountPk)
 ORDER BY usr.due_date ASC;
 ```
 
-### Recebiveis com saldo pendente (outstanding)
+### Receivables with outstanding balance
 ```sql
 SELECT
     r.account_pk,
@@ -382,15 +382,15 @@ WHERE r.account_pk = :accountPk
 ORDER BY r.due_date, r.pk;
 ```
 
-### Recebiveis por tipo (ex: NSF_FEE)
+### Receivables by type (e.g., NSF_FEE)
 ```sql
 SELECT *
 FROM uown_sv_receivable usr
-WHERE usr.receivable_type = 'NSF_FEE'  -- ou 'REGULAR_PAYMENT', 'EARLY_PAY_OFF', 'PROCESSING_FEE'
+WHERE usr.receivable_type = 'NSF_FEE'  -- or 'REGULAR_PAYMENT', 'EARLY_PAY_OFF', 'PROCESSING_FEE'
 ORDER BY usr.pk DESC;
 ```
 
-### Schedule summary da conta
+### Account schedule summary
 ```sql
 SELECT
     uss.account_pk,
@@ -405,9 +405,9 @@ WHERE uss.account_pk IN (:accountPk);
 
 ---
 
-## 7b. SVC - Arranjos de Pagamento (Task #446)
+## 7b. SVC - Payment Arrangements (Task #446)
 
-### Consultar arranjo de pagamento por conta
+### Look up payment arrangement by account
 ```sql
 SELECT
     uspa.pk,
@@ -430,7 +430,7 @@ WHERE uspa.account_pk IN (:accountPk)
 ORDER BY uspa.pk DESC;
 ```
 
-### Consultar transacoes CC vinculadas a um arranjo
+### Look up CC transactions linked to an arrangement
 ```sql
 SELECT
     uscct.pk,
@@ -445,7 +445,7 @@ WHERE uscct.payment_arrangement_pk = :paymentArrangementPk
 ORDER BY uscct.posting_date ASC;
 ```
 
-### Consultar pagamentos ACH vinculados a um arranjo
+### Look up ACH payments linked to an arrangement
 ```sql
 SELECT
     usp.pk,
@@ -459,7 +459,7 @@ WHERE usp.payment_arrangement_pk = :paymentArrangementPk
 ORDER BY usp.pk ASC;
 ```
 
-### Verificar status do arranjo com resumo de transacoes
+### Check the arrangement status with a transaction summary
 ```sql
 SELECT
     uspa.pk AS arrangement_pk,
@@ -482,9 +482,9 @@ ORDER BY uspa.pk DESC;
 
 ---
 
-## 8. SVC - Pagamentos CC
+## 8. SVC - CC Payments
 
-### Transacoes CC de uma conta
+### CC transactions of an account
 ```sql
 SELECT
     uscct.pk,
@@ -504,7 +504,7 @@ WHERE uscct.account_pk IN (:accountPk)
 ORDER BY uscct.pk DESC;
 ```
 
-### Transacoes CC negadas (para troubleshooting de reruns)
+### Denied CC transactions (for rerun troubleshooting)
 ```sql
 SELECT *
 FROM uown_sv_credit_card_transaction uscct
@@ -514,9 +514,9 @@ ORDER BY uscct.pk DESC;
 
 ---
 
-## 9. SVC - Pagamentos ACH
+## 9. SVC - ACH Payments
 
-### Pagamentos ACH de uma conta
+### ACH payments of an account
 ```sql
 SELECT
     usp.account_pk,
@@ -535,9 +535,9 @@ ORDER BY usp.pk DESC;
 
 ---
 
-## 10. SVC - Pagamentos Gerais
+## 10. SVC - General Payments
 
-### Pagamentos de uma conta
+### Payments of an account
 ```sql
 SELECT *
 FROM uown_sv_payment usp
@@ -547,9 +547,9 @@ ORDER BY usp.pk DESC;
 
 ---
 
-## 11. Merchants e Programas
+## 11. Merchants and Programs
 
-### Consultar merchant por codigo ou nome
+### Look up merchant by code or name
 ```sql
 SELECT
     um.ref_merchant_code,
@@ -566,7 +566,7 @@ WHERE um.ref_merchant_code IN (:refMerchantCode)
 ORDER BY um.location_name DESC;
 ```
 
-### Flags booleanas do merchant (verificacao rapida)
+### Merchant boolean flags (quick check)
 ```sql
 SELECT
     m.ref_merchant_code,
@@ -597,7 +597,7 @@ FROM uown_merchant m
 WHERE m.ref_merchant_code = :refMerchantCode;
 ```
 
-### Contagem de flags nulas no merchant (auditoria de dados)
+### Count of null flags on the merchant (data audit)
 ```sql
 SELECT
     COUNT(CASE WHEN m.is_item_split IS NULL THEN 1 END) AS is_item_split_null,
@@ -609,14 +609,14 @@ SELECT
 FROM uown_merchant m;
 ```
 
-### Listar client types distintos
+### List distinct client types
 ```sql
 SELECT DISTINCT um.client_type
 FROM uown_merchant um
 ORDER BY um.client_type;
 ```
 
-### Programas de um merchant
+### Programs of a merchant
 ```sql
 SELECT umtp.*, m.ref_merchant_code, m.*
 FROM uown_merchant m
@@ -624,7 +624,7 @@ LEFT JOIN uown_merchant_to_program umtp ON umtp.merchant_pk = m.pk
 WHERE m.ref_merchant_code IN (:refMerchantCode);
 ```
 
-### Consultar programa por PK ou termo
+### Look up program by PK or term
 ```sql
 SELECT
     ump.pk,
@@ -642,7 +642,7 @@ WHERE ump.term_months = :termMonths
 ORDER BY ump.pk DESC;
 ```
 
-### Historico de alteracoes do merchant
+### Merchant change history
 ```sql
 SELECT *
 FROM uown_merchant_history umh
@@ -650,7 +650,7 @@ WHERE umh.row_created_timestamp BETWEEN :startDate AND :endDate
 ORDER BY umh.pk DESC;
 ```
 
-### Activity log do merchant (alteracoes de programa)
+### Merchant activity log (program changes)
 ```sql
 SELECT
     umal.merchant_pk,
@@ -668,27 +668,27 @@ WHERE umal.notes LIKE '%UPDATED: PROGRAM[payoffDiscount cha%'
 ORDER BY umal.pk DESC;
 ```
 
-### Merchant Settings Snapshot por lead (R1.53.0)
+### Merchant Settings Snapshot by lead (R1.53.0)
 ```sql
--- Snapshot de configuracao do merchant gravado no UW_APPROVED
--- Ausencia de linha = lead anterior a R1.53.0 (Path A: sem snapshot)
+-- Merchant config snapshot written at UW_APPROVED
+-- Absence of a row = lead prior to R1.53.0 (Path A: no snapshot)
 SELECT *
 FROM uown_los_lead_merchant_settings_snapshot
 WHERE lead_pk = :leadPk;
 ```
 
-### Merchant Settings Snapshot por conta SVC (R1.53.0)
+### Merchant Settings Snapshot by SVC account (R1.53.0)
 ```sql
--- Snapshot herdado do lead, gravado na criacao da conta SVC
+-- Snapshot inherited from the lead, written at SVC account creation
 SELECT *
 FROM uown_sv_account_merchant_settings_snapshot
 WHERE account_pk = :accountPk;
 ```
 
-### Verificar existencia de snapshot (Path A vs Path B)
+### Check snapshot existence (Path A vs Path B)
 ```sql
--- Path A (sem snapshot): COUNT = 0 — lead/conta pre-R1.53.0 ou sem UW_APPROVED
--- Path B (com snapshot): COUNT > 0 — config congelada no momento do UW_APPROVED
+-- Path A (no snapshot): COUNT = 0 — lead/account pre-R1.53.0 or without UW_APPROVED
+-- Path B (with snapshot): COUNT > 0 — config frozen at the moment of UW_APPROVED
 SELECT COUNT(*) AS has_snapshot
 FROM uown_los_lead_merchant_settings_snapshot
 WHERE lead_pk = :leadPk;
@@ -696,9 +696,9 @@ WHERE lead_pk = :leadPk;
 
 ---
 
-## 12. Correspondencia (Email/SMS)
+## 12. Correspondence (Email/SMS)
 
-### Fila de emails (recentes ou por conta)
+### Email queue (recent or by account)
 ```sql
 SELECT
     ueq.account_pk,
@@ -719,7 +719,7 @@ WHERE ueq.account_pk IN (:accountPk)
 ORDER BY ueq.pk DESC;
 ```
 
-### Fila de SMS
+### SMS queue
 ```sql
 SELECT
     usq.lead_pk,
@@ -738,28 +738,28 @@ ORDER BY usq.pk DESC;
 
 ---
 
-## 13. Sweeps e Tarefas Agendadas
+## 13. Sweeps and Scheduled Tasks
 
-### Listar todos os sweeps
+### List all sweeps
 ```sql
 SELECT * FROM uown_scheduled_task ORDER BY scheduled_task_name ASC;
 ```
 
-### Buscar sweep por nome
+### Find sweep by name
 ```sql
 SELECT *
 FROM uown_scheduled_task
 WHERE scheduled_task_name LIKE '%Payment%';
 ```
 
-### Verificar status ativo/inativo dos sweeps
+### Check active/inactive status of sweeps
 ```sql
 SELECT scheduled_task_name, is_active
 FROM uown_scheduled_task
 ORDER BY scheduled_task_name;
 ```
 
-### Logs de execucao dos sweeps
+### Sweep execution logs
 ```sql
 SELECT *
 FROM uown_sweep_logs usl
@@ -769,11 +769,11 @@ ORDER BY usl.pk DESC;
 
 ---
 
-## 14. SQL dos Sweeps (Criterios de Selecao)
+## 14. Sweep SQL (Selection Criteria)
 
-As queries abaixo sao os criterios SQL que os sweeps usam para selecionar registros a processar. Uteis para entender a logica de negocio e para troubleshooting.
+The queries below are the SQL criteria that the sweeps use to select records to process. Useful for understanding the business logic and for troubleshooting.
 
-### rerunCCPaymentsSweep - Retentativa de CC negados
+### rerunCCPaymentsSweep - Retry of denied CC
 ```sql
 SELECT DISTINCT ON(t.account_pk) t.*
 FROM uown_sv_credit_card_transaction t
@@ -795,7 +795,7 @@ WHERE t.status = 'DENIED'
 ORDER BY t.account_pk, t.pk DESC;
 ```
 
-### delinquencyRerunCCPaymentsSweep - Rerun CC em contas inadimplentes 100+ dias
+### delinquencyRerunCCPaymentsSweep - CC rerun on accounts delinquent 100+ days
 ```sql
 SELECT DISTINCT(s.account_pk)
 FROM uown_sv_account a
@@ -814,7 +814,7 @@ WHERE (s.delinquency_as_of_date IS NULL OR s.delinquency_as_of_date < CURRENT_DA
 ORDER BY s.account_pk DESC;
 ```
 
-### updateTaxRatesSweep - Contas que precisam atualizar taxa de imposto
+### updateTaxRatesSweep - Accounts that need to update tax rate
 ```sql
 SELECT a.pk AS accountPk, a.*
 FROM uown_sv_account a
@@ -824,7 +824,7 @@ WHERE a.account_status = 'ACTIVE'
        OR summary.last_tax_updated_time + INTERVAL '1 MONTH' <= CURRENT_TIMESTAMP);
 ```
 
-### FirstPaymentReminderSweep - Lembretes de primeiro pagamento
+### FirstPaymentReminderSweep - First payment reminders
 ```sql
 SELECT DISTINCT account.pk
 FROM uown_sv_account account
@@ -847,7 +847,7 @@ WHERE account.account_status IN ('FUNDED', 'ACTIVE')
   AND (account.rating IS NULL OR account.rating NOT IN ('B', 'C'));
 ```
 
-### customerPortalReminderSweep - Convites para portal do cliente
+### customerPortalReminderSweep - Customer portal invitations
 ```sql
 SELECT DISTINCT a.pk
 FROM uown_sv_account a
@@ -864,7 +864,7 @@ HAVING
   OR (EXTRACT(DAY FROM CURRENT_DATE) = 2 AND COUNT(e) > 2);
 ```
 
-### RecurringPaymentReminderSweep - Lembrete de pagamento recorrente
+### RecurringPaymentReminderSweep - Recurring payment reminder
 ```sql
 WITH receivable AS (
     SELECT a.pk AS accountPk, r.total_amount, r.due_date AS nextDueDate
@@ -906,7 +906,7 @@ GROUP BY account.pk, account.lead_pk, customer.pk, receivable.nextDueDate,
          schedSummary.total_number_of_payments, CONCAT(phone.area_code, phone.phone_number);
 ```
 
-### delinquencyOfferEmailSweep - Ofertas de negociacao por faixa de atraso
+### delinquencyOfferEmailSweep - Negotiation offers by delinquency band
 ```sql
 WITH eq AS (
     SELECT account_pk, template_name
@@ -942,7 +942,7 @@ WHERE a.account_status = 'ACTIVE'
   AND (a.rating IS NULL OR a.rating NOT IN ('P','B','C'));
 ```
 
-### paidInFullAccountEmailSweep - Contas quitadas (para email de confirmacao)
+### paidInFullAccountEmailSweep - Paid-off accounts (for confirmation email)
 ```sql
 SELECT DISTINCT sa.pk
 FROM uown_sv_account sa
@@ -959,10 +959,10 @@ WHERE sa.pay_off_date_time IS NOT NULL
   END);
 ```
 
-### sendCreditCardPaymentsSql - Envio de transacoes CC pendentes (inclui arranjos, Task #446)
+### sendCreditCardPaymentsSql - Send pending CC transactions (includes arrangements, Task #446)
 ```sql
--- Seleciona transacoes CC com status PENDING e posting_date <= hoje
--- Exclui contas com rating B ou C
+-- Selects CC transactions with status PENDING and posting_date <= today
+-- Excludes accounts with rating B or C
 SELECT t.*
 FROM uown_sv_credit_card_transaction t
 JOIN uown_sv_account a ON a.pk = t.account_pk
@@ -971,13 +971,13 @@ WHERE t.status = 'PENDING'
   AND a.account_status = 'ACTIVE'
   AND (a.rating IS NULL OR a.rating NOT IN ('B', 'C'))
 ORDER BY t.pk ASC;
--- Resultado: transacoes selecionadas sao marcadas como PICKED_TO_SEND
+-- Result: selected transactions are marked as PICKED_TO_SEND
 ```
 
-### sendACHPaymentsSql - Envio de pagamentos ACH pendentes (inclui arranjos, Task #446)
+### sendACHPaymentsSql - Send pending ACH payments (includes arrangements, Task #446)
 ```sql
--- Seleciona pagamentos ACH com status PENDING e posting_date <= amanha (D+1)
--- Exclui contas com rating B ou C
+-- Selects ACH payments with status PENDING and posting_date <= tomorrow (D+1)
+-- Excludes accounts with rating B or C
 SELECT ap.*
 FROM uown_sv_achpayment ap
 JOIN uown_sv_account a ON a.pk = ap.account_pk
@@ -985,10 +985,10 @@ WHERE ap.status = 'PENDING'
   AND ap.posting_date <= CURRENT_DATE + 1
   AND (a.rating IS NULL OR a.rating NOT IN ('B', 'C'))
 ORDER BY ap.pk ASC;
--- Resultado: pagamentos selecionados sao marcados como PICKED_TO_SEND
+-- Result: selected payments are marked as PICKED_TO_SEND
 ```
 
-### settledInFullAccountEmailSweep - Contas liquidadas por acordo
+### settledInFullAccountEmailSweep - Accounts settled by agreement
 ```sql
 SELECT DISTINCT sa.pk
 FROM uown_sv_account sa
@@ -1007,9 +1007,9 @@ WHERE sa.account_status = 'SETTLED_IN_FULL'
 
 ---
 
-## 15. Inadimplencia e Cobranca
+## 15. Delinquency and Collections
 
-### Contas inadimplentes 150+ dias (com rating J ou P)
+### Accounts delinquent 150+ days (with rating J or P)
 ```sql
 WITH withdayslate AS (
     SELECT
@@ -1038,7 +1038,7 @@ WHERE usa.account_status = 'ACTIVE'
 ORDER BY usa.pk DESC;
 ```
 
-### Calculo de past due e valor de settlement
+### Calculation of past due and settlement amount
 ```sql
 WITH regularPayments AS (
     SELECT r.account_pk, SUM(r.total_amount) AS amount
@@ -1077,7 +1077,7 @@ LEFT JOIN nsfFees nsf ON nsf.account_pk = base.account_pk
 LEFT JOIN partialPayments pp ON pp.account_pk = base.account_pk;
 ```
 
-### Oferta de desconto por faixa de inadimplencia (Delinquency 150 Day Offer)
+### Discount offer by delinquency band (Delinquency 150 Day Offer)
 ```sql
 SELECT
     c.account_pk,
@@ -1107,16 +1107,16 @@ WHERE a.account_status = 'ACTIVE'
 ORDER BY a.pk DESC;
 ```
 
-**Percentuais de desconto por faixa:**
+**Discount percentages by band:**
 
-| Dias em Atraso | Desconto Oferecido |
+| Days Past Due | Discount Offered |
 |---|---|
-| 31-60 | 0% (valor cheio) |
-| 61-90 | 30% (paga 70%) |
-| 91-150 | 50% (paga 50%) |
-| 150+ | 75% (paga 25%) |
+| 31-60 | 0% (full amount) |
+| 61-90 | 30% (pays 70%) |
+| 91-150 | 50% (pays 50%) |
+| 150+ | 75% (pays 25%) |
 
-### EPO pool em contas inadimplentes (days past due com pool)
+### EPO pool on delinquent accounts (days past due with pool)
 ```sql
 WITH nextRec AS (
     SELECT account_pk AS accountPk, MIN(due_date) AS nextDueDate
@@ -1164,9 +1164,9 @@ WHERE a.account_status = 'ACTIVE'
 
 ---
 
-## 16. Logs e Auditoria
+## 16. Logs and Auditing
 
-### Activity log do LOS
+### LOS activity log
 ```sql
 SELECT
     ulal.lead_pk AS LeadPk,
@@ -1181,7 +1181,7 @@ WHERE ulal.lead_pk IN (:leadPk)
 ORDER BY ulal.pk DESC;
 ```
 
-### Activity log do SVC
+### SVC activity log
 ```sql
 SELECT
     usal.lead_pk AS LeadPk,
@@ -1197,21 +1197,21 @@ WHERE usal.account_pk IN (:accountPk)
 ORDER BY usal.pk DESC;
 ```
 
-### Leads com mais atividade INTERNAL do SYSTEM
+### Leads with the most INTERNAL activity from SYSTEM
 ```sql
 SELECT
     ulal.lead_pk AS LeadPk,
-    COUNT(*) AS num_ocorrencias,
+    COUNT(*) AS num_occurrences,
     MAX(ulal.pk) AS max_pk
 FROM uown_los_activity_log ulal
 WHERE ulal.log_type IN ('INTERNAL')
   AND ulal.created_by IN ('SYSTEM')
 GROUP BY ulal.lead_pk
 HAVING COUNT(*) > 1
-ORDER BY num_ocorrencias DESC;
+ORDER BY num_occurrences DESC;
 ```
 
-### Inbound API logs (requisicoes recebidas)
+### Inbound API logs (received requests)
 ```sql
 SELECT *
 FROM uown_los_inbound_api_log ulial
@@ -1220,7 +1220,7 @@ WHERE ulial.row_created_timestamp BETWEEN :startDate AND :endDate
 ORDER BY pk DESC;
 ```
 
-### Outbound API logs (requisicoes enviadas)
+### Outbound API logs (sent requests)
 ```sql
 SELECT *
 FROM uown_los_outbound_api_log ulial
@@ -1228,7 +1228,7 @@ WHERE ulial.row_created_timestamp BETWEEN :startDate AND :endDate
 ORDER BY pk DESC;
 ```
 
-### Documentos armazenados
+### Stored documents
 ```sql
 SELECT
     usd.lead_pk,
@@ -1244,7 +1244,7 @@ WHERE usd.account_pk IN (:accountPk)
 ORDER BY usd.pk DESC;
 ```
 
-### Gravacoes de lead (signing flow)
+### Lead recordings (signing flow)
 ```sql
 SELECT * FROM uown_lead_recording WHERE lead_pk IN (:leadPk);
 ```
@@ -1256,9 +1256,9 @@ SELECT * FROM uown_esign_document WHERE lead_pk IN (:leadPk);
 
 ---
 
-## 17. Verificacoes de Fraude
+## 17. Fraud Checks
 
-### SEON (fraude digital)
+### SEON (digital fraud)
 ```sql
 SELECT
     us.lead_pk,
@@ -1275,7 +1275,7 @@ WHERE us.lead_pk IN (:leadPk)
 ORDER BY us.pk DESC;
 ```
 
-### Intellicheck (verificacao de documento de ID)
+### Intellicheck (ID document verification)
 ```sql
 SELECT
     ui.lead_pk,
@@ -1290,12 +1290,12 @@ WHERE ui.lead_pk IN (:leadPk)
 ORDER BY ui.pk DESC;
 ```
 
-### Kount (fraude de cartao de credito)
+### Kount (credit card fraud)
 ```sql
 SELECT * FROM uown_kount WHERE account_pk IN (:accountPk);
 ```
 
-### Kount token (validade)
+### Kount token (validity)
 ```sql
 SELECT
     CASE WHEN access_token IS NULL THEN 'N' ELSE 'Y' END AS token_valid
@@ -1305,12 +1305,12 @@ ORDER BY COALESCE(row_updated_timestamp, row_created_timestamp) DESC
 LIMIT 1;
 ```
 
-### Plaid (verificacao bancaria)
+### Plaid (bank verification)
 ```sql
--- Usuarios Plaid
+-- Plaid users
 SELECT * FROM uown_plaid_user WHERE lead_pk IN (:leadPk) ORDER BY pk DESC;
 
--- Relatorios Plaid
+-- Plaid reports
 SELECT
     upr.lead_pk,
     upr.cash_score,
@@ -1321,7 +1321,7 @@ WHERE upr.lead_pk IN (:leadPk)
 ORDER BY upr.pk DESC;
 ```
 
-### Fraud verification (geral)
+### Fraud verification (general)
 ```sql
 SELECT
     ufv.lead_pk,
@@ -1337,19 +1337,19 @@ WHERE ufv.lead_pk IN (:leadPk);
 
 ---
 
-## 18. Configuracoes e Templates
+## 18. Configurations and Templates
 
 ### State configurations
 ```sql
 SELECT * FROM uown_state_configurations ORDER BY pk DESC;
 ```
 
-### Historico de alteracoes de state config
+### State config change history
 ```sql
 SELECT * FROM uown_state_configurations_log WHERE state_pk IN (:statePk) ORDER BY pk DESC;
 ```
 
-### Templates de email/contrato
+### Email/contract templates
 ```sql
 SELECT
     ut.template_name,
@@ -1375,19 +1375,19 @@ SELECT * FROM uown_third_party_contact WHERE account_pk IN (:accountPk);
 
 ---
 
-## 19. AMS - Usuarios e Permissoes
+## 19. AMS - Users and Permissions
 
-### Consultar usuario
+### Look up user
 ```sql
 SELECT * FROM "user" WHERE user_pk IN (:userPk);
 ```
 
-### Log de usuarios
+### User log
 ```sql
 SELECT * FROM user_log ORDER BY pk DESC;
 ```
 
-### Permissoes
+### Permissions
 ```sql
 SELECT * FROM permission WHERE name LIKE '%charge%';
 ```
@@ -1399,29 +1399,29 @@ SELECT * FROM user_roles;
 
 ---
 
-## Dicas de Uso
+## Usage Tips
 
-### Parametros comuns
-- `:leadPk` - PK do lead (ex: `14399`)
-- `:accountPk` - PK da conta (ex: `206871`)
-- `:refMerchantCode` - Codigo do merchant (ex: `'OL90205-0079'`)
-- `:startDate` / `:endDate` - Periodo (ex: `'2026-02-10 00:00:00.000'` / `'2026-02-10 23:59:59.999'`)
+### Common parameters
+- `:leadPk` - Lead PK (e.g., `14399`)
+- `:accountPk` - Account PK (e.g., `206871`)
+- `:refMerchantCode` - Merchant code (e.g., `'OL90205-0079'`)
+- `:startDate` / `:endDate` - Period (e.g., `'2026-02-10 00:00:00.000'` / `'2026-02-10 23:59:59.999'`)
 
-### Investigacao completa de um lead (passo a passo)
+### Complete investigation of a lead (step by step)
 
-1. **Buscar o lead:** `SELECT * FROM uown_los_lead WHERE pk = :leadPk`
-2. **Ver UW data:** `SELECT * FROM uown_los_uwdata WHERE lead_pk = :leadPk`
-3. **Ver activity log:** `SELECT * FROM uown_los_activity_log WHERE lead_pk = :leadPk ORDER BY pk DESC`
-4. **Ver contrato:** `SELECT * FROM uown_los_contract WHERE lead_pk = :leadPk`
-5. **Ver invoice/itens:** `SELECT * FROM uown_los_invoice WHERE lead_pk = :leadPk`
-6. **Se funded, ver conta:** `SELECT * FROM uown_sv_account WHERE lead_pk = :leadPk`
+1. **Find the lead:** `SELECT * FROM uown_los_lead WHERE pk = :leadPk`
+2. **View UW data:** `SELECT * FROM uown_los_uwdata WHERE lead_pk = :leadPk`
+3. **View activity log:** `SELECT * FROM uown_los_activity_log WHERE lead_pk = :leadPk ORDER BY pk DESC`
+4. **View contract:** `SELECT * FROM uown_los_contract WHERE lead_pk = :leadPk`
+5. **View invoice/items:** `SELECT * FROM uown_los_invoice WHERE lead_pk = :leadPk`
+6. **If funded, view the account:** `SELECT * FROM uown_sv_account WHERE lead_pk = :leadPk`
 
-### Investigacao completa de uma conta (passo a passo)
+### Complete investigation of an account (step by step)
 
-1. **Buscar a conta:** `SELECT * FROM uown_sv_account WHERE pk = :accountPk`
-2. **Ver schedule summary:** `SELECT * FROM uown_sv_sched_summary WHERE account_pk = :accountPk`
-3. **Ver recebiveis:** `SELECT * FROM uown_sv_receivable WHERE account_pk = :accountPk ORDER BY due_date`
-4. **Ver pagamentos:** `SELECT * FROM uown_sv_payment WHERE account_pk = :accountPk ORDER BY pk DESC`
-5. **Ver transacoes CC:** `SELECT * FROM uown_sv_credit_card_transaction WHERE account_pk = :accountPk ORDER BY pk DESC`
-6. **Ver activity log:** `SELECT * FROM uown_sv_activity_log WHERE account_pk = :accountPk ORDER BY pk DESC`
-7. **Ver alertas:** `SELECT * FROM uown_sv_alert WHERE account_pk = :accountPk`
+1. **Find the account:** `SELECT * FROM uown_sv_account WHERE pk = :accountPk`
+2. **View schedule summary:** `SELECT * FROM uown_sv_sched_summary WHERE account_pk = :accountPk`
+3. **View receivables:** `SELECT * FROM uown_sv_receivable WHERE account_pk = :accountPk ORDER BY due_date`
+4. **View payments:** `SELECT * FROM uown_sv_payment WHERE account_pk = :accountPk ORDER BY pk DESC`
+5. **View CC transactions:** `SELECT * FROM uown_sv_credit_card_transaction WHERE account_pk = :accountPk ORDER BY pk DESC`
+6. **View activity log:** `SELECT * FROM uown_sv_activity_log WHERE account_pk = :accountPk ORDER BY pk DESC`
+7. **View alerts:** `SELECT * FROM uown_sv_alert WHERE account_pk = :accountPk`

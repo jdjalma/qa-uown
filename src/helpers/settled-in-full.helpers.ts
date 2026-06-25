@@ -574,7 +574,7 @@ export async function checkTemplateQueryReturnsData(
  *   - Thu (4) / Fri (5) → CURRENT_DATE − 2
  *
  * Used to tell the user which `settled_in_full_date_time` value to set when
- * manually preparing a fixture (Opção A / Opção B in the preflight log).
+ * manually preparing a fixture (Option A / Option B in the preflight log).
  */
 export function getSweepWindowDate(date: Date = new Date()): string {
   const dow = date.getUTCDay();

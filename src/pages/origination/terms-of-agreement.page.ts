@@ -1,11 +1,11 @@
 /**
- * TermsOfAgreementPage — segunda tela apos MissingDataForm.
+ * TermsOfAgreementPage — second screen after MissingDataForm.
  *
- * Mostra resumo do contrato (First Payment, EPO, # Payments, Total) + items + 2 checkboxes:
+ * Shows the contract summary (First Payment, EPO, # Payments, Total) + items + 2 checkboxes:
  *   - #isInfoConfirmed       — "I confirm all information is true and complete"
  *   - #isEverythingAgreed    — "I agree to Privacy Policy, T&C, Electronic Disclosures"
  *
- * Apos marcar ambos e clicar "Proceed to signature", abre modal com iframe GowSign
+ * After checking both and clicking "Proceed to signature", a modal with the GowSign iframe opens
  * (`AlternativeContractModalPage`).
  *
  * Form ID: `termsOfAgreementForm`
@@ -86,34 +86,34 @@ export class TermsOfAgreementPage extends BasePage {
     await this.page.getByRole('button', { name: /proceed to signature/i }).click();
   }
 
-  /** Conveniencia: marca os 2 checkboxes + clica Proceed */
+  /** Convenience: checks the 2 checkboxes + clicks Proceed */
   async acceptAndProceed(): Promise<void> {
     await this.checkAll();
     await this.clickProceedToSignature();
   }
 
   /**
-   * Conveniencia para merchants com `offerInsurance=true`: o botao primario
-   * vira "See Protection Benefits" antes de chegar ao iframe de assinatura.
+   * Convenience for merchants with `offerInsurance=true`: the primary button
+   * becomes "See Protection Benefits" before reaching the signing iframe.
    *
-   * Comportamento:
-   *   1. Marca os checkboxes de confirmacao
-   *   2. Se "See Protection Benefits" estiver visivel → clica, opta in/out
-   *      no painel de PP e clica PROCEED TO SIGNATURE
-   *   3. Senao → clica PROCEED TO SIGNATURE direto (caminho standard)
+   * Behavior:
+   *   1. Checks the confirmation checkboxes
+   *   2. If "See Protection Benefits" is visible → clicks it, opts in/out
+   *      on the PP panel and clicks PROCEED TO SIGNATURE
+   *   3. Otherwise → clicks PROCEED TO SIGNATURE directly (standard path)
    *
-   * Hardening: retorna `{ buddyReached, radioClicked }` para que o teste
-   * possa FALHAR num fallback silencioso (insurance merchant que não abre o Buddy)
-   * em vez de passar verde. Lança quando o painel Buddy abriu mas nenhum radio de
-   * opt-in/opt-out pôde ser clicado — submeter cego mascararia uma regressão de
-   * render do widget (`@buddy-technology/offer-component ^1.7.1`). Callers que
-   * apenas precisam atravessar o Terms (opt-out, sem insurance) podem ignorar o
-   * retorno — o early-return devolve `{ buddyReached:false, radioClicked:false }`.
+   * Hardening: returns `{ buddyReached, radioClicked }` so the test
+   * can FAIL on a silent fallback (insurance merchant that does not open Buddy)
+   * instead of passing green. Throws when the Buddy panel opened but no
+   * opt-in/opt-out radio could be clicked — submitting blind would mask a render
+   * regression of the widget (`@buddy-technology/offer-component ^1.7.1`). Callers that
+   * only need to get through Terms (opt-out, no insurance) may ignore the
+   * return value — the early-return yields `{ buddyReached:false, radioClicked:false }`.
    *
-   * @param ppOptIn true = aceitar PP (cria row em uown_los_protection_plan),
-   *                false = recusar
-   * @returns outcome com `buddyReached`/`radioClicked` — ver {@link ProtectionPlanOutcome}
-   * @throws se o painel Buddy abriu mas nenhum radio pôde ser clicado
+   * @param ppOptIn true = accept PP (creates a row in uown_los_protection_plan),
+   *                false = decline
+   * @returns outcome with `buddyReached`/`radioClicked` — see {@link ProtectionPlanOutcome}
+   * @throws if the Buddy panel opened but no radio could be clicked
    */
   async acceptAndProceedWithProtectionPlan(ppOptIn: boolean): Promise<ProtectionPlanOutcome> {
     await this.checkAll();

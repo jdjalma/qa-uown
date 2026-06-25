@@ -1,58 +1,58 @@
 # Application Lifecycle - Canonical Sequence Detail
 
-> Para visao geral e regras, ver [SKILL.md](../SKILL.md).
+> For an overview and rules, see [SKILL.md](../SKILL.md).
 
 ---
 
-## Sequencia completa (happy path end-to-end)
+## Complete sequence (happy path end-to-end)
 
-Para criar uma conta partindo do zero ate `ACTIVE` (ou `SETTLED_IN_FULL` via SETTLEMENT):
+To create an account from scratch up to `ACTIVE` (or `SETTLED_IN_FULL` via SETTLEMENT):
 
-| # | Chamada | Resultado | Exige |
+| # | Call | Result | Requires |
 |---|---------|-----------|-------|
-| 1 | `buildTestData({ env, state, merchant, orderTotal })` | `applicant.email` unico, SSN aprovado | NAO passar `emailOverride` (pitfall #1) |
-| 2 | `api.application.sendApplication(merchant, applicant, order)` | retorna `leadPk`, `leadUuid`, `paymentDetailsList` | Para Kornerstone: `body.mainBankRoutingNumber` + `body.mainBankAccountNumber` obrigatorios (pitfall #5) |
-| 3 | `sleep(5000)` + `api.application.getApplicationStatus(merchant, leadUuid)` | status contem `"approved"` + `approvedAmount > 0` | SSN nao-terminando-em-9 + merchant nao bloqueado no estado |
-| 4 | `api.invoice.sendInvoice(merchant, leadUuid, { orderTotal })` | retorna `paymentDetailsList[0].redirectUrl` com `shortCode` + `planId` | sendApplication aprovado antes |
-| 5 | Extrair `shortCode` + `planId` de `invoiceResp.body.paymentDetailsList[0].redirectUrl` | `shortCode = url.pathname.split('/')[1]`, `planId = url.searchParams.get('planId')` | - |
-| 6 | `api.application.getMissingFields(shortCode, { planId })` | seta `merchantProgramPk` no lead | Passo 5 ok |
-| 7 | `api.application.submitApplication(leadPk, firstName, lastName, { planId, ccNumber, ccType, ccExp, cvc })` | lead transita para CC_AUTH_PASSED/CONTRACT_CREATED | **ccNumber = `TEST_CARDS.MASTERCARD_APPROVED.number` (BIN 5500)** (pitfall #3) |
+| 1 | `buildTestData({ env, state, merchant, orderTotal })` | unique `applicant.email`, approved SSN | Do NOT pass `emailOverride` (pitfall #1) |
+| 2 | `api.application.sendApplication(merchant, applicant, order)` | returns `leadPk`, `leadUuid`, `paymentDetailsList` | For Kornerstone: `body.mainBankRoutingNumber` + `body.mainBankAccountNumber` mandatory (pitfall #5) |
+| 3 | `sleep(5000)` + `api.application.getApplicationStatus(merchant, leadUuid)` | status contains `"approved"` + `approvedAmount > 0` | SSN not-ending-in-9 + merchant not blocked in the state |
+| 4 | `api.invoice.sendInvoice(merchant, leadUuid, { orderTotal })` | returns `paymentDetailsList[0].redirectUrl` with `shortCode` + `planId` | sendApplication approved first |
+| 5 | Extract `shortCode` + `planId` from `invoiceResp.body.paymentDetailsList[0].redirectUrl` | `shortCode = url.pathname.split('/')[1]`, `planId = url.searchParams.get('planId')` | - |
+| 6 | `api.application.getMissingFields(shortCode, { planId })` | sets `merchantProgramPk` on the lead | Step 5 ok |
+| 7 | `api.application.submitApplication(leadPk, firstName, lastName, { planId, ccNumber, ccType, ccExp, cvc })` | lead transitions to CC_AUTH_PASSED/CONTRACT_CREATED | **ccNumber = `TEST_CARDS.MASTERCARD_APPROVED.number` (BIN 5500)** (pitfall #3) |
 | 8 | `api.lead.changeLeadStatus(merchant, leadPk, 'SIGNED', 'Automated')` | lead - SIGNED | submitApplication ok |
-| 9 | `api.settlement.settleApplication(merchant, leadUuid)` | lead - SETTLED | Lead em SIGNED |
-| 10 | `sleep(3000)` + `api.lead.updateFundingStatus([leadPk], 'FUNDING')` | lead - FUNDING | Lead em SETTLED |
-| 11 | `api.lead.updateFundingStatus([leadPk], 'FUNDED')` | lead - FUNDED, cria `uown_sv_account` | Lead em FUNDING |
-| 12 | `db.waitForAccountByLeadPk(leadPk, 60_000)` | retorna `accountPk` | Passo 11 ok |
-| 13 | `db.waitForAccountStatus(accountPk, 'ACTIVE', 180_000)` | account ACTIVE | Account criado |
+| 9 | `api.settlement.settleApplication(merchant, leadUuid)` | lead - SETTLED | Lead in SIGNED |
+| 10 | `sleep(3000)` + `api.lead.updateFundingStatus([leadPk], 'FUNDING')` | lead - FUNDING | Lead in SETTLED |
+| 11 | `api.lead.updateFundingStatus([leadPk], 'FUNDED')` | lead - FUNDED, creates `uown_sv_account` | Lead in FUNDING |
+| 12 | `db.waitForAccountByLeadPk(leadPk, 60_000)` | returns `accountPk` | Step 11 ok |
+| 13 | `db.waitForAccountStatus(accountPk, 'ACTIVE', 180_000)` | account ACTIVE | Account created |
 
-## Para chegar em `SETTLED_IN_FULL` (email de Settled in Full depende disso)
+## To reach `SETTLED_IN_FULL` (the Settled in Full email depends on this)
 
-| # | Chamada | Resultado |
+| # | Call | Result |
 |---|---------|-----------|
-| 14 | `api.paymentArrangement.makeCreditCardPayments(buildCcArrangementBody({ accountPk, arrangementType: 'SETTLEMENT', ccNumber, ccExp, cvc, installments }))` | payment processa sincrono (CC), listener transiciona account |
+| 14 | `api.paymentArrangement.makeCreditCardPayments(buildCcArrangementBody({ accountPk, arrangementType: 'SETTLEMENT', ccNumber, ccExp, cvc, installments }))` | payment processes synchronously (CC), listener transitions the account |
 | 15 | `db.waitForPaymentArrangementStatus(accountPk, 'SUCCESS', 60_000)` | arrangement SUCCESS |
-| 16 | `db.waitForAccountStatus(accountPk, 'SETTLED_IN_FULL', 60_000)` | account SETTLED_IN_FULL + `uown_sv_payment(PAID)` populado |
+| 16 | `db.waitForAccountStatus(accountPk, 'SETTLED_IN_FULL', 60_000)` | account SETTLED_IN_FULL + `uown_sv_payment(PAID)` populated |
 
-## Para trocar primary email (testes de email template)
+## To change the primary email (email template tests)
 
-| # | Chamada | Quando |
+| # | Call | When |
 |---|---------|--------|
-| 17 | `api.svcEmail.getContactInfo(accountPk)` - extrair `emailPK` + `customerPK` da entry PRIMARY | Apos ACTIVE (ou SETTLED_IN_FULL) |
+| 17 | `api.svcEmail.getContactInfo(accountPk)` - extract `emailPK` + `customerPK` from the PRIMARY entry | After ACTIVE (or SETTLED_IN_FULL) |
 | 18 | `api.svcEmail.createOrUpdateEmail({ emailPK, customerPK, emailAddress: INBOX, emailType: 'PRIMARY', doNotEmail: false })` | - |
 
 ---
 
-## Helpers que ja implementam a sequencia completa
+## Helpers that already implement the complete sequence
 
-| Helper | Completo ate | Notas |
+| Helper | Complete up to | Notes |
 |--------|--------------|-------|
-| `setupApplicationViaApi` (`src/helpers/api-setup.helpers.ts`) | Passo 7 (submitApplication via `submitPaymentInfoViaApi: true`) | Inclui `getMissingFields` - pode encadear `driveLeadToFunding` depois |
-| `createPreQualifiedApplication` (idem) | Passo 7 | Agora inclui `getMissingFields`. Aceita `bankData` para Kornerstone |
-| `driveLeadToSigned(api, merchant, ctx)` | Passo 8 | Chama `changeLeadStatus('SIGNED')` |
-| `driveLeadToFunding(api, merchant, ctx)` | Passo 10 | Inclui SIGNED - settle - FUNDING |
+| `setupApplicationViaApi` (`src/helpers/api-setup.helpers.ts`) | Step 7 (submitApplication via `submitPaymentInfoViaApi: true`) | Includes `getMissingFields` - can chain `driveLeadToFunding` afterward |
+| `createPreQualifiedApplication` (same file) | Step 7 | Now includes `getMissingFields`. Accepts `bankData` for Kornerstone |
+| `driveLeadToSigned(api, merchant, ctx)` | Step 8 | Calls `changeLeadStatus('SIGNED')` |
+| `driveLeadToFunding(api, merchant, ctx)` | Step 10 | Includes SIGNED - settle - FUNDING |
 
-## Para ir de FUNDING - FUNDED - ACTIVE - SETTLED_IN_FULL
+## To go from FUNDING - FUNDED - ACTIVE - SETTLED_IN_FULL
 
-Encadear manualmente no spec:
+Chain manually in the spec:
 ```typescript
 await driveLeadToFunding(api, merchant, ctx); // passos 8-10
 const fundedResp = await api.lead.updateFundingStatus([leadPk], 'FUNDED'); // passo 11

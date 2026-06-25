@@ -1,12 +1,12 @@
 ---
 name: helpers-catalog
-description: Carregue ao precisar de helper (auth, navigation, OTP, IMAP, DB query, network intercept). Catálogo do que já existe em src/helpers/ — não duplicar. Antes de criar helper novo, conferir se equivalente existe.
+description: Load when you need a helper (auth, navigation, OTP, IMAP, DB query, network intercept). Catalog of what already exists in src/helpers/ — do not duplicate. Before creating a new helper, check whether an equivalent exists.
 disable-model-invocation: true
 ---
 
 # Helpers Catalog
 
-> Catalogo de helpers em `src/helpers/` com localizacao, proposito e signatures-chave.
+> Catalog of helpers in `src/helpers/` with location, purpose, and key signatures.
 > Detailed method signatures, parameters, return types: [references/methods.md](references/methods.md)
 
 ## Principles
@@ -95,9 +95,9 @@ For asserting a downloaded CSV's column SET and row count against the portal tot
 | `getSvUwScoresByAccountPk(accountPk)` | Same projection from Servicing-side `uown_sv_uwdata` by `account_pk` (CT-04, funded lead → account snapshot) |
 | `waitForUwNpmSegment(leadPk, timeout?)` | Poll-with-backoff until the UW decision row exists AND `npm_segment` is non-null (the GDS snapshot write is async). Read-only. |
 | `getLeadMerchantSettingsSnapshot(leadPk)` | Read-only row from `uown_los_lead_merchant_settings_snapshot` (`merchant_pk, program_pk, epo5, epo10, uw_pipeline, fraud_threshold`). |
-| `getAccountMerchantSettingsSnapshot(accountPk)` | Same from `uown_sv_account_merchant_settings_snapshot` (account-side snapshot, copiado do lead no import LOS→SVC). |
-| `waitForLeadMerchantSettingsSnapshot(leadPk, timeout?)` | Poll until the lead snapshot exists (escrito AFTER_COMMIT na aprovacao UW). Read-only. |
-| `waitForAccountMerchantSettingsSnapshot(accountPk, timeout?)` | Poll until the account snapshot exists (escrito no import LOS→SVC). Read-only. |
+| `getAccountMerchantSettingsSnapshot(accountPk)` | Same from `uown_sv_account_merchant_settings_snapshot` (account-side snapshot, copied from the lead in the LOS→SVC import). |
+| `waitForLeadMerchantSettingsSnapshot(leadPk, timeout?)` | Poll until the lead snapshot exists (written AFTER_COMMIT at UW approval). Read-only. |
+| `waitForAccountMerchantSettingsSnapshot(accountPk, timeout?)` | Poll until the account snapshot exists (written in the LOS→SVC import). Read-only. |
 
 > Full signatures and detailed usage: [references/methods.md](references/methods.md)
 
@@ -153,19 +153,19 @@ const ppCart    = randomPayPairCart({ category: 'Tires', total: 800 });
 **When NOT to use:** a test that must pin a deterministic SSN/address for a routing
 assertion (use a literal `SsnStrategy` / static `STATE_ADDRESSES`).
 
-## Helpers ainda não detalhados aqui (existem — NÃO recriar)
+## Helpers not yet detailed here (they exist — do NOT recreate)
 
-Listados para fechar o gap da Regra #2 (auditoria 2026-06-18). Leia o `src/helpers/<arquivo>` para a assinatura antes de usar:
+Listed to close the Rule #2 gap (audit 2026-06-18). Read `src/helpers/<file>` for the signature before using:
 
-| Helper | Propósito |
+| Helper | Purpose |
 |--------|-----------|
-| `contract-pdf.helper.ts` | Extração/validação de conteúdo do PDF de contrato |
-| `merchant-config.helper.ts` | Leitura/preflight de config de merchant |
-| `merchant-location-report.helper.ts` | `MerchantLocationReportControls` — filtro Merchant/Location + paginação + leitura de coluna compartilhados (composição). NOTA: a página `FundingPage` (`src/pages/origination/funding.page.ts`) NÃO usa o componente compartilhado `MerchantLocationFilters` — tem DOM custom (labels `<div>` + IDs estáveis). Sua API pública de filtro (`listAvailableLocations()`, `filterByLocations`, `filterByStatuses`, …) vive no page object, catalogada em [[page-object-pattern]] `FundingPage`. NÃO usar `MerchantLocationFilterPO` no Funding Queue. |
-| `merchant-program-toggle.helpers.ts` | Toggle de programas 13m/16m do merchant |
-| `svc-payoff.helpers.ts` | Cálculo/parse de EPO/payoff (`parseEpoBreakdown`) |
-| `svc-servicing-info.helpers.ts` | Leitura de info da conta no Servicing |
-| `sweep-fixture.helpers.ts` | Finders de registros idle + restores + `sweepLogBaseline`/`triggerAndWaitSweepLog` |
+| `contract-pdf.helper.ts` | Extraction/validation of contract PDF content |
+| `merchant-config.helper.ts` | Reading/preflight of merchant config |
+| `merchant-location-report.helper.ts` | `MerchantLocationReportControls` — shared Merchant/Location filter + pagination + column reading (composition). NOTE: the `FundingPage` page (`src/pages/origination/funding.page.ts`) does NOT use the shared `MerchantLocationFilters` component — it has custom DOM (`<div>` labels + stable IDs). Its public filter API (`listAvailableLocations()`, `filterByLocations`, `filterByStatuses`, …) lives in the page object, cataloged in [[page-object-pattern]] `FundingPage`. Do NOT use `MerchantLocationFilterPO` on the Funding Queue. |
+| `merchant-program-toggle.helpers.ts` | Toggle of the merchant's 13m/16m programs |
+| `svc-payoff.helpers.ts` | EPO/payoff calculation/parsing (`parseEpoBreakdown`) |
+| `svc-servicing-info.helpers.ts` | Reading account info in Servicing |
+| `sweep-fixture.helpers.ts` | Finders for idle records + restores + `sweepLogBaseline`/`triggerAndWaitSweepLog` |
 
 ## When to Create a New Helper
 

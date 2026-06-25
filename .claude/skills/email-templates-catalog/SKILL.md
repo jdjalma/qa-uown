@@ -1,42 +1,42 @@
 ---
 name: email-templates-catalog
-description: Carregue ao planejar/implementar/validar teste que envolva templates de email (Welcome, Settled-in-Full, Verification, Late Payment, OTP). Catálogo de fatos confirmados — template_name, GCS bucket, schema das tabelas uown_email_queue e uown_los_lead_notes, gaps de observabilidade.
+description: Load when planning/implementing/validating a test that involves email templates (Welcome, Settled-in-Full, Verification, Late Payment, OTP). Catalog of confirmed facts — template_name, GCS bucket, schema of the uown_email_queue and uown_los_lead_notes tables, observability gaps.
 disable-model-invocation: true
 ---
 
-# Email Templates Catalog — fatos confirmados via probe DB
+# Email Templates Catalog — facts confirmed via DB probe
 
-> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **fatos confirmados de email** — template names, schemas de tabelas, gaps de observabilidade. As **regras canônicas de comunicação** (portal, SMS, consentimento, notificações) NÃO moram aqui — é fonte única em `docs/business-rules/10-portal-comunicacoes.md`. Para resolver um tópico, rode `node scripts/docs-tooling.mjs resolve email`. **Não duplique regras de produto aqui** — elas driftam.
+> **Authority boundary** (`docs/_docs-conventions.md` §7): this skill covers **confirmed email facts** — template names, table schemas, observability gaps. The **canonical communication rules** (portal, SMS, consent, notifications) do NOT live here — the single source is `docs/business-rules/10-portal-comunicacoes.md`. To resolve a topic, run `node scripts/docs-tooling.mjs resolve email`. **Do not duplicate product rules here** — they drift.
 
-> Fonte das confirmações: probe direto em qa1 (`scripts/probe_welcome.ts`, `scripts/probe_notes_schema.ts`). Atualize esta skill sempre que um novo fato for confirmado por probe (responsabilidade do `qa-doc-keeper`).
+> Source of the confirmations: direct probe in qa1 (`scripts/probe_welcome.ts`, `scripts/probe_notes_schema.ts`). Update this skill whenever a new fact is confirmed by a probe (`qa-doc-keeper`'s responsibility).
 
-## 1. Tabela `uown_email_queue` — schema canônico
+## 1. Table `uown_email_queue` — canonical schema
 
-Tabela fonte da verdade para evidência de "email foi enviado". Sweep `triggerScheduledTask/emailSweep` é o worker que muda `status PENDING → SENT` e popula `sent_time`.
+The source-of-truth table for "email was sent" evidence. The `triggerScheduledTask/emailSweep` sweep is the worker that changes `status PENDING → SENT` and populates `sent_time`.
 
-| Coluna | Tipo | Uso em validação |
+| Column | Type | Use in validation |
 |---|---|---|
-| `pk` | bigint | identificador da linha |
-| `account_pk` | bigint | filtro por conta (FK lease) |
-| `lead_pk` | bigint | filtro por lead (origination) |
-| `customer_pk` | bigint | FK customer |
-| `merchant_pk` | bigint | 0 = sem merchant (ex.: Welcome) |
-| `to_email_addresses` | text | comparar com email do customer |
-| `from_email_address`, `from_email_name` | varchar | branding do remetente |
-| `subject` | text | asserção de subject |
-| `template_name` | varchar | **case-sensitive** — usar literal exato |
-| `template_version` | varchar | normalmente NULL |
-| `status` | varchar | `PENDING` (na fila) → `SENT` / `STORED` (entregue) |
-| `queue_type`, `priority` | varchar | metadados de fila |
-| `sent_time` | timestamp | NULL antes do sweep; populado após pickup |
-| `picked_at_time`, `send_by_time` | timestamp | janela de SLA |
-| `row_created_timestamp`, `row_updated_timestamp` | timestamp | use `row_created_timestamp >= trigger_ts` para filtrar |
-| `email_body` | text | HTML completo entregue (use para extrair `<img src>`, validar placeholders) |
-| `email_body_type` | varchar | `HTML` ou `TEXT` |
+| `pk` | bigint | row identifier |
+| `account_pk` | bigint | filter by account (lease FK) |
+| `lead_pk` | bigint | filter by lead (origination) |
+| `customer_pk` | bigint | customer FK |
+| `merchant_pk` | bigint | 0 = no merchant (e.g., Welcome) |
+| `to_email_addresses` | text | compare with the customer's email |
+| `from_email_address`, `from_email_name` | varchar | sender branding |
+| `subject` | text | subject assertion |
+| `template_name` | varchar | **case-sensitive** — use the exact literal |
+| `template_version` | varchar | normally NULL |
+| `status` | varchar | `PENDING` (queued) → `SENT` / `STORED` (delivered) |
+| `queue_type`, `priority` | varchar | queue metadata |
+| `sent_time` | timestamp | NULL before the sweep; populated after pickup |
+| `picked_at_time`, `send_by_time` | timestamp | SLA window |
+| `row_created_timestamp`, `row_updated_timestamp` | timestamp | use `row_created_timestamp >= trigger_ts` to filter |
+| `email_body` | text | full delivered HTML (use to extract `<img src>`, validate placeholders) |
+| `email_body_type` | varchar | `HTML` or `TEXT` |
 | `data_map` | text (json) | merge vars (FirstName, Amount, etc.) |
-| `error_desc`, `response` | text | troubleshooting de envios falhos |
+| `error_desc`, `response` | text | troubleshooting of failed sends |
 
-### Pattern padrão de validação de envio
+### Standard send-validation pattern
 
 ```sql
 SELECT pk, account_pk, lead_pk, to_email_addresses, subject,
@@ -49,80 +49,80 @@ SELECT pk, account_pk, lead_pk, to_email_addresses, subject,
  LIMIT 1;
 ```
 
-Asserções mínimas: linha existe; `status='SENT'`; `sent_time IS NOT NULL`; `to_email_addresses` casa com email; `email_body_type='HTML'`.
+Minimum assertions: row exists; `status='SENT'`; `sent_time IS NOT NULL`; `to_email_addresses` matches the email; `email_body_type='HTML'`.
 
-## 2. Catálogo de `template_name` (valor exato — case-sensitive)
+## 2. Catalog of `template_name` (exact value — case-sensitive)
 
-| template_name | Trigger | Brand-aware? | Activity log em lead_notes? | Confirmado |
+| template_name | Trigger | Brand-aware? | Activity log in lead_notes? | Confirmed |
 |---|---|---|---|---|
-| `Welcome` | `POST /uown/sendWelcomeEmail/{accountPk}` | sim (UOWN ↔ KS) após #517 | ❌ NÃO (gap) | 2026-05-20 qa1 (45 envios) |
-| `SettledInFullEmail` | sweep `settledInFullAccountEmailSweep` | indeterminado | indeterminado | 2026-06-02 dev3 |
-| `RecurringPaymentReminder` | sweep `RecurringPaymentReminderSweep` | indeterminado | indeterminado | 2026-06-02 dev3 |
-| `FirstPaymentReminder` | sweep `FirstPaymentReminderSweep` | indeterminado | indeterminado | 2026-06-02 dev3 |
+| `Welcome` | `POST /uown/sendWelcomeEmail/{accountPk}` | yes (UOWN ↔ KS) after #517 | ❌ NO (gap) | 2026-05-20 qa1 (45 sends) |
+| `SettledInFullEmail` | sweep `settledInFullAccountEmailSweep` | undetermined | undetermined | 2026-06-02 dev3 |
+| `RecurringPaymentReminder` | sweep `RecurringPaymentReminderSweep` | undetermined | undetermined | 2026-06-02 dev3 |
+| `FirstPaymentReminder` | sweep `FirstPaymentReminderSweep` | undetermined | undetermined | 2026-06-02 dev3 |
 
-> Adicione novas linhas conforme outros templates forem probados. Inclua coluna "Confirmado em" com env + data — sem isso a entrada vira folclore.
+> Add new rows as other templates are probed. Include a "Confirmed on" column with env + date — without it the entry becomes folklore.
 
-> ⚠️ `src/scripts/dev3-trigger-sweeps.ts` usa o template ERRADO `SettledInFullAccountEmail` (com `Account`) e porta ERRADA `5446` — NÃO copiar desse arquivo. O `template_name` real é `SettledInFullEmail` (sem `Account`). Confirmado em `email-sweeps-servicing.spec.ts`, dev3 2026-06-02. Condições de seleção e janela DOW de cada sweep: [[payment-flows]] seção "Email Sweep validation + selection conditions" + [[application-lifecycle]] pitfalls #87-#90.
+> ⚠️ `src/scripts/dev3-trigger-sweeps.ts` uses the WRONG template `SettledInFullAccountEmail` (with `Account`) and the WRONG port `5446` — do NOT copy from that file. The real `template_name` is `SettledInFullEmail` (without `Account`). Confirmed in `email-sweeps-servicing.spec.ts`, dev3 2026-06-02. Selection conditions and DOW window of each sweep: [[payment-flows]] section "Email Sweep validation + selection conditions" + [[application-lifecycle]] pitfalls #87-#90.
 
-## 3. Image hosting — domínio GCS aprovado
+## 3. Image hosting — approved GCS domain
 
-**Allow-list confirmada**: `https://storage.googleapis.com/uown/<filename>` (bucket = `uown`).
+**Confirmed allow-list**: `https://storage.googleapis.com/uown/<filename>` (bucket = `uown`).
 
-Imagens conhecidas no template Welcome atual (pré-#517):
+Known images in the current Welcome template (pre-#517):
 - `logo_top_62.png` (+ `@2x.png`)
 - `icon-facebook.png`
-- `icon-twitter.png` *(será substituído por `icon-linkedin.png` na #517 para UOWN)*
+- `icon-twitter.png` *(will be replaced by `icon-linkedin.png` in #517 for UOWN)*
 - `icon-instagram.png`
 - `logos-05.png` (+ `@2x.png`)
 
-Regex de validação (negative — qualquer URL fora dessa allow-list falha):
+Validation regex (negative — any URL outside this allow-list fails):
 ```regex
 <img[^>]+src="(?!https://storage\.googleapis\.com/uown/)
 ```
 
-Inclua também CSS background images: `background(?:-image)?:url\(["']?([^"')]+)`.
+Also include CSS background images: `background(?:-image)?:url\(["']?([^"')]+)`.
 
 ## 4. Sweep — `emailSweep`
 
-**Endpoint**: `POST {svc}/uown/svc/triggerScheduledTask/emailSweep` — pega rows `PENDING`, dispara via SendGrid, popula `sent_time` e muda `status` para `SENT` (também já visto `STORED`).
+**Endpoint**: `POST {svc}/uown/svc/triggerScheduledTask/emailSweep` — picks up `PENDING` rows, dispatches via SendGrid, populates `sent_time` and changes `status` to `SENT` (`STORED` has also been seen).
 
-**Disponibilidade confirmada**: dev1, qa1.
-**Indeterminado** (requer VPN): stg, qa2.
+**Confirmed availability**: dev1, qa1.
+**Undetermined** (requires VPN): stg, qa2.
 
-Pattern: `trigger` → `sweep` → `polling DB sent_time IS NOT NULL` → `polling IMAP inbox`.
+Pattern: `trigger` → `sweep` → `poll DB sent_time IS NOT NULL` → `poll IMAP inbox`.
 
-Helpers existentes em `src/helpers/settled-in-full.helpers.ts`:
+Existing helpers in `src/helpers/settled-in-full.helpers.ts`:
 - `getEmailQueueRecord(db, toEmail, accountPk, templateHint)` — single fetch
-- `waitForEmailQueueRecord(...)` — com polling exponencial
-- `waitForEmailQueueDispatched(db, queuePk, timeoutMs)` — espera `sent_time IS NOT NULL`
-- `countEmailQueueRows(db, accountPk, sinceTs)` — baseline / idempotência
+- `waitForEmailQueueRecord(...)` — with exponential polling
+- `waitForEmailQueueDispatched(db, queuePk, timeoutMs)` — waits for `sent_time IS NOT NULL`
+- `countEmailQueueRows(db, accountPk, sinceTs)` — baseline / idempotency
 
-## 5. `uown_los_lead_notes` — schema real (CORREÇÃO 2026-05-20)
+## 5. `uown_los_lead_notes` — real schema (CORRECTION 2026-05-20)
 
-Confirmado por probe que a tabela **NÃO tem** `note_type`. Schema real:
+A probe confirmed that the table **does NOT have** `note_type`. Real schema:
 
-| Coluna | Tipo | Notas |
+| Column | Type | Notes |
 |---|---|---|
 | `pk` | bigint | |
-| `agent` | varchar | quase sempre NULL (logs system) |
-| `row_created_timestamp` | timestamp | use isto, não `created_at` |
+| `agent` | varchar | almost always NULL (system logs) |
+| `row_created_timestamp` | timestamp | use this, not `created_at` |
 | `row_updated_timestamp` | timestamp | |
 | `tenant_id` | bigint | |
 | `web_user_id` | bigint | |
-| `lead_pk` | bigint | filtro principal |
-| `notes` | text | conteúdo livre, tipagem como prefixo |
+| `lead_pk` | bigint | main filter |
+| `notes` | text | free content, typing as a prefix |
 
-**Tipagem implícita** — formato observado:
+**Implicit typing** — observed format:
 ```
-2026-05-18T13:22:46.293Z : [ServiceName][methodName] mensagem livre
+2026-05-18T13:22:46.293Z : [ServiceName][methodName] free message
 ```
 
-Exemplos reais (lead 11407):
+Real examples (lead 11407):
 - `[ESIGNSERVICE][parseCCPeekConsent] CC Peek Consent set to true`
 - `[ContractService][isLeaseOrLeaseModSigned] Lead starting status CONTRACT_CREATED`
 - `[LeadFundingService][updateFundingStatus] Update Lead Status to FUNDING`
 
-Validação correta:
+Correct validation:
 ```sql
 SELECT pk, notes, row_created_timestamp
  FROM uown_los_lead_notes
@@ -131,18 +131,18 @@ SELECT pk, notes, row_created_timestamp
  AND notes ILIKE '%[ContractService]%SIGNED%';
 ```
 
-## 6. Gaps confirmados de observabilidade
+## 6. Confirmed observability gaps
 
-| Action | Gap | Workaround | Reportar? |
+| Action | Gap | Workaround | Report? |
 |---|---|---|---|
-| Welcome Email | Não cria nota em lead_notes | Usar `uown_email_queue` como evidência primária | Sim — pitfall em `activity-log-validation` |
-| `uown_correspondence_logs.error` | Campo carrega texto informativo MESMO em sucesso (dev3 2026-06-02) | NÃO assertir `error IS NULL` para validar sucesso de envio — usar presença de row em `uown_email_queue` | Não (comportamento de log, não bug) |
+| Welcome Email | Does not create a note in lead_notes | Use `uown_email_queue` as primary evidence | Yes — pitfall in `activity-log-validation` |
+| `uown_correspondence_logs.error` | Field carries informational text EVEN on success (dev3 2026-06-02) | Do NOT assert `error IS NULL` to validate send success — use the presence of a row in `uown_email_queue` | No (log behavior, not a bug) |
 
-## 7. IMAP — leitura do email entregue
+## 7. IMAP — reading the delivered email
 
-Inbox compartilhada: `fintechgroup777@gmail.com` (ver memory `reference_imap_fintechgroup777`).
+Shared inbox: `fintechgroup777@gmail.com` (see memory `reference_imap_fintechgroup777`).
 
-Plus-addressing por runId para isolar entre testes/workers:
+Plus-addressing by runId to isolate between tests/workers:
 ```ts
 import { uniqueEmail, RUN_ID } from '@helpers/index.js';
 const customerEmail = uniqueEmail(`517-${RUN_ID}-uown`);
@@ -150,28 +150,28 @@ const customerEmail = uniqueEmail(`517-${RUN_ID}-uown`);
 
 Helper: `src/helpers/email.helpers.ts` — `snapshotInboxUid` → `getEmailContent` / `getEmailLink`.
 
-**Regra**: clicar no link real (não usar URL do payload API) para fluxos que envolvem CTA — ver memory `feedback_email_imap_click_link`.
+**Rule**: click the real link (do not use the API payload URL) for flows involving a CTA — see memory `feedback_email_imap_click_link`.
 
-## 8. Como manter esta skill atualizada (qa-doc-keeper)
+## 8. How to keep this skill up to date (qa-doc-keeper)
 
-Esta skill é **catálogo vivo de fatos probados**, não documentação de teoria. Toda vez que:
+This skill is a **living catalog of probed facts**, not theory documentation. Every time:
 
-1. Um novo template é descoberto / criado → adicionar linha na §2.
-2. Um novo bucket / domínio de imagem aparece → atualizar §3.
-3. Schema da tabela mudar (nova migration) → re-probar e atualizar §1 ou §5.
-4. Um gap de log for confirmado / fechado → atualizar §6.
+1. A new template is discovered / created → add a row in §2.
+2. A new bucket / image domain appears → update §3.
+3. The table schema changes (new migration) → re-probe and update §1 or §5.
+4. A log gap is confirmed / closed → update §6.
 
-**Comando de re-probe** (rodar quando suspeitar de drift):
+**Re-probe command** (run when you suspect drift):
 ```bash
 npx tsx scripts/probe_welcome.ts QA1
 npx tsx scripts/probe_notes_schema.ts QA1
 ```
 
-Sempre incluir **data de confirmação + env** ao adicionar uma linha. Sem isso a info vira folclore e o próximo agente não saberá se ainda é verdade.
+Always include the **confirmation date + env** when adding a row. Without it the info becomes folklore and the next agent won't know whether it is still true.
 
 ## Cross-links
 
-- Skill [[activity-log-validation]] — schema correto de lead_notes (referencia esta skill)
-- Skill [[db-polling-pattern]] — patterns de polling
+- Skill [[activity-log-validation]] — correct lead_notes schema (references this skill)
+- Skill [[db-polling-pattern]] — polling patterns
 - Memory `reference_imap_fintechgroup777`
-- `docs/taskTestingUown/database-schema.md` — schema canônico (deve refletir esta skill)
+- `docs/taskTestingUown/database-schema.md` — canonical schema (must reflect this skill)

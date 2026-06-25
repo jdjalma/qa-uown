@@ -1,8 +1,8 @@
 # Agents & Skills — fintech-playwright
 
-> **Resumo (PT-BR):** O projeto usa 5 agents enxutos em `.claude/agents/` e ~30 skills em `.claude/skills/`. Agents carregam skills sob demanda baseado em sinais semânticos da task — não há slash commands. CLAUDE.md é o orquestrador.
+> **Summary:** The project uses 5 lean agents in `.claude/agents/` and ~30 skills in `.claude/skills/`. Agents load skills on demand based on semantic signals from the task — there are no slash commands. CLAUDE.md is the orchestrator.
 
-## Arquitetura
+## Architecture
 
 ```
 CLAUDE.md (orchestrator)
@@ -14,27 +14,27 @@ CLAUDE.md (orchestrator)
 
 ## Agents (5)
 
-Todos opus exceto `qa-doc-keeper` (opus).
+All opus except `qa-doc-keeper` (opus).
 
-| Agent | Papel | Escreve código? |
+| Agent | Role | Writes code? |
 |-------|-------|------------------|
-| [`qa-planner`](../.claude/agents/qa-planner.md) | QA Strategist — scope, AC review, risk-based design, strategy, SPEC | Não |
-| [`qa-implementer`](../.claude/agents/qa-implementer.md) | QA Engineer — testes, page objects, API clients, helpers, DB | Sim |
-| [`qa-debugger`](../.claude/agents/qa-debugger.md) | QA Investigator — DOM-first, root-cause, classificação conservadora | Sim |
-| [`qa-validator`](../.claude/agents/qa-validator.md) | QA Reviewer — runs, valida vs risco, gera task report | Não (report) |
-| [`qa-doc-keeper`](../.claude/agents/qa-doc-keeper.md) | Knowledge Curator — catálogos + pitfalls (ALWAYS last) | Sim (docs) |
+| [`qa-planner`](../.claude/agents/qa-planner.md) | QA Strategist — scope, AC review, risk-based design, strategy, SPEC | No |
+| [`qa-implementer`](../.claude/agents/qa-implementer.md) | QA Engineer — tests, page objects, API clients, helpers, DB | Yes |
+| [`qa-debugger`](../.claude/agents/qa-debugger.md) | QA Investigator — DOM-first, root-cause, conservative classification | Yes |
+| [`qa-validator`](../.claude/agents/qa-validator.md) | QA Reviewer — runs, validates vs risk, generates task report | No (report) |
+| [`qa-doc-keeper`](../.claude/agents/qa-doc-keeper.md) | Knowledge Curator — catalogs + pitfalls (ALWAYS last) | Yes (docs) |
 
-## Skills (~30) por camada
+## Skills (~30) by layer
 
-### Camada A — Strategic (cognitive QA skills)
-Habilidades de **julgamento de QA** — análise, design, triagem.
+### Layer A — Strategic (cognitive QA skills)
+**QA judgment** skills — analysis, design, triage.
 
 - `scope-analysis` · `acceptance-criteria-review` · `risk-based-prioritization`
 - `test-strategy-decision` · `test-design-techniques` · `exploratory-heuristics`
 - `defect-triage` · `user-journey-perspective`
 
-### Camada B — Domain (UOWN fintech knowledge)
-Conhecimento específico do produto.
+### Layer B — Domain (UOWN fintech knowledge)
+Product-specific knowledge.
 
 - `qa-domain-reflexes` · `application-lifecycle` · `bug-classification`
 - `dom-investigation` · `merchant-preflight` · `activity-log-validation`
@@ -42,70 +42,70 @@ Conhecimento específico do produto.
 - `gowsign-knowledge` · `payment-flows` · `fraud-vendors-knowledge`
 - `regression-suites-map`
 
-### Camada C — Patterns (code conventions)
-Como escrever código que segue o padrão do projeto.
+### Layer C — Patterns (code conventions)
+How to write code that follows the project's standard.
 
 - `page-object-pattern` · `api-client-pattern` · `db-polling-pattern`
 - `selector-hardening` · `helpers-catalog` · `e2e-examples`
 - `common-operations`
 
-### Camada D — Standards (output formats)
-Formato canônico de artefatos.
+### Layer D — Standards (output formats)
+Canonical artifact format.
 
 - `test-plan-template` · `test-report-standard` · `e2e-checklist`
 
-### Camada E — Workflows
-Procedimentos pontuais.
+### Layer E — Workflows
+One-off procedures.
 
 - `fetch-gitlab-task`
 
-## Como cada agent carrega skills
+## How each agent loads skills
 
-Cada SKILL.md tem frontmatter:
+Each SKILL.md has frontmatter:
 
 ```yaml
 ---
 name: scope-analysis
-description: Gatilho semântico — quando carregar. Ex: "Carregue na análise inicial de task nova, antes de spec..."
+description: Semantic trigger — when to load. E.g.: "Load it in the initial analysis of a new task, before the spec..."
 disable-model-invocation: true
 ---
 ```
 
-`disable-model-invocation: true` significa: **não é slash command**. O agent decide carregar baseado em match entre o `description` e o contexto da task.
+`disable-model-invocation: true` means: **it is not a slash command**. The agent decides to load it based on a match between the `description` and the task context.
 
-### Exemplo concreto
+### Concrete example
 
-Task: *"Criar teste de Finalize Purchase Email para Kornerstone"*
+Task: *"Create a Finalize Purchase Email test for Kornerstone"*
 
-`qa-planner` automaticamente carrega:
-- [[scope-analysis]] (qualquer task nova)
-- [[acceptance-criteria-review]] (há AC no input)
-- [[risk-based-prioritization]] (avalia onde concentrar)
+`qa-planner` automatically loads:
+- [[scope-analysis]] (any new task)
+- [[acceptance-criteria-review]] (there is AC in the input)
+- [[risk-based-prioritization]] (assesses where to concentrate)
 - [[test-strategy-decision]] (UI-first vs API)
-- [[application-lifecycle]] (envolve criação de lead)
-- [[merchant-preflight]] (envolve Kornerstone)
-- [[ui-first-principle]] (template render é UI-driven)
-- [[activity-log-validation]] (dispatch email = business action)
+- [[application-lifecycle]] (involves lead creation)
+- [[merchant-preflight]] (involves Kornerstone)
+- [[ui-first-principle]] (template render is UI-driven)
+- [[activity-log-validation]] (email dispatch = business action)
 
-Produz SPEC justificado com top-N cenários prioritizados por risco.
+Produces a justified SPEC with the top-N scenarios prioritized by risk.
 
-## Fluxo de dispatch (orchestrator → agents)
+## Dispatch flow (orchestrator → agents)
 
-| Sinal da task | Sequência |
+| Task signal | Sequence |
 |----------------|-----------|
-| Nova feature / GitLab URL / AC list | `qa-planner` → `qa-implementer` → `qa-validator` → `qa-doc-keeper` |
-| Teste falhando / flaky / trace | `qa-debugger` → (`qa-validator` se report existe) → `qa-doc-keeper` |
+| New feature / GitLab URL / AC list | `qa-planner` → `qa-implementer` → `qa-validator` → `qa-doc-keeper` |
+| Failing / flaky test / trace | `qa-debugger` → (`qa-validator` if a report exists) → `qa-doc-keeper` |
 | Refactor / cleanup | `qa-implementer` (refactor mode) → `qa-doc-keeper` |
-| Atualizar docs / catálogo | `qa-doc-keeper` |
-| Auditar selectors / dead code | `qa-debugger` com skill `selector-hardening` em modo audit → `qa-doc-keeper` |
-| Ambíguo | `qa-planner` — vai delimitar |
+| Update docs / catalog | `qa-doc-keeper` |
+| Audit selectors / dead code | `qa-debugger` with the `selector-hardening` skill in audit mode → `qa-doc-keeper` |
+| Ambiguous | `qa-planner` — it will scope it |
 
-## Regras-chave (extraídas de CLAUDE.md)
+## Key rules (extracted from CLAUDE.md)
 
-1. `qa-doc-keeper` SEMPRE roda por último (regra inviolável #4).
-2. Spec obrigatória para qualquer test work não-trivial (regra #1).
-3. `tsc --noEmit` clean antes de handoff (regra #3).
-4. Real parallelization quando work é independente (regra #6).
-5. Atomic scope — cada agent faz uma coisa (regra #5).
+1. `qa-doc-keeper` ALWAYS runs last (inviolable rule #4).
+2. A spec is mandatory for any non-trivial test work (rule #1).
+3. `tsc --noEmit` clean before handoff (rule #3).
+4. Real parallelization when work is independent (rule #6).
+5. Atomic scope — each agent does one thing (rule #5).
 
-Detalhes completos: [`CLAUDE.md`](../CLAUDE.md).
+Full details: [`CLAUDE.md`](../CLAUDE.md).

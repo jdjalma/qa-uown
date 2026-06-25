@@ -1,5 +1,5 @@
 ---
-title: "Apendice I: API de Integracao do Merchant (UOWN Leasing Full API)"
+title: "Appendix I: Merchant Integration API (UOWN Leasing Full API)"
 domain: business-rules
 status: stable
 volatility: volatile
@@ -10,69 +10,69 @@ sources:
 covers: [integration-api, settlement, additional-lease, fraud-vendors, enums, webhooks]
 ---
 
-# Apendice I: API de Integracao do Merchant (UOWN Leasing Full API)
+# Appendix I: Merchant Integration API (UOWN Leasing Full API)
 ## UOwn Leasing - SVC Platform
 
-Referencia canonica do **contrato de campos/enums** da Full Integration API que o merchant usa para automatizar aplicacoes, invoices, contratos e funding sem o Merchant Portal. E o contrato por tras dos paths ja listados em [`appendix-b-endpoints.md`](appendix-b-endpoints.md) (que NAO se movem para ca) e usa os enums de [`appendix-d-constantes-enums.md`](appendix-d-constantes-enums.md).
+Canonical reference of the **field/enum contract** of the Full Integration API that the merchant uses to automate applications, invoices, contracts, and funding without the Merchant Portal. This is the contract behind the paths already listed in [`appendix-b-endpoints.md`](appendix-b-endpoints.md) (which do NOT move here) and uses the enums from [`appendix-d-constantes-enums.md`](appendix-d-constantes-enums.md).
 
-> **Fonte primaria (autoritativa):** Postman published doc `UOWN LEASING API DOCUMENTATION (FULL API)` — `https://documenter.getpostman.com/view/13272666/2sAYX9o1C6` (capturado 2026-06-23). `[external-doc:postman/uown-fullapi,2026-06-23]`. Por ser spec oficial do produto, os campos/enums sao `[CONFIRMADO]` conforme o doc os declara. O framework de teste dirige esses endpoints via `src/api/clients`. `[doc:src/api/clients]`
+> **Primary (authoritative) source:** Postman published doc `UOWN LEASING API DOCUMENTATION (FULL API)` — `https://documenter.getpostman.com/view/13272666/2sAYX9o1C6` (captured 2026-06-23). `[external-doc:postman/uown-fullapi,2026-06-23]`. Because it is the official product spec, the fields/enums are `[CONFIRMED]` as the doc declares them. The test framework drives these endpoints via `src/api/clients`. `[doc:src/api/clients]`
 >
-> **Por que `volatility: volatile`:** as regras de sandbox (SSN-9 gate, min lease) e merchant config sao categorias drift-prone (cat. #1/#6 de [[volatile-knowledge-registry]]) — ver o ⚠ caveat em I.7.
+> **Why `volatility: volatile`:** the sandbox rules (SSN-9 gate, min lease) and merchant config are drift-prone categories (cat. #1/#6 in [[volatile-knowledge-registry]]) — see the ⚠ caveat in I.7.
 
 ---
 
-## I.1 Os dois fluxos de aplicacao
+## I.1 The two application flows
 
-| Fluxo | Quando usar | Como |
+| Flow | When to use | How |
 |-------|-------------|------|
-| **Complete (with cart)** | Cliente ja escolheu os itens | `sendApplication` ja inclui `lineItem` → retorna link de finalizacao do lease |
-| **Pre-Approval (without cart)** | Dar limite de credito antes da compra | `sendApplication` sem invoice → retorna pre-approved amount; depois `sendInvoice` separado |
+| **Complete (with cart)** | Customer has already chosen the items | `sendApplication` already includes `lineItem` → returns a lease finalization link |
+| **Pre-Approval (without cart)** | Give a credit limit before the purchase | `sendApplication` without invoice → returns the pre-approved amount; later a separate `sendInvoice` |
 
-Apos aprovacao: cliente entra dados de pagamento → revisa termos → decide protection plan → assina contrato → lease finalizado. Finalizacao via **UOWN Portal** (link hospedado) ou **embedded pages** (iframe no site do merchant).
+After approval: the customer enters payment data → reviews terms → decides on the protection plan → signs the contract → lease finalized. Finalization via the **UOWN Portal** (hosted link) or **embedded pages** (iframe on the merchant's site).
 
 ---
 
-## I.2 Autenticacao
+## I.2 Authentication
 
-Cada request inclui no corpo (ou headers):
+Each request includes in the body (or headers):
 
-| Campo | Descricao |
+| Field | Description |
 |-------|-----------|
-| `userName` | Username atribuido ao merchant |
-| `setupPassword` | Senha de autenticacao |
-| `merchantNumber` | Identificador unico do merchant (ex.: `OL90202-0001`) |
+| `userName` | Username assigned to the merchant |
+| `setupPassword` | Authentication password |
+| `merchantNumber` | Unique merchant identifier (e.g., `OL90202-0001`) |
 
-**Egress IP allowlist obrigatorio:** para acessar Sandbox/Production os IPs de egresso do merchant devem ser whitelisted (contatar UOWN Support com Merchant Name, Environment, Access Type, IPs estaticos). Cloud: rotear via NAT Gateway para IPs consistentes. Credenciais sao merchant-specific. `[external-doc:postman/uown-fullapi,2026-06-23]`
+**Mandatory egress IP allowlist:** to access Sandbox/Production the merchant's egress IPs must be whitelisted (contact UOWN Support with Merchant Name, Environment, Access Type, static IPs). Cloud: route via NAT Gateway for consistent IPs. Credentials are merchant-specific. `[external-doc:postman/uown-fullapi,2026-06-23]`
 
 ---
 
-## I.3 `sendApplication` — campos
+## I.3 `sendApplication` — fields
 
-Submete a aplicacao do cliente para avaliacao de credito. Com `lineItem` → retorna link de finalizacao; sem → retorna pre-approved amount.
+Submits the customer's application for credit assessment. With `lineItem` → returns a finalization link; without → returns the pre-approved amount.
 
-### Campos requeridos (selecao chave — formatos)
+### Required fields (key selection — formats)
 
-| JSON Tag | Formato / Notas |
+| JSON Tag | Format / Notes |
 |----------|-----------------|
-| `userName`, `setupPassword`, `merchantNumber` | Credenciais (I.2) |
-| `mainFirstName`, `mainLastName` | Nome do aplicante |
+| `userName`, `setupPassword`, `merchantNumber` | Credentials (I.2) |
+| `mainFirstName`, `mainLastName` | Applicant name |
 | `mainDOB` | **MMDDYYYY** |
-| `mainSSN` | **Digits only, sem hifens** |
+| `mainSSN` | **Digits only, no hyphens** |
 | `mainAddress1`, `mainCity`, `mainPostalCode` | `mainPostalCode` digits only |
 | `mainCellPhone` | Digits only |
-| `mainEmployerName` | Obrigatorio |
-| `mainMonthlyIncome` **ou** `mainAnnualIncome` | Integer — **um dos dois e obrigatorio** |
-| `emailAddress` | Email do aplicante |
-| `ipAddress` | **Requerido** |
-| `seonFingerprintText` | **Requerido** — fingerprint SEON (fraude, I.8) |
+| `mainEmployerName` | Required |
+| `mainMonthlyIncome` **or** `mainAnnualIncome` | Integer — **one of the two is required** |
+| `emailAddress` | Applicant email |
+| `ipAddress` | **Required** |
+| `seonFingerprintText` | **Required** — SEON fingerprint (fraud, I.8) |
 
-### Campos opcionais relevantes (formatos)
+### Relevant optional fields (formats)
 
-| JSON Tag | Formato / Notas |
+| JSON Tag | Format / Notes |
 |----------|-----------------|
 | `localeString` | Default `en_US` |
-| `returnUrl` | Redirect pos-assinatura (I.6) |
-| `uuid` / `externalReferenceId` / `customerCode` | Identificadores do merchant |
+| `returnUrl` | Post-signing redirect (I.6) |
+| `uuid` / `externalReferenceId` / `customerCode` | Merchant identifiers |
 | `individualJointIndicator` | `I` = Individual, `J` = Joint |
 | `mainAtAddressFrom`, `mainAtPrevAddressFrom`, `mainAtEmployerFrom` | **MMYY** |
 | `mainHousingStatus` | `O`=Own, `R`=Rent, `PR`=Parents/Relative, `OT`=Other |
@@ -82,110 +82,110 @@ Submete a aplicacao do cliente para avaliacao de credito. Com `lineItem` → ret
 | `mainPayFrequency` | `WEEKLY` / `BI_WEEKLY` / `SEMI_MONTHLY` / `MONTHLY` |
 | `languagePreference` | `E` = English, `S` = Spanish |
 | `mainMaritalStatus` | `M` = Married, `U` = Unmarried |
-| `depositAmount`, `orderTotal`, `merchandiseSubtotal`, `salesTax`, `deliveryCharge`, `installationCharge`, `miscellaneousFees` | Decimais (ate 10 digitos, 2 casas) |
-| `invoiceNumber`, `discountAmount`, `salesPerson` | Dados de invoice |
+| `depositAmount`, `orderTotal`, `merchandiseSubtotal`, `salesTax`, `deliveryCharge`, `installationCharge`, `miscellaneousFees` | Decimals (up to 10 digits, 2 places) |
+| `invoiceNumber`, `discountAmount`, `salesPerson` | Invoice data |
 
-### Estrutura `lineItem` (cart embutido)
+### `lineItem` structure (embedded cart)
 
-Array; cada objeto e um produto. Requeridos: `lineItemLineNumber`, `lineItemProductNumber`, `lineItemProductDescription`, `lineItemProductCategory`, `lineItemType`, `lineItemQuantityOrdered`, `lineItemUnitPrice`, `lineItemExtendedPrice` (= unit × qty; ate 10 digitos, 2 casas).
+Array; each object is a product. Required: `lineItemLineNumber`, `lineItemProductNumber`, `lineItemProductDescription`, `lineItemProductCategory`, `lineItemType`, `lineItemQuantityOrdered`, `lineItemUnitPrice`, `lineItemExtendedPrice` (= unit × qty; up to 10 digits, 2 places).
 
 - **`lineItemType`**: `D` = debit/sale · `C` = credit/return.
 
 ---
 
-## I.4 `sendInvoice` — operacoes via `orderType`
+## I.4 `sendInvoice` — operations via `orderType`
 
-Submete invoice OU opera sobre aplicacao existente. Requer `accountNumber` (retornado pelo `sendApplication`). `lineItem` requerido para sales.
+Submits an invoice OR operates on an existing application. Requires `accountNumber` (returned by `sendApplication`). `lineItem` required for sales.
 
-| `orderType` | Operacao |
+| `orderType` | Operation |
 |-------------|----------|
 | `1` | Sale / Submit / Modify invoice |
-| `5` | Cancel application (mantem a aprovacao) |
+| `5` | Cancel application (keeps the approval) |
 
-Semantica de retorno:
-- **Submit (1):** line items com `lineItemType=D`; `orderTotal` = total.
-- **Cancel (5):** `orderTotal = "0.00"`, sem items; lease aprovado permanece.
-- **Full return:** item list vazia + `orderTotal 0.00`.
-- **Partial return:** por item retornado, `lineItemType = C`.
-- **Modify (1):** atualizar `lineItem` + `orderTotal`; nao incluir items cancelados/retornados; valores calculados (`orderTotal`, `merchandiseSubtotal`) devem bater.
+Return semantics:
+- **Submit (1):** line items with `lineItemType=D`; `orderTotal` = total.
+- **Cancel (5):** `orderTotal = "0.00"`, no items; the approved lease remains.
+- **Full return:** empty item list + `orderTotal 0.00`.
+- **Partial return:** per returned item, `lineItemType = C`.
+- **Modify (1):** update `lineItem` + `orderTotal`; do not include cancelled/returned items; calculated values (`orderTotal`, `merchandiseSubtotal`) must match.
 
-Line item opcionais extra: `lineItemSerialNumber`, `lineItemBasePrice`, `lineItemTaxAmount`.
+Extra optional line item fields: `lineItemSerialNumber`, `lineItemBasePrice`, `lineItemTaxAmount`.
 
 ---
 
 ## I.5 `getApplicationStatus` — response + enums
 
-Requer `accountNumber`. Retorna status, decisao, funding.
+Requires `accountNumber`. Returns status, decision, funding.
 
-| Campo | Valores |
+| Field | Values |
 |-------|---------|
 | `transactionStatus` | **`E0`** = not approved · **`E1`** = approved |
 | `currentStatus` | `UW_APPROVED`, `UW_DENIED`, `DENIED`, `CANCELLED_DUP_SSN`, `CONTRACT_CREATED` |
 | `statusDescription` | `SIGNED`, `FUNDING`, `FUNDED` |
-| `hasSignedLease` | boolean — lease assinado |
-| `canContinue` | boolean — pode prosseguir |
+| `hasSignedLease` | boolean — lease signed |
+| `canContinue` | boolean — can proceed |
 | `openToBuy` | boolean |
-| `applicationFound` | boolean — aplicacao existe |
-| `applicationSubmitted` | boolean — submetida com sucesso |
-| `approvedAmount` / `accountBalance` / `amountToBeFunded` | Valores |
-| `authorizationNumber` | Se `E1`, numero de autorizacao do provider |
+| `applicationFound` | boolean — application exists |
+| `applicationSubmitted` | boolean — submitted successfully |
+| `approvedAmount` / `accountBalance` / `amountToBeFunded` | Values |
+| `authorizationNumber` | If `E1`, provider authorization number |
 | `applicationCreatedTimestamp` / `fundRequestDateTime` / `fundedDateTime` | Timestamps |
-| `lastPayment` / `lastPaymentDate` / `paymentDueDate` | Pagamentos |
-| `faults` / `fieldInError1..5` / `sorErrorDescription` | Fault detail (so se ocorreu erro) |
+| `lastPayment` / `lastPaymentDate` / `paymentDueDate` | Payments |
+| `faults` / `fieldInError1..5` / `sorErrorDescription` | Fault detail (only if an error occurred) |
 
 ---
 
 ## I.6 `settleApplication` — funding
 
-Finaliza o lease apos assinatura + entrega → dispara funding.
+Finalizes the lease after signing + delivery → triggers funding.
 
-**Pre-condicoes (ambas):** (a) cliente assinou o contrato digitalmente; (b) merchant entregou a mercadoria.
+**Pre-conditions (both):** (a) the customer signed the contract digitally; (b) the merchant delivered the merchandise.
 
-Request: `userName`, `setupPassword`, `merchantNumber`, `accountNumber` (+ `localeString` opcional).
+Request: `userName`, `setupPassword`, `merchantNumber`, `accountNumber` (+ optional `localeString`).
 
-Response chave: **`transactionStatus`** `A0` = not settled · `A1` = settled; `amount`; `paymentDetailsList`; `authorizationNumber` (se A1); `faults`/`fieldInError*`/`sorErrorDescription`.
-
----
-
-## I.7 `addLease` — lease adicional
-
-Cria lease adicional usando o approval remanescente de um lease ja funded. Mesma estrutura do `sendInvoice`, endpoint diferente.
-
-**Pre-condicoes:** (a) lease original funded; (b) primeira parcela paga **on-time**; (c) approval remanescente disponivel.
-
-Campos: credenciais + `customerCode` (requerido), `accountNumber` (lease funded existente), **`orderType` sempre `"1"`**, `invoiceNumber` (novo), `orderTotal`, `lineItem` (requerido), `selectedPaymentFrequency` (opcional). Cria nova invoice sob a mesma conta do cliente; segue as mesmas validacoes de estrutura/totais do `sendInvoice`.
+Key response: **`transactionStatus`** `A0` = not settled · `A1` = settled; `amount`; `paymentDetailsList`; `authorizationNumber` (if A1); `faults`/`fieldInError*`/`sorErrorDescription`.
 
 ---
 
-## I.7.1 ⚠ Regras de sandbox — CAVEAT VOLATILE
+## I.7 `addLease` — additional lease
 
-O doc declara duas regras de sandbox:
-- **SSN ending in 9 → DENIED; 0–8 → APPROVED** (so simula; nao reflete decisao de credito real).
-- **Min lease amount = $250** (abaixo disso nao aprova).
+Creates an additional lease using the remaining approval of an already-funded lease. Same structure as `sendInvoice`, different endpoint.
 
-> ⚠ **NAO assuma a regra SSN-9 como vigente sem reconfirmar.** O **gate de denial SSN-ending-9 foi observado OFF em sandbox/qa1** (live-proven 2026-06-17) — SSN terminando em 9 **NAO mais nega**. Denial deterministico agora exige **`uown_merchant.auto_deny_application=TRUE`** (denial PRE-UW, `MERCHANT_AUTO_DENIED` ≠ `UW_DENIED`, qa2-proven). `[memory:ssn9-denial-gate-off-sandbox-qa1]` `[db-observation:uown_los_lead_notes/uown_los_outbound_api_log]` — fato drift-prone (cat. #6 [[volatile-knowledge-registry]]). Reconfirmar via `uown_los_lead_notes`/`uown_los_outbound_api_log` antes de afirmar denial em **qualquer** env. Cross-link [[ssn-test-modalities]] §6, [[application-lifecycle]] #109/#112.
+**Pre-conditions:** (a) original lease funded; (b) first installment paid **on-time**; (c) remaining approval available.
 
-A regra de min lease ($250) e do doc; tratar como `[external-doc]` e reverificar contra o env alvo.
+Fields: credentials + `customerCode` (required), `accountNumber` (existing funded lease), **`orderType` always `"1"`**, `invoiceNumber` (new), `orderTotal`, `lineItem` (required), `selectedPaymentFrequency` (optional). Creates a new invoice under the same customer account; follows the same structure/totals validations as `sendInvoice`.
 
 ---
 
-## I.8 Notificacoes de finalizacao + SEON
+## I.7.1 ⚠ Sandbox rules — VOLATILE CAVEAT
 
-**Lease finalization notifications** (3 vias):
-1. **URL Redirect:** `{returnUrl}?event=completed&ata={uuid}` (assinou) ou `event=cancelled` (recusou); `ata` = application UUID.
-2. **Iframe postMessage:** quando o signing e embedded, UOWN envia `postMessage` ao completar.
-3. **Webhook:** UOWN faz `POST` para a URL configurada do partner ao assinar (URL + mensagem configuraveis por merchant).
+The doc declares two sandbox rules:
+- **SSN ending in 9 → DENIED; 0–8 → APPROVED** (just a simulation; does not reflect a real credit decision).
+- **Min lease amount = $250** (below this it does not approve).
 
-**SEON fingerprint:** `seonFingerprintText` e **requerido** no `sendApplication` (fraude). Merchant integra o SEON JS Agent (web) / SDK (iOS/Android) → `seon.config()` + `seon.getBase64Session()` produz o fingerprint encriptado. Habilita deteccao de fraude por sinais de browser/device/comportamento no underwriting.
+> ⚠ **Do NOT assume the SSN-9 rule is in effect without reconfirming.** The **SSN-ending-9 denial gate was observed OFF in sandbox/qa1** (live-proven 2026-06-17) — SSN ending in 9 **no longer denies**. Deterministic denial now requires **`uown_merchant.auto_deny_application=TRUE`** (PRE-UW denial, `MERCHANT_AUTO_DENIED` ≠ `UW_DENIED`, qa2-proven). `[memory:ssn9-denial-gate-off-sandbox-qa1]` `[db-observation:uown_los_lead_notes/uown_los_outbound_api_log]` — drift-prone fact (cat. #6 [[volatile-knowledge-registry]]). Reconfirm via `uown_los_lead_notes`/`uown_los_outbound_api_log` before asserting denial in **any** env. Cross-link [[ssn-test-modalities]] §6, [[application-lifecycle]] #109/#112.
+
+The min lease rule ($250) is from the doc; treat it as `[external-doc]` and re-verify against the target env.
+
+---
+
+## I.8 Finalization notifications + SEON
+
+**Lease finalization notifications** (3 channels):
+1. **URL Redirect:** `{returnUrl}?event=completed&ata={uuid}` (signed) or `event=cancelled` (declined); `ata` = application UUID.
+2. **Iframe postMessage:** when the signing is embedded, UOWN sends a `postMessage` on completion.
+3. **Webhook:** UOWN does a `POST` to the partner's configured URL on signing (URL + message configurable per merchant).
+
+**SEON fingerprint:** `seonFingerprintText` is **required** in `sendApplication` (fraud). The merchant integrates the SEON JS Agent (web) / SDK (iOS/Android) → `seon.config()` + `seon.getBase64Session()` produces the encrypted fingerprint. Enables fraud detection via browser/device/behavior signals in underwriting.
 
 ---
 
 ## Cross-links
 
-- Paths dos endpoints → [`appendix-b-endpoints.md`](appendix-b-endpoints.md)
+- Endpoint paths → [`appendix-b-endpoints.md`](appendix-b-endpoints.md)
 - Enums (LeadStatus, FundingQueueStatus) → [`appendix-d-constantes-enums.md`](appendix-d-constantes-enums.md)
-- Vendors externos (SEON, SignWell) → [`appendix-a-integracoes.md`](appendix-a-integracoes.md)
-- Categorias volatile (sandbox SSN, merchant config) → [[volatile-knowledge-registry]] #1/#6
+- External vendors (SEON, SignWell) → [`appendix-a-integracoes.md`](appendix-a-integracoes.md)
+- Volatile categories (sandbox SSN, merchant config) → [[volatile-knowledge-registry]] #1/#6
 - SSN modalities → [[ssn-test-modalities]]
 
 ---

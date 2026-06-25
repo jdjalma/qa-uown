@@ -1,5 +1,5 @@
 {
-  "_comment": "Vocabulário controlado de tópicos para covers: em docs/business-rules e docs/knowledge-base. Fonte única — validado por scripts/docs-tooling.mjs e usado por 'resolve'. Cada chave é o tópico CANÔNICO; o array são aliases aceitos (absorvem drift de sinônimo, incluindo PT-BR). Adicione um alias aqui em vez de criar slug novo. Ver docs/_docs-conventions.md §6.",
+  "_comment": "Controlled vocabulary of topics for covers: in docs/business-rules and docs/knowledge-base. Single source — validated by scripts/docs-tooling.mjs and used by 'resolve'. Each key is the CANONICAL topic; the array holds accepted aliases (they absorb synonym drift, including PT-BR). Add an alias here instead of creating a new slug. See docs/_docs-conventions.md §6.",
   "topics": {
     "business-overview": ["business-model", "lease", "rto", "produto-lease"],
     "originacao": ["origination", "pipeline", "los"],

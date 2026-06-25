@@ -18,7 +18,7 @@ covers: [fraud-vendors, esign, lead-status, account-status, activity-log]
 # SEON IDV Widget — User Behavior & Coverage Gap
 
 > Charter: discover what the REAL customer sees and can do at the SEON identity-verification step on the consumer portal, and map the gap vs the current SEON test suite (which is 100% backend-gate-focused).
-> Origin: user question 2026-06-23 — "quais cenários temos focados no comportamento do usuário? cancelar verificação SEON? reiniciar processo?". Overall confidence: **high** (widget inspected live; backend behavior verified against svc source + confirmed live in DB).
+> Origin: user question 2026-06-23 — "which scenarios do we have focused on user behavior? cancel SEON verification? restart the process?". Overall confidence: **high** (widget inspected live; backend behavior verified against svc source + confirmed live in DB).
 
 ## TL;DR
 
@@ -55,7 +55,7 @@ Earlier this was mis-flagged as a candidate bug ("status never set"). Root cause
 - `SEON_ID_FAILED`, `SEON_ID_APPROVED`, `SEON_ID_UPLOADED`, `INTELLICHECK_FAILED`, `NEURO_ID_*` are all **internal-status** values by design (`LeadService.java:358`, `'internal.status'` config). They are never main `lead_status` values.
 - Live proof (sandbox 2026-06-23): leads 97950/97951/97943/97942/97940 (injected name-mismatch SEON record + `submitApplication`) → `internal_status=SEON_ID_FAILED`, `lead_status=UW_APPROVED`.
 - **Exception — no SEON record at all**: `SeonIdVerificationStep` returns STOP ("No SEON record found") **before** calling `verifySeon`, so `internal_status` stays `UW_APPROVED` (lead 97955). SEON_ID_FAILED is set only when a record exists and fails the name/DOB checks.
-- No transition guard exists (`UpdateLeadStatusService` + `LeadInfo.setLeadStatus` are unconditional setters); `SubmitApplicationProcessor` is `@Transactional` and a STOP commits normally. Classification: **OBSERVAÇÃO** (correct-by-design behavior), not a bug.
+- No transition guard exists (`UpdateLeadStatusService` + `LeadInfo.setLeadStatus` are unconditional setters); `SubmitApplicationProcessor` is `@Transactional` and a STOP commits normally. Classification: **OBSERVATION** (correct-by-design behavior), not a bug.
 
 > Coverage gap this exposes: the negative-scenario specs assert only the error message, never `internal_status=SEON_ID_FAILED`. Add that assertion to prove the lifecycle transition (Rule #13).
 
@@ -126,9 +126,9 @@ CT-06 requires a real camera device and cannot run headless. The following proce
 |----|-------|--------|-------|
 | CT-01 | Widget renders on SEON-required merchant | PASS | `isSeonWidgetVisible()` confirmed |
 | CT-02 | Consent gate — Start button gated | PASS | `isStartVerificationEnabled()` false→true |
-| CT-03 | Cancel via X | PENDENTE-MANUAL | X click does not dismiss in sandbox (Pitfall #142) |
+| CT-03 | Cancel via X | MANUAL-PENDING | X click does not dismiss in sandbox (Pitfall #142) |
 | CT-04 | Gate blocks payment form | PASS | `isSeonGateBlockingPaymentForm()` |
-| CT-05 | Restart after cancel | PENDENTE-MANUAL | Depends on CT-03 dismiss |
+| CT-05 | Restart after cancel | MANUAL-PENDING | Depends on CT-03 dismiss |
 | CT-06 | Complete via real camera | MANUAL | See procedure above |
 | CT-07 | `internal_status=SEON_ID_FAILED` via API mismatch | PASS | 8/8 in `seon-negative-scenarios.spec.ts` |
 

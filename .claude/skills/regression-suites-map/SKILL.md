@@ -1,147 +1,147 @@
 ---
 name: regression-suites-map
-description: Use to decide WHICH regression suites a given PR / task / fix must trigger before merge. Map of existing suites (signing-regression, gowsign, ci/unified-flow, smoke, dual-brand) -> activation criteria (what code change activates which suite). Triggers when planning test scope for a fix, when user asks "quais testes rodar?", "qual regressao?", "preciso de cobertura dual-brand?", "rodo so smoke?", on PRs touching `src/api/clients/application.client.ts`, `MissingDataPanel`, Complete page, signing handler, GoSign templates, contract page, sendApplication payload.
+description: Use to decide WHICH regression suites a given PR / task / fix must trigger before merge. Map of existing suites (signing-regression, gowsign, ci/unified-flow, smoke, dual-brand) -> activation criteria (what code change activates which suite). Triggers when planning test scope for a fix, when the user asks "which tests should I run?", "which regression?", "do I need dual-brand coverage?", "do I just run smoke?", on PRs touching `src/api/clients/application.client.ts`, `MissingDataPanel`, Complete page, signing handler, GoSign templates, contract page, sendApplication payload.
 disable-model-invocation: true
 ---
 
 # Regression Suites Map
 
-> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **WHICH SUITE TO RUN** — activation criteria, decision matrix. Para regras canônicas de produto que embasam o escopo de regressão (signing routing, payment states, merchant config), rode `node scripts/docs-tooling.mjs resolve gowsign-routing` (ou `payments`, `merchant-config`) conforme a área de mudança. **Não duplique critérios de produto aqui** — eles driftam.
+> **Authority boundary** (`docs/_docs-conventions.md` §7): this skill covers **WHICH SUITE TO RUN** — activation criteria, decision matrix. For canonical product rules that underpin the regression scope (signing routing, payment states, merchant config), run `node scripts/docs-tooling.mjs resolve gowsign-routing` (or `payments`, `merchant-config`) depending on the area of change. **Do not duplicate product criteria here** — they drift.
 
-> Criterios de ativacao por tipo de mudanca. Para inventario detalhado de suites, custos, e spec file listings, ver [references/suites.md](references/suites.md).
+> Activation criteria by type of change. For a detailed inventory of suites, costs, and spec file listings, see [references/suites.md](references/suites.md).
 
-## Quando aplicar
+## When to apply
 
-Antes de marcar task como pronta para merge. Aplicar quando:
-- Fix toca submit handler (`submitApplication`, `MissingDataPanel`, Complete page)
-- Fix toca template de signing (placeholders, layout, items purchased table)
-- Fix toca rota/payload entre svc e vendor (GoSign, SignWell, DV360)
-- qa-flow esta sendo executado
-- Usuario pergunta o escopo de regressao
+Before marking a task as ready to merge. Apply when:
+- The fix touches the submit handler (`submitApplication`, `MissingDataPanel`, Complete page)
+- The fix touches a signing template (placeholders, layout, items purchased table)
+- The fix touches the route/payload between svc and a vendor (GoSign, SignWell, DV360)
+- qa-flow is being executed
+- The user asks for the regression scope
 
-NAO aplicar para: bug fixes locais sem alcance (typo em log, refactor de fixture isolada).
+Do NOT apply for: local bug fixes with no reach (a typo in a log, an isolated fixture refactor).
 
-## Criterios de ativacao (decision matrix)
+## Activation criteria (decision matrix)
 
-### 1. Mudou sendApplication / submit handler / Complete page / MissingDataPanel
+### 1. Changed sendApplication / submit handler / Complete page / MissingDataPanel
 
-**DUAL-BRAND + LEASE-EDIT OBRIGATORIO:**
-- Unified Flow E2E (UOWN TireAgent + Kornerstone KS3015) — CADA cenario, nao smoke
+**DUAL-BRAND + LEASE-EDIT MANDATORY:**
+- Unified Flow E2E (UOWN TireAgent + Kornerstone KS3015) — EVERY scenario, not smoke
 - `new-application.spec.ts` + `new-application-api.spec.ts`
-- CT de lease-edit/re-issue: modificar invoice para MAIOR, re-submit, assert single submit (useRef reset)
-- UI-only — proibido usar API direta para o Submit
-- Activity log + DV360 probe em qa1
+- Lease-edit/re-issue CT: modify the invoice to be LARGER, re-submit, assert a single submit (useRef reset)
+- UI-only — using the direct API for the Submit is forbidden
+- Activity log + DV360 probe in qa1
 
-### 2. Mudou template signing / GoSign / Items Purchased
+### 2. Changed signing template / GoSign / Items Purchased
 
 **DUAL-PROVIDER + MULTI-STATE:**
 - Multi-state Signing Regression (47 states + 4 blocked)
-- Diff visual SignWell vs GoSign (pagina 1 tabela, headers, placeholders, branding)
-- GowSign suite COMPLETA (18 specs)
-- SignWell regression — OBRIGATORIA (coexistencia, refactor pode regredir)
+- Visual diff SignWell vs GoSign (page 1 table, headers, placeholders, branding)
+- COMPLETE GowSign suite (18 specs)
+- SignWell regression — MANDATORY (coexistence, a refactor may regress)
 
-### 3. Mudou roteamento e-sign / deteccao de provider
+### 3. Changed e-sign routing / provider detection
 
 - Multi-state Signing Regression
-- Verificar `uown_esign_document.client` por estado (CA qa2=GOWSIGN, CA stg=SIGNWELL override, outros=SIGNWELL fallback, NJ/VT/MN/ME=BLOCKED)
-- INSTORE merchants usam `merchant.state`, nao customer state — usar ONLINE (TireAgent) para multi-state
+- Check `uown_esign_document.client` per state (CA qa2=GOWSIGN, CA stg=SIGNWELL override, others=SIGNWELL fallback, NJ/VT/MN/ME=BLOCKED)
+- INSTORE merchants use `merchant.state`, not the customer state — use ONLINE (TireAgent) for multi-state
 
-### 4. Mudou contract page (CC + bank + T&C + iframe)
+### 4. Changed contract page (CC + bank + T&C + iframe)
 
 - Unified Flow E2E
 - `credit-card-decline-check.spec.ts` (14 decline cards)
-- `seon-e2e-flow.spec.ts` se SEON overlay afetado
+- `seon-e2e-flow.spec.ts` if the SEON overlay is affected
 
-### 5. Mudou correspondence / email template
+### 5. Changed correspondence / email template
 
 - `finalize-email-518-validation.spec.ts` — BOTH brands (UOWN + Kornerstone)
-- Verificar brand -> template_name: UOWN=`FinalizePurchaseEmail`, KS=`KORNERSTONE_FinalizePurchaseEmail`
+- Check brand -> template_name: UOWN=`FinalizePurchaseEmail`, KS=`KORNERSTONE_FinalizePurchaseEmail`
 - Activity log + `uown_email_queue.template_name`
 
-### 6. Mudou modify-lease / cancel-lease / refund
+### 6. Changed modify-lease / cancel-lease / refund
 
 - `paytomorrow-refund-flow.spec.ts` + `modify-lease.spec.ts` + `lease-cancellation.spec.ts` + API variants
 
-### 7. Mudou Protection Plan
+### 7. Changed Protection Plan
 
 - `protection-plan-cancellation.spec.ts`
-- CA: PP nao oferecido (restricao regulatoria)
-- Buddy widget loop em qa2 (3 cliques)
+- CA: PP not offered (regulatory restriction)
+- Buddy widget loop in qa2 (3 clicks)
 
-### 8. Mudou sweep / scheduled task
+### 8. Changed sweep / scheduled task
 
-- Trigger manual via API + DB validation `ORDER BY pk DESC LIMIT 1`
-- Settled-In-Full: janela DOW-dependente (Mon-Tue: -4d, Wed: -4/-3/-2, Thu-Fri: -2d)
+- Manual trigger via API + DB validation `ORDER BY pk DESC LIMIT 1`
+- Settled-In-Full: DOW-dependent window (Mon-Tue: -4d, Wed: -4/-3/-2, Thu-Fri: -2d)
 - Email sweeps: `email-sweeps-servicing.spec.ts` (S1 settledInFull / S2 RecurringPaymentReminder / S3 FirstPaymentReminder)
-- **Evidencia primaria = `uown_email_queue` (PK monotonico), NAO `uown_sweep_logs.number_of_records_processed`** (escrito DEPOIS do processamento; leitura imediata retorna 0). Ver [[payment-flows]] secao "Email Sweep validation" + [[application-lifecycle]] pitfalls #87-#90
-- `FirstPaymentReminderSweep` exige `sched_summary.first_payment_due_date` E `receivable.due_date` alinhados; `settledInFull` deduplica same-day (Java)
-- **Familia de sweeps de Servicing (em disco, alem de email):** `business-sweeps-`, `cc-rerun-sweeps-`, `document-dispatch-sweeps-`, `external-sync-sweeps-`, `payment-scheduling-sweeps-`, `report-sweeps-`, `funding-refund-report-content-sweeps-servicing.spec.ts`
-- **RightFoot ACH balance-check (R1.53.0):** sweeps `DailyAchBalanceCheckSweep` / `RerunAchBalanceCheckSweep` (criacao de ACH via `DailyRerunAchCreationService`, event-driven). Disparar via `scheduledTask.dailyAchBalanceCheckSweep()` / `.rerunAchBalanceCheckSweep()`; evidencia em `uown_right_foot_balance_check` (`status=SUCCESS`) + `uown_sv_achpayment.right_foot_balance_check_pk`. Ver [[payment-flows]] secao RightFoot
+- **Primary evidence = `uown_email_queue` (monotonic PK), NOT `uown_sweep_logs.number_of_records_processed`** (written AFTER processing; an immediate read returns 0). See [[payment-flows]] section "Email Sweep validation" + [[application-lifecycle]] pitfalls #87-#90
+- `FirstPaymentReminderSweep` requires `sched_summary.first_payment_due_date` AND `receivable.due_date` aligned; `settledInFull` deduplicates same-day (Java)
+- **Servicing sweep family (on disk, besides email):** `business-sweeps-`, `cc-rerun-sweeps-`, `document-dispatch-sweeps-`, `external-sync-sweeps-`, `payment-scheduling-sweeps-`, `report-sweeps-`, `funding-refund-report-content-sweeps-servicing.spec.ts`
+- **RightFoot ACH balance-check (R1.53.0):** sweeps `DailyAchBalanceCheckSweep` / `RerunAchBalanceCheckSweep` (ACH creation via `DailyRerunAchCreationService`, event-driven). Trigger via `scheduledTask.dailyAchBalanceCheckSweep()` / `.rerunAchBalanceCheckSweep()`; evidence in `uown_right_foot_balance_check` (`status=SUCCESS`) + `uown_sv_achpayment.right_foot_balance_check_pk`. See [[payment-flows]] section RightFoot
 
-### 9. Mudou Servicing payments / allocation
+### 9. Changed Servicing payments / allocation
 
 - Unified Flow E2E Phase 6
-- Allocation strategy via Payment History "Update Payment" modal (NAO CC Transactions pencil)
+- Allocation strategy via the Payment History "Update Payment" modal (NOT the CC Transactions pencil)
 
-### 10. Mudou SEON ID verification
+### 10. Changed SEON ID verification
 
 - `seon-id-verification-bypass.spec.ts` (API) + `seon-e2e-flow.spec.ts` (Hybrid)
 
-### 11. Mudou website portal (OTP, payment, sidebar)
+### 11. Changed website portal (OTP, payment, sidebar)
 
 - `login-otp.spec.ts` + Unified Flow Phase 7
 
-### 12. Mudou merchant config / preflight
+### 12. Changed merchant config / preflight
 
-- Smoke por brand (UOWN + Kornerstone) + validate `ensureMerchantReady`
+- Smoke per brand (UOWN + Kornerstone) + validate `ensureMerchantReady`
 
-### 13. Mudou snapshot / NeuroID-retry / sticky / receipt / RightFoot (R1.53.0)
+### 13. Changed snapshot / NeuroID-retry / sticky / receipt / RightFoot (R1.53.0)
 
-| Sinal | Suite / spec | Evidencia |
+| Signal | Suite / spec | Evidence |
 |-------|--------------|-----------|
-| Merchant-settings snapshot | `RU05.26.1.53.0_merchantSettingsSnapshotTracking` | `uown_los_lead_merchant_settings_snapshot` / `uown_sv_account_merchant_settings_snapshot` — preflight ANTES da aprovacao ([[merchant-preflight]]); helpers `getLeadMerchantSettingsSnapshot`/`getAccountMerchantSettingsSnapshot` |
-| npm_segment / tam_score | task UW scores | `uown_los_uwdata`/`uown_sv_uwdata` (helpers `getUwScoresByLeadPk`/`getSvUwScoresByAccountPk`) |
-| NeuroID retry/simulate | `RU06.26.1.53.0_preventRepeatedNeuroIdCallsSigningRetry.spec.ts` | ⚠️ guard de chamada repetida **NAO mergeado** em R1.53.0 — nao assumir skip |
-| Sticky cancel/refund | sticky specs (sandbox-only) | `uown_sticky.recovery_status` + log INTERNAL/SYSTEM ([[activity-log-validation]]) |
-| Receipt fees / You Save | task receipt | recibo: balance inclui fees, "You Save" > 0 |
-| RightFoot ACH rerun (#540) | ver secao 8 | `uown_right_foot_balance_check` |
+| Merchant-settings snapshot | `RU05.26.1.53.0_merchantSettingsSnapshotTracking` | `uown_los_lead_merchant_settings_snapshot` / `uown_sv_account_merchant_settings_snapshot` — preflight BEFORE approval ([[merchant-preflight]]); helpers `getLeadMerchantSettingsSnapshot`/`getAccountMerchantSettingsSnapshot` |
+| npm_segment / tam_score | UW scores task | `uown_los_uwdata`/`uown_sv_uwdata` (helpers `getUwScoresByLeadPk`/`getSvUwScoresByAccountPk`) |
+| NeuroID retry/simulate | `RU06.26.1.53.0_preventRepeatedNeuroIdCallsSigningRetry.spec.ts` | ⚠️ the repeated-call guard was **NOT merged** in R1.53.0 — do not assume skip |
+| Sticky cancel/refund | sticky specs (sandbox-only) | `uown_sticky.recovery_status` + INTERNAL/SYSTEM log ([[activity-log-validation]]) |
+| Receipt fees / You Save | receipt task | receipt: balance includes fees, "You Save" > 0 |
+| RightFoot ACH rerun (#540) | see section 8 | `uown_right_foot_balance_check` |
 
 ## Pitfalls
 
 | # | Pitfall | Rule |
 |---|---------|------|
-| 1 | Reduzir Kornerstone a smoke quando fix afeta submitApplication | Rodar CADA cenario em BOTH brands |
-| 2 | Esquecer lease-edit / re-issue | Sempre incluir CT de modificar invoice + re-submit |
-| 3 | Rodar so GoSign e ignorar SignWell | Coexistencia: sempre incluir SignWell regression |
-| 4 | Bug Daniel's Jewelers CA nao pego por falta de diff visual | Diff visual SignWell vs GoSign mandatorio |
-| 5 | INSTORE merchants quebram parametrizacao por state | Usar ONLINE merchants para multi-state coverage |
-| 6 | Confiar em STATE_MATRIX sem env-aware helpers | Usar `getGowsignStatesForEnv(env)`, nao constante direta |
-| 7 | DV360 outage em qa1 mascara como bug do codigo | Probe DV360 antes de qa-flow em qa1 |
-| 8 | qa2 RBAC issue em getMerchantsByRefCode | Pattern defensivo try/catch + proceed |
-| 9 | Buddy widget loop em qa2 para Protection Plan | 3 cliques antes de destravar |
-| 10 | multi-state-signing exige UI-first | submitPaymentInfoViaApi DROPPED |
-| 11 | Skip GoSign signing porque "iframe e flaky" | Use `installPostMessageRecorder` + `signGowSignInFrame` |
+| 1 | Reducing Kornerstone to smoke when the fix affects submitApplication | Run EVERY scenario in BOTH brands |
+| 2 | Forgetting lease-edit / re-issue | Always include a CT to modify the invoice + re-submit |
+| 3 | Running only GoSign and ignoring SignWell | Coexistence: always include SignWell regression |
+| 4 | Daniel's Jewelers CA bug missed for lack of a visual diff | Visual diff SignWell vs GoSign mandatory |
+| 5 | INSTORE merchants break per-state parameterization | Use ONLINE merchants for multi-state coverage |
+| 6 | Trusting STATE_MATRIX without env-aware helpers | Use `getGowsignStatesForEnv(env)`, not the constant directly |
+| 7 | DV360 outage in qa1 masquerading as a code bug | Probe DV360 before qa-flow in qa1 |
+| 8 | qa2 RBAC issue in getMerchantsByRefCode | Defensive try/catch + proceed pattern |
+| 9 | Buddy widget loop in qa2 for Protection Plan | 3 clicks before it unblocks |
+| 10 | multi-state-signing requires UI-first | submitPaymentInfoViaApi DROPPED |
+| 11 | Skipping GoSign signing because "the iframe is flaky" | Use `installPostMessageRecorder` + `signGowSignInFrame` |
 
-## Checklist de escopo (pre-merge)
+## Scope checklist (pre-merge)
 
-- [ ] Mudou sendApplication/submit/Complete/MissingDataPanel? -> DUAL-BRAND + LEASE-EDIT + UI-only
-- [ ] Mudou template signing? -> Multi-state + GowSign + SignWell + diff visual PDF
-- [ ] Mudou routing e-sign? -> Multi-state + INSTORE/ONLINE coverage
-- [ ] Mudou contract page? -> Unified + cc-decline + seon-e2e
-- [ ] Mudou correspondence/email? -> finalize-email + brand templates
-- [ ] Mudou refund/modify-lease? -> PT refund + cancellation suites
-- [ ] Mudou Protection Plan? -> PP cancellation + state-aware
-- [ ] Mudou sweep? -> Trigger + DB latest-row
-- [ ] Mudou Servicing payments? -> Unified Phase 6
-- [ ] Mudou SEON? -> API bypass + hybrid UI
-- [ ] Mudou website portal? -> website-otp + Unified Phase 7
-- [ ] Mudou merchant config? -> smoke por brand
-- [ ] Em qa1 com sendApplication? -> probe DV360
-- [ ] Activity log validado? (CLAUDE.md regra 13)
-- [ ] UI-first respeitado? (CLAUDE.md regra 14)
-- [ ] Fresh data? (CLAUDE.md regra 9)
+- [ ] Changed sendApplication/submit/Complete/MissingDataPanel? -> DUAL-BRAND + LEASE-EDIT + UI-only
+- [ ] Changed signing template? -> Multi-state + GowSign + SignWell + visual PDF diff
+- [ ] Changed e-sign routing? -> Multi-state + INSTORE/ONLINE coverage
+- [ ] Changed contract page? -> Unified + cc-decline + seon-e2e
+- [ ] Changed correspondence/email? -> finalize-email + brand templates
+- [ ] Changed refund/modify-lease? -> PT refund + cancellation suites
+- [ ] Changed Protection Plan? -> PP cancellation + state-aware
+- [ ] Changed sweep? -> Trigger + DB latest-row
+- [ ] Changed Servicing payments? -> Unified Phase 6
+- [ ] Changed SEON? -> API bypass + hybrid UI
+- [ ] Changed website portal? -> website-otp + Unified Phase 7
+- [ ] Changed merchant config? -> smoke per brand
+- [ ] In qa1 with sendApplication? -> probe DV360
+- [ ] Activity log validated? (CLAUDE.md rule 13)
+- [ ] UI-first respected? (CLAUDE.md rule 14)
+- [ ] Fresh data? (CLAUDE.md rule 9)
 
-> Inventario detalhado de suites, custos, spec files, e STATE_MATRIX: [references/suites.md](references/suites.md)
+> Detailed inventory of suites, costs, spec files, and STATE_MATRIX: [references/suites.md](references/suites.md)
 
 ## Cross-links
 

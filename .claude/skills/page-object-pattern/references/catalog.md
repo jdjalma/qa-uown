@@ -1,6 +1,6 @@
 # Page Objects Catalog - Detailed Method Reference
 
-> Para hierarquia, convencoes e anti-patterns, ver [SKILL.md](../SKILL.md).
+> For hierarchy, conventions, and anti-patterns, see [SKILL.md](../SKILL.md).
 
 ---
 
@@ -101,8 +101,8 @@
  - `waitForTableLoad`, `getRowData(index)`, `findRowByPk(pk)`, `expandRow(index)`
  - `getCcPaymentsData`, `getAchPaymentsData`, `getSubTableData(tableIndex)`
  - `getNormalizedHeaders`, `getExpandedSectionHeaders`, `getPaginationTotal`
-- **Notes:** FilterTable headers sao duplicados no DOM - `getSubTableData` dedupe automaticamente. Usa direct URL navigation (menu nav unreliable from `task-testing` project).
-- **Cosmetic tech-debt (2026-06-02):** `EXPECTED_COLUMNS[0]` declara `'Arrangement PK'` (K maiusculo) mas a UI renderiza `'Arrangement Pk'` (k minusculo). A spec compara case-insensitive, entao NAO ha falha de teste; alinhar a constante para `'Arrangement Pk'` quando tocar o arquivo. Descoberto no payment-arrangement-servicing pipeline (7/7 PASS, dev3).
+- **Notes:** FilterTable headers are duplicated in the DOM - `getSubTableData` dedupes automatically. Uses direct URL navigation (menu nav unreliable from `task-testing` project).
+- **Cosmetic tech-debt (2026-06-02):** `EXPECTED_COLUMNS[0]` declares `'Arrangement PK'` (uppercase K) but the UI renders `'Arrangement Pk'` (lowercase k). The spec compares case-insensitively, so there is NO test failure; align the constant to `'Arrangement Pk'` when you touch the file. Discovered in the payment-arrangement-servicing pipeline (7/7 PASS, dev3).
 
 ## ServicingCustomerPage - (Opt Out AI) + (Send Podium Link)
 
@@ -123,12 +123,12 @@
 - `closeSendInviteModal` - closes the Send Invite modal if open
 
 **UI interaction notes:**
-- Primary Contact section e READ-ONLY por default - clicar pencil icon (`#PrimaryContact-edit`) primeiro
-- Checking "Opt Out AI" dispara modal "Reason for Opt Out AI Mobile" (textarea + Save)
-- Unchecking NAO dispara modal
-- "Customer Information Confirmation" modal aparece intermitente no page load - clicar CONFIRM
+- Primary Contact section is READ-ONLY by default - click the pencil icon (`#PrimaryContact-edit`) first
+- Checking "Opt Out AI" triggers the "Reason for Opt Out AI Mobile" modal (textarea + Save)
+- Unchecking does NOT trigger the modal
+- "Customer Information Confirmation" modal appears intermittently on page load - click CONFIRM
 - Activity log format: `"UPDATED : Phone[ optOutAi changed from false to true ]"`
-- `InviteModal` de `@uownleasing/common-ui` usa Bootstrap "modal fade" - CSS animations disabled in tests prevent "show" class; force via JS
+- `InviteModal` from `@uownleasing/common-ui` uses Bootstrap "modal fade" - CSS animations disabled in tests prevent "show" class; force via JS
 - Click "Send Podium Link" uses `force:true` (React unmounts InviteModal during click handler)
 - ConfirmationModal: title "Please Confirm", button "Continue" - also force:true for same reason
 
@@ -148,7 +148,7 @@
  - `navigateToAddMerchant(originationUrl)` - navigates to Add Merchant form
  - `fillMerchantForm(data)` - fills all main merchant fields (text + react-select) via private `pickReactSelectOption(fieldId, value)`
  - `selectInventoryCategory(value)` - picks a value from the Inventory Category react-select
- - `clearInventoryCategory` - sends Backspace/Delete to combobox input (LIMITATION: does NOT reliably null the Formik state - use only for negative-validation CTs)
+ - `clearInventoryCategory` - sends Backspace/Delete to the combobox input (LIMITATION: does NOT reliably null the Formik state - use only for negative-validation CTs)
  - `getInventoryCategoryValue` - currently selected category text
  - `isInventoryCategoryLabelRequired` - true if label carries required marker
  - `getInventoryCategoryErrorText` - Formik error message text
@@ -160,10 +160,10 @@
  - `merchantListAddButton`, `merchantCloneDropdownToggle`, `merchantCloneDropdownInput`, `merchantCloneDropdownItem`, `merchantClonedFromIcon`, `inventoryCategoryControl`, `inventoryCategoryInput`, `inventoryCategoryClearIndicator`, `inventoryCategorySingleValue`, `inventoryCategoryLabel`, `inventoryCategoryErrorText`, `merchantRefCodeInput`, `merchantNameInput`, `merchantLegalNameInput`, `merchantLocationNameInput`
 
 - **Platform quirks discovered:**
- - Origination react-selects mix `filter__*` (classNamePrefix="filter") E default `css-*` prefixes no mesmo form
- - Generic option selector que funciona para ambos: `.filter__option, [class*="css-"][class*="option-"], [class*="-option"]:not([class*="options"]):not([class*="placeholder"]):not([class*="single-value"])`
- - Clone DropdownButton e `<a class="dropdownContainer__ddButton">` (nao `<button>`); menu items sao `.dropdown-item` inside `.dropdown.show`. Primeiro item e header com search input - sempre excluir via `.dropdown-item:not(.dropdown-header)`.
- - `page.waitForResponse('/uown/createOrUpdateMerchant')` e flaky em qa2 (response fires after navigation invalidates wait). Prefere `waitForRequest` + `expect.poll(=> page.url.includes('addMerchant'))` como UX success proof.
+ - Origination react-selects mix `filter__*` (classNamePrefix="filter") AND default `css-*` prefixes in the same form
+ - Generic option selector that works for both: `.filter__option, [class*="css-"][class*="option-"], [class*="-option"]:not([class*="options"]):not([class*="placeholder"]):not([class*="single-value"])`
+ - The Clone DropdownButton is `<a class="dropdownContainer__ddButton">` (not `<button>`); menu items are `.dropdown-item` inside `.dropdown.show`. The first item is a header with a search input - always exclude it via `.dropdown-item:not(.dropdown-header)`.
+ - `page.waitForResponse('/uown/createOrUpdateMerchant')` is flaky in qa2 (response fires after navigation invalidates the wait). Prefer `waitForRequest` + `expect.poll(=> page.url.includes('addMerchant'))` as the UX success proof.
 
 ## AmsUserDetailsPage - (AMS Merchant Selection Flow)
 
@@ -307,8 +307,8 @@
 
 - **Selectors** (`LeadsTableSelectors`): `leadsInvoiceNumberInput` - `"input[placeholder='Search by Invoice Number']"`
 - **Notes:**
- - Leads table headers include sort indicators - sempre usar `getCleanHeaders` antes de column name matching
- - `filterByMerchant` e `filterByLocation` clicam `filter__control` element para evitar `filter__input-container` intercept
+ - Leads table headers include sort indicators - always use `getCleanHeaders` before column name matching
+ - `filterByMerchant` and `filterByLocation` click the `filter__control` element to avoid the `filter__input-container` intercept
 
 ## MissingDataFormPage - Origination portal (side-fix)
 
@@ -361,7 +361,7 @@
 - If you only need the legacy DOM-hide behavior, `contract.page.ts:dismissSeonOverlay` still delegates to `hideWidget()` — no change needed unless exercising real cancel UX.
 - PayPair and PayTomorrow still have their own `dismissSeonOverlay` impls (hide-only). Consolidation to `SeonWidgetComponent` is a tracked refactor debt (see below).
 
-**Known behavior — cancel UX is non-trivial (OBSERVACAO S3/P2, 2026-06-23):**
+**Known behavior — cancel UX is non-trivial (OBSERVATION S3/P2, 2026-06-23):**
 Clicking the real X (`closeSeonWidget`) does NOT dismiss the widget in sandbox (reproduced 2x — probe + validated spec). Root hypothesis: SEON SDK sandbox-mode does not implement close, or click does not propagate cross-origin. Not a confirmed bug. See [[fraud-vendors-knowledge]] Pitfall #11 and [[application-lifecycle]] Pitfall #142.
 
 **Hook caveat:** `pre-write-validate.sh` Rule 1 (line 25-33) checks `export class` in `src/pages/**` without `extends` → blocks the file. The implementer worked around this with the `class X {}; export { X }` pattern. See [[application-lifecycle]] Pitfall #143.
@@ -373,7 +373,7 @@ Today `contract.page.ts` delegates to `SeonWidgetComponent.hideWidget()`. PayPai
 
 ## ContractPage - missing employment info flow
 
-Methods added to `ContractPage` (`src/pages/origination/contract.page.ts`) para `/complete` URL quando `planId` esta empty:
+Methods added to `ContractPage` (`src/pages/origination/contract.page.ts`) for the `/complete` URL when `planId` is empty:
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
@@ -385,7 +385,7 @@ Methods added to `ContractPage` (`src/pages/origination/contract.page.ts`) para 
 | `choosePlanByName` | `choosePlanByName(programName, index?)` | Clicks payment program button matching `programName`. Falls back to index. |
 | `completeMissingEmploymentInfo` | `completeMissingEmploymentInfo(nextPayDate, frequency, programName?)` | Convenience: full 3-step flow. Default `programName = 'Bi-Weekly'`. |
 
-- **Trigger condition:** quando `planId` esta empty em `/complete` URL, backend renderiza 2-step employment form antes de payment program options.
+- **Trigger condition:** when `planId` is empty in the `/complete` URL, the backend renders a 2-step employment form before the payment program options.
 - **New selectors:** `completeNextPaycheckInput`, `completePayFrequencyCombobox`, `completePlanSelectionHeading`, `completeChooseProgramBtn`
 
 ## ServicingDocumentsPage -
@@ -427,15 +427,15 @@ Methods added to `ContractPage` (`src/pages/origination/contract.page.ts`) para 
 
 **Location:** `src/pages/origination/customer.page.ts:225-385`
 
-**Pattern:** `ensureAuthenticated(intendedPath?: string)` - rewrite v8 com 4 componentes: (A) pre-emptive JWT exp check; (B) caller-supplied intendedPath; (C) page.reload; (D) guarda de hidratacao real via poll ate JWT `exp > now + 60s`.
+**Pattern:** `ensureAuthenticated(intendedPath?: string)` - v8 rewrite with 4 components: (A) pre-emptive JWT exp check; (B) caller-supplied intendedPath; (C) page.reload; (D) a real hydration guard via poll until JWT `exp > now + 60s`.
 
-**Anti-patterns proibidos:** guarda por `*Store$` key existir; `goto(base)` durante SPA nav pendente; deteccao lazy por `isLoginPage`.
+**Forbidden anti-patterns:** guarding by the existence of a `*Store$` key; `goto(base)` during a pending SPA nav; lazy detection via `isLoginPage`.
 
-**Cross-links:** pitfall #69 em [[application-lifecycle]] (root cause completo).
+**Cross-links:** pitfall #69 in [[application-lifecycle]] (full root cause).
 
 ## OriginationCustomerPage - `settleLeaseViaDocuments` brand-filter gap
 
-**Pitfall (F-005):** filtro usa regex `/^UOWN_/` que nao casa com documentos KS3015 (Kornerstone). **Status:** `[OBSERVACAO]`.
+**Pitfall (F-005):** the filter uses the regex `/^UOWN_/` which does not match KS3015 (Kornerstone) documents. **Status:** `[OBSERVATION]`.
 
 ## OriginationCustomerPage - (Lease panel reader)
 
@@ -460,20 +460,20 @@ Methods added to `ContractPage` (`src/pages/origination/contract.page.ts`) para 
 | `waitForStickyCellPopulated(cctPk, timeoutMs?)` | Polls until Sticky Recovery Status cell is non-empty |
 | `reloadAfterStickyDataReady(baseUrl, accountPk, cctPk, timeoutMs?)` | Full reload pattern encapsulating MobX race workaround |
 
-## Pitfall - `filter({ hasText: pk }).first` em tabelas rdt
+## Pitfall - `filter({ hasText: pk }).first` in rdt tables
 
-**Sintoma:** helpers `getRowBy*Pk` retornam "-" ou texto vazio.
+**Symptom:** `getRowBy*Pk` helpers return "-" or empty text.
 
-**Causa raiz:** `getRows.filter({ hasText: String(pk) }).first` faz match **substring** no texto acumulado de TODA a row. Multiplas rows podem conter o PK como substring.
+**Root cause:** `getRows.filter({ hasText: String(pk) }).first` does a **substring** match on the accumulated text of the ENTIRE row. Multiple rows may contain the PK as a substring.
 
-**Regra geral para tabelas rdt-style:**
+**General rule for rdt-style tables:**
 
 ```
-NAO: getRows.filter({ hasText: String(pk) }).first // substring + first - colisao silenciosa
-NAO: row.locator('div[role="cell"]').nth(N) // index hardcoded
-SIM: page.locator(SELECTORS.tableRowById(pk)) // id da row (rdt usa keyField)
-SIM: rows.filter({ has: page.getByRole('cell', { name, exact: true }) }) // cell exact
-SIM: resolucao dinamica de columnIndex via header role=columnheader
+NO: getRows.filter({ hasText: String(pk) }).first // substring + first - silent collision
+NO: row.locator('div[role="cell"]').nth(N) // hardcoded index
+YES: page.locator(SELECTORS.tableRowById(pk)) // row id (rdt uses keyField)
+YES: rows.filter({ has: page.getByRole('cell', { name, exact: true }) }) // exact cell
+YES: dynamic columnIndex resolution via header role=columnheader
 ```
 
 ## SettlementBreakdownModal - Servicing portal
@@ -578,7 +578,7 @@ SIM: resolucao dinamica de columnIndex via header role=columnheader
 ### `MerchantLocationFilterPO` — shared multi-select filter PO
 - **Location:** `src/pages/origination/merchant-location-filter.po.ts`. Extends `OriginationBasePage`.
 - **`applySearch` regex** covers 3 Search endpoints per page: `getMerchantDataChangeResults` (MMH), `getModifiedLeads` (Modification Report), `getLeadsForFundingQueue` (Funding Queue, also matched via `funding` token).
-- **[HIPÓTESE]** the `getLeadsForFundingQueue` endpoint name is NOT confirmed via MCP (inferred from older reports); confirm via `browser_network_requests` in qa2 before treating as `[CONFIRMADO]`.
+- **[HYPOTHESIS]** the `getLeadsForFundingQueue` endpoint name is NOT confirmed via MCP (inferred from older reports); confirm via `browser_network_requests` in qa2 before treating it as `[CONFIRMED]`.
 
 ### `MerchantModHistoryPage` — MMH `/merchantModificationHistory`
 - **Location:** `src/pages/origination/merchant-mod-history.page.ts`. Extends `OriginationBasePage`.

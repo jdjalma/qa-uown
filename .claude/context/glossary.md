@@ -1,4 +1,4 @@
-<!-- PT-BR: Glossário de mapeamento entre o projeto legado Java/Cucumber e o projeto atual TypeScript/Playwright. -->
+<!-- Glossary mapping terms from the legacy Java/Cucumber project to the current TypeScript/Playwright project. -->
 
 # Glossary — Java/Cucumber → TypeScript/Playwright
 

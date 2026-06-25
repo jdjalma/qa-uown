@@ -1,82 +1,82 @@
 ---
 name: ui-first-principle
-description: Carregue ao decidir estratégia de teste (E2E vs API). Se a feature tem fluxo de usuário em portal (Origination/Servicing/Website/AMS), o teste DEVE exercer browser. API-only é EXCEÇÃO restrita a admin/ops sem UI, setup/precondições, ou validações DB cross-cutting.
+description: Load when deciding test strategy (E2E vs API). If the feature has a user flow in a portal (Origination/Servicing/Website/AMS), the test MUST exercise the browser. API-only is an EXCEPTION restricted to admin/ops without UI, setup/preconditions, or cross-cutting DB validations.
 disable-model-invocation: true
 ---
 
-# UI-First Principle — Regra Inviolável #14
+# UI-First Principle — Inviolable Rule #14
 
-## O princípio
+## The principle
 
-**UI-first como padrão.** API-only só quando a feature **não tem** UI affordance.
+**UI-first as the default.** API-only only when the feature **has no** UI affordance.
 
-> Validação visual (placeholders renderizados, badges, content do iframe GowSign, PDFs) **NÃO pode ser substituída** por leitura de log de backend. Bug de rendering só vira detectável quando o cliente vê.
+> Visual validation (rendered placeholders, badges, GowSign iframe content, PDFs) **CANNOT be replaced** by reading a backend log. A rendering bug only becomes detectable when the customer sees it.
 
-## Origem (2026-05-06)
+## Origin (2026-05-06)
 
-BUG-01: placeholders vazios no PDF de Daniel's Jewelers (CA) descoberto **manualmente** pelo Fernando porque os testes API-only só liam logs sem renderizar o PDF. Daí veio a regra.
+BUG-01: empty placeholders in the PDF of Daniel's Jewelers (CA) discovered **manually** by Fernando because the API-only tests only read logs without rendering the PDF. That is where the rule came from.
 
-## Quando aplicar
+## When to apply
 
-Sempre que decidir entre:
+Whenever deciding between:
 - E2E (Playwright + browser)
-- API-only (Playwright sem browser, só HTTP)
+- API-only (Playwright without a browser, HTTP only)
 - DB-only
 
 ## Decision tree
 
 ```
-A feature tem fluxo no portal Origination/Servicing/Website/AMS?
-├─ SIM → E2E obrigatório
-│ API/DB pode complementar (setup, validation cross-cutting)
-└─ NÃO → API-only OK
- (ex: admin endpoint, sweep, internal CRUD)
+Does the feature have a flow in the Origination/Servicing/Website/AMS portal?
+├─ YES → E2E mandatory
+│ API/DB may complement (setup, cross-cutting validation)
+└─ NO → API-only OK
+ (e.g., admin endpoint, sweep, internal CRUD)
 ```
 
-## Casos onde API-only é aceitável
+## Cases where API-only is acceptable
 
-1. **Admin/ops endpoints sem UI exposta**
- Ex: `PATCH /uown/svc/gowsign-templates/{id}`, sweeps de scheduled tasks, internal CRUD configs.
+1. **Admin/ops endpoints with no exposed UI**
+ E.g.: `PATCH /uown/svc/gowsign-templates/{id}`, scheduled-task sweeps, internal CRUD configs.
 
-2. **Setup/precondições que aceleram o teste**
- Criar lead via `sendApplication` antes de exercitar fluxo de signing UI. **A precondição é API; a feature é UI.**
+2. **Setup/preconditions that accelerate the test**
+ Creating a lead via `sendApplication` before exercising the UI signing flow. **The precondition is API; the feature is UI.**
 
-3. **Validações DB cross-cutting**
- Queries de assertion (activity log presente, FK não quebrou, count correto). Complemento, não substituto.
+3. **Cross-cutting DB validations**
+ Assertion queries (activity log present, FK not broken, correct count). A complement, not a substitute.
 
-## Casos onde API-only NÃO basta
+## Cases where API-only is NOT enough
 
-| Feature | Por que precisa de UI |
+| Feature | Why it needs UI |
 |---------|----------------------|
-| Email template rendering | Bug de placeholder só aparece no PDF/HTML gerado |
-| GowSign iframe content | Conteúdo dentro do iframe não está em log |
-| Activity log display | Friendly name vs technical id — visualização importa (memory `example.md` AC1) |
-| Status badge transitions | CSS, timing, race condition de re-render |
-| Form validation messages | Mensagens ao usuário, locale, layout |
-| Responsive / mobile | Apenas browser detecta |
-| Telas de auditoria / report (Modification Report, Activity Log display) | A célula renderizada é o que o auditor vê — mapeamento DB→UI (status display, friendly name vs id, atribuição de agent) só é validável lendo a tabela na tela, não a row do DB |
+| Email template rendering | A placeholder bug only appears in the generated PDF/HTML |
+| GowSign iframe content | Content inside the iframe is not in a log |
+| Activity log display | Friendly name vs technical id — visualization matters (memory `example.md` AC1) |
+| Status badge transitions | CSS, timing, re-render race condition |
+| Form validation messages | Messages to the user, locale, layout |
+| Responsive / mobile | Only the browser detects it |
+| Audit / report screens (Modification Report, Activity Log display) | The rendered cell is what the auditor sees — the DB→UI mapping (status display, friendly name vs id, agent attribution) is only validatable by reading the table on screen, not the DB row |
 
-## Procedimento
+## Procedure
 
-### Antes de decidir estratégia
+### Before deciding strategy
 
-1. Identifique **onde a feature é consumida**: cliente (Website), agent (Servicing/Origination), admin (AMS).
-2. Pergunte: "o usuário final vê isso?" → SIM = UI obrigatória.
-3. Se híbrido: separar **setup** (API rápido) de **execução** (UI realista) de **validação** (UI + DB).
+1. Identify **where the feature is consumed**: customer (Website), agent (Servicing/Origination), admin (AMS).
+2. Ask: "does the end user see this?" → YES = UI mandatory.
+3. If hybrid: separate **setup** (fast API) from **execution** (realistic UI) from **validation** (UI + DB).
 
-### Exemplo correto (híbrido)
+### Correct example (hybrid)
 
 ```ts
-// SETUP — API (rápido, determinístico)
+// SETUP — API (fast, deterministic)
 await ensureMerchantReady(merchant);
 const lead = await api.sendApplication({ ssn: "...", merchant });
 
-// EXECUÇÃO — UI (fluxo real do cliente)
+// EXECUTION — UI (real customer flow)
 await page.goto("/customer-portal/login");
 await page.fill('[name="otp"]', otp);
 await page.click("text=Confirm Signature");
 
-// VALIDAÇÃO — UI + DB
+// VALIDATION — UI + DB
 await expect(page.locator(".badge")).toHaveText("Signed");
 const log = await waitForRecord({ table: "uown_los_lead_notes", filter: { lead_id: lead.id, note_type: "SIGNING_COMPLETED" } });
 expect(log).toBeDefined;
@@ -84,21 +84,21 @@ expect(log).toBeDefined;
 
 ## Pitfalls
 
-1. **Tentação de skip browser pra deixar suite mais rápida** — funciona até descobrir BUG-01 de rendering em produção.
-2. **API mascara fluxo real do email** — clicar no link do email (memory `feedback_email_imap_click_link`) é diferente de chamar a URL do payload da API. Bypass API esconde bug de template.
-3. **Setup via API quando feature é Origination** — memory `feedback_setup_via_ui_new_application`: criar lead via UI new-application em vez de `createPreQualifiedApplication` quando feature **é** o Origination flow. Mascara bugs do caminho real.
-4. **Asserir só a row do DB num bug de display de auditoria** (#1315, 2026-06-18) — o fix do "SYSTEM no Modification Report" muda o que o **auditor vê** na coluna "Agent Name". CT-03 dirige a transição pelo portal (header `username`) E **lê a célula renderizada** no `/modificationReport` (`getAgentNameByLeadPk` / `getRowByLeadPk`), com a row do DB apenas como guard cross-cutting. Validar só `uown_lead_modifications.agent_username` no DB não cobriria um bug de mapeamento DB→UI (ex.: a coluna renderizar o id errado). Telas de report/auditoria são UI-first.
+1. **Temptation to skip the browser to make the suite faster** — it works until you discover BUG-01 of rendering in production.
+2. **API masks the real email flow** — clicking the email link (memory `feedback_email_imap_click_link`) is different from calling the URL from the API payload. An API bypass hides a template bug.
+3. **Setup via API when the feature is Origination** — memory `feedback_setup_via_ui_new_application`: create a lead via the UI new-application instead of `createPreQualifiedApplication` when the feature **is** the Origination flow. It masks bugs of the real path.
+4. **Asserting only the DB row in an audit display bug** (#1315, 2026-06-18) — the fix for "SYSTEM in the Modification Report" changes what the **auditor sees** in the "Agent Name" column. CT-03 drives the transition through the portal (header `username`) AND **reads the rendered cell** in `/modificationReport` (`getAgentNameByLeadPk` / `getRowByLeadPk`), with the DB row only as a cross-cutting guard. Validating only `uown_lead_modifications.agent_username` in the DB would not cover a DB→UI mapping bug (e.g., the column rendering the wrong id). Report/audit screens are UI-first.
 
 ## Anti-patterns
 
-- ❌ "Já tem log no DB, o teste passou" → não cobriu o render
-- ❌ "Vou só testar o endpoint, a UI usa o mesmo" → CSS/JS/timing podem quebrar
-- ❌ "É admin endpoint" sem confirmar que o admin **realmente** não tem tela
-- ❌ Setup via API em feature de Origination quando o ponto **é** o Origination flow
+- ❌ "There's already a log in the DB, the test passed" → it did not cover the render
+- ❌ "I'll just test the endpoint, the UI uses the same one" → CSS/JS/timing can break
+- ❌ "It's an admin endpoint" without confirming the admin **really** has no screen
+- ❌ Setup via API in an Origination feature when the point **is** the Origination flow
 
 ## Cross-links
 
-- Regra inviolável #15 em `CLAUDE.md`
-- Skill [[test-strategy-decision]] — decisão maior (E2E vs API vs híbrido)
-- Skill [[test-data-hierarchy]] — setup fresh data via UI quando feature é UI
+- Inviolable rule #15 in `CLAUDE.md`
+- Skill [[test-strategy-decision]] — the larger decision (E2E vs API vs hybrid)
+- Skill [[test-data-hierarchy]] — set up fresh data via UI when the feature is UI
 - Memory: `feedback_email_imap_click_link`, `feedback_setup_via_ui_new_application`

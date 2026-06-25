@@ -496,8 +496,8 @@ export interface ServicingInformationSelectors {
 // exposes a clickable "Settlement Amount" label. Clicking it opens a
 // Bootstrap modal titled "Settlement Breakdown" with per-line items.
 //
-// Selectors validated via MCP Playwright in qa1 (SPEC §7 + diretrizes do
-// usuário 2026-05-22). The label is a `<div>` (NOT a button/link), so
+// Selectors validated via MCP Playwright in qa1 (SPEC §7 + user
+// guidelines 2026-05-22). The label is a `<div>` (NOT a button/link), so
 // `getByRole` does not match — we anchor on the exact text content.
 export interface SettlementAmountSelectors {
   /** Clickable "Settlement Amount" label in the Account & Contract Overview panel. */
@@ -857,7 +857,7 @@ export interface AmsMerchantsSelectors {
   amsMerchantsActiveCombobox: string;
   /** OPEN-state combobox container — scope for option label lookups. */
   amsMerchantsActiveComboboxOpen: string;
-  /** Option row container in the open Active combobox — CSS-Module class `[class*="customOptionStyles"]`. Page object filters by exact label text. 6ª passada (F-003 fix definitivo). */
+  /** Option row container in the open Active combobox — CSS-Module class `[class*="customOptionStyles"]`. Page object filters by exact label text. 6th pass (F-003 definitive fix). */
   amsMerchantsActiveOptionRow: string;
   /** Last Login column header in the merchants table (rendered regardless of cell content). */
   amsMerchantsLastLoginHeader: string;

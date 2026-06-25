@@ -1,6 +1,6 @@
 ---
 name: e2e-examples
-description: Carregue ao escrever teste E2E novo — exemplos canônicos do projeto com estrutura, fixtures, tags, asserções. Use como template estilístico para tests/e2e/{portal}/.
+description: Load when writing a new E2E test — canonical project examples with structure, fixtures, tags, assertions. Use as a stylistic template for tests/e2e/{portal}/.
 disable-model-invocation: true
 ---
 
@@ -10,9 +10,9 @@ disable-model-invocation: true
 
 ## 0. Prefer state fixtures over inline setup (REACH FOR THESE FIRST)
 
-A teste precisa de uma aplicação **aprovada** ou de uma conta **fundeada**? NÃO reescreva Phase 1..4 inline. As fixtures `approvedApplication` / `fundedAccount` (em `src/support/base-test.ts`) já compõem `buildTestData` + `createPreQualifiedApplication` (+ `driveLeadToFunding`), rodam merchant preflight (regra #12) e geram dados frescos por teste (regra #9). São **lazy** — só executam quando o teste destrutura a fixture, então o custo é zero para quem não usa.
+Does a test need an **approved** application or a **funded** account? Do NOT rewrite Phase 1..4 inline. The `approvedApplication` / `fundedAccount` fixtures (in `src/support/base-test.ts`) already compose `buildTestData` + `createPreQualifiedApplication` (+ `driveLeadToFunding`), run merchant preflight (rule #12), and generate fresh data per test (rule #9). They are **lazy** — they only execute when the test destructures the fixture, so the cost is zero for those who don't use them.
 
-**BEFORE — ~150 linhas de Phase 1..4 inline (NÃO faça isto):**
+**BEFORE — ~150 lines of Phase 1..4 inline (do NOT do this):**
 
 ```typescript
 test('settle a funded lease', async ({ page, api, db, testEnv }) => {
@@ -42,49 +42,49 @@ test('settle a funded lease', async ({ page, api, db, testEnv }) => {
   const accountPk = await db.waitForAccountByLeadPk(ctx.leadPk);
   ctx.accountPk = accountPk;
 
-  // ...finalmente o domínio do teste começa aqui, ~150 linhas depois...
+  // ...finally the test's domain starts here, ~150 lines later...
   await page.goto(/* servicing */);
 });
 ```
 
-**AFTER — fixture entrega o estado; o teste começa no domínio:**
+**AFTER — the fixture delivers the state; the test starts in the domain:**
 
 ```typescript
 // fundedAccount: FundedAccountResult = { leadPk, leadUuid, accountPk, contractUrl?, esignClient? }
 test('settle a funded lease', async ({ page, fundedAccount, db }) => {
   test.setTimeout(300_000);
 
-  // Estado pronto: lease em FUNDING/FUNDED, accountPk já resolvido. Vá direto ao domínio.
+  // State ready: lease in FUNDING/FUNDED, accountPk already resolved. Go straight to the domain.
   await test.step('Open settlement modal in Servicing', async () => {
     const servicing = new ServicingCustomerPage(page);
     await servicing.openByAccountPk(fundedAccount.accountPk);
-    // ...assertion do teste...
+    // ...test assertion...
   });
 });
 ```
 
-Para um teste que só precisa de aprovação (sem fundear), destrutura `approvedApplication`:
+For a test that only needs approval (without funding), destructure `approvedApplication`:
 
 ```typescript
 // approvedApplication: ApprovedApplicationResult = { leadPk, leadUuid, approvedAmount, contractUrl?, esignClient? }
 test('contract renders approved amount', async ({ page, approvedApplication }) => {
-  // lead já em UW_APPROVED / CONTRACT_CREATED; esignClient = 'GOWSIGN' | 'SIGNWELL'
+  // lead already in UW_APPROVED / CONTRACT_CREATED; esignClient = 'GOWSIGN' | 'SIGNWELL'
   await page.goto(approvedApplication.contractUrl!);
-  // ...assert no contrato...
+  // ...assert on the contract...
 });
 ```
 
-**Parametrizar estado/merchant/total/payment** por describe — sem reescrever a setup:
+**Parameterize state/merchant/total/payment** per describe — without rewriting the setup:
 
 ```typescript
 // Default: state 'NY', merchant 'TireAgent', orderTotal '800', paymentMode 'submitApi'.
 test.use({ setup: { state: 'CA', merchant: 'TerraceFinance', orderTotal: '1200', paymentMode: 'submitApi' } });
 ```
 
-**Regras:**
-- `db` e `email` são **worker-scoped** (um pool pg / sessão IMAP por worker) — destrutura `{ db }` direto, não crie `new DatabaseHelpers`.
-- `paymentMode`: `'submitApi'` (default, → CONTRACT_CREATED, captura `esignClient`+iframe) · `'ccAuth'` (→ CC_AUTH_PASSED) · `'none'` (fica em UW_APPROVED). `fundedAccount` força `'submitApi'` upstream independente do `setup`.
-- Hand-escrever Phase 1..4 quando a fixture já entrega o estado = retrabalho e drift; é o anti-pattern que estas fixtures existem para matar.
+**Rules:**
+- `db` and `email` are **worker-scoped** (one pg pool / IMAP session per worker) — destructure `{ db }` directly, do not create `new DatabaseHelpers`.
+- `paymentMode`: `'submitApi'` (default, → CONTRACT_CREATED, captures `esignClient`+iframe) · `'ccAuth'` (→ CC_AUTH_PASSED) · `'none'` (stays in UW_APPROVED). `fundedAccount` forces `'submitApi'` upstream regardless of `setup`.
+- Hand-writing Phase 1..4 when the fixture already delivers the state = rework and drift; it is the anti-pattern these fixtures exist to kill.
 
 ## 1. Standard E2E Test Structure
 

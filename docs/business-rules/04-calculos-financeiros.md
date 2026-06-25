@@ -1,5 +1,5 @@
 ---
-title: Cálculos e Fórmulas Financeiras
+title: Financial Calculations and Formulas
 domain: business-rules
 status: stable
 volatility: stable
@@ -12,20 +12,20 @@ sources:
 covers: [payment-calculator, epo, payoff, money-factor, payment-frequency, state-rules]
 ---
 
-# Calculos e Formulas Financeiras
+# Financial Calculations and Formulas
 ## UOwn Leasing - SVC Platform
 
-Calculadora de pagamentos, EPO (Early Pay Off), calculo de payoff e regras EPO por estado.
+Payment calculator, EPO (Early Pay Off), payoff calculation, and per-state EPO rules.
 
 ---
 
-## 7. Calculadora de Pagamentos
+## 7. Payment Calculator
 
-### O Que Faz
+### What It Does
 
-Calcula o cronograma completo de pagamentos do lease: valor de cada parcela, numero de parcelas, EPO, taxas, impostos, e URL de redirecionamento.
+Calculates the complete lease payment schedule: amount of each installment, number of installments, EPO, fees, taxes, and the redirect URL.
 
-### Formulas Principais
+### Main Formulas
 
 ```
 baseCost = totalInvoiceAmount - taxAmount - depositAmount
@@ -34,125 +34,125 @@ contractAmountAfterTax = contractAmountBeforeTax + contractTax + processingFee -
 regularPayment = contractAmountBeforeTax / numberOfPayments
 ```
 
-### Pagamento Devido Hoje e Primeira Parcela com Taxas (R1.53.0 — svc#558)
+### Payment Due Today and First Installment With Fees (R1.53.0 — svc#558)
 
-Corrigido em R1.53.0 para merchants que cobram a signing fee no e-sign (caso Good Feet), evitando duplo-faturamento da taxa/deposito na primeira parcela:
+Fixed in R1.53.0 for merchants that charge the signing fee at e-sign (Good Feet case), preventing double-billing of the fee/deposit on the first installment:
 
-- `paymentDueToday` agora vem **direto de `SchedSummaryInfo.getSigningFee()`** (a signing fee ja resolvida), e nao mais re-derivado de flags do merchant (`chargeProcessingFeeBeforeEsign` / `holdDeposit` / UW).
-- `processingFee` + `securityDeposit` so sao somados a `firstPaymentWithFeesAndTax` **quando NAO ha signing fee sendo cobrada agora** (`signingFee == null || <= 0`). Se a taxa ja foi coletada na assinatura, a primeira parcela nao a recobra.
-- **Fontes:** `pojo/rest/CalculatorResults.java:41-58`.
+- `paymentDueToday` now comes **directly from `SchedSummaryInfo.getSigningFee()`** (the already-resolved signing fee), and is no longer re-derived from merchant flags (`chargeProcessingFeeBeforeEsign` / `holdDeposit` / UW).
+- `processingFee` + `securityDeposit` are only added to `firstPaymentWithFeesAndTax` **when there is NO signing fee being charged now** (`signingFee == null || <= 0`). If the fee was already collected at signing, the first installment does not charge it again.
+- **Sources:** `pojo/rest/CalculatorResults.java:41-58`.
 
-### Saldo do Contrato no Recibo (Contract Balance) — R1.53.0 (#533)
+### Contract Balance on the Receipt (Contract Balance) — R1.53.0 (#533)
 
-O saldo do contrato usado no recibo de pagamento passou a ser calculado em Java, nao mais inline no SQL do recibo (que subtraia todos os pagamentos PAID e podia ficar **negativo** com fees):
+The contract balance used on the payment receipt is now calculated in Java, no longer inline in the receipt SQL (which subtracted all PAID payments and could go **negative** with fees):
 
-- `ContractBalance.balance = totalContractAmount − totalPaidAmount` via `AccountAmountsService.getContractBalance(account)`, escalado 2 casas (HALF_EVEN); injetado no placeholder `:contractBalance`.
-- A linha "If you pay off now you save" (`savedAmount = balance − payoff`) so e renderizada quando `savedAmount != null && savedAmount > 0` — o cliente nunca ve "you save" negativo/zero.
-- **Fontes:** `service/PaymentReceiptService.java:104-126`, `pojo/CommonDataPojo.java:179-207`, `service/AccountAmountsService.java:80-103`, templates `correspondence/templates/payment-receipt-email.html`.
+- `ContractBalance.balance = totalContractAmount − totalPaidAmount` via `AccountAmountsService.getContractBalance(account)`, scaled to 2 places (HALF_EVEN); injected into the `:contractBalance` placeholder.
+- The "If you pay off now you save" line (`savedAmount = balance − payoff`) is only rendered when `savedAmount != null && savedAmount > 0` — the customer never sees a negative/zero "you save".
+- **Sources:** `service/PaymentReceiptService.java:104-126`, `pojo/CommonDataPojo.java:179-207`, `service/AccountAmountsService.java:80-103`, templates `correspondence/templates/payment-receipt-email.html`.
 
-### Numero de Parcelas por Frequencia
+### Number of Installments by Frequency
 
-| Frequencia | Abreviacao (planId) | Como e determinado |
+| Frequency | Abbreviation (planId) | How it is determined |
 |------------|--------------------|--------------------|
 | WEEKLY | WK | Config `numOfPayments.{term}.WEEKLY` |
 | BI_WEEKLY | BWK | Config `numOfPayments.{term}.BI_WEEKLY` |
 | SEMI_MONTHLY | SM | Config `numOfPayments.{term}.SEMI_MONTHLY` |
-| MONTHLY | MN | `termMonths` (se nenhum config) |
+| MONTHLY | MN | `termMonths` (if no config) |
 
-### planId no Calculo (Task #439)
+### planId in the Calculation (Task #439)
 
-A calculadora agora gera um `planId` para cada combinacao de frequencia + termo via `buildScheduleForFrequency`. O `planId` e incluido no `SchedSummaryInfo` retornado e segue o formato `{abreviacao}{termo}` (ex: `WK13`, `BWK16`).
+The calculator now generates a `planId` for each frequency + term combination via `buildScheduleForFrequency`. The `planId` is included in the returned `SchedSummaryInfo` and follows the format `{abbreviation}{term}` (e.g., `WK13`, `BWK16`).
 
-O `planId` permite que o `SubmitApplicationService` localize o `PaymentOption` exato, substituindo a busca apenas por `selectedPaymentFrequency`. Ambos os parametros continuam funcionando para compatibilidade.
+The `planId` allows `SubmitApplicationService` to locate the exact `PaymentOption`, replacing the lookup by `selectedPaymentFrequency` alone. Both parameters continue to work for compatibility.
 
-### Calculo do EPO
+### EPO Calculation
 
 ```
-epoStartDate = firstPaymentDate ou hoje
-epoExpiry = startDate + meses configurados ou epoDays do programa
+epoStartDate = firstPaymentDate or today
+epoExpiry = startDate + configured months or program epoDays
 epoAmount = costWithFeesNoTax + epoFeeAmount + buyoutFee
 ```
 
-**Termo especial de 16 meses (configuravel via `changeEpoForTermMonths`):**
+**Special 16-month term (configurable via `changeEpoForTermMonths`):**
 ```
-totalMoneyFactor = moneyFactor * termMonths   (ex: 0.15 * 16 = 2.40)
+totalMoneyFactor = moneyFactor * termMonths   (e.g., 0.15 * 16 = 2.40)
 leaseAmount = (baseCost * totalMoneyFactor) - baseCost
-leaseDays = dias totais do lease (calculado a partir de firstPaymentDate, numOfPayments e frequency)
+leaseDays = total lease days (calculated from firstPaymentDate, numOfPayments, and frequency)
 dailyLeaseAmount = leaseAmount / leaseDays
 epoAmount = baseCost + (dailyLeaseAmount * epoDays) + processingFee + epoFeeAmount + buyoutFee
 ```
 
-**Nota:** O `moneyFactor` usado nesta formula e o fator **total** do contrato (`moneyFactor * termMonths`), NAO o fator mensal.
+**Note:** The `moneyFactor` used in this formula is the **total** contract factor (`moneyFactor * termMonths`), NOT the monthly factor.
 
-### Pagamento Minimo Final (Especifico por Estado)
+### Final Minimum Payment (State-Specific)
 
-Certos estados (ex: NC) exigem que o ultimo pagamento nao seja inferior a um percentual do custo base (default: 11%).
+Certain states (e.g., NC) require that the last payment not be lower than a percentage of the base cost (default: 11%).
 
 ---
 
-## 15. EPO - Early Pay Off (Quitacao Antecipada em 90 Dias)
+## 15. EPO - Early Pay Off (Early Payoff Within 90 Days)
 
-### O Que e
+### What It Is
 
-EPO e a opcao que permite ao cliente **quitar o lease antecipadamente pagando o valor original do produto** (ou proximo disso) dentro de uma janela de tempo limitada -- tipicamente 90 dias. E o diferencial do modelo "Same as Cash".
+EPO is the option that lets the customer **pay off the lease early by paying the original product value** (or close to it) within a limited time window -- typically 90 days. It is the differentiator of the "Same as Cash" model.
 
-### Para Que Serve (Beneficio ao Cliente)
+### What It's For (Customer Benefit)
 
-O custo total do lease (com money factor) e significativamente maior que o preco original. Exemplo: um produto de $1.000 pode custar $1.800 no lease de 12 meses. Se o cliente pagar ~$1.000 + taxas dentro de 90 dias, ele economiza ~$800.
+The total cost of the lease (with money factor) is significantly higher than the original price. Example: a $1,000 product can cost $1,800 on a 12-month lease. If the customer pays ~$1,000 + fees within 90 days, they save ~$800.
 
-### Elegibilidade para EPO de 90 Dias
+### Eligibility for the 90-Day EPO
 
-| Condicao (TODAS devem ser verdadeiras) | |
+| Condition (ALL must be true) | |
 |---|---|
-| Recebivel EPO ativo deve existir |
-| `earlyPayoffDateExpiry` nao expirou |
-| Override nao definida (ou override = true) |
-| Estado em bypass list (CA): pula verificacao de atraso |
-| Delinquency-as-of date nao anterior a hoje |
-| Sem transacoes de pagamento em atraso |
+| An active EPO receivable must exist |
+| `earlyPayoffDateExpiry` has not expired |
+| Override not set (or override = true) |
+| State in bypass list (CA): skips the past-due check |
+| Delinquency-as-of date not earlier than today |
+| No past-due payment transactions |
 
-### Calculo do EPO (Cascata por Estado)
+### EPO Calculation (Per-State Cascade)
 
-| Prioridade | Regra |
+| Priority | Rule |
 |------------|-------|
-| 1 | Desconto estadual sobre valor pago |
-| 2 | Desconto estadual sobre saldo restante |
-| 3 | Percentual estadual sobre saldo restante |
-| 4 | Formula estados (CA, HI, NY, WV): `EPO = cost * (remainingPayments / totalPayments)` |
-| 5 | Desconto do programa ou percentual global |
+| 1 | State discount on amount paid |
+| 2 | State discount on remaining balance |
+| 3 | State percentage on remaining balance |
+| 4 | State formula (CA, HI, NY, WV): `EPO = cost * (remainingPayments / totalPayments)` |
+| 5 | Program discount or global percentage |
 
-**NC:** EPO nao pode ser menor que a ultima parcela.
+**NC:** EPO cannot be lower than the last installment.
 
-### EPO Kornerstone (Formula Especial)
+### Kornerstone EPO (Special Formula)
 
 ```
 kwBuyout = EpoNoTax - ((TotalPaid - PPFees - OtherFees) / MoneyFactor) + PastDueRegular
 ```
 
-### O Que Acontece Quando EPO e Quitado
+### What Happens When EPO Is Paid Off
 
-1. Todos os pagamentos sao **rewound** (desfeitos)
-2. Pagamentos realocados ao recebivel EPO
-3. EPO marcado como `PAID_IN_FULL`
-4. Status da conta -> `PAID_OUT_EARLY_EPO`
-5. Data de quitacao registrada
-6. Se houve overpayment: alerta criado
+1. All payments are **rewound** (undone)
+2. Payments reallocated to the EPO receivable
+3. EPO marked as `PAID_IN_FULL`
+4. Account status -> `PAID_OUT_EARLY_EPO`
+5. Payoff date recorded
+6. If there was an overpayment: an alert is created
 
 ---
 
-## 56. Calculo de Payoff (Payoff Amount)
+## 56. Payoff Calculation (Payoff Amount)
 
-### O Que e
+### What It Is
 
-Calcula o valor total necessario para quitar completamente um lease. Suporta logica diferenciada para contas Kornerstone vs contas padrao UOwn.
+Calculates the total amount needed to fully pay off a lease. Supports differentiated logic for Kornerstone accounts vs. standard UOwn accounts.
 
-### Para Que Serve
+### What It's For
 
-Quando um cliente deseja quitar o lease fora da janela de 90 dias do EPO, ou quando um agente precisa informar o valor de quitacao total.
+When a customer wants to pay off the lease outside the 90-day EPO window, or when an agent needs to provide the total payoff amount.
 
-### Formula Kornerstone (KW Buyout)
+### Kornerstone Formula (KW Buyout)
 
-Aplicavel apenas para programas Kleverwise, Prime10 ou KWChoice:
+Applicable only for Kleverwise, Prime10, or KWChoice programs:
 
 ```
 KwBuyoutAmount = EpoAmountWithTax
@@ -160,76 +160,76 @@ KwBuyoutAmount = EpoAmountWithTax
     + PastDueRegularPayments
 ```
 
-| Componente | Descricao |
+| Component | Description |
 |------------|-----------|
-| `TotalPayments` | Todos os pagamentos realizados ate a data |
-| `ProtectionPlanFees` | Taxas do plano de protecao ate a data atual (NAO futuras) |
-| `OtherFees` | NSF e outras taxas (passadas E futuras) |
-| `MoneyFactor` | Do schedule summary (se zero, divisao retorna zero) |
-| `PastDueRegularPayments` | Apenas parcelas regulares em atraso (exclui processing fees) |
+| `TotalPayments` | All payments made to date |
+| `ProtectionPlanFees` | Protection plan fees up to the current date (NOT future) |
+| `OtherFees` | NSF and other fees (past AND future) |
+| `MoneyFactor` | From the schedule summary (if zero, division returns zero) |
+| `PastDueRegularPayments` | Only past-due regular installments (excludes processing fees) |
 
-**Arredondamento:** `CEILING` para o centavo mais proximo.
+**Rounding:** `CEILING` to the nearest cent.
 
-### Calculo Padrao (UOwn)
+### Standard Calculation (UOwn)
 
-Usa query SQL configuravel armazenada em `SvSqlConfig` com nome `getEpoBalance`. A query retorna dados de breakdown separados por virgula.
+Uses a configurable SQL query stored in `SvSqlConfig` with the name `getEpoBalance`. The query returns comma-separated breakdown data.
 
-### Validacao contra Saldo do Contrato
+### Validation Against Contract Balance
 
 **Config:** `com.uownleasing.svc.service.PayOffAmountService.check.contract.balance.for.epo`
 
-Se habilitado e o EPO calculado exceder o saldo do contrato, o saldo do contrato e usado como valor de payoff.
+If enabled and the calculated EPO exceeds the contract balance, the contract balance is used as the payoff amount.
 
-### Como Consultar
+### How to Query
 
 - **Via TMS:** `POST /uown/tms/getPayoffAmount/{accountPk}`
-- **Via Admin:** Interface de detalhes da conta
+- **Via Admin:** Account details interface
 
 ---
 
-## 70. Regras Detalhadas de Calculo EPO por Estado
+## 70. Detailed Per-State EPO Calculation Rules
 
-### O Que e
+### What It Is
 
-O calculo do EPO segue uma cascata de regras estaduais que determinam descontos e formulas especificas.
+The EPO calculation follows a cascade of state rules that determine specific discounts and formulas.
 
-### Cascata de Prioridade (verificada no codigo)
+### Priority Cascade (verified in the code)
 
-| Prioridade | Regra | Config | Exemplo |
+| Priority | Rule | Config | Example |
 |------------|-------|--------|---------|
-| 1 | Desconto fixo sobre valor pago | `epo.discount.for.state.{STATE}` | Ex: TX = $50 desconto |
-| 2 | Desconto sobre saldo restante | `epo.remaining.amount.discount.for.state.{STATE}` | Ex: FL = $30 |
-| 3 | Percentual sobre saldo restante | `epo.discount.on.remaining.for.state.{STATE}` | Ex: GA = 5% |
-| 4 | Formula especial (CA, HI, NY, WV) | Hardcoded | `EPO = cost * (remainingPayments / totalPayments)` |
-| 5 | Desconto do programa | `merchantProgram.payoffDiscount` | Fallback |
+| 1 | Fixed discount on amount paid | `epo.discount.for.state.{STATE}` | E.g., TX = $50 discount |
+| 2 | Discount on remaining balance | `epo.remaining.amount.discount.for.state.{STATE}` | E.g., FL = $30 |
+| 3 | Percentage on remaining balance | `epo.discount.on.remaining.for.state.{STATE}` | E.g., GA = 5% |
+| 4 | Special formula (CA, HI, NY, WV) | Hardcoded | `EPO = cost * (remainingPayments / totalPayments)` |
+| 5 | Program discount | `merchantProgram.payoffDiscount` | Fallback |
 
-### Regras Especiais por Estado
+### Special Rules by State
 
-| Estado | Regra Especial |
+| State | Special Rule |
 |--------|---------------|
-| **NC** | EPO nao pode ser menor que o valor da ultima parcela (`lastPaymentNoTaxWithFees`) |
-| **CA, HI, NY, WV** | Formula proporcional: `cost * (remainingPayments / totalPayments)` |
+| **NC** | EPO cannot be lower than the last installment value (`lastPaymentNoTaxWithFees`) |
+| **CA, HI, NY, WV** | Proportional formula: `cost * (remainingPayments / totalPayments)` |
 
-### Formula EPO declarada no contrato (16 meses)
+### EPO Formula Declared in the Contract (16 months)
 
-O **texto** do contrato 16-meses declara o preco EPO (intencao verbatim):
+The **text** of the 16-month contract declares the EPO price (verbatim intent):
 
-> **EPO price = custo dos bens arrendados + impostos + fees aplicaveis + daily lease fees acumuladas da inception ate (data de exercicio | data corrente — depende do estado) − pagamentos de aluguel feitos on-time (excluindo impostos e fees).**
+> **EPO price = cost of the leased goods + taxes + applicable fees + daily lease fees accrued from inception until (exercise date | current date — depends on the state) − rental payments made on-time (excluding taxes and fees).**
 
-- Janela de **promotional payoff** = `epoDays`; **qualquer parcela atrasada anula a opcao** ("any late payment voids the option").
-- A cascata de **calculo** (descontos por estado) ja esta em §70 acima; os **variantes de texto de contrato** por estado:
+- The **promotional payoff** window = `epoDays`; **any late payment voids the option** ("any late payment voids the option").
+- The **calculation** cascade (per-state discounts) is already in §70 above; the per-state **contract text variants**:
   - **OH:** "Cash Price less **50%** of payments made".
-  - **NY:** proporcional — `Cash Price × (remaining / total payments)` (New baseline; NAO daily-accrual).
-  - **PA / AL / LA / NC / TN / GA:** desconto `{{payOffDiscountPercent}}%` sobre o remaining.
-  - **NC:** EPO nunca abaixo de `{{lastPaymentDueAmountWithTax}}` (floor balloon).
+  - **NY:** proportional — `Cash Price × (remaining / total payments)` (New baseline; NOT daily-accrual).
+  - **PA / AL / LA / NC / TN / GA:** `{{payOffDiscountPercent}}%` discount on the remaining.
+  - **NC:** EPO never below `{{lastPaymentDueAmountWithTax}}` (floor balloon).
 
-Registro de templates + tokens + matriz → [`appendix-h-epo-template-registry.md`](appendix-h-epo-template-registry.md). Fonte primaria: wiki `gow-sign/EPO-SECTIONS` `[external-doc:gitlab/EPO-SECTIONS,2026-06-23]`.
+Template registry + tokens + matrix → [`appendix-h-epo-template-registry.md`](appendix-h-epo-template-registry.md). Primary source: wiki `gow-sign/EPO-SECTIONS` `[external-doc:gitlab/EPO-SECTIONS,2026-06-23]`.
 
-### Desativacao de Recebiveis
+### Receivable Deactivation
 
-Ao criar novos recebiveis (ex: mudanca de frequencia), o sistema desativa os anteriores:
-- **Para leads:** Desativa TODOS os recebiveis nao pagos
-- **Para contas:** Desativa apenas tipos especificos: `PROCESSING_FEE`, `PROTECTION_PLAN_FEE`, `EARLY_PAY_OFF`, `REGULAR_PAYMENT`
+When creating new receivables (e.g., frequency change), the system deactivates the previous ones:
+- **For leads:** Deactivates ALL unpaid receivables
+- **For accounts:** Deactivates only specific types: `PROCESSING_FEE`, `PROTECTION_PLAN_FEE`, `EARLY_PAY_OFF`, `REGULAR_PAYMENT`
 
 ---
 

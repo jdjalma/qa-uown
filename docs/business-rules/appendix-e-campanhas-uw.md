@@ -1,5 +1,5 @@
 ---
-title: "Apendice E: Referencia de Campanhas de Underwriting"
+title: "Appendix E: Underwriting Campaigns Reference"
 domain: business-rules
 status: stable
 volatility: stable
@@ -11,18 +11,18 @@ sources:
 covers: [campanhas, underwriting, client-type, peak, off-peak, campaign-id, segment-limits]
 ---
 
-# Apendice E: Referencia de Campanhas de Underwriting
+# Appendix E: Underwriting Campaigns Reference
 ## UOwn Leasing - SVC Platform
 
-IDs de campanhas de underwriting por ClientType.
+Underwriting campaign IDs by ClientType.
 
 ---
 
-## Apendice E: Referencia de Campanhas de Underwriting
+## Appendix E: Underwriting Campaigns Reference
 
-Cada ClientType possui IDs de campanha para horarios de pico (peak) e fora de pico (off-peak):
+Each ClientType has campaign IDs for peak and off-peak hours:
 
-| ID | Campanha |
+| ID | Campaign |
 |----|----------|
 | 137 | Tires Peak |
 | 141-146 | Core Furniture |
@@ -39,21 +39,21 @@ Cada ClientType possui IDs de campanha para horarios de pico (peak) e fora de pi
 | 160 | UOwn Jewellers |
 | 164 | Eye/Optical |
 | 170 | Conecta / Kornerstone (Senior Living) |
-| 171 | Tire Agent (adicional) -- nao consta no bloco de comentario de `ClientType.java`, mas e tratado como TireAgent por `LeadRiskService` |
+| 171 | Tire Agent (additional) -- not present in the comment block of `ClientType.java`, but is treated as TireAgent by `LeadRiskService` |
 
-**Regra de selecao:** Em producao, entre `peakStartHour` e `peakEndHour` usa `peakCampaignId`, caso contrario usa `offPeakCampaignId`. Em ambientes de teste, sempre usa peak.
+**Selection rule:** In production, between `peakStartHour` and `peakEndHour` it uses `peakCampaignId`, otherwise it uses `offPeakCampaignId`. In test environments, it always uses peak.
 
-### Mapeamento Campanha -> riskType (R1.53.0)
+### Campaign -> riskType mapping (R1.53.0)
 
-`LeadRiskService.determineRiskType` classifica o lead em `riskType` a partir do `peakCampaignId` do ClientType. Esse `riskType` (junto com `lambdaSegment`) seleciona a linha de `approved_amount_by_segment` (ver [02-originacao-pipeline.md](02-originacao-pipeline.md) secao 40):
+`LeadRiskService.determineRiskType` classifies the lead into a `riskType` from the ClientType's `peakCampaignId`. This `riskType` (together with `lambdaSegment`) selects the `approved_amount_by_segment` row (see [02-originacao-pipeline.md](02-originacao-pipeline.md) section 40):
 
-| riskType | Campanhas (peakCampaignId) |
+| riskType | Campaigns (peakCampaignId) |
 |----------|----------------------------|
 | `TIRE_AGENT` | `137`, `150`, `171` |
 | `HIGH_RISK` | `153`, `154`, `157`, `159`, `160`, `162`, `163`, `172` |
-| `DEFAULT` | qualquer outra (inclui `142` Core Furniture) |
+| `DEFAULT` | any other (includes `142` Core Furniture) |
 
-> **Brands genericos (campanha 142):** a maioria dos brands `PayTomorrowClient` (EPC_VIP, FORM_PIPER, FLEXX_BUY, ..., e o novo **MAGWITCH** em R1.53.0) usa campanha `142/142` e cai em `riskType = DEFAULT`.
+> **Generic brands (campaign 142):** most `PayTomorrowClient` brands (EPC_VIP, FORM_PIPER, FLEXX_BUY, ..., and the new **MAGWITCH** in R1.53.0) use campaign `142/142` and fall into `riskType = DEFAULT`.
 >
-> **`tam_score`** e o score de contexto TireAgent retornado pelo GDS (snapshot, R1.53.0); **`npm_segment`** e um segmento de pricing/risco do GDS (snapshot). Ambos sao gravados mas NAO consumidos pela logica de aprovacao da svc -- ver secao 12/40 de [02-originacao-pipeline.md](02-originacao-pipeline.md).
+> **`tam_score`** is the TireAgent context score returned by GDS (snapshot, R1.53.0); **`npm_segment`** is a GDS pricing/risk segment (snapshot). Both are stored but NOT consumed by the svc approval logic -- see section 12/40 of [02-originacao-pipeline.md](02-originacao-pipeline.md).
 

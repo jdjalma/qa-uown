@@ -1,148 +1,148 @@
-# Execution Plan — DRY / Reuse / Best-Practices no código gerado pelos agents
+# Execution Plan — DRY / Reuse / Best-Practices in agent-generated code
 
-> **Status:** Tier 0 + Tier 1.1/1.2 + Cross-cutting **CONCLUÍDOS** (2026-06-23); Tiers 1.3/2/3 pendentes · **Owner inicial:** orquestrador (CLAUDE.md)
-> **Objetivo:** fazer o código que os agents geram ser DRY e seguir best-practices — atacando as **causas de raiz**, não só os sintomas.
-> Este arquivo é o plano vivo. Atualizar status por item conforme avança.
+> **Status:** Tier 0 + Tier 1.1/1.2 + Cross-cutting **COMPLETED** (2026-06-23); Tiers 1.3/2/3 pending · **Initial owner:** orchestrator (CLAUDE.md)
+> **Goal:** make the code the agents generate DRY and best-practice-compliant — attacking the **root causes**, not just the symptoms.
+> This file is the living plan. Update the status per item as it progresses.
 
-## ✅ Progresso 2026-06-23 (verificado)
+## ✅ Progress 2026-06-23 (verified)
 
-**Tier 0 (enforcement) — DONE.** ESLint flat config + `eslint-plugin-playwright` + regras targeted (todas warn/ratchet); `noUnusedLocals`+`noUnusedParameters` (error, 0 violações); `database.helpers` adicionado ao barrel; `.jscpd.json`; **job `quality` no CI** (preserva `ci-tests`). Verificado: `tsc` 0 erros fora de `src/scripts`; `eslint` **0 errors / 1759 warnings**; jscpd. Ratchet eslint = **1780** (baseline 1759 + buffer 21 p/ não bloquear MR incidental; baixar p/ 1759 = strict). jscpd threshold = **10** (baseline real medido **9.09%**, NÃO 8.84% — corrigido).
+**Tier 0 (enforcement) — DONE.** ESLint flat config + `eslint-plugin-playwright` + targeted rules (all warn/ratchet); `noUnusedLocals`+`noUnusedParameters` (error, 0 violations); `database.helpers` added to the barrel; `.jscpd.json`; **`quality` job in CI** (preserves `ci-tests`). Verified: `tsc` 0 errors outside `src/scripts`; `eslint` **0 errors / 1759 warnings**; jscpd. ESLint ratchet = **1780** (baseline 1759 + buffer of 21 to avoid blocking an incidental MR; lower to 1759 = strict). jscpd threshold = **10** (real measured baseline **9.09%**, NOT 8.84% — corrected).
 
-**Tier 1.1 fixtures — DONE.** `approvedApplication` + `fundedAccount` (lazy, compõem `createPreQualifiedApplication`+`driveLeadToFunding`, preflight via helper, NÃO reinline) em `base-test.ts`. Review adversarial: compõe, não reimplementa.
+**Tier 1.1 fixtures — DONE.** `approvedApplication` + `fundedAccount` (lazy, compose `createPreQualifiedApplication`+`driveLeadToFunding`, preflight via helper, NOT re-inlined) in `base-test.ts`. Adversarial review: composes, does not reimplement.
 
-**Tier 1.2 oracle — DONE.** `src/helpers/activity-log.helpers.ts` cobre `uown_los_activity_log` (reusa `pollUntil`+`db`, colunas verificadas) + re-exporta os helpers de lead-notes (não copia). No barrel + catalog.
+**Tier 1.2 oracle — DONE.** `src/helpers/activity-log.helpers.ts` covers `uown_los_activity_log` (reuses `pollUntil`+`db`, verified columns) + re-exports the lead-notes helpers (does not copy them). In the barrel + catalog.
 
-**X.1/X.2 routing — DONE.** `e2e-examples` (§0 prefer-fixtures), `common-operations` (oracle), `qa-implementer` (reuse-first gate). Defeito de routing pego no review (`uniqueName`/`getWorkerRunId()` fictícios) **corrigido** em `e2e-examples` §6 + `.claude/rules/helpers.md`.
+**X.1/X.2 routing — DONE.** `e2e-examples` (§0 prefer-fixtures), `common-operations` (oracle), `qa-implementer` (reuse-first gate). A routing defect caught in review (fictitious `uniqueName`/`getWorkerRunId()`) **fixed** in `e2e-examples` §6 + `.claude/rules/helpers.md`.
 
-**Métrica de duplicação:** 597 → **494 clones** (efeito dos itens 5/6 anteriores). Próximo alvo: Tier 1.3 (runUnifiedFlow, ~595 linhas) e Tier 2.3 (CTs intra-spec).
+**Duplication metric:** 597 → **494 clones** (effect of the earlier items 5/6). Next target: Tier 1.3 (runUnifiedFlow, ~595 lines) and Tier 2.3 (intra-spec CTs).
 
-## ✅ Progresso 2026-06-23 — parte 2 (type-health + selector type + 2.1/3.3/3.4)
+## ✅ Progress 2026-06-23 — part 2 (type-health + selector type + 2.1/3.3/3.4)
 
-**DESCOBERTA GRANDE:** ao excluir `src/scripts` do `tsc` (item 3.4) o cache incremental parou de mascarar — **o repo NUNCA type-checava limpo**: 125 erros latentes (o CI nunca rodava `tsc`, só `ci-tests`; localmente o `.tsbuildinfo` escondia). Todos PRÉ-EXISTENTES (nenhum referencia minhas mudanças). Resolvidos:
+**BIG DISCOVERY:** when excluding `src/scripts` from `tsc` (item 3.4) the incremental cache stopped masking it — **the repo NEVER type-checked clean**: 125 latent errors (CI never ran `tsc`, only `ci-tests`; locally `.tsbuildinfo` hid them). All PRE-EXISTING (none reference my changes). Resolved:
 
-- **`AppSelectors` derivado do objeto** (`type AppSelectors = typeof SELECTORS`) — era uma interface paralela de 992 linhas mantida à mão que driftou e gerava **41 erros TS2339 fantasma**. Fonte única agora; o tipo nunca mais desincroniza. **(DRY win — Tier 2.4-adjacent.)**
-- **53 dead-code** (TS6133/6196 — imports/locals/métodos/params não usados) removidos por 2 agents paralelos. `noUnusedLocals`/`noUnusedParameters` agora são erro real com 0 violações.
-- **15 erros residuais** corrigidos: `goToNextPage` overrides (Promise<void>→<boolean>), `ApiClients` import path errado, `buildTestData.orderTotal` → opcional c/ default, `SELECTORS` import faltando, casts unknown, `testData.env` inexistente. (+9 de `seon-negative-scenarios` resolvidos em cascata pelo derive.)
+- **`AppSelectors` derived from the object** (`type AppSelectors = typeof SELECTORS`) — it was a 992-line parallel interface maintained by hand that drifted and produced **41 phantom TS2339 errors**. Single source now; the type never desyncs again. **(DRY win — Tier 2.4-adjacent.)**
+- **53 dead-code** (TS6133/6196 — unused imports/locals/methods/params) removed by 2 parallel agents. `noUnusedLocals`/`noUnusedParameters` are now real errors with 0 violations.
+- **15 residual errors** fixed: `goToNextPage` overrides (Promise<void>→<boolean>), wrong `ApiClients` import path, `buildTestData.orderTotal` → optional with default, missing `SELECTORS` import, unknown casts, nonexistent `testData.env`. (+9 from `seon-negative-scenarios` resolved in cascade by the derive.)
 
-**Resultado:** `tsc --noEmit` **EXIT 0 genuíno** (cache limpo, sem filtro) — 125 → **0**. Gate Tier 0 agora é verdadeiro. Ratchet eslint re-tunado p/ **1775** (baseline 1754 pós-cleanup). jscpd 597 → **491 clones**.
+**Result:** `tsc --noEmit` **genuine EXIT 0** (clean cache, no filter) — 125 → **0**. The Tier 0 gate is now true. ESLint ratchet re-tuned to **1775** (baseline 1754 post-cleanup). jscpd 597 → **491 clones**.
 
-**Tier 3.4 DONE** (src/scripts + scratch `_*.spec.ts` excluídos do tsconfig — não são framework). **Tier 3.3 DONE** (scratch já gitignored, deixados no lugar). **Tier 2.1 DONE** (política de selectors reconciliada em `selectors.md` + `selector-hardening` + `page-objects.md`: co-locação no page object é OK; `common.selectors.ts` só cross-cutting; spec nunca inline).
+**Tier 3.4 DONE** (src/scripts + scratch `_*.spec.ts` excluded from tsconfig — they are not framework). **Tier 3.3 DONE** (scratch already gitignored, left in place). **Tier 2.1 DONE** (selector policy reconciled in `selectors.md` + `selector-hardening` + `page-objects.md`: co-location in the page object is OK; `common.selectors.ts` cross-cutting only; specs never inline).
 
-## ✅ Progresso 2026-06-23 — parte 3 (3.1 + adoção do oracle, behavior-preserving)
+## ✅ Progress 2026-06-23 — part 3 (3.1 + oracle adoption, behavior-preserving)
 
-**Tier 3.1 DONE** — `makeTestContext(overrides?)` em `base-test.ts`; os 2 `ctx as any`/double-cast (specs 531, storeUW) trocados por ctx tipado; a própria `ctx` fixture agora usa o factory (fonte única). `seon-widget` param-property unused corrigido.
+**Tier 3.1 DONE** — `makeTestContext(overrides?)` in `base-test.ts`; the 2 `ctx as any`/double-cast (specs 531, storeUW) swapped for typed ctx; the `ctx` fixture itself now uses the factory (single source). `seon-widget` unused param-property fixed.
 
-**Tier 1.2 oracle — ADOÇÃO** (a maior dívida do 2º audit: 20+ SELECTs crus de activity-log). **13 queries inline → oracle** (`findLeadNoteContaining`/`findActivityLogContaining`): #1315 (4), gowsign/servicing (8), Pii/PP (1). Behavior-preserving (oracle roda a query idêntica; `ILIKE '%'||$2||'%'` preserva wildcards embutidos). **14 deixadas inline DE PROPÓSITO** — não casavam a semântica do oracle (múltiplos ILIKE OR, `LIKE` case-sensitive, `LIMIT 5`, multi-tabela). Disciplina via 2 agents com regra "só-se-casar-exato" + spot-check.
+**Tier 1.2 oracle — ADOPTION** (the biggest debt from the 2nd audit: 20+ raw activity-log SELECTs). **13 inline queries → oracle** (`findLeadNoteContaining`/`findActivityLogContaining`): #1315 (4), gowsign/servicing (8), Pii/PP (1). Behavior-preserving (the oracle runs the identical query; `ILIKE '%'||$2||'%'` preserves embedded wildcards). **14 left inline ON PURPOSE** — they did not match the oracle's semantics (multiple ILIKE OR, case-sensitive `LIKE`, `LIMIT 5`, multi-table). Discipline via 2 agents with the "only-if-exact-match" rule + spot-check.
 
-`tsc` **0** · `eslint` **0 errors / 1758 warnings** (ceiling 1775) · jscpd **494 clones** (~flat — o ganho do oracle foi reuso/manutenção, não line-count, já que a maioria das queries não casava e ficou inline).
+`tsc` **0** · `eslint` **0 errors / 1758 warnings** (ceiling 1775) · jscpd **494 clones** (~flat — the oracle gain was reuse/maintenance, not line-count, since most queries did not match and stayed inline).
 
-> Nuance documentada: o oracle de activity-log filtra `deleted IS NOT TRUE` — para assert de existência é *mais* correto (log soft-deleted não é consequência observável); difere do inline só no caso raro de uma row matching soft-deletada.
+> Documented nuance: the activity-log oracle filters `deleted IS NOT TRUE` — for an existence assertion this is *more* correct (a soft-deleted log is not an observable consequence); it differs from inline only in the rare case of a matching soft-deleted row.
 
-### Ainda pendente (precisam rodar a suíte / DOM / refactor grande)
-Tier 1.3 (runUnifiedFlow, suíte 12min), 1.4 (payment builders), 2.2 (god-objects — split de page object de 1.5k linhas usado pelo CI, risco sem run), 2.3 (CTs intra-spec — só onde forem data-variations reais; #1315 NÃO era), 2.4 (~38 XPath estruturais em page objects → sibling selectors precisam DOM/MCP). As LEFT activity-log queries com `LIKE` case-sensitive em `modify-lease` podem virar follow-up (variante case-insensitive do oracle).
+### Still pending (need to run the suite / DOM / big refactor)
+Tier 1.3 (runUnifiedFlow, 12-min suite), 1.4 (payment builders), 2.2 (god-objects — splitting a 1.5k-line page object used by CI, risky without a run), 2.3 (intra-spec CTs — only where they are real data-variations; #1315 was NOT), 2.4 (~38 structural XPath in page objects → sibling selectors need DOM/MCP). The LEFT activity-log queries with case-sensitive `LIKE` in `modify-lease` could become a follow-up (case-insensitive variant of the oracle).
 
-## Diagnóstico de raiz
+## Root-cause diagnosis
 
-Os agents geram código não-DRY por **duas causas que se reforçam**:
+The agents generate non-DRY code due to **two mutually reinforcing causes**:
 
-1. **Sem enforcement mecânico.** Toda regra de DRY é advisory (skills + CLAUDE.md). Sem ESLint, sem `tsc`/sonar/jscpd no CI (que só roda `--project=ci-tests`), nada *impede* a duplicação. Regra sem gate = drift.
-2. **Helpers existem mas as skills não roteiam para eles.** `setupApplicationViaApi`, `findLeadNoteContaining`, `buildCcArrangementBody` existem e são bons — e quase ninguém usa (1 / 2 / 2 specs). O agent só usa o que a skill manda E o lint obriga.
+1. **No mechanical enforcement.** Every DRY rule is advisory (skills + CLAUDE.md). Without ESLint, without `tsc`/sonar/jscpd in CI (which only runs `--project=ci-tests`), nothing *prevents* duplication. A rule without a gate = drift.
+2. **Helpers exist but the skills don't route to them.** `setupApplicationViaApi`, `findLeadNoteContaining`, `buildCcArrangementBody` exist and are good — and almost no one uses them (1 / 2 / 2 specs). The agent only uses what the skill mandates AND the lint enforces.
 
-> **Os dois levers:** skill que **roteia** para reuso + lint que **bloqueia** o não-reuso. Todo item abaixo se ancora num desses dois.
+> **The two levers:** a skill that **routes** to reuse + a lint that **blocks** non-reuse. Every item below anchors to one of these two.
 
-## Baseline medido (2026-06-23)
+## Measured baseline (2026-06-23)
 
-| Métrica | Valor | Fonte |
+| Metric | Value | Source |
 |---|---|---|
-| Linhas duplicadas (jscpd, tests+src) | **8.84%** (597 clones) | `npx jscpd tests src --min-lines 5 --min-tokens 50` |
-| Locators inline em `src/pages/` | **1.110** | grep |
-| `common.selectors.ts` | 1.049 linhas / 565 chaves | wc |
-| Locator inline em specs | 104 (15 arquivos) | grep |
-| XPath em specs | 2 | grep |
-| Import `@helpers/*` individual em specs | 115 (98 excl. `database`) | grep |
-| `await sleep()` em specs | 120 (~30 em loop) | grep |
-| `as any`/`as unknown` em tests | 16 | grep |
-| ESLint | **inexistente** | — |
-| CI gates | só `playwright --project=ci-tests` | `.gitlab-ci.yml` |
-| `noUnusedLocals`/`noUnusedParameters` se ligados | **0 erros novos** | `tsc` |
+| Duplicated lines (jscpd, tests+src) | **8.84%** (597 clones) | `npx jscpd tests src --min-lines 5 --min-tokens 50` |
+| Inline locators in `src/pages/` | **1,110** | grep |
+| `common.selectors.ts` | 1,049 lines / 565 keys | wc |
+| Inline locators in specs | 104 (15 files) | grep |
+| XPath in specs | 2 | grep |
+| Individual `@helpers/*` import in specs | 115 (98 excl. `database`) | grep |
+| `await sleep()` in specs | 120 (~30 in a loop) | grep |
+| `as any`/`as unknown` in tests | 16 | grep |
+| ESLint | **nonexistent** | — |
+| CI gates | only `playwright --project=ci-tests` | `.gitlab-ci.yml` |
+| `noUnusedLocals`/`noUnusedParameters` if turned on | **0 new errors** | `tsc` |
 
-Meta de duplicação: **derrubar de 8.84% para < 5%** após Tiers 1–2; gatear no CI para não subir.
+Duplication goal: **bring it down from 8.84% to < 5%** after Tiers 1–2; gate it in CI so it doesn't climb.
 
 ---
 
-## TIER 0 — Enforcement mecânico (o multiplicador)
+## TIER 0 — Mechanical enforcement (the multiplier)
 
-> Converte as regras já escritas em gates reais. Sem isto, todo o resto regride.
+> Converts the already-written rules into real gates. Without this, everything else regresses.
 
-| # | Item | Arquivos | Calibração | Status |
+| # | Item | Files | Calibration | Status |
 |---|---|---|---|---|
-| 0.1 | ESLint flat config + `typescript-eslint` + `eslint-plugin-playwright` | `eslint.config.mjs`, `package.json` (devDeps + script `lint:es`) | base | ☐ |
-| 0.2 | Regra: sem XPath em specs | eslint `no-restricted-syntax` | **error** (2 violações → corrigir) | ☐ |
-| 0.3 | Regra: import de helper de runtime só via barrel | eslint `no-restricted-imports` (`@helpers/*.helpers.js`, `*.helper.js`; exceto `database.helpers.js` OU adicioná-lo ao barrel) | **warn** (ratchet) | ☐ |
-| 0.4 | Regra custom: `sleep()` dentro de `for/while` | `eslint-rules/no-sleep-in-loop.mjs` | **warn** (~30) | ☐ |
-| 0.5 | Regra: locator inline em specs (`page.locator/getBy*` em `tests/**`) | eslint `no-restricted-syntax` | **warn** (104) | ☐ |
-| 0.6 | Regra: `as any`/`as unknown`/`@ts-ignore` em tests | eslint | **warn** (16) | ☐ |
-| 0.7 | `noUnusedLocals` + `noUnusedParameters` no tsconfig | `tsconfig.json` | **error** (0 violações) | ☐ |
-| 0.8 | `.jscpd.json` + threshold no baseline (9%) | `.jscpd.json`, `package.json` script `dup` | gate ratchet | ☐ |
-| 0.9 | Job `quality` no CI: `tsc --noEmit` + `eslint` (falha só em ERROR) + `jscpd --threshold` | `.gitlab-ci.yml` | bloqueia regressão | ☐ |
-| 0.10 | Hook pre-push rodando lint nos arquivos mudados | framework de hooks existente | feedback local | ☐ |
+| 0.1 | ESLint flat config + `typescript-eslint` + `eslint-plugin-playwright` | `eslint.config.mjs`, `package.json` (devDeps + `lint:es` script) | base | ☐ |
+| 0.2 | Rule: no XPath in specs | eslint `no-restricted-syntax` | **error** (2 violations → fix) | ☐ |
+| 0.3 | Rule: runtime helper imports only via the barrel | eslint `no-restricted-imports` (`@helpers/*.helpers.js`, `*.helper.js`; except `database.helpers.js` OR add it to the barrel) | **warn** (ratchet) | ☐ |
+| 0.4 | Custom rule: `sleep()` inside `for/while` | `eslint-rules/no-sleep-in-loop.mjs` | **warn** (~30) | ☐ |
+| 0.5 | Rule: inline locator in specs (`page.locator/getBy*` in `tests/**`) | eslint `no-restricted-syntax` | **warn** (104) | ☐ |
+| 0.6 | Rule: `as any`/`as unknown`/`@ts-ignore` in tests | eslint | **warn** (16) | ☐ |
+| 0.7 | `noUnusedLocals` + `noUnusedParameters` in tsconfig | `tsconfig.json` | **error** (0 violations) | ☐ |
+| 0.8 | `.jscpd.json` + threshold at the baseline (9%) | `.jscpd.json`, `package.json` `dup` script | ratchet gate | ☐ |
+| 0.9 | `quality` job in CI: `tsc --noEmit` + `eslint` (fails only on ERROR) + `jscpd --threshold` | `.gitlab-ci.yml` | blocks regression | ☐ |
+| 0.10 | Pre-push hook running lint on changed files | existing hooks framework | local feedback | ☐ |
 
-**Aceite Tier 0:** `npx eslint .` roda sem ERROR; CI tem job `quality`; `tsc` verde (após corrigir os 2 `src/scripts` quebrados — item 3.4); jscpd gateado em 9%.
+**Tier 0 acceptance:** `npx eslint .` runs with no ERROR; CI has a `quality` job; `tsc` green (after fixing the 2 broken `src/scripts` — item 3.4); jscpd gated at 9%.
 
 ---
 
-## TIER 1 — Building blocks reutilizáveis (maior corte de linhas)
+## TIER 1 — Reusable building blocks (biggest line cut)
 
-| # | Item | Arquivos | Impacto | Status |
+| # | Item | Files | Impact | Status |
 |---|---|---|---|---|
-| 1.1 | Fixtures de estado pronto: `approvedApplication` + `fundedAccount` (compõem `setupApplicationViaApi` + `driveLeadToFunding` — NÃO reimplementar inline) | `src/support/base-test.ts` (+ tipos) | ~19 specs, milhares de linhas | ☐ |
-| 1.2 | Oracle de activity-log: `assertLeadNote(db, leadPk, pattern)` / `waitForActivityLog(...)` envolvendo `esign-db.helpers` + queries genéricas em `uown_los_activity_log` (hoje sem helper) | `src/helpers/activity-log.helpers.ts` (novo) + barrel + catalog | 20+ SQLs crus em 10 specs; regra #13 garante crescimento | ☐ |
-| 1.3 | `runUnifiedFlow` shared runner (parametriza `ci/` e `e2e/` unified-flow) | `tests/_shared/unified-flow.runner.ts` | clone de 595 linhas (top jscpd) | ☐ (exige rodar suíte de 12min) |
-| 1.4 | Adoção dos builders de payment + helper `waitForCcTransactionStatus` | `src/api/bodies/`, `src/helpers/database.helpers.ts` | builder em 2 specs; polling repetido | ☐ |
+| 1.1 | Ready-state fixtures: `approvedApplication` + `fundedAccount` (compose `setupApplicationViaApi` + `driveLeadToFunding` — do NOT reimplement inline) | `src/support/base-test.ts` (+ types) | ~19 specs, thousands of lines | ☐ |
+| 1.2 | Activity-log oracle: `assertLeadNote(db, leadPk, pattern)` / `waitForActivityLog(...)` wrapping `esign-db.helpers` + generic queries on `uown_los_activity_log` (no helper today) | `src/helpers/activity-log.helpers.ts` (new) + barrel + catalog | 20+ raw SQLs in 10 specs; rule #13 guarantees growth | ☐ |
+| 1.3 | `runUnifiedFlow` shared runner (parameterizes the `ci/` and `e2e/` unified-flow) | `tests/_shared/unified-flow.runner.ts` | 595-line clone (top jscpd) | ☐ (requires running the 12-min suite) |
+| 1.4 | Adopt the payment builders + the `waitForCcTransactionStatus` helper | `src/api/bodies/`, `src/helpers/database.helpers.ts` | builder in 2 specs; repeated polling | ☐ |
 
-**Aceite Tier 1:** fixtures usadas por ≥1 spec novo; oracle no barrel + catalog; jscpd cai vs baseline.
+**Tier 1 acceptance:** fixtures used by ≥1 new spec; oracle in the barrel + catalog; jscpd drops vs baseline.
 
 ---
 
-## TIER 2 — Dívida estrutural que alimenta duplicação
+## TIER 2 — Structural debt that feeds duplication
 
-| # | Item | Evidência | Status |
+| # | Item | Evidence | Status |
 |---|---|---|---|
-| 2.1 | **Reconciliar política de selectors**: redefinir a regra "tudo em common.selectors.ts". Decisão: selector dono-de-página **co-locado** no page object (getter semântico OK); `common.selectors.ts` só p/ cross-cutting; splitar `common` por portal. Atualizar `.claude/rules/selectors.md` + `selector-hardening` | 1.110 inline vs regra; god-file 1.049 linhas | ☐ |
-| 2.2 | Quebrar god-objects por composição (`paytomorrow` 1.540, `customer` 1.525, `contract` 966) | wc | ☐ |
-| 2.3 | Parametrizar CTs intra-spec (`for...of testData` em vez de copy-paste de bloco) | self-clones jscpd: svc-509 (348), #1315 (237), 531 (118), 525 (103) | ☐ |
-| 2.4 | Corrigir os ~38 XPath restantes em page objects → semântico | grep | ☐ |
+| 2.1 | **Reconcile the selector policy**: redefine the "everything in common.selectors.ts" rule. Decision: a page-owned selector is **co-located** in the page object (semantic getter OK); `common.selectors.ts` for cross-cutting only; split `common` by portal. Update `.claude/rules/selectors.md` + `selector-hardening` | 1,110 inline vs the rule; god-file 1,049 lines | ☐ |
+| 2.2 | Break god-objects by composition (`paytomorrow` 1,540, `customer` 1,525, `contract` 966) | wc | ☐ |
+| 2.3 | Parameterize intra-spec CTs (`for...of testData` instead of copy-pasting a block) | jscpd self-clones: svc-509 (348), #1315 (237), 531 (118), 525 (103) | ☐ |
+| 2.4 | Fix the ~38 remaining XPath in page objects → semantic | grep | ☐ |
 
-## TIER 3 — Type-safety & higiene
+## TIER 3 — Type-safety & hygiene
 
-| # | Item | Evidência | Status |
+| # | Item | Evidence | Status |
 |---|---|---|---|
-| 3.1 | Factory `makeTestContext()` p/ specs pararem de montar ctx parcial + castar | 2 `ctx as any`/double-cast (531, storeUnderwritingScores) | ☐ |
-| 3.2 | Auditar `as any` restantes (16 em tests) | grep | ☐ |
-| 3.3 | Remover specs scratch/probe (`__scratch_la_signing_url`, `_sticky_multi_fresh` — esse com `UPDATE` cru) | grep | ☐ |
-| 3.4 | Corrigir 2 `src/scripts` quebrados (markdown com `.ts`) que deixam `tsc` vermelho | tsc | ☐ |
+| 3.1 | `makeTestContext()` factory so specs stop building a partial ctx + casting | 2 `ctx as any`/double-cast (531, storeUnderwritingScores) | ☐ |
+| 3.2 | Audit the remaining `as any` (16 in tests) | grep | ☐ |
+| 3.3 | Remove scratch/probe specs (`__scratch_la_signing_url`, `_sticky_multi_fresh` — that one with a raw `UPDATE`) | grep | ☐ |
+| 3.4 | Fix the 2 broken `src/scripts` (markdown with `.ts`) that leave `tsc` red | tsc | ☐ |
 
-## CROSS-CUTTING — fechar o loop no sistema de agents
+## CROSS-CUTTING — close the loop in the agent system
 
 | # | Item | Status |
 |---|---|---|
-| X.1 | Toda fixture/helper/oracle nova entra nas skills (`helpers-catalog`, `e2e-examples`, `common-operations`) p/ o agent ALCANÇAR | ☐ |
-| X.2 | Gate "reuse-first" no `qa-implementer`: antes de escrever setup/asserção, usar fixture/oracle existente | ☐ |
-| X.3 | Skill nova `prefer-fixtures` (ou seção em `test-data-hierarchy`): fixture de estado pronto > setup inline | ☐ |
+| X.1 | Every new fixture/helper/oracle enters the skills (`helpers-catalog`, `e2e-examples`, `common-operations`) so the agent can REACH it | ☐ |
+| X.2 | "Reuse-first" gate in `qa-implementer`: before writing setup/assertion, use an existing fixture/oracle | ☐ |
+| X.3 | New `prefer-fixtures` skill (or a section in `test-data-hierarchy`): a ready-state fixture > inline setup | ☐ |
 
 ---
 
-## Sequência de execução
+## Execution sequence
 
-1. **Tier 0** (enforcement) — multiplicador, primeiro.
-2. **Tier 1.1 + 1.2** (fixtures + oracle) + **X.1/X.2** (roteamento nas skills) — maior corte + fecha o loop.
-3. **Tier 2.1** (política de selectors) — destrava a contradição que o agent enfrenta.
-4. **Tier 1.3, 2.2–2.4, 3.x** — restante (alguns exigem rodar a suíte).
+1. **Tier 0** (enforcement) — the multiplier, first.
+2. **Tier 1.1 + 1.2** (fixtures + oracle) + **X.1/X.2** (routing in the skills) — biggest cut + closes the loop.
+3. **Tier 2.1** (selector policy) — unblocks the contradiction the agent faces.
+4. **Tier 1.3, 2.2–2.4, 3.x** — the rest (some require running the suite).
 
-## Como medir progresso
+## How to measure progress
 
 ```bash
-npx jscpd tests src --min-lines 5 --min-tokens 50   # % duplicação (baseline 8.84%)
+npx jscpd tests src --min-lines 5 --min-tokens 50   # % duplication (baseline 8.84%)
 npx eslint .                                          # ERRORs = 0; warnings ratchet
-npx tsc --noEmit                                      # verde (após 3.4)
+npx tsc --noEmit                                      # green (after 3.4)
 ```

@@ -1,6 +1,6 @@
 ---
 name: test-report-standard
-description: Carregue ao gerar/atualizar relatório em docs/taskTestingUown/{testName}/{testName}-report.md. Define seções obrigatórias: ambiente, cenários, status, evidência, observações vs bugs. Nunca deixar PENDING após execução bem-sucedida.
+description: Load when generating/updating a report at docs/taskTestingUown/{testName}/{testName}-report.md. Defines the mandatory sections: environment, scenarios, status, evidence, observations vs bugs. Never leave PENDING after a successful execution.
 disable-model-invocation: true
 ---
 
@@ -12,16 +12,16 @@ disable-model-invocation: true
 
 ## Reports = history, not pattern source
 
-Reports em `docs/taskTestingUown/` sao **registros do que aconteceu em uma execucao especifica**. NAO sao fonte de patterns (regra #16).
+Reports in `docs/taskTestingUown/` are **records of what happened in a specific execution**. They are NOT a source of patterns (rule #16).
 
-- **Fonte de pattern de codigo** -> skills (`.claude/skills/`) + codigo (`src/`, `tests/`)
-- **Fonte de pattern de dominio** -> skills ([[qa-domain-reflexes]], [[merchant-preflight]], etc.)
-- **Licoes aprendidas** -> pitfalls em [[application-lifecycle]] ou skill domain-especifica
-- **Categorias volatile** -> [[volatile-knowledge-registry]]
+- **Code pattern source** -> skills (`.claude/skills/`) + code (`src/`, `tests/`)
+- **Domain pattern source** -> skills ([[qa-domain-reflexes]], [[merchant-preflight]], etc.)
+- **Lessons learned** -> pitfalls in [[application-lifecycle]] or a domain-specific skill
+- **Volatile categories** -> [[volatile-knowledge-registry]]
 
-Re-leitura de report por agente permitida apenas para: (a) `qa-validator` atualizando apos nova execucao, (b) reproducao manual via leadPk/accountPk, (c) auditoria solicitada pelo user. **Inferir pattern a partir de report antigo = bug do agente.**
+Re-reading a report by an agent is allowed only for: (a) `qa-validator` updating after a new execution, (b) manual reproduction via leadPk/accountPk, (c) an audit requested by the user. **Inferring a pattern from an old report = agent bug.**
 
-Todo report gerado DEVE incluir o disclaimer no topo, logo apos o `# Relatorio de Teste:` header (ver template).
+Every generated report MUST include the disclaimer at the top, right after the `# Relatorio de Teste:` header (see template).
 
 ## Report Structure (sections)
 
@@ -84,7 +84,7 @@ No separate bugs file — bugs are documented inside `-report.md`.
 
 ## Source-Tagging — Evidence Provenance
 
-Toda afirmacao tecnica num report deve carregar **tag de proveniencia**. Operacionaliza regra #10 (conservadora) e regra #16 (reports = history).
+Every technical assertion in a report must carry a **provenance tag**. Operationalizes rule #10 (conservative) and rule #16 (reports = history).
 
 ### Tag Taxonomy
 
@@ -104,9 +104,9 @@ Toda afirmacao tecnica num report deve carregar **tag de proveniencia**. Operaci
 ### Where to apply (MANDATORY)
 
 - Every `**Evidencia:**` and `**Causa provavel:**` line in bug reports
-- Every `[CONFIRMADO]` classification — **without primary source tag, degrades to `[HIPOTESE]`**
+- Every `[CONFIRMADO]` classification — **without a primary source tag, it degrades to `[HIPOTESE]`**
 - System behavior assertions in `**O que e verificado:**` (when beyond obvious)
-- Every leadPk/accountPk in Evidencias table
+- Every leadPk/accountPk in the Evidencias table
 
 ### Degradation Rule
 
@@ -116,7 +116,7 @@ Toda afirmacao tecnica num report deve carregar **tag de proveniencia**. Operaci
 | `[HIPOTESE]` | yes | `[OBSERVACAO]` |
 | `[OBSERVACAO]` | yes | (keeps) |
 
-Memory is a dated record — may be stale. Drift-prone categories in [[volatile-knowledge-registry]] always require primary source tag.
+Memory is a dated record — may be stale. Drift-prone categories in [[volatile-knowledge-registry]] always require a primary source tag.
 
 > Full examples: [references/template.md](references/template.md)
 

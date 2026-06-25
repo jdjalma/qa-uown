@@ -20,7 +20,7 @@ async function driveToFunded(
  data: { env: string; state: string; merchant: string; orderTotal: string },
  existingAccountPk?: string,
 ): Promise<{ leadPk: string; accountPk: string }> {
- // GDS bypass: usar conta existente quando GDS indisponível
+ // GDS bypass: use an existing account when GDS is unavailable
  if (existingAccountPk) {
  console.log(`[Setup] Using existing accountPk=${existingAccountPk} (GDS bypass)`);
  return { leadPk: '0', accountPk: existingAccountPk };
@@ -34,7 +34,7 @@ async function driveToFunded(
  reportKeys: new Map<string, string>,
  };
 
- // Padrão pre-qual: sendApplication SEM order -> 5s -> getApplicationStatus -> sendInvoice -> submitApplication
+ // Pre-qual pattern: sendApplication WITHOUT order -> 5s -> getApplicationStatus -> sendInvoice -> submitApplication
  await createPreQualifiedApplication(api, td.merchant, td.applicant, ctx, {
  submitPaymentInfoViaApi: true,
  });
@@ -47,7 +47,7 @@ async function driveToFunded(
  const fundedResp = await api.lead.updateFundingStatus([Number(ctx.leadPk)], 'FUNDED');
  if (!fundedResp.ok) throw new Error(`updateFundingStatus FUNDED failed: ${fundedResp.status}`);
 
- // Aguardar criação da conta SVC (assíncrono após FUNDED)
+ // Wait for SVC account creation (asynchronous after FUNDED)
  const accountPk = await db.waitForAccountByLeadPk(ctx.leadPk, 30_000);
  if (!accountPk) throw new Error(`SVC account not created for leadPk=${ctx.leadPk}`);
 
@@ -57,50 +57,50 @@ async function driveToFunded(
 
 ---
 
-## submitApplication — pre-requisito obrigatorio (`getMissingFields`)
+## submitApplication — mandatory prerequisite (`getMissingFields`)
 
-> **Regra:** qualquer helper ou funcao customizada que chama `submitApplication` DEVE antes resolver
-> `merchantProgramPk` via `getMissingFields`. Pular esse passo faz `submitApplication` falhar com
-> "Merchant program is required"; se a falha nao for assertida, o lead fica preso em `CC_AUTH_PASSED`
-> (nunca chega a `CONTRACT_CREATED`) e o `settleApplication` downstream estoura HTTP 500 — diagnostico
-> enganoso. Prefira `createPreQualifiedApplication`, que ja encadeia a sequencia canonica.
+> **Rule:** any helper or custom function that calls `submitApplication` MUST first resolve
+> `merchantProgramPk` via `getMissingFields`. Skipping this step makes `submitApplication` fail with
+> "Merchant program is required"; if the failure is not asserted, the lead gets stuck in `CC_AUTH_PASSED`
+> (never reaching `CONTRACT_CREATED`) and the downstream `settleApplication` blows up with HTTP 500 — a
+> misleading diagnosis. Prefer `createPreQualifiedApplication`, which already chains the canonical sequence.
 
 ```typescript
-// Sequencia obrigatoria ANTES de submitApplication (quando nao usar createPreQualifiedApplication):
-// 1. extrair shortCode + planId do redirectUrl retornado por sendInvoice
+// Mandatory sequence BEFORE submitApplication (when not using createPreQualifiedApplication):
+// 1. extract shortCode + planId from the redirectUrl returned by sendInvoice
 const redirectUrl = invoiceResp.body.paymentDetailsList[0].redirectUrl;
-const { shortCode, planId } = parseRedirectUrl(redirectUrl); // shortCode + planId da query/path
+const { shortCode, planId } = parseRedirectUrl(redirectUrl); // shortCode + planId from query/path
 
-// 2. resolver merchantProgramPk
+// 2. resolve merchantProgramPk
 const missing = await api.lead.getMissingFields(shortCode, { planId });
 
-// 3. submeter E assertir explicitamente (NUNCA swallow silencioso)
+// 3. submit AND assert explicitly (NEVER swallow silently)
 const submitResp = await api.lead.submitApplication(buildSubmitApplicationBody(missing, ...));
 if (!submitResp.ok) throw new Error(`submitApplication failed: ${submitResp.status} ${submitResp.bodyText}`);
 ```
 
-> **Sintoma de diagnostico:** `settleApplication` 500 + lead em `CC_AUTH_PASSED` → quase sempre
-> `submitApplication` sem `getMissingFields`. Ver [[application-lifecycle]] pitfalls #2 e #81.
+> **Diagnostic symptom:** `settleApplication` 500 + lead in `CC_AUTH_PASSED` → almost always
+> `submitApplication` without `getMissingFields`. See [[application-lifecycle]] pitfalls #2 and #81.
 
 ---
 
 ## CC Payment Arrangement (API)
 
-> **IMPORTANTE:** CC é **síncrono** — `makeCreditCardPayments` processa a cobrança na mesma
-> requisição. O arrangement já está como SUCCESS imediatamente após a chamada. Nenhum sweep é
-> necessário.
+> **IMPORTANT:** CC is **synchronous** — `makeCreditCardPayments` processes the charge in the same
+> request. The arrangement is already SUCCESS immediately after the call. No sweep is
+> needed.
 
 ```typescript
-// Imports necessários
+// Required imports
 import { buildCcArrangementBody } from '@api/bodies/payment-arrangement.body.js';
 import { calculateDateISO } from '@helpers/date.helpers.js';
 import { VALID_TEST_CARDS } from '@data/test-cards.js';
 
-// ctx.accountPk deve estar preenchido antes
+// ctx.accountPk must be populated beforehand
 
-// 1. Build body — OBJETO de opções (NÃO array + boolean)
+// 1. Build body — options OBJECT (NOT array + boolean)
 const body = buildCcArrangementBody({
- accountPk: Number(ctx.accountPk), // obrigatório, tipo number
+ accountPk: Number(ctx.accountPk), // required, number type
  arrangementType: 'SETTLEMENT', // 'SETTLEMENT' | 'NORMAL'
  ccNumber: VALID_TEST_CARDS[0].cardNumber,
  ccExp: VALID_TEST_CARDS[0].expirationDate,
@@ -110,23 +110,23 @@ const body = buildCcArrangementBody({
  ],
 });
 
-// 2. Criar arrangement — corpo já tem accountPk, SEM parâmetro extra
+// 2. Create arrangement — the body already has accountPk, NO extra parameter
 const res = await api.paymentArrangement.makeCreditCardPayments(body);
 expect(res.ok, `makeCreditCardPayments: ${res.status} — ${JSON.stringify(res.body)}`).toBeTruthy;
 
-// 3. CC é síncrono — arrangement já SUCCESS aqui
+// 3. CC is synchronous — arrangement is already SUCCESS here
 const arrangement = await db.getPaymentArrangement(ctx.accountPk);
 ctx.arrangementPk = String(arrangement?.pk ?? '');
 expect(arrangement!.status).toBe('SUCCESS');
 expect(arrangement!.arrangement_type).toBe('SETTLEMENT');
 
-// 4. Poll CC transactions — usa ARRANGEMENT pk, não account pk
+// 4. Poll CC transactions — uses the ARRANGEMENT pk, not the account pk
 await db.waitForCcTransactionsProcessed(ctx.arrangementPk, 60_000);
 
-// 5. Poll arrangement status — usa ACCOUNT pk
+// 5. Poll arrangement status — uses the ACCOUNT pk
 await db.waitForPaymentArrangementStatus(ctx.accountPk, 'SUCCESS', 60_000);
 
-// 6. Verificar status da conta (apenas SETTLEMENT transiciona para SETTLED_IN_FULL)
+// 6. Check the account status (only SETTLEMENT transitions to SETTLED_IN_FULL)
 const accountStatus = await db.getAccountStatus(ctx.accountPk);
 expect(accountStatus).toBe('SETTLED_IN_FULL');
 ```
@@ -177,30 +177,30 @@ Selectors added in (`CreditCardSelectors`):
 
 ## ACH Payment Arrangement
 
-> **IMPORTANTE:** ACH é **assíncrono** — `createOrUpdateAchPayments` cria entradas NOT_STARTED.
-> O sweep (via Profituity) processa depois. **NÃO testável em qa1** — Profituity inativo lá.
-> Body deve ter `achProcessType: 'REQUEST'` para o sweep pegar sem checar data de vencimento.
-> O builder já inclui `achProcessType: 'REQUEST'` por padrão.
+> **IMPORTANT:** ACH is **asynchronous** — `createOrUpdateAchPayments` creates NOT_STARTED entries.
+> The sweep (via Profituity) processes them later. **NOT testable in qa1** — Profituity is inactive there.
+> The body must have `achProcessType: 'REQUEST'` for the sweep to pick it up without checking the due date.
+> The builder already includes `achProcessType: 'REQUEST'` by default.
 
 ```typescript
 import { buildAchArrangementBody } from '@api/bodies/payment-arrangement.body.js';
 import { calculateDateISO } from '@helpers/date.helpers.js';
 
-// Build body — OBJETO de opções
+// Build body — options OBJECT
 const body = buildAchArrangementBody({
- accountPk: Number(ctx.accountPk), // obrigatório
+ accountPk: Number(ctx.accountPk), // required
  arrangementType: 'SETTLEMENT', // 'SETTLEMENT' | 'NORMAL', default='SETTLEMENT'
  installments: [
  { amount: '100', date: calculateDateISO(3) }, // amount=string, date=YYYY-MM-DD
  ],
- // Opcional: routingNumber, accountNumber, bankAccountType (defaults de TEST_BANK)
+ // Optional: routingNumber, accountNumber, bankAccountType (defaults from TEST_BANK)
 });
 
-// Criar arrangement — corpo já tem accountPk, SEM parâmetro extra
+// Create arrangement — the body already has accountPk, NO extra parameter
 const res = await api.paymentArrangement.createOrUpdateAchPayments(body);
 expect(res.ok).toBeTruthy;
 
-// Verificar FK e pagamentos ACH criados
+// Check the FK and the created ACH payments
 const hasFk = await db.achPaymentHasArrangementFk;
 expect(hasFk).toBe(true);
 
@@ -210,8 +210,8 @@ const payments = await db.getAchPaymentsByArrangement(ctx.arrangementPk);
 expect(payments.length).toBeGreaterThan(0);
 expect(payments[0].status).toBe('PENDING');
 
-// ACH sweep — só em ambientes com Profituity ativo (não qa1)
-// Se necessário testar sem Profituity, usar simulação via DB (ver database.helpers.ts):
+// ACH sweep — only in environments with Profituity active (not qa1)
+// If you need to test without Profituity, use DB simulation (see database.helpers.ts):
 // await db.simulateCcSweepForArrangement(ctx.arrangementPk);
 // await db.recalculateArrangementStatus(ctx.arrangementPk);
 ```
@@ -221,10 +221,10 @@ expect(payments[0].status).toBe('PENDING');
 ## TMS Due Date Adjustment
 
 ```typescript
-// Endpoint TMS usa API KEY separada (FIVE9_TMS_API_KEY, não SVC key)
-// testEnv.tmsApiKey <- chave correta
+// The TMS endpoint uses a separate API KEY (FIVE9_TMS_API_KEY, not the SVC key)
+// testEnv.tmsApiKey <- the correct key
 const res = await api.account.moveDueDatesByDays(ctx.accountPk, 7);
-// ou via TMS:
+// or via TMS:
 // POST /uown/tms/v1/accounts/{pk}/next-due-date/adjustments
 // Header: Authorization: testEnv.tmsApiKey
 ```
@@ -234,10 +234,10 @@ const res = await api.account.moveDueDatesByDays(ctx.accountPk, 7);
 ## Scheduled Tasks
 
 ```typescript
-// Sweep CC
+// CC Sweep
 await api.scheduledTask.sendCreditCardPaymentsSweep;
 
-// Ou via trigger genérico (nome da task)
+// Or via the generic trigger (task name)
 await api.scheduledTask.triggerScheduledTask('sendCreditCardPaymentsSweep');
 ```
 
@@ -421,8 +421,10 @@ await mSetup.configure(MERCHANTS.DanielsJewelers.number, { isCcRequired: true, .
 
 ## Estado compartilhado entre steps (ctx)
 
+> Shared state between steps (ctx)
+
 ```typescript
-// Declarar ANTES de test.step
+// Declare BEFORE test.step
 const ctx: {
  leadPk: string;
  leadUuid: string;
@@ -430,13 +432,13 @@ const ctx: {
  arrangementPk: string;
 } = { leadPk: '', leadUuid: '', accountPk: '', arrangementPk: '' };
 
-// Preencher em steps
+// Populate inside steps
 await test.step('Setup', async  => {
  ctx.accountPk = '4438';
 });
 
 await test.step('Assert', async  => {
- // ctx.accountPk disponível aqui
+ // ctx.accountPk available here
  const status = await db.getAccountStatus(ctx.accountPk);
 });
 ```

@@ -76,7 +76,13 @@ docs/
 ├── PROJECT.md          # Architecture details
 ├── TESTING.md          # Testing guide and conventions
 ├── AGENTS.md           # Agent/subagent workflow documentation
-└── business-rules/     # Domain business rules (12 chapters + appendices)
+├── onboarding-qa.md    # QA onboarding guide
+├── database-schema.md  # Database schema reference
+├── business-rules/     # Domain business rules (chapters + appendices)
+├── adrs/               # Architecture Decision Records (ADR-001..009)
+├── api-reference/      # UOWN TMS Service API mirror (OpenAPI 3.0.1)
+├── knowledge-base/     # Per-feature investigation notes (from /discovery)
+└── scenarios/          # BDD scenarios per demand (/test-scenarios → /test-report)
 ```
 
 ## Running Tests
@@ -212,7 +218,12 @@ UW_APPROVED → CC_AUTH_PASSED → CONTRACT_CREATED → SIGNED → SETTLED → F
 | [PROJECT.md](docs/PROJECT.md) | Architecture, setup, and environment details |
 | [TESTING.md](docs/TESTING.md) | Testing guide, conventions, and examples |
 | [AGENTS.md](docs/AGENTS.md) | Agent/subagent workflow for AI-assisted development |
-| [Business Rules](docs/business-rules/) | Domain knowledge (12 chapters + appendices) |
+| [onboarding-qa.md](docs/onboarding-qa.md) | QA onboarding guide |
+| [Business Rules](docs/business-rules/) | Domain knowledge (chapters + appendices) |
+| [ADRs](docs/adrs/) | Architecture Decision Records (ADR-001..009) |
+| [API Reference](docs/api-reference/) | UOWN TMS Service API mirror (OpenAPI 3.0.1) |
+| [Knowledge Base](docs/knowledge-base/) | Per-feature investigation notes (from `/discovery`) |
+| [Scenarios](docs/scenarios/) | BDD scenarios per demand (from `/test-scenarios`) |
 | [CLAUDE.md](CLAUDE.md) | AI agent instructions and project context |
 
 ## Key Conventions

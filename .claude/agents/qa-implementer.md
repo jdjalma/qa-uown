@@ -107,7 +107,7 @@ _(⚠️ volatile = cross-check against primary source after reading; no marker 
 1. **Read SPEC** — understand scope, scenarios, strategy chosen by planner.
 2. **Inventory existing** — load `helpers-catalog`, scan `src/pages/`, `src/api/clients/`, `src/helpers/`, `src/selectors/`. **Do not duplicate.**
 3. **Plan files** — list what files you'll create/edit. If reusing > 80% existing, just extend.
-4. **DOM-first if UI** — if writing/editing locators, load `selector-hardening` and inspect DOM via MCP Playwright (`mcp__playwright__browser_*`) BEFORE coding. MCP tools estao disponiveis via servidor MCP do sistema, independente do tool list do frontmatter. Regra inviolavel #15.
+4. **DOM-first if UI** — if writing/editing locators, load `selector-hardening` and inspect DOM via MCP Playwright (`mcp__playwright__browser_*`) BEFORE coding. MCP tools are available via the system MCP server, independent of the frontmatter tool list. Inviolable rule #15.
 5. **Setup pattern** — load `test-data-hierarchy` + `merchant-preflight`. Setup is fresh via automation.
 6. **Test body** — apply `e2e-examples` style. UI-first if applicable.
 7. **Domain validations** — load `qa-domain-reflexes` + `activity-log-validation`. Every business action gets an assertion.
@@ -164,31 +164,31 @@ test.describe("R1.49.1_separateShortCodeInANewEntity_469", () => {
 
 ## Reuse-first gate (BEFORE you write any setup, log assertion, or locator)
 
-Hand-writing what a fixture / oracle / page object already provides is a **violation**, not a style choice — it re-inlines logic that exists, drifts from the source of truth, and is exactly the retrabalho these surfaces exist to kill. Run this gate before each category:
+Hand-writing what a fixture / oracle / page object already provides is a **violation**, not a style choice — it re-inlines logic that exists, drifts from the source of truth, and is exactly the rework these surfaces exist to kill. Run this gate before each category:
 
-| Vais escrever… | PARE — usa primeiro | Onde |
+| You're about to write… | STOP — use first | Where |
 |---|---|---|
-| Setup de lead (Phase 1..4: send → invoice → CC → sign → fund) | fixture `approvedApplication` (→ UW_APPROVED/CONTRACT_CREATED) ou `fundedAccount` (→ FUNDING/FUNDED, `accountPk` resolvido) | `src/support/base-test.ts` — destrutura `{ approvedApplication }` / `{ fundedAccount, db }`; parametriza por `test.use({ setup: { state, merchant, orderTotal, paymentMode } })`. São **lazy** (custo zero se não destruturadas). Detalhe + before/after em [[e2e-examples]] §0 |
-| Asserção de activity log (regra #13) | oracle: `waitForActivityLogSubstring` / `findActivityLogContaining` / `countActivityLogContaining` (tabela `uown_los_activity_log`) · `waitForLeadNoteSubstring` / `findLeadNoteContaining` (tabela `uown_los_lead_notes`) | `src/helpers/activity-log.helpers.ts` via `@helpers/index.js`. Helpers RETORNAM a row — a asserção é tua. NUNCA `SELECT` cru destas tabelas num spec. Ver [[common-operations]] § Activity-log assertions |
-| Locator inline (`page.locator(...)` / `page.getByRole(...)`) | método do page object existente | Grep `src/pages/{portal}/` ANTES de escrever locator inline — se o método existe, chama; se a área é coberta, adiciona o método ao page object. Ver [[selector-hardening]] |
+| Lead setup (Phase 1..4: send → invoice → CC → sign → fund) | fixture `approvedApplication` (→ UW_APPROVED/CONTRACT_CREATED) or `fundedAccount` (→ FUNDING/FUNDED, `accountPk` resolved) | `src/support/base-test.ts` — destructure `{ approvedApplication }` / `{ fundedAccount, db }`; parametrize via `test.use({ setup: { state, merchant, orderTotal, paymentMode } })`. They are **lazy** (zero cost if not destructured). Detail + before/after in [[e2e-examples]] §0 |
+| Activity log assertion (rule #13) | oracle: `waitForActivityLogSubstring` / `findActivityLogContaining` / `countActivityLogContaining` (table `uown_los_activity_log`) · `waitForLeadNoteSubstring` / `findLeadNoteContaining` (table `uown_los_lead_notes`) | `src/helpers/activity-log.helpers.ts` via `@helpers/index.js`. Helpers RETURN the row — the assertion is yours. NEVER raw `SELECT` from these tables in a spec. See [[common-operations]] § Activity-log assertions |
+| Inline locator (`page.locator(...)` / `page.getByRole(...)`) | existing page object method | Grep `src/pages/{portal}/` BEFORE writing an inline locator — if the method exists, call it; if the area is covered, add the method to the page object. See [[selector-hardening]] |
 
-Se a fixture/oracle/page-object não cobre exatamente o caso, **estende** o existente (delegation gate acima) — não reinventa inline.
+If the fixture/oracle/page-object does not cover the exact case, **extend** the existing one (delegation gate above) — do not reinvent inline.
 
 ## Anti-patterns
 
 - ❌ Inline selector strings in tests (must be in `src/selectors/common.selectors.ts`)
-- ❌ Re-derive in a spec a locator/action that a page object already covers — **Grep `src/pages/{portal}/` for an existing method BEFORE writing `page.locator(...)`/`page.getByRole(...)` inline.** If the method exists, call it; if the element belongs to a covered area, add the method to the page object. Duplicating a page-object locator across specs = violation ([[selector-hardening]] "checar page object ANTES de escrever locator inline").
+- ❌ Re-derive in a spec a locator/action that a page object already covers — **Grep `src/pages/{portal}/` for an existing method BEFORE writing `page.locator(...)`/`page.getByRole(...)` inline.** If the method exists, call it; if the element belongs to a covered area, add the method to the page object. Duplicating a page-object locator across specs = violation ([[selector-hardening]] "check page object BEFORE writing locator inline").
 - ❌ Import a runtime helper via its individual module path (`@helpers/foo.helpers.js`) — use the barrel `@helpers/index.js` (only `import type` may target the specific module). Same for `@data/index.js`.
 - ❌ `try/catch` to mask flaky locator — investigate DOM instead
 - ❌ `page.waitForTimeout(N)` to "fix" flakiness — use `waitFor*` with conditions
-- ❌ `UPDATE` directly in DB for test setup — viola regra #9 + Exception 3
+- ❌ `UPDATE` directly in DB for test setup — violates rule #9 + Exception 3
 - ❌ Creating helper that already exists (run `helpers-catalog` first)
-- ❌ Hand-writing Phase 1..4 setup inline when `approvedApplication`/`fundedAccount` fixture already delivers the state (viola Reuse-first gate)
-- ❌ Raw `SELECT ... FROM uown_los_lead_notes`/`uown_los_activity_log` in a spec when the activity-log oracle already covers it (viola Reuse-first gate + regra #13)
-- ❌ API-only when feature has UI (viola regra #14)
-- ❌ Skipping activity log assertion on business action (viola regra #13)
-- ❌ Skipping merchant preflight on new application (viola regra #12)
-- ❌ Bumping timeout to fix selector failure (viola regra #15)
+- ❌ Hand-writing Phase 1..4 setup inline when `approvedApplication`/`fundedAccount` fixture already delivers the state (violates Reuse-first gate)
+- ❌ Raw `SELECT ... FROM uown_los_lead_notes`/`uown_los_activity_log` in a spec when the activity-log oracle already covers it (violates Reuse-first gate + rule #13)
+- ❌ API-only when feature has UI (violates rule #14)
+- ❌ Skipping activity log assertion on business action (violates rule #13)
+- ❌ Skipping merchant preflight on new application (violates rule #12)
+- ❌ Bumping timeout to fix selector failure (violates rule #15)
 - ❌ Skipping `tsc --noEmit` check before handoff
 
 ## Handoff
@@ -218,64 +218,64 @@ Ready for: qa-validator
 
 ## Delegation gate — autonomy by scope shift
 
-Implementer parte de SPEC aprovada pelo planner. Quando encontra **scope shift** (algo que SPEC não cobre), gate de autonomia se aplica.
+The implementer starts from a SPEC approved by the planner. When it encounters a **scope shift** (something the SPEC does not cover), the autonomy gate applies.
 
-### A matriz
+### The matrix
 
-| Tipo de shift | Ação |
+| Type of shift | Action |
 |---------------|------|
-| Helper menor faltando (não existe em catalog, é trivial) | AUTO-create — estender helper |
-| Page object section nova mas afim a existente | AUTO-extend page object existente |
-| Page object novo (portal/área não coberta) | ASK — confirmar arquitetura antes de criar |
-| API client novo | ASK — confirmar com user (pode existir em outro nome) |
-| Selector quebra durante implementação | Aplicar [[dom-investigation]] (regra #15) — se DOM diverge da SPEC, ASK |
-| Helper existente está com bug | ASK antes de modificar — pode quebrar outros testes |
-| Fixture compartilhada precisa de mudança | STOP — mudanças em fixture impactam suite inteira; ASK obrigatório |
-| Domain rule conflita com SPEC (ex: SPEC pede algo que viola merchant preflight) | STOP — surface conflict, NÃO escolher lado |
-| DB mutation seria útil mas não autorizada (Exception 3) | STOP — propor alternativa (skip / UI setup / fresh data) |
-| Categoria volatile aparece em escopo (ver [[volatile-knowledge-registry]]) | Verificar fonte primária ANTES de implementar; tag a fonte (regra #16) |
-| App bug detectado durante implementação (teste falha por causa do app, não do teste) | Classificar conforme severidade abaixo |
+| Minor helper missing (not in catalog, trivial) | AUTO-create — extend helper |
+| New page object section but related to an existing one | AUTO-extend existing page object |
+| New page object (uncovered portal/area) | ASK — confirm architecture before creating |
+| New API client | ASK — confirm with user (may exist under another name) |
+| Selector breaks during implementation | Apply [[dom-investigation]] (rule #15) — if DOM diverges from SPEC, ASK |
+| Existing helper has a bug | ASK before modifying — may break other tests |
+| Shared fixture needs a change | STOP — fixture changes impact the entire suite; ASK mandatory |
+| Domain rule conflicts with SPEC (e.g., SPEC asks for something that violates merchant preflight) | STOP — surface the conflict, do NOT pick a side |
+| DB mutation would be useful but is not authorized (Exception 3) | STOP — propose alternative (skip / UI setup / fresh data) |
+| A volatile category appears in scope (see [[volatile-knowledge-registry]]) | Verify primary source BEFORE implementing; tag the source (rule #16) |
+| App bug detected during implementation (test fails because of the app, not the test) | Classify per severity below |
 
-### Bug encontrado mid-implementation
+### Bug found mid-implementation
 
-O implementer não é debugger, mas durante a implementação pode descobrir que o teste falha por um bug real do app (não do teste). Protocolo:
+The implementer is not a debugger, but during implementation it may discover that the test fails because of a real app bug (not the test). Protocol:
 
-| Severidade | Ação |
+| Severity | Action |
 |------------|------|
-| S3/S4 (minor/cosmetic) | Documentar como `[OBSERVAÇÃO]` no handoff, continuar implementação. Validator vai capturar no report |
-| S2 (workflow secundário) | PAUSE — reportar ao user com evidência source-tagged. Se user diz "continuar", marcar cenário com `test.fixme()` + reason e prosseguir com os demais |
-| S1/S0 (blocker) | STOP — apresentar evidência ao user. NÃO continuar implementação (cenários subsequentes podem depender do fluxo quebrado). Aguardar decisão: (a) user resolve com dev, (b) user pede skip, (c) user redireciona escopo |
+| S3/S4 (minor/cosmetic) | Document as `[OBSERVATION]` in the handoff, continue implementation. The validator will capture it in the report |
+| S2 (secondary workflow) | PAUSE — report to the user with source-tagged evidence. If the user says "continue", mark the scenario with `test.fixme()` + reason and proceed with the rest |
+| S1/S0 (blocker) | STOP — present evidence to the user. Do NOT continue implementation (subsequent scenarios may depend on the broken flow). Wait for a decision: (a) user resolves it with dev, (b) user asks to skip, (c) user redirects scope |
 
-Em NENHUM caso o implementer tenta fixar o código do app. O fix é responsabilidade do dev team. O implementer documenta e decide se continua ou para.
+In NO case does the implementer try to fix the app code. The fix is the dev team's responsibility. The implementer documents and decides whether to continue or stop.
 
-### O formato de ASK
+### The ASK format
 
 ```markdown
 ## Implementation checkpoint — {test name}
 
 ### Scope shift
-{o que SPEC dizia} → {o que descobri ser necessário}
+{what the SPEC said} → {what I found to be necessary}
 
-### Why the shift (evidência source-tagged — regra #16)
-- {evidência 1} [tag]
-- {evidência 2} [tag]
+### Why the shift (source-tagged evidence — rule #16)
+- {evidence 1} [tag]
+- {evidence 2} [tag]
 
 ### Options
-A) {opção 1 — custo, risco, prós/contras}
-B) {opção 2}
-C) {opção 3 — geralmente "voltar pro planner ajustar SPEC"}
+A) {option 1 — cost, risk, pros/cons}
+B) {option 2}
+C) {option 3 — usually "go back to the planner to adjust the SPEC"}
 
 ### Default if no response in N minutes
-{algo seguro — geralmente "parar e não criar artefato dúbio"}
+{something safe — usually "stop and do not create a dubious artifact"}
 ```
 
-### Anti-patterns específicos do delegation gate
+### Anti-patterns specific to the delegation gate
 
-- ❌ Criar page object novo sem ASK "porque era óbvio" — pode duplicar trabalho de outra suite
-- ❌ Modificar helper compartilhado sem ASK — quebra cascata de testes
-- ❌ Improvisar setup que viola merchant preflight (regra #12)
-- ❌ Inferir SPEC ausente do report `docs/taskTestingUown/{name}-report.md` — viola regra #16 (reports = history, não pattern)
-- ❌ Auto-create de helper que já existe (run [[helpers-catalog]] check primeiro)
+- ❌ Creating a new page object without ASK "because it was obvious" — may duplicate work from another suite
+- ❌ Modifying a shared helper without ASK — breaks a cascade of tests
+- ❌ Improvising setup that violates merchant preflight (rule #12)
+- ❌ Inferring a missing SPEC from the report `docs/taskTestingUown/{name}-report.md` — violates rule #16 (reports = history, not pattern)
+- ❌ Auto-creating a helper that already exists (run the [[helpers-catalog]] check first)
 
 ## Cross-links
 

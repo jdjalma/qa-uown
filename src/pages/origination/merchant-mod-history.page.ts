@@ -9,9 +9,9 @@ import { MerchantLocationReportControls } from '../../helpers/merchant-location-
  *
  * Endpoint: POST /uown/getMerchantDataChangeResults
  *
- * O filtro multi-select Merchant/Location (#1319), a paginação e a leitura de
- * coluna são compartilhados via {@link MerchantLocationReportControls} (campo
- * `report`) — os métodos abaixo delegam, preservando a API pública.
+ * The multi-select Merchant/Location filter (#1319), pagination and column
+ * reading are shared via {@link MerchantLocationReportControls} (field
+ * `report`) — the methods below delegate, preserving the public API.
  */
 export class MerchantModHistoryPage extends OriginationBasePage {
   private readonly report = new MerchantLocationReportControls(this.page);
@@ -21,7 +21,7 @@ export class MerchantModHistoryPage extends OriginationBasePage {
     await this.waitForPageLoad();
   }
 
-  // ── Delegação ao MerchantLocationReportControls (#1319) ──────────────
+  // ── Delegation to MerchantLocationReportControls (#1319) ──────────────
   expandFilters(): Promise<void> { return this.report.expandFilters(); }
   filterByMerchant(name: string): Promise<void> { return this.report.filterByMerchant(name); }
   filterByLocation(name: string): Promise<void> { return this.report.filterByLocation(name); }

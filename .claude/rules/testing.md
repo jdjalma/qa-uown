@@ -20,20 +20,20 @@ Non-task tests: `tests/e2e/{portal}/` or `tests/api/`
 
 ### task-testing project split — MANDATORY tag (discovered 2026-05-24)
 
-O projeto `task-testing` foi splitado em `task-testing-origination` e `task-testing-servicing` para evitar `storageState`/`baseURL` mismatch quando uma spec cobre os dois portais.
+The `task-testing` project was split into `task-testing-origination` and `task-testing-servicing` to avoid a `storageState`/`baseURL` mismatch when a spec covers both portals.
 
-**Regra:** toda spec em `docs/taskTestingUown/` DEVE declarar `@origination` OU `@servicing` no campo `tag` do `testData`:
+**Rule:** every spec in `docs/taskTestingUown/` MUST declare `@origination` OR `@servicing` in the `tag` field of `testData`:
 
 ```typescript
 const testData = [{
   env: 'qa1',
-  tag: '@origination',   // seleciona task-testing-origination (baseURL + storageState Origination)
-  // ou
-  tag: '@servicing',    // seleciona task-testing-servicing (baseURL + storageState Servicing)
+  tag: '@origination',   // selects task-testing-origination (Origination baseURL + storageState)
+  // or
+  tag: '@servicing',    // selects task-testing-servicing (Servicing baseURL + storageState)
 }];
 ```
 
-Se uma spec usa AMBOS os portais: separar os CTs que acessam Origination (tag `@origination`) dos que acessam Servicing (tag `@servicing`) — nunca misturar no mesmo CT. Sem essa tag, o Playwright seleciona o projeto errado e a página carregada não corresponde ao portal esperado. Ver [[application-lifecycle]] pitfall #61.
+If a spec uses BOTH portals: separate the CTs that access Origination (tag `@origination`) from those that access Servicing (tag `@servicing`) — never mix them in the same CT. Without this tag, Playwright selects the wrong project and the loaded page does not match the expected portal. See [[application-lifecycle]] pitfall #61.
 
 ## Mandatory Principles
 
@@ -46,83 +46,83 @@ Se uma spec usa AMBOS os portais: separar os CTs que acessam Origination (tag `@
 
 ## UI-First Principle (MANDATORY — CLAUDE.md rule #15)
 
-> **Regra inviolável:** se a feature tem fluxo de usuário no portal, o teste DEVE exercer esse fluxo via browser. API-only é EXCEÇÃO restrita.
+> **Inviolable rule:** if the feature has a user flow in the portal, the test MUST exercise that flow via the browser. API-only is a restricted EXCEPTION.
 
-### Quando UI é obrigatório
+### When UI is mandatory
 
-- Feature tem tela ou interação de usuário (Origination/Servicing/Website/AMS/Merchant portal)
-- Validação visual: placeholders renderizados, badges, conteúdo de iframe (GowSign/SignWell), PDFs gerados, emails formatados
-- Fluxo customer-facing: completeApplication, signing, payment, refund, support actions
+- Feature has a screen or user interaction (Origination/Servicing/Website/AMS/Merchant portal)
+- Visual validation: rendered placeholders, badges, iframe content (GowSign/SignWell), generated PDFs, formatted emails
+- Customer-facing flow: completeApplication, signing, payment, refund, support actions
 
-### Quando API-only é aceitável (EXCEÇÕES)
+### When API-only is acceptable (EXCEPTIONS)
 
-- **Endpoints admin/ops sem UI:** `PATCH /uown/svc/gowsign-templates/{id}`, `triggerScheduledTask`, `resumeScheduledTask`, internal CRUD
-- **Setup/precondição:** acelerar teste criando lead via `sendApplication` antes de exercer o fluxo de signing UI
-- **Validação DB cross-cutting:** queries de assertion sobre rows persistidos (status transition, log presence)
-- **API-only com justificativa explícita no spec** quando o resultado da feature SÓ é observável via API (ex: webhooks, response payloads)
+- **Admin/ops endpoints with no UI:** `PATCH /uown/svc/gowsign-templates/{id}`, `triggerScheduledTask`, `resumeScheduledTask`, internal CRUD
+- **Setup/precondition:** speeding up the test by creating a lead via `sendApplication` before exercising the UI signing flow
+- **Cross-cutting DB validation:** assertion queries over persisted rows (status transition, log presence)
+- **API-only with explicit justification in the spec** when the feature's result is ONLY observable via API (e.g., webhooks, response payloads)
 
-### O que NÃO pode ser substituído por API
+### What CANNOT be replaced by API
 
-- **Conteúdo renderizado** (PDF, email body, iframe content): bug de rendering só é detectável visualmente. Ler log de backend ≠ confirmar que o usuário vê o valor correto
-- **Brand/styling** (logos, cores, footers): exige inspeção visual
-- **Interação fluida** (modal abre, redirect funciona, click muda estado): comportamento UI
+- **Rendered content** (PDF, email body, iframe content): a rendering bug is only detectable visually. Reading a backend log ≠ confirming that the user sees the correct value
+- **Brand/styling** (logos, colors, footers): requires visual inspection
+- **Fluid interaction** (modal opens, redirect works, click changes state): UI behavior
 
-### Origem da regra
+### Origin of the rule
 
-2026-05-06 — BUG-01 (placeholders `{{securityDeposit}}`/`{{costPriceWithFeeNoTax}}` vazios em documentos legais) foi descoberto **manualmente pelo Fernando** porque os testes automatizados API-only só liam log de backend (`[DocumentDispatchService][GowSign] missing N tokens`) sem renderizar o PDF. Tests UI-driven teriam falhado visivelmente no iframe GowSign — bug seria caught em CI antes de qualquer tester manual.
+2026-05-06 — BUG-01 (empty `{{securityDeposit}}`/`{{costPriceWithFeeNoTax}}` placeholders in legal documents) was discovered **manually by Fernando** because the API-only automated tests only read the backend log (`[DocumentDispatchService][GowSign] missing N tokens`) without rendering the PDF. UI-driven tests would have failed visibly in the GowSign iframe — the bug would have been caught in CI before any manual tester.
 
-### Checklist para spec-test / impl-e2e / impl-api
+### Checklist for spec-test / impl-e2e / impl-api
 
-Antes de marcar um teste como pronto:
+Before marking a test as done:
 
-- [ ] A feature tem UI? Se sim, o test exerce o fluxo via browser?
-- [ ] Validações visuais (renderização de PDF, conteúdo de iframe, badges) usam page object + assertions sobre o DOM/PDF, não só logs?
-- [ ] Se o teste é API-only, o spec/comentário JUSTIFICA explicitamente por que UI não é viável?
-- [ ] Se um helper API foi escolhido para acelerar setup, o spec deixa claro qual parte do fluxo ainda é UI (ex: "criar lead via API → assinar via UI")?
+- [ ] Does the feature have UI? If so, does the test exercise the flow via the browser?
+- [ ] Do visual validations (PDF rendering, iframe content, badges) use a page object + assertions over the DOM/PDF, not just logs?
+- [ ] If the test is API-only, does the spec/comment explicitly JUSTIFY why UI is not viable?
+- [ ] If an API helper was chosen to speed up setup, does the spec make clear which part of the flow is still UI (e.g., "create lead via API → sign via UI")?
 
-### Anti-padrões
-
-```
-❌ "API-only é mais rápido" — sem justificar perda de cobertura visual
-❌ Validar bug de rendering via log de backend (`expect(notes).not.toContain('missing'))`)
-❌ Skip do iframe GowSign/SignWell porque "é flaky"
-❌ Setup via API + assert via API quando o usuário interage via UI no fluxo real
-```
+### Anti-patterns
 
 ```
-✅ Setup via API (criar lead em CC_AUTH_PASSED) + UI completa o resto (signing iframe, download)
-✅ API-only para PATCH /admin endpoints (sem UI exposta) com comentário justificando
-✅ Hybrid: drive lead via UI completa quando o defeito a caçar pode ser de UI/render
+❌ "API-only is faster" — without justifying the loss of visual coverage
+❌ Validating a rendering bug via a backend log (`expect(notes).not.toContain('missing'))`)
+❌ Skipping the GowSign/SignWell iframe because "it's flaky"
+❌ Setup via API + assert via API when the user interacts via UI in the real flow
+```
+
+```
+✅ Setup via API (create lead in CC_AUTH_PASSED) + UI completes the rest (signing iframe, download)
+✅ API-only for PATCH /admin endpoints (no UI exposed) with a justifying comment
+✅ Hybrid: drive the lead fully via UI when the defect being hunted may be UI/render-related
 ```
 
 ## Application Lifecycle Protocol (MANDATORY when feature creates applications)
 
-> **Regra inviolável:** qualquer teste que envolva `sendApplication` DEVE seguir a sequência canônica documentada em skill [[application-lifecycle]]. Violações conhecidas causam falhas bobas recorrentes (DENIED, 400, 500, timeouts).
+> **Inviolable rule:** any test involving `sendApplication` MUST follow the canonical sequence documented in the [[application-lifecycle]] skill. Known violations cause recurring silly failures (DENIED, 400, 500, timeouts).
 >
-> Agents que criam testes OU debug (`qa-planner`, `qa-implementer`, `qa-debugger`) DEVEM carregar esse protocolo antes de escrever/corrigir código.
+> Agents that create tests OR debug (`qa-planner`, `qa-implementer`, `qa-debugger`) MUST load this protocol before writing/fixing code.
 
-**Checklist rápido (detalhes no protocolo):**
+**Quick checklist (details in the protocol):**
 
-- [ ] `buildTestData` sem `emailOverride` (email único por run — evita DataMismatchStep)
-- [ ] Kornerstone merchant → `bankData` no body do sendApplication
-- [ ] `submitApplication` sempre precedido de `getMissingFields(shortCode, { planId })` **e `submitResp.ok` assertido explicitamente** (falha silenciosa → lead preso em `CC_AUTH_PASSED` → `settleApplication` 500; ver [[application-lifecycle]] pitfall #81)
-- [ ] CC: `TEST_CARDS.MASTERCARD_APPROVED` (nunca VISA_APPROVED — rollback em qa)
-- [ ] Ordem: `SIGNED → settle → FUNDING → FUNDED → ACTIVE`
-- [ ] SETTLED_IN_FULL via `makeCreditCardPayments(SETTLEMENT)` — nunca UPDATE direto (sem payment history → email template falha)
+- [ ] `buildTestData` without `emailOverride` (unique email per run — avoids DataMismatchStep)
+- [ ] Kornerstone merchant → `bankData` in the sendApplication body
+- [ ] `submitApplication` always preceded by `getMissingFields(shortCode, { planId })` **and `submitResp.ok` asserted explicitly** (silent failure → lead stuck in `CC_AUTH_PASSED` → `settleApplication` 500; see [[application-lifecycle]] pitfall #81)
+- [ ] CC: `TEST_CARDS.MASTERCARD_APPROVED` (never VISA_APPROVED — rollback in qa)
+- [ ] Order: `SIGNED → settle → FUNDING → FUNDED → ACTIVE`
+- [ ] SETTLED_IN_FULL via `makeCreditCardPayments(SETTLEMENT)` — never a direct UPDATE (no payment history → email template fails)
 
-## E-sign Provider Routing — Por Disponibilidade de Template
+## E-sign Provider Routing — By Template Availability
 
-> **Regra (qa2, confirmada por dev 2026-04-28):** o e-sign provider é determinado pela **disponibilidade de template GowSign para o estado do lead**, NÃO por uma flag global no merchant.
+> **Rule (qa2, confirmed by dev 2026-04-28):** the e-sign provider is determined by the **availability of a GowSign template for the lead's state**, NOT by a global flag on the merchant.
 >
-> **Comportamento observado:**
-> - Existe template GowSign para o estado → `uown_esign_document.client = 'GOWSIGN'`
-> - Não existe template GowSign para o estado → fallback para `merchant.esign_client` (default `SIGNWELL`)
+> **Observed behavior:**
+> - A GowSign template exists for the state → `uown_esign_document.client = 'GOWSIGN'`
+> - No GowSign template exists for the state → fallback to `merchant.esign_client` (default `SIGNWELL`)
 >
-> **Estados com template GowSign em qa2 (28-04-2026):** somente **CA**. Todos os outros caem no fallback Signwell.
+> **States with a GowSign template in qa2 (2026-04-28):** only **CA**. All others fall back to Signwell.
 >
-> **🔄 SUPERADO (2026-06-21):** templates GowSign foram distribuídos para MAIS estados desde abril. Live-proven: TerraceFinance (`OL90202-0001`, ONLINE) com **customer state NY** assina via **GowSign** (`uown_esign_document.client='GOWSIGN'`, status SIGNED via `[EsignRedirectService][updateSignStatus]` + `[ContractService][isLeaseOrLeaseModSigned]`), NÃO o fallback Signwell. → **NÃO assumir `state != 'CA' → Signwell`**; verificar `uown_esign_document.client` real para o estado/env alvo antes de escolher merchant para cobertura GowSign vs Signwell. Nota: na cerimônia GowSign, `signGowSignInFrame` loga `completedMessage=false` (postMessage "completed" não capturado) mas o backend AINDA transiciona para SIGNED via redirect — **não é falha**. Ver [[volatile-knowledge-registry]] (GowSign state-routing drift).
+> **🔄 SUPERSEDED (2026-06-21):** GowSign templates were rolled out to MORE states since April. Live-proven: TerraceFinance (`OL90202-0001`, ONLINE) with **customer state NY** signs via **GowSign** (`uown_esign_document.client='GOWSIGN'`, status SIGNED via `[EsignRedirectService][updateSignStatus]` + `[ContractService][isLeaseOrLeaseModSigned]`), NOT the Signwell fallback. → **Do NOT assume `state != 'CA' → Signwell`**; check the real `uown_esign_document.client` for the target state/env before choosing a merchant for GowSign vs Signwell coverage. Note: during the GowSign ceremony, `signGowSignInFrame` logs `completedMessage=false` (the "completed" postMessage was not captured) but the backend STILL transitions to SIGNED via redirect — **this is not a failure**. See [[volatile-knowledge-registry]] (GowSign state-routing drift).
 >
-> **⚠️ INSTORE merchant exception (descoberto 2026-05-06:** para merchants com `merchant_type='INSTORE'`, o backend usa `merchant.state` (estado da loja física) ao invés do customer state para o lookup de template. Verificado em `EsignService.loadLeadEsignContext()` linhas 194-197 (svc R1.51.1):
+> **⚠️ INSTORE merchant exception (discovered 2026-05-06):** for merchants with `merchant_type='INSTORE'`, the backend uses `merchant.state` (the physical store's state) instead of the customer state for the template lookup. Verified in `EsignService.loadLeadEsignContext()` lines 194-197 (svc R1.51.1):
 >
 > ```java
 > if (merchant.getMerchantInfo().getMerchantType() == MerchantType.INSTORE) {
@@ -130,82 +130,82 @@ Antes de marcar um teste como pronto:
 > }
 > ```
 >
-> **Implicações:**
-> - Daniel's Jewelers (`OL90205-0079*`, INSTORE, state=CA) → SEMPRE roteia por CA, qualquer customer state
-> - Saslow's Jewelers CA (`OW90337-0001`, INSTORE, state=NC) → SEMPRE roteia por NC, qualquer customer state → SIGNWELL fallback
-> - TireAgent (`OW90218-0001`, ONLINE, state=CA) → usa customer state (comportamento normal)
+> **Implications:**
+> - Daniel's Jewelers (`OL90205-0079*`, INSTORE, state=CA) → ALWAYS routes by CA, regardless of customer state
+> - Saslow's Jewelers CA (`OW90337-0001`, INSTORE, state=NC) → ALWAYS routes by NC, regardless of customer state → SIGNWELL fallback
+> - TireAgent (`OW90218-0001`, ONLINE, state=CA) → uses customer state (normal behavior)
 >
-> **Como descobrir merchant_type:** `SELECT pk, ref_merchant_code, merchant_type, state FROM uown_merchant WHERE ref_merchant_code = $1`. INSTORE em qa2 = 34 merchants (1.5k ONLINE).
+> **How to find merchant_type:** `SELECT pk, ref_merchant_code, merchant_type, state FROM uown_merchant WHERE ref_merchant_code = $1`. INSTORE in qa2 = 34 merchants (1.5k ONLINE).
 >
-> **Para testes parametrizados por estado:** validar `merchant.merchant_type` ANTES de assumir que customer state determina routing — INSTORE merchants ignoram customer state. Não usar INSTORE merchant para multi-state coverage de routing GowSign vs SignWell.
+> **For state-parametrized tests:** validate `merchant.merchant_type` BEFORE assuming that customer state determines routing — INSTORE merchants ignore customer state. Do not use an INSTORE merchant for multi-state coverage of GowSign vs SignWell routing.
 >
-> **Evidência empírica — TireAgent (OW90218-0001) qa2:**
+> **Empirical evidence — TireAgent (OW90218-0001) qa2:**
 > - leads CA 15741–15745, 15748+ → GOWSIGN
 > - leads CO 15746–15747 → SIGNWELL
-> - `uown_merchant.pk=34.esign_client = 'SIGNWELL'` (mesmo valor durante ambos os waves)
+> - `uown_merchant.pk=34.esign_client = 'SIGNWELL'` (same value during both waves)
 >
-> **Implicações para testes:**
-> - Teste de **GowSign signing** → `state: 'CA'` (único estado com template até nova distribuição)
-> - Teste de **Signwell signing** → qualquer estado válido `≠ CA`
-> - Teste de **Protection Plan** + **GowSign** simultâneos → bloqueado em qa2 enquanto:
->   - (a) CA não tem PP oferecido (log do lease "Protection plan was not offered" — restrição regulatória/legal de CA, não bug)
->   - (b) Demais estados onde PP funciona caem no Signwell (sem template GowSign)
-> - Quando time de produto distribuir templates GowSign para outros estados, **revalidar essa regra** e atualizar com lead_pk de evidência
+> **Implications for tests:**
+> - Test for **GowSign signing** → `state: 'CA'` (the only state with a template until the new rollout)
+> - Test for **Signwell signing** → any valid state `≠ CA`
+> - Test for **Protection Plan** + **GowSign** simultaneously → blocked in qa2 while:
+>   - (a) CA does not offer PP (lease log "Protection plan was not offered" — CA regulatory/legal restriction, not a bug)
+>   - (b) The other states where PP works fall back to Signwell (no GowSign template)
+> - When the product team rolls out GowSign templates to other states, **re-validate this rule** and update it with an evidence lead_pk
 
-## Buddy Insurance Widget — Loop Conhecido em qa2 STAGING
+## Buddy Insurance Widget — Known Loop in qa2 STAGING
 
-> **Bug ativo (origination/components/purchase-insurance/index.tsx:107-127):** Em qa2, o `BuddyOfferElement` carrega de `staging.embed.buddy.insure` que tenta enviar analytics para `aggregate-analytics.netlify.app/api/send` — endpoint sem `Access-Control-Allow-Origin` → CORS error. Pode corromper o `offerElementResponse`, fazendo `utilityStore.createProtectionPlan` falhar.
+> **Active bug (origination/components/purchase-insurance/index.tsx:107-127):** In qa2, the `BuddyOfferElement` loads from `staging.embed.buddy.insure`, which tries to send analytics to `aggregate-analytics.netlify.app/api/send` — an endpoint without `Access-Control-Allow-Origin` → CORS error. It can corrupt the `offerElementResponse`, making `utilityStore.createProtectionPlan` fail.
 >
-> **Sintoma:** opt-in/opt-out clica → submit "engole" sem feedback visível → usuário acha que voltou para Terms. Frontend só destrava no 3º clique consecutivo (`if (submitFailCount > 1)`).
+> **Symptom:** opt-in/opt-out is clicked → submit "swallows" with no visible feedback → the user thinks they were returned to Terms. The frontend only unblocks on the 3rd consecutive click (`if (submitFailCount > 1)`).
 >
-> **Como aplicar em testes automatizados:**
-> - Teste que precisa passar pelo Buddy widget em qa2 deve considerar até 3 cliques no botão Submit antes de assumir falha de timeout
-> - `TermsOfAgreementPage.acceptAndProceedWithProtectionPlan(true)` em qa2 pode necessitar retry; em qa1 funciona direto (Buddy não falha)
-> - Reportado ao dev em 2026-04-28; até correção, marcar testes Buddy-dependentes como `@flaky-tracked` se rodarem em qa2
+> **How to apply it in automated tests:**
+> - A test that needs to go through the Buddy widget in qa2 should account for up to 3 clicks on the Submit button before assuming a timeout failure
+> - `TermsOfAgreementPage.acceptAndProceedWithProtectionPlan(true)` may need a retry in qa2; in qa1 it works directly (Buddy does not fail)
+> - Reported to dev on 2026-04-28; until it is fixed, mark Buddy-dependent tests as `@flaky-tracked` if they run in qa2
 
 ## Activity Log Validation (MANDATORY — every business action)
 
-> **Regra inviolável (CLAUDE.md #14):** *"If there is no activity log, that means nothing is happening."* — Priyanka Namburu, daily UOWN 2026-04-28.
+> **Inviolable rule (CLAUDE.md #14):** *"If there is no activity log, that means nothing is happening."* — Priyanka Namburu, daily UOWN 2026-04-28.
 >
-> Toda ação de negócio executada pelo teste DEVE ter validação explícita do activity log/note gerado. Ausência de log = falha de implementação, não comportamento esperado.
+> Every business action executed by the test MUST have an explicit validation of the generated activity log/note. Absence of a log = implementation failure, not expected behavior.
 
-### O que conta como "ação de negócio"
+### What counts as a "business action"
 
-Disparou um destes? → Precisa validar log:
+Triggered one of these? → You need to validate the log:
 
 - `sendApplication` / `submitApplication`
 - Signing event (SignWell, GoSign, redirect, webhook callback)
 - Payment attempt (CC, ACH, PayNearMe, Sticky retry)
 - Refund (full/partial, CC/ACH)
-- Recovery attempt (Sticky webhook recebido)
-- Status transition do lease/account (UW_APPROVED → SIGNED → SETTLED → FUNDING → FUNDED, etc.)
-- Vendor callback (qualquer webhook recebido de provedor externo)
-- Mutação via SVC (e-mail enviado, SMS, link de cobrança, opt-out)
+- Recovery attempt (Sticky webhook received)
+- Lease/account status transition (UW_APPROVED → SIGNED → SETTLED → FUNDING → FUNDED, etc.)
+- Vendor callback (any webhook received from an external provider)
+- Mutation via SVC (email sent, SMS, billing link, opt-out)
 
-### Como validar
+### How to validate
 
-Toda fase do pipeline deve aplicar:
+Every phase of the pipeline must apply:
 
 **Planning (`qa-planner`)**
-- Cada cenário lista o(s) log(s) esperado(s) na seção "Validações"
-- Formato: `uown_los_lead_notes` (ou tabela específica do domínio) — pattern textual + ordem cronológica
+- Each scenario lists the expected log(s) in the "Validations" section
+- Format: `uown_los_lead_notes` (or the domain-specific table) — text pattern + chronological order
 
-**Implementação (`qa-implementer`)**
-- `test.step('validate activity log', ...)` após cada ação de negócio
-- Use `db.waitForRecord` / `db.getSingleRow` consultando `uown_los_lead_notes WHERE lead_pk = $1 ORDER BY pk DESC` (ou tabela correspondente)
-- Assert presença do pattern esperado + assert ausência de patterns negativos quando relevante (`"not offered"`, `"rejected"`, `"skipped"`, `"denied"`)
+**Implementation (`qa-implementer`)**
+- `test.step('validate activity log', ...)` after each business action
+- Use `db.waitForRecord` / `db.getSingleRow` querying `uown_los_lead_notes WHERE lead_pk = $1 ORDER BY pk DESC` (or the corresponding table)
+- Assert the presence of the expected pattern + assert the absence of negative patterns when relevant (`"not offered"`, `"rejected"`, `"skipped"`, `"denied"`)
 
-**Validação de resultado (`qa-validator`)**
-- Relatório DEVE listar log capturado por step (cita PK + texto)
-- Step sem log capturado → marcar como `[INCOMPLETO]`, não `[OK]`
+**Result validation (`qa-validator`)**
+- The report MUST list the captured log per step (cite PK + text)
+- A step with no captured log → mark as `[INCOMPLETE]`, not `[OK]`
 
 **Debug (`qa-debugger`)**
-- Antes de hipotetizar, ler logs do lease (regra abaixo). Se a ação esperada não tem log → bug de backend (reportar) ou step não disparou (corrigir).
+- Before hypothesizing, read the lease logs (rule below). If the expected action has no log → backend bug (report it) or the step did not fire (fix it).
 
-### Padrões mínimos de assert
+### Minimum assert patterns
 
 ```typescript
-// Após sendApplication
+// After sendApplication
 await test.step('activity log: application submitted', async () => {
   const note = await db.waitForRecord(
     `SELECT pk, notes FROM uown_los_lead_notes
@@ -216,7 +216,7 @@ await test.step('activity log: application submitted', async () => {
   expect(note, 'application submission log must be present').toBeTruthy();
 });
 
-// Após signing event
+// After signing event
 await test.step('activity log: contract signed', async () => {
   const note = await db.waitForRecord(
     `SELECT pk, notes FROM uown_los_lead_notes
@@ -228,95 +228,95 @@ await test.step('activity log: contract signed', async () => {
 });
 ```
 
-### Quando o log NÃO é gerado
+### When the log is NOT generated
 
-Se o backend não registra log para uma ação que deveria — isso é bug de produto, não de teste:
+If the backend does not record a log for an action that should — this is a product bug, not a test bug:
 
-1. Documentar em `[ContractService][...]` ou domínio correspondente como gap
-2. Abrir ticket para dev adicionar o log
-3. Marcar o step de validação como `@blocked-by-missing-log` no comentário do código
-4. NÃO remover o assert. NÃO marcar teste como passou. Aguardar dev incluir o log.
+1. Document it in `[ContractService][...]` or the corresponding domain as a gap
+2. Open a ticket for dev to add the log
+3. Mark the validation step as `@blocked-by-missing-log` in the code comment
+4. Do NOT remove the assert. Do NOT mark the test as passed. Wait for dev to add the log.
 
-### Exception (única)
+### Exception (the only one)
 
-Steps puramente de leitura (GET, query SELECT, consulta de UI sem mutação) não precisam validar log — não geram ação de negócio.
+Purely read-only steps (GET, SELECT query, UI lookup without mutation) do not need to validate a log — they do not generate a business action.
 
-## Debug de Erro/Divergência em Criação ou Assinatura — Inspecionar Logs do Lease ANTES de Hipotetizar
+## Debugging an Error/Divergence in Creation or Signing — Inspect the Lease Logs BEFORE Hypothesizing
 
-> **Regra inviolável:** quando um teste de criação de aplicação ou assinatura falhar/divergir do esperado, a **PRIMEIRA AÇÃO** é abrir o lease/conta criados e ler os logs/notes na DB (`uown_los_lead_notes` ordenado por `pk`) ou no portal Servicing (Activity tab). NÃO hipotetizar nem refatorar antes de ter lido o log.
+> **Inviolable rule:** when an application-creation or signing test fails/diverges from the expected, the **FIRST ACTION** is to open the created lease/account and read the logs/notes in the DB (`uown_los_lead_notes` ordered by `pk`) or in the Servicing portal (Activity tab). Do NOT hypothesize or refactor before reading the log.
 >
-> **Por quê:** o backend já registra a causa raiz em texto plano com timestamp em EST. Exemplos reais que pouparam horas:
-> - "Protection plan was not offered" → revelou bloqueio por estado (CA), não por flag de merchant
-> - "DataMismatchStep" → revelou email duplicado entre runs
-> - "[ContractService][isLeaseOrLeaseModSigned]" → confirmou rota de signing (Webhook vs EsignRedirectService)
+> **Why:** the backend already records the root cause in plain text with an EST timestamp. Real examples that saved hours:
+> - "Protection plan was not offered" → revealed a state-based block (CA), not a merchant flag
+> - "DataMismatchStep" → revealed a duplicate email across runs
+> - "[ContractService][isLeaseOrLeaseModSigned]" → confirmed the signing route (Webhook vs EsignRedirectService)
 >
-> **Como aplicar:**
-> - Falha em `sendApplication`/`submitApplication`/signing → query `SELECT pk, notes FROM uown_los_lead_notes WHERE lead_pk = $1 ORDER BY pk` e leia os últimos 30
-> - Comportamento ausente (PP não criado, contrato não assinado, status não progrediu) → mesma query, procurar negações: "not offered", "rejected", "blocked", "denied", "skipped"
-> - Citar o log na conversa antes de propor solução. Se não houver log, citar isso explicitamente
-> - Documentar a causa descoberta como nova regra (estado bloqueado, flag obrigatória, ordem de chamadas) — alimentar `application-lifecycle-protocol.md § Pitfalls`
+> **How to apply it:**
+> - Failure in `sendApplication`/`submitApplication`/signing → query `SELECT pk, notes FROM uown_los_lead_notes WHERE lead_pk = $1 ORDER BY pk` and read the last 30
+> - Missing behavior (PP not created, contract not signed, status did not progress) → same query, look for negations: "not offered", "rejected", "blocked", "denied", "skipped"
+> - Cite the log in the conversation before proposing a solution. If there is no log, cite that explicitly
+> - Document the discovered cause as a new rule (blocked state, mandatory flag, call order) — feed `application-lifecycle-protocol.md § Pitfalls`
 
 ## Test Data Hierarchy (MANDATORY — all levels: spec / implementation / orchestration / direct analysis)
 
-> **Criar dados fresh é PADRÃO. Reusar registros existentes é EXCEÇÃO com justificativa.**
-> Esta regra não é opcional e vale para spec-test, impl-e2e, impl-api, validate-results,
-> debug-flaky, qa-flow command, e análises diretas. Violar esta hierarquia foi a causa
-> raiz de 4 horas desperdiçadas no pipeline #491 investigando um "bug" que era apenas
-> artefato de uma fixture antiga.
+> **Creating fresh data is the DEFAULT. Reusing existing records is the EXCEPTION, with justification.**
+> This rule is not optional and applies to spec-test, impl-e2e, impl-api, validate-results,
+> debug-flaky, the qa-flow command, and direct analyses. Violating this hierarchy was the root
+> cause of 4 hours wasted on pipeline #491 investigating a "bug" that was merely an
+> artifact of an old fixture.
 
-**Preferência (do mais ao menos preferido):**
+**Preference (from most to least preferred):**
 
-1. ✅ **Criar conta/lead NOVO via automação (happy path completo)** — PADRÃO. Use
+1. ✅ **Create a NEW account/lead via automation (full happy path)** — DEFAULT. Use
    `driveLeadToFunding`, `buildTestData`, `sendApplication` + `submitApplication` + `changeLeadStatus`
-   encadeados. Vantagens: dados previsíveis, estado limpo, teste reproduzível, independente.
+   chained together. Advantages: predictable data, clean state, reproducible test, independent.
 
-2. ⚠️ **Criar via automação + mutação via API oficial** (ex: `SvcEmailClient.createOrUpdateEmail`
-   para trocar primary email após funding) — aceitável quando a mutação por API é mais rápida
-   do que refazer o fluxo completo. Sempre documentar o porquê num comentário curto.
+2. ⚠️ **Create via automation + mutate via the official API** (e.g., `SvcEmailClient.createOrUpdateEmail`
+   to change the primary email after funding) — acceptable when the API mutation is faster
+   than redoing the full flow. Always document the reason in a short comment.
 
-3. 🚨 **Usar conta/lead existente (fixture pré-existente)** — EXCEÇÃO. Aceito SOMENTE se:
-   - Teste é GDS bypass documentado (já sem dados de aplicação), OU
-   - Setup via automação levaria > 10 min por CT (custo inaceitável), OU
-   - Fixture impossível de criar via automação (ex: rating computado pelo sistema
-     requer histórico de pagamentos reais).
+3. 🚨 **Use an existing account/lead (pre-existing fixture)** — EXCEPTION. Accepted ONLY if:
+   - The test is a documented GDS bypass (already without application data), OR
+   - Setup via automation would take > 10 min per CT (unacceptable cost), OR
+   - The fixture is impossible to create via automation (e.g., a system-computed rating
+     requires a real payment history).
 
-   Mesmo na exceção: requer **comentário no spec** justificando, E requer **reprodução
-   em conta fresh** ANTES de classificar qualquer comportamento como bug (ver
-   skill [[bug-classification]]).
+   Even in the exception: it requires a **comment in the spec** justifying it, AND requires a **reproduction
+   in a fresh account** BEFORE classifying any behavior as a bug (see
+   the [[bug-classification]] skill).
 
-4. ❌ **UPDATE direto no DB em conta existente** — PROIBIDO por padrão (CLAUDE.md
-   Exception 3). Aceito somente com autorização explícita do usuário registrada na
-   conversa. Mesmo autorizado, é a última opção — sempre prefere reproduzir via
-   automação antes.
+4. ❌ **Direct UPDATE in the DB on an existing account** — FORBIDDEN by default (CLAUDE.md
+   Exception 3). Accepted only with explicit user authorization recorded in the
+   conversation. Even when authorized, it is the last resort — always prefer to reproduce via
+   automation first.
 
-### Por quê
+### Why
 
-Dados pré-existentes trazem estado herdado imprevisível:
-- Artefatos de pipelines/execuções anteriores
-- Bugs de dados já conhecidos (ou não) por outras tasks
-- Race conditions históricas que não refletem o código atual
-- Estado inconsistente produzido por fixes manuais
+Pre-existing data brings unpredictable inherited state:
+- Artifacts from previous pipelines/runs
+- Data bugs already known (or not) to other tasks
+- Historical race conditions that do not reflect the current code
+- Inconsistent state produced by manual fixes
 
-Fresh data prova o comportamento do **código**, não do **banco**. É reproduzível,
-confiável e elimina falsos positivos.
+Fresh data proves the behavior of the **code**, not the **database**. It is reproducible,
+reliable, and eliminates false positives.
 
 ### Enforcement checklist
 
-Aplicar em toda fase do pipeline:
+Apply at every phase of the pipeline:
 
-- [ ] Spec tem setup via API/automação (não hardcode de PK)?
-- [ ] Implementação cria fresh data via `buildTestData` / `sendApplication` / etc.?
-- [ ] Evidência no relatório marca `Criado` (não `Existente`) como padrão?
-- [ ] Se reuso de conta existente: comentário no código justifica + reprodução em fresh validou o comportamento?
-- [ ] Se UPDATE direto no DB: autorização do user registrada na conversa?
+- [ ] Does the spec set up via API/automation (no hardcoded PK)?
+- [ ] Does the implementation create fresh data via `buildTestData` / `sendApplication` / etc.?
+- [ ] Does the report's evidence mark `Created` (not `Existing`) as the default?
+- [ ] If reusing an existing account: does a code comment justify it + did a fresh reproduction validate the behavior?
+- [ ] If a direct DB UPDATE: is the user's authorization recorded in the conversation?
 
-Se qualquer resposta for NÃO → **violação**. Voltar à fase correspondente e corrigir
-antes de prosseguir.
+If any answer is NO → **violation**. Go back to the corresponding phase and fix it
+before proceeding.
 
-### Ver também
+### See also
 
-- skill [[bug-classification]] — regras para classificar
-  comportamento como bug (exige reprodução em fresh).
+- the [[bug-classification]] skill — rules for classifying
+  behavior as a bug (requires a fresh reproduction).
 
 ## Lease State Machine
 
@@ -357,13 +357,13 @@ const testData = [{
 
 ```
 ❌ page.waitForTimeout() — use .waitFor({ state: 'visible' }) or db.waitForRecord()
-❌ await sleep(N) como espera condicional (loop while/for que checa DB/estado) — re-implementa pollUntil/waitForRecord; sleep() é o MESMO anti-pattern que waitForTimeout, só escapa pelo nome. Helper: pollUntil (@helpers/index.js) / db.waitForRecord / locator.waitFor. sleep() nu só p/ delay de propagação externa documentado + comentário. Ver [[db-polling-pattern]] pitfall #8
+❌ await sleep(N) as a conditional wait (while/for loop that checks DB/state) — re-implements pollUntil/waitForRecord; sleep() is the SAME anti-pattern as waitForTimeout, it just dodges by name. Helper: pollUntil (@helpers/index.js) / db.waitForRecord / locator.waitFor. Bare sleep() only for a documented external-propagation delay + comment. See [[db-polling-pattern]] pitfall #8
 ❌ Assertions in page objects — assert in test, return values from page objects
 ❌ Import from @playwright/test directly — use @support/base-test or @fixtures/test-context.fixture
-❌ Import de helper de runtime pelo módulo individual (@helpers/foo.helpers.js) — usar o barrel @helpers/index.js (só import type pode apontar o módulo)
+❌ Importing a runtime helper via its individual module (@helpers/foo.helpers.js) — use the barrel @helpers/index.js (only import type may target the module)
 ❌ ctx shared across tests — ctx is per-test only
 ❌ Relative imports (../../../src/...) — always use path aliases (@support/base-test.js, @config/constants.js, etc.)
-❌ Locator inline no spec que duplica método de page object — Grep src/pages/{portal}/ antes; se existe método, chamar; ver [[selector-hardening]]
+❌ Inline locator in a spec that duplicates a page object method — Grep src/pages/{portal}/ first; if a method exists, call it; see [[selector-hardening]]
 ❌ body as never casts — use the correct typed builder (buildSendApplicationBody, buildSubmitApplicationBody) instead
 ```
 

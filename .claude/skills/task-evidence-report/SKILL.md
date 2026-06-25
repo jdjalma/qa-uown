@@ -1,220 +1,220 @@
 ---
 name: task-evidence-report
-description: Carregue ao FECHAR pipeline de teste (último PASS validado, sem bugs bloqueantes pendentes de re-execução) para gerar `docs/taskTestingUown/{testName}/{testName}-evidence.md` - relatório product-focused que será colado no comentário da tarefa (GitLab/Jira) como evidência de validação QA. NÃO gerar a cada execução intermediária; este artefato é o "carimbo final" do ciclo de validação. Distinto de `{testName}-report.md` (history técnica) - evidence é stakeholder-facing.
+description: Load when CLOSING a test pipeline (last validated PASS, no blocking bugs pending re-execution) to generate `docs/taskTestingUown/{testName}/{testName}-evidence.md` - a product-focused report that will be pasted into the task comment (GitLab/Jira) as evidence of QA validation. Do NOT generate on every intermediate run; this artifact is the "final stamp" of the validation cycle. Distinct from `{testName}-report.md` (technical history) - evidence is stakeholder-facing.
 disable-model-invocation: true
 ---
 
 # Task Evidence Report
 
-> Relatório de evidência que vai colado no ticket (GitLab/Jira) ao final do ciclo de validação. Stakeholder-facing - leitor primário é PO/Tech Lead/Dev, não QA.
+> Evidence report that gets pasted into the ticket (GitLab/Jira) at the end of the validation cycle. Stakeholder-facing - the primary reader is PO/Tech Lead/Dev, not QA.
 
-## ⚠️ Quando gerar
+## ⚠️ When to generate
 
-Gerar **uma única vez por ciclo de task**, no momento em que o pipeline fecha:
+Generate **only once per task cycle**, at the moment the pipeline closes:
 
-- Último `qa-validator` PASS já registrado em `{testName}-report.md`.
-- Sem bugs bloqueantes pendentes de re-execução (bugs catalogados como OBS/follow-up são aceitos).
-- Usuário (ou orquestrador) sinalizou "pipeline fechado", "pronto pra colar no ticket", "final report", ou equivalente.
+- Last `qa-validator` PASS already recorded in `{testName}-report.md`.
+- No blocking bugs pending re-execution (bugs cataloged as OBS/follow-up are accepted).
+- The user (or orchestrator) signaled "pipeline closed", "ready to paste into the ticket", "final report", or equivalent.
 
-**NÃO** gerar:
-- Após cada execução intermediária - esse é o papel de `{testName}-report.md`.
-- Quando ainda há CTs com status PENDING/SKIP por débito de teste não-decidido.
-- Como duplicação do report técnico - se o conteúdo é history de execução, vai no `-report.md`, não aqui.
+**DO NOT** generate:
+- After every intermediate run - that is the role of `{testName}-report.md`.
+- When there are still CTs with PENDING/SKIP status due to undecided test debt.
+- As a duplication of the technical report - if the content is execution history, it goes in `-report.md`, not here.
 
-Se já existe `{testName}-evidence.md` na pasta da task, **sobrescrever** com a versão atualizada (não acumular versões).
+If `{testName}-evidence.md` already exists in the task folder, **overwrite** it with the updated version (do not accumulate versions).
 
-## ⚠️ Reports = history, não pattern source (regra #16)
+## ⚠️ Reports = history, not pattern source (rule #16)
 
-Mesmo disclaimer dos demais reports: este arquivo é **registro do ciclo de validação**, não fonte de patterns. Source-tagging permanece obrigatório em toda asserção técnica (taxonomia em [[test-report-standard]] §9).
+Same disclaimer as the other reports: this file is a **record of the validation cycle**, not a source of patterns. Source-tagging remains mandatory in every technical assertion (taxonomy in [[test-report-standard]] §9).
 
-## Princípios de escrita
+## Writing principles
 
-1. **Product-focused, não test-mechanic.** Leitor é PO/Dev/TL - quer saber "o ticket está atendido? Sim/não" e "que melhorias foram descobertas?". NÃO listar mecânica de teste no corpo: page object, fixtures, selectors, `page.evaluate`, `page.on('response')`, "snapshot in-vivo", "annotation Playwright", "captura via curl", nomes de funções de helper (`calculateDate`, `buildTestData`, etc), ou qualquer jargão de automação. Em vez de "captura via `page.on('response')` no browser real", escrever "as 4 requisições ao proxy responderam 200". Em vez de "snapshot in-vivo via Playwright annotation", escrever "o loader expôs os campos esperados". Linguagem do produto, não do framework.
-2. **Hierarquia visual escalonada.** Leitor que escaneia em 30s deve ver: header + TL;DR + tabela de Cobertura (requisitos × cenários) e já saber a resposta. Leitor que quer aprofundar lê em ordem (Resumo → Cenários → Recomendação) e expande `<details>` em achados longos. NUNCA enfiar conteúdo importante dentro de `<details>` colapsado por default (resumo, classificação, recomendação ficam sempre visíveis).
-3. **Tamanho scannable, não linhas absolutas.** Conteúdo visível ao primeiro scroll deve permitir veredito em 30s. Detalhes técnicos vão em `<details>` colapsados, não inflam fadiga. Reports com 5+ achados ou cross-brand longos podem passar de 300 linhas totais sem prejuízo se a estrutura visual mantiver escaneabilidade.
-4. **PT-BR.** Apenas valores técnicos (URLs, enums, classes, queries) em forma original.
-5. **Source-tagging.** Toda asserção técnica não-trivial referencia evidência primária (leadPk, accountPk, arquivo:linha, query SQL). Sem tag de fonte → degradar para `[HIPÓTESE]` ou `[OBSERVAÇÃO]` (taxonomia em [[test-report-standard]] §9 + regra #10).
-6. **Conservative classification (regra #10).** `[CONFIRMADO]` exige fresh repro. Isolated observation em dados pré-existentes = `[OBSERVAÇÃO]` ou `[HIPÓTESE]`.
-7. **Veredito em UMA linha** no header. Sem "depende"/"talvez". Se há bloqueador, é Bloquear; se há ressalva mas não bloqueia, é Aprovar com follow-up.
-8. **NÃO usar em-dash (`—`).** Em substituição: hífen (`-`), dois-pontos (`:`), parênteses, ou ponto. Aplica também aos cabeçalhos de tabela, índices e bullets. Vale para TODOS os reports gerados (este artefato, `-report.md`, `-spec.md` e qualquer comentário em ticket).
-9. **Não repetir o ambiente no corpo.** Env já fica no header (`**Ambiente:** qa1`). NÃO escrever "A validação em qa1...", "O fix funciona em qa1...", "rodou em qa1" no Resumo, Cenários ou Recomendação. Quando precisar referenciar URLs específicas do env nos cenários (ex: `apply-qa1.uownleasing.com`), use a URL técnica direta sem prefixo narrativo "em qa1".
-10. **Não usar referências comparativas a MR/PR anterior** (ex: "o bug anterior ao MR !1464", "antes do !XYZ", "a versão antiga"). Descrever o comportamento atual de forma positiva: o que o sistema faz agora, não o que estava quebrado. O MR já está no header; o corpo é sobre o estado validado, não sobre histórico de bugs. Exceção: seção "Resumo" pode mencionar o problema corrigido em termos de produto ("o script de fingerprint não executava"), sem citar número do MR.
+1. **Product-focused, not test-mechanic.** The reader is PO/Dev/TL - they want to know "is the ticket addressed? Yes/no" and "what improvements were discovered?". Do NOT list test mechanics in the body: page object, fixtures, selectors, `page.evaluate`, `page.on('response')`, "live snapshot", "Playwright annotation", "captured via curl", helper function names (`calculateDate`, `buildTestData`, etc), or any automation jargon. Instead of "captured via `page.on('response')` in the real browser", write "the 4 requests to the proxy responded 200". Instead of "live snapshot via Playwright annotation", write "the loader exposed the expected fields". Product language, not framework language.
+2. **Tiered visual hierarchy.** A reader scanning in 30s should see: header + TL;DR + Coverage table (requirements × scenarios) and already know the answer. A reader who wants to dig deeper reads in order (Summary → Scenarios → Recommendation) and expands `<details>` on long findings. NEVER bury important content inside a `<details>` collapsed by default (summary, classification, recommendation always stay visible).
+3. **Scannable size, not absolute line count.** Content visible at the first scroll should allow a verdict in 30s. Technical details go in collapsed `<details>`, do not inflate fatigue. Reports with 5+ findings or long cross-brand content can exceed 300 total lines without harm if the visual structure preserves scannability.
+4. **English.** Only technical values (URLs, enums, classes, queries) in original form.
+5. **Source-tagging.** Every non-trivial technical assertion references primary evidence (leadPk, accountPk, file:line, SQL query). Without a source tag → downgrade to `[HYPOTHESIS]` or `[OBSERVATION]` (taxonomy in [[test-report-standard]] §9 + rule #10).
+6. **Conservative classification (rule #10).** `[CONFIRMED]` requires a fresh repro. Isolated observation in pre-existing data = `[OBSERVATION]` or `[HYPOTHESIS]`.
+7. **Verdict in ONE line** in the header. No "depends"/"maybe". If there is a blocker, it is Block; if there is a caveat but it does not block, it is Approve with follow-up.
+8. **Do NOT use em-dash (`—`).** Use instead: hyphen (`-`), colon (`:`), parentheses, or period. Also applies to table headers, indexes and bullets. Applies to ALL generated reports (this artifact, `-report.md`, `-spec.md` and any ticket comment).
+9. **Do not repeat the environment in the body.** Env is already in the header (`**Environment:** qa1`). Do NOT write "The validation in qa1...", "The fix works in qa1...", "ran in qa1" in the Summary, Scenarios or Recommendation. When you need to reference env-specific URLs in the scenarios (e.g. `apply-qa1.uownleasing.com`), use the direct technical URL without the narrative prefix "in qa1".
+10. **Do not use comparative references to a previous MR/PR** (e.g. "the bug before MR !1464", "before !XYZ", "the old version"). Describe the current behavior positively: what the system does now, not what was broken. The MR is already in the header; the body is about the validated state, not about bug history. Exception: the "Summary" section may mention the corrected problem in product terms ("the fingerprint script did not execute"), without citing the MR number.
 
 ## Template
 
 **File path:** `docs/taskTestingUown/{testName}/{testName}-evidence.md`
 
 ```markdown
-# Validação QA - #{taskId} {taskTitle}
+# QA Validation - #{taskId} {taskTitle}
 
-**Ambiente:** {env} (build {YYYY-MM-DD ou MR/commit ref})
-**Resultado:** {✅ Aprovado / ⚠️ Aprovado com follow-up / ❌ Bloqueado} **- {1 linha de veredito}**
+**Environment:** {env} (build {YYYY-MM-DD or MR/commit ref})
+**Result:** {✅ Approved / ⚠️ Approved with follow-up / ❌ Blocked} **- {1-line verdict}**
 
 ---
 
 > ### TL;DR
-> {1 linha: quantos requisitos confirmados, em quais brands/frequências}.
-> {1 linha: observações ou bloqueadores encontrados, ou "Nenhum achado fora do escopo"}.
-> **Ação:** {1 frase: aprovar deploy / aguardar fix / discutir com PO}.
+> {1 line: how many requirements confirmed, across which brands/frequencies}.
+> {1 line: observations or blockers found, or "No findings outside scope"}.
+> **Action:** {1 sentence: approve deploy / wait for fix / discuss with PO}.
 
 ---
 
-## Resumo
+## Summary
 
-{1–2 parágrafos curtos em linguagem de negócio:
- - O que o fix/feature faz e qual era o problema original.
- - Funcionou? Em quais brands/frequências/cenários?
- NÃO descrever mecânica de teste aqui. NÃO repetir TL;DR.}
+{1-2 short paragraphs in business language:
+ - What the fix/feature does and what the original problem was.
+ - Did it work? Across which brands/frequencies/scenarios?
+ Do NOT describe test mechanics here. Do NOT repeat TL;DR.}
 
 ---
 
-## Cobertura: requisitos x cenários
+## Coverage: requirements x scenarios
 
-> Tabela de cruzamento entre cada requisito da tarefa + critério de aceite (linha) e o(s) cenário(s) descrito(s) abaixo que validaram esse item (coluna "Cenário(s)"). NÃO usar apenas códigos abreviados (ex: "AC-02", "CT-03") na coluna de cenário, sempre incluir o título completo do cenário para que a tabela seja legível sem precisar voltar ao restante do documento. Source-tag obrigatório onde aplicável (leadPk, accountPk, query SQL, doc:linha).
+> Cross-reference table between each task requirement + acceptance criterion (row) and the scenario(s) described below that validated that item (column "Scenario(s)"). Do NOT use only abbreviated codes (e.g. "AC-02", "CT-03") in the scenario column — always include the full scenario title so the table is readable without needing to scroll back. Source-tag mandatory where applicable (leadPk, accountPk, SQL query, doc:line).
 
-| # | Requisito + critério de aceite | Cenário(s) que validaram | Status |
-|---|--------------------------------|--------------------------|--------|
-| R1 | {requisito da tarefa em prose curta, com valor esperado concreto - ex: "IGLOO loader inicializa com shape canônico `version=general5`, `subkey=IOVATION_KEY`"} | "{título completo do cenário que valida}" + source-tag (leadPk=X, accountPk=Y, doc:linha) | ✅ CONFIRMADO / ⚠️ PARCIAL / ❌ FALHOU |
-| R2 | {próximo requisito} | "{cenário}" | ✅ |
+| # | Requirement + acceptance criterion | Scenario(s) that validated | Status |
+|---|-----------------------------------|---------------------------|--------|
+| R1 | {task requirement in short prose, with concrete expected value - e.g. "IGLOO loader initializes with canonical shape `version=general5`, `subkey=IOVATION_KEY`"} | "{full scenario title that validates}" + source-tag (leadPk=X, accountPk=Y, doc:line) | ✅ CONFIRMED / ⚠️ PARTIAL / ❌ FAILED |
+| R2 | {next requirement} | "{scenario}" | ✅ |
 | ... | ... | ... | ... |
 
-**Quando há OBS/BUG fora do escopo dos requisitos** (melhorias UX, observações cross-cutting, bugs adjacentes descobertos durante validação), listar em seção separada **Observações** mais abaixo (ver template) - NÃO misturar com a tabela de cobertura, que é só sobre requisitos do ticket.
+**When there are OBS/BUG items outside the requirements scope** (UX improvements, cross-cutting observations, adjacent bugs found during validation), list them in a separate **Observations** section below (see template) - do NOT mix with the coverage table, which covers only ticket requirements.
 
 ---
 
-## Cenários validados
+## Validated scenarios
 
-> Cenários são DESCRITOS em prose (uma sub-seção por requisito). Cada bloco tem heading numerado, badge de status em quote block, descrição prose, e linha de Evidência.
+> Scenarios are DESCRIBED in prose (one sub-section per requirement). Each block has a numbered heading, status badge in a quote block, prose description, and an Evidence line.
 
-### Requisitos da tarefa
+### Task requirements
 
-#### 1. {Título descritivo do requisito - 1 linha}
+#### 1. {Descriptive title of the requirement - 1 line}
 
-> ✅ **PASSOU** · {onde testado: brand / merchant / URL / frequência}
+> ✅ **PASSED** · {where tested: brand / merchant / URL / frequency}
 
-{1-3 frases descrevendo o que foi testado e o que foi observado. Linguagem de negócio, não mecânica de teste.}
+{1-3 sentences describing what was tested and what was observed. Business language, not test mechanics.}
 
-**Evidência:** leadPk={N} / accountPk={N} / merchantCode `OW90218-0001` / log entry / query
+**Evidence:** leadPk={N} / accountPk={N} / merchantCode `OW90218-0001` / log entry / query
 
-#### 2. {Próximo requisito}
+#### 2. {Next requirement}
 
-> ✅ **PASSOU** · {onde testado}
+> ✅ **PASSED** · {where tested}
 
-{idem}
+{same}
 
-**Evidência:** ...
+**Evidence:** ...
 
-### Cenários adicionais explorados
+### Additional scenarios explored
 
-> Cobertura além do AC (escopo expandido, edge cases, segurança, regressão dual-brand, mobile-only). Omitir se não houve. Mesma estrutura prose, mais conciso.
+> Coverage beyond the AC (expanded scope, edge cases, security, dual-brand regression, mobile-only). Omit if none. Same prose structure, more concise.
 
-#### 7. {Título do cenário extra}
+#### 7. {Extra scenario title}
 
-> ⚠️ **Melhoria identificada** · ver [OBS-1](#obs-1)
-> (ou `> ✅ **PASSOU**` se não levanta nenhuma observação)
+> ⚠️ **Improvement identified** · see [OBS-1](#obs-1)
+> (or `> ✅ **PASSED**` if it raises no observation)
 
-{1-2 frases.}
+{1-2 sentences.}
 
 ---
 
-## Observações (não bloqueiam release)
+## Observations (do not block release)
 
-> Omitir esta seção inteira quando não há OBS.
+> Omit this entire section when there are no OBS.
 
-### OBS-1: {Título curto do achado}
+### OBS-1: {Short finding title}
 
-> {1 linha de resumo da observação, em prose normal}
+> {1-line summary of the observation, in plain prose}
 
 <details>
-<summary><b>Causa raiz, reprodução e fix proposto</b></summary>
+<summary><b>Root cause, reproduction, and proposed fix</b></summary>
 
-**Causa raiz:** {explicação técnica em 1–3 frases, com referência a arquivo:linha quando aplicável}
+**Root cause:** {technical explanation in 1-3 sentences, with reference to file:line where applicable}
 
-**Quando dispara:** {condição mínima de reprodução: frequência, brand, sequência de calls}
+**When it triggers:** {minimum reproduction condition: frequency, brand, call sequence}
 
-**Impacto:** {efeito visível para cliente/agent/integração; severidade real}
+**Impact:** {visible effect for customer/agent/integration; real severity}
 
-**Evidência:** leadPk={N} / accountPk={N} / query / log entry
+**Evidence:** leadPk={N} / accountPk={N} / query / log entry
 
-**Reprodução:**
+**Reproduction:**
 \`\`\`{sql|ts|js|http}
-{snippet mínimo que reproduz - copy-pasteable}
+{minimal snippet that reproduces - copy-pasteable}
 \`\`\`
 
-**Fix proposto:** {opcional, incluir se o achado tem fix óbvio em ≤5 linhas; caso contrário deixar pra dev}
+**Proposed fix:** {optional, include if the finding has an obvious fix in ≤5 lines; otherwise leave to dev}
 
 </details>
 
-**Classificação:** {[CONFIRMADO] / [HIPÓTESE] / [OBSERVAÇÃO]}. {Melhoria UX | Performance | Segurança | Observability}
+**Classification:** {[CONFIRMED] / [HYPOTHESIS] / [OBSERVATION]}. {UX Improvement | Performance | Security | Observability}
 
 ---
 
-## Bloqueadores
+## Blockers
 
-> Sempre incluir esta seção, mesmo quando vazia (sinaliza explicitamente "validação não encontrou bloqueador"). Quando há BUG, aplicar a mesma estrutura de OBS, mas com badge `> ❌ **BLOQUEADOR**` no topo.
+> Always include this section, even when empty (explicitly signals "validation found no blocker"). When there is a BUG, apply the same OBS structure, but with badge `> ❌ **BLOCKER**` at the top.
 
-_Nenhum nesta validação._
+_None in this validation._
 
 ---
 
-## Recomendação
+## Recommendation
 
-> ✅ **{Aprovar deploy QA → Staging / Aprovar com follow-up / Bloquear release}**
+> ✅ **{Approve QA deploy → Staging / Approve with follow-up / Block release}**
 
-- {bullet 1: ponto de cobertura confirmado}
-- {bullet 2: regressão coberta}
-- {bullet 3: escopo dual-brand / dual-frequência se aplicável}
+- {bullet 1: confirmed coverage point}
+- {bullet 2: covered regression}
+- {bullet 3: dual-brand / dual-frequency scope if applicable}
 
-**Pendências não-bloqueantes:**
+**Non-blocking pending items:**
 
-- {item 1: link para tarefa-filha se já criada}
-- {item 2: recomendação de validação manual ou follow-up}
+- {item 1: link to child task if already created}
+- {item 2: manual validation recommendation or follow-up}
 
 ---
 ```
 
-### Notas de renderização
+### Rendering notes
 
-- **`<details>`** funciona nativamente no GitLab e no Jira Cloud (markdown comments). Conteúdo dentro segue sendo markdown válido. O `<summary>` é o que fica visível colapsado.
-- **Quote blocks** (`>`) com badge no topo de cada requisito dão escaneabilidade visual sem precisar abrir tabela. Funciona em qualquer renderer.
-- **TL;DR** dentro de blockquote (`> ### TL;DR`) cria caixa visual destacada; leitor vê veredito antes de qualquer prose.
+- **`<details>`** works natively in GitLab and Jira Cloud (markdown comments). The content inside remains valid markdown. The `<summary>` is what stays visible when collapsed.
+- **Quote blocks** (`>`) with a badge at the top of each requirement give visual scannability without needing to open a table. Works in any renderer.
+- **TL;DR** inside a blockquote (`> ### TL;DR`) creates a highlighted visual box; the reader sees the verdict before any prose.
 
-## Mapeamento dos campos
+## Field mapping
 
-| Placeholder | Origem |
+| Placeholder | Source |
 | --------------------- | --------------------------------------------------------------- |
-| `{taskId}` | número GitLab/Jira (ex: 530, 1293) |
-| `{taskTitle}` | título curto da issue |
-| `{testName}` | mesmo slug usado em `-spec.md`/`-report.md` |
+| `{taskId}` | GitLab/Jira number (e.g. 530, 1293) |
+| `{taskTitle}` | short title of the issue |
+| `{testName}` | same slug used in `-spec.md`/`-report.md` |
 | `{env}` | qa1 / qa2 / stg |
 
-## Checklist antes de fechar o arquivo
+## Checklist before closing the file
 
-- Veredito em UMA linha no header - sem ambiguidade.
-- Toda asserção `[CONFIRMADO]` tem leadPk/accountPk/query como fonte primária.
-- Cobertura dual-brand (UOWN + Kornerstone) explicitada quando aplicável (regra #4 do QA-flow).
-- Activity log validation citada se o fluxo gera log (regra inviolável #13).
-- Sem prose per-CT longa - mecânica de teste fica no `-report.md`.
-- ≤250 linhas. Acima disso, mover detalhe técnico pro `-report.md`.
-- Sem inferência de pattern a partir do `-report.md` - esse arquivo é history, não fonte (regra #16).
-- Disclaimer/source-tagging seguindo [[test-report-standard]] §1 + §9.
-- Pendências não-bloqueantes com sugestão de follow-up (tarefa-filha / discussão com PO).
+- Verdict in ONE line in the header - no ambiguity.
+- Every `[CONFIRMED]` assertion has leadPk/accountPk/query as primary source.
+- Dual-brand coverage (UOWN + Kornerstone) made explicit when applicable (rule #4 of QA-flow).
+- Activity log validation cited if the flow generates a log (inviolable rule #13).
+- No long per-CT prose - test mechanics stay in `-report.md`.
+- ≤250 lines. Beyond that, move technical detail to `-report.md`.
+- No pattern inference from `-report.md` - that file is history, not a source (rule #16).
+- Disclaimer/source-tagging following [[test-report-standard]] §1 + §9.
+- Non-blocking pending items with a follow-up suggestion (child task / discussion with PO).
 
-## Sinais de "pipeline fechado"
+## Signals of "pipeline closed"
 
-O orquestrador (CLAUDE.md) ou o usuário sinaliza explicitamente um destes:
-- "pipeline fechado" / "pronto pra colar no ticket" / "final report" / "evidence final"
-- "vou colar no GitLab/Jira agora"
-- `qa-validator` reporta último ciclo PASS sem follow-up de re-execução pendente
+The orchestrator (CLAUDE.md) or the user explicitly signals one of these:
+- "pipeline closed" / "ready to paste into the ticket" / "final report" / "final evidence"
+- "I'm going to paste it into GitLab/Jira now"
+- `qa-validator` reports the last cycle as PASS with no pending re-execution follow-up
 
-Sem sinal explícito → NÃO gerar. Em dúvida, perguntar ao usuário.
+Without an explicit signal → do NOT generate. When in doubt, ask the user.
 
-## Referências cruzadas
+## Cross-references
 
-- [[test-report-standard]] - formato do `-report.md` (history técnica complementar).
-- [[bug-classification]] - taxonomia `[CONFIRMADO] / [HIPÓTESE] / [OBSERVAÇÃO]`.
-- [[volatile-knowledge-registry]] - categorias drift-prone exigem source-tag de código fonte.
-- Exemplos atuais (consultar como referência de estilo, não de pattern):
- - `docs/taskTestingUown/RU05.26.1.52.0_redirectInvalidOrInactiveApplicationLinks_1293/gitlab-comment.md` (simples, ~70 linhas)
- - `docs/taskTestingUown/RU05.26.1.52.0_settleApplicationFailsWhenNextPayDateMissing_530/gitlab-comment.md` (cross-brand, ~150 linhas)
- - `docs/taskTestingUown/RU05.26.1.52.0_optimizeHighCpuQueriesQuery4_454/gitlab-comment.md` (3 achados técnicos, ~250 linhas)
+- [[test-report-standard]] - format of `-report.md` (complementary technical history).
+- [[bug-classification]] - taxonomy `[CONFIRMED] / [HYPOTHESIS] / [OBSERVATION]`.
+- [[volatile-knowledge-registry]] - drift-prone categories require a source-code source tag.
+- Current examples (consult as a style reference, not a pattern reference):
+ - `docs/taskTestingUown/RU05.26.1.52.0_redirectInvalidOrInactiveApplicationLinks_1293/gitlab-comment.md` (simple, ~70 lines)
+ - `docs/taskTestingUown/RU05.26.1.52.0_settleApplicationFailsWhenNextPayDateMissing_530/gitlab-comment.md` (cross-brand, ~150 lines)
+ - `docs/taskTestingUown/RU05.26.1.52.0_optimizeHighCpuQueriesQuery4_454/gitlab-comment.md` (3 technical findings, ~250 lines)

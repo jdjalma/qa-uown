@@ -1,15 +1,15 @@
 /**
  * ApplicationWizardPage - Consumer-facing 3-page application form.
  *
- * Servido por `apply-{env}.{brand}/{shortLivedToken}/start` (Next.js SPA).
- * Entry canônico: `origination-{env}.uownleasing.com/getApplication/{merchantCode}`
- * forwarda para o wizard com session válida. Hit direto em `/start` retorna
+ * Served by `apply-{env}.{brand}/{shortLivedToken}/start` (Next.js SPA).
+ * Canonical entry: `origination-{env}.uownleasing.com/getApplication/{merchantCode}`
+ * forwards to the wizard with a valid session. A direct hit on `/start` returns
  * "application link has expired".
  *
- * Layout do wizard (validado in-vivo qa1 2026-05-24, MR !1464):
+ * Wizard layout (validated live in qa1 2026-05-24, MR !1464):
  *   Page 1 (Your Info)     -> firstName, lastName, SSN, DOB, phone, email, address, zip, city
  *   Page 2 (Employment)    -> pay schedule, lastPayDate, nextPayDate, monthlyIncome
- *                             (employer name e employment duration foram removidos do form)
+ *                             (employer name and employment duration were removed from the form)
  *   Page 3 (Disclaimer)    -> bankruptcy dropdown, 2 consent checkboxes, Submit
  */
 import { BasePage } from '../base.page.js';
@@ -68,10 +68,10 @@ export class ApplicationWizardPage extends BasePage {
     //
     // IMPORTANT FILL ORDER (DOM-confirmed qa1 2026-06-01): the wizard runs a one-time
     // async form re-init in the first few seconds that WIPES firstName/lastName if
-    // they are filled too early or while other fills are committing. So we fill SSN /
-    // DOB / phone / email / address / ZIP first, let the ZIP->state autofill settle,
-    // and fill firstName/lastName LAST via pressSequentially (real keystrokes). This
-    // is the only ordering that reliably enables NEXT. See investigation in
+    // they are filled too early or while other fills are still committing. So we fill
+    // SSN / DOB / phone / email / address / ZIP first, let the ZIP->state autofill
+    // settle, and fill firstName/lastName LAST via pressSequentially (real keystrokes).
+    // This is the only ordering that reliably enables NEXT. See investigation in
     // docs/taskTestingUown/R1.52.0_rightfootConsent_1310.
     await this.page.waitForTimeout(2_500);
 

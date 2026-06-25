@@ -6,24 +6,24 @@ paths:
 
 # Selector Rules
 
-## Onde mora o selector (política reconciliada 2026-06-23)
+## Where the selector lives (reconciled policy 2026-06-23)
 
-A regra antiga "TODO selector em `common.selectors.ts`" não escala (1.110 locators já vivem co-locados nos page objects) e brigava com a coesão. Política real:
+The old rule "EVERY selector in `common.selectors.ts`" does not scale (1,110 locators already live co-located in page objects) and fought against cohesion. The real policy:
 
-- **Selector dono-de-página → CO-LOCADO no page object** que o usa, como `readonly x = this.page.getByRole(...)` (getter semântico) ou referenciando `SELECTORS.x`. Co-locação é COESÃO, não violação. Um selector usado por UMA página não precisa ir pro arquivo global.
-- **Selector cross-cutting (≥2 page objects / portais)** → `src/selectors/common.selectors.ts`, consumido via `SELECTORS.x`. O tipo `AppSelectors` é **derivado** do objeto (`typeof SELECTORS`) — fonte única, não há interface paralela pra sincronizar.
-- **Spec NUNCA define selector inline** — chama o método do page object. Essa é a fronteira que o ESLint cobre (locator inline em `tests/**` = warn).
-- A hierarquia semântica (abaixo) vale ONDE QUER que o selector esteja.
+- **Page-owned selector → CO-LOCATED in the page object** that uses it, as `readonly x = this.page.getByRole(...)` (semantic getter) or referencing `SELECTORS.x`. Co-location is COHESION, not a violation. A selector used by ONE page does not need to go to the global file.
+- **Cross-cutting selector (≥2 page objects / portals)** → `src/selectors/common.selectors.ts`, consumed via `SELECTORS.x`. The `AppSelectors` type is **derived** from the object (`typeof SELECTORS`) — a single source, with no parallel interface to keep in sync.
+- **A spec NEVER defines an inline selector** — it calls the page object method. This is the boundary ESLint covers (inline locator in `tests/**` = warn).
+- The semantic hierarchy (below) applies WHEREVER the selector lives.
 
 ```
-❌ Spec com page.locator(...)/getBy* inline duplicando método de page object
-❌ XPath (xpath=//...) — preferir CSS/semântico (sibling `~`/`:has-text` quando estrutural)
-❌ Positional CSS (div:nth-child(3)) — acoplamento frágil ao DOM
-❌ Class-based quando id/role disponível
+❌ Spec with inline page.locator(...)/getBy* duplicating a page object method
+❌ XPath (xpath=//...) — prefer CSS/semantic (sibling `~`/`:has-text` when structural)
+❌ Positional CSS (div:nth-child(3)) — fragile coupling to the DOM
+❌ Class-based when id/role is available
 
-✅ Page object co-loca seus próprios selectors (semânticos primeiro)
-✅ common.selectors.ts só pro que é compartilhado entre páginas
-✅ Spec chama método de page object, nunca o locator cru
+✅ Page object co-locates its own selectors (semantic first)
+✅ common.selectors.ts only for what is shared between pages
+✅ Spec calls a page object method, never the raw locator
 ✅ Prefer semantic: getByRole(), getByLabel(), getByTestId()
 ✅ CSS sibling combinators (label:has-text("X") ~ div) over XPath
 ```
@@ -40,24 +40,24 @@ A regra antiga "TODO selector em `common.selectors.ts`" não escala (1.110 locat
 
 ## Adding a New Selector
 
-1. **Usado por 1 página** → defina no próprio page object (getter `readonly` semântico) OU em `SELECTORS` — co-locação é OK.
-2. **Compartilhado por ≥2 páginas** → adicione ao `SELECTORS` object em `src/selectors/common.selectors.ts`. O tipo `AppSelectors` é DERIVADO do objeto (`typeof SELECTORS`), então atualiza sozinho — não há interface paralela pra editar.
-3. Use como `SELECTORS.myNewSelector` no page object.
-4. **Nunca** inline a string num spec — exponha um método no page object.
+1. **Used by 1 page** → define in the page object itself (semantic `readonly` getter) OR in `SELECTORS` — co-location is fine.
+2. **Shared by ≥2 pages** → add to the `SELECTORS` object in `src/selectors/common.selectors.ts`. The `AppSelectors` type is DERIVED from the object (`typeof SELECTORS`), so it updates automatically — there is no parallel interface to keep in sync.
+3. Use as `SELECTORS.myNewSelector` in the page object.
+4. **Never** inline the string in a spec — expose a method in the page object.
 
-## DOM-First antes de criar/mudar seletor (MANDATORY — CLAUDE.md #16)
+## DOM-First before creating/changing a selector (MANDATORY — CLAUDE.md #16)
 
-> Antes de escolher `getByRole(...)` / `getByLabel(...)` / `getByTestId(...)` para um elemento novo OU mudar um existente que está falhando, **validar via MCP Playwright** que o `tagName`, `role` e `accessible name` reais do DOM batem com o seletor proposto.
+> Before choosing `getByRole(...)` / `getByLabel(...)` / `getByTestId(...)` for a new element OR changing an existing one that is failing, **validate via MCP Playwright** that the real `tagName`, `role`, and `accessible name` from the DOM match the proposed selector.
 
-- Falha de seletor com `TimeoutError` / `not visible` / `0 elements` / `strict mode violation` → rodar o protocolo, NÃO aumentar timeout
-- `getByRole('button', ...)` só vale se o elemento é `<button>` OU tem `role="button"` explícito. Anchor (`<a>`) é `role="link"` por padrão
-- Suspeita de responsive (`d-lg-block`, `d-none d-md-block`, hamburger menu): fixar viewport 1440×900 antes de inspecionar
-- Protocolo completo: skill [[dom-investigation]] em `.claude/skills/dom-investigation/SKILL.md`
+- Selector failure with `TimeoutError` / `not visible` / `0 elements` / `strict mode violation` → run the protocol, do NOT increase timeout
+- `getByRole('button', ...)` is only valid if the element is `<button>` OR has an explicit `role="button"`. Anchor (`<a>`) is `role="link"` by default
+- Suspected responsive issue (`d-lg-block`, `d-none d-md-block`, hamburger menu): fix viewport to 1440×900 before inspecting
+- Full protocol: skill [[dom-investigation]] at `.claude/skills/dom-investigation/SKILL.md`
 
 ```
-❌ Trocar getByRole por XPath "porque não funciona" sem inspecionar DOM
-❌ Adicionar fallback try/catch com selector alternativo (mascara o bug)
-❌ Aumentar timeout sem ter validado role/tag/visible
+❌ Switching getByRole to XPath "because it doesn't work" without inspecting the DOM
+❌ Adding a try/catch fallback with an alternative selector (masks the bug)
+❌ Increasing timeout without validating role/tag/visible
 
-✅ MCP browser_evaluate retorna tagName/role/visible reais → tabela DOM vs Selector → fix preciso
+✅ MCP browser_evaluate returns real tagName/role/visible → DOM vs Selector table → precise fix
 ```

@@ -69,7 +69,7 @@ The guard is **size-based, not pure row count.** It samples the actually-loaded 
 | | Overview (`/overview`) | Leads (`/leads`) |
 |---|---|---|
 | Download filename | `all-filtered-leads.csv` | `leads-results.csv` |
-| Columns | 27 (see [[overview-csv-export-merchant-support]]) | **17**: Lead Number, Account Number, Lead Status, Internal Status, State, Term Month, Customer Name, Invoice Number, SSN, Phone Number, Email, Merchant, Location, Ref Merchant Code, Client Type, Created at, Created from. **NOTE — OBS-01:** the 17th column "Created from" (`createdFrom`) exports with a **BLANK header label** in `leads-results.csv` (its react-csv header entry has no `label`). Pre-existing, product-side `[OBSERVAÇÃO]` — flagged for a separate ticket. See [[application-lifecycle]] OBS-01-1321. |
+| Columns | 27 (see [[overview-csv-export-merchant-support]]) | **17**: Lead Number, Account Number, Lead Status, Internal Status, State, Term Month, Customer Name, Invoice Number, SSN, Phone Number, Email, Merchant, Location, Ref Merchant Code, Client Type, Created at, Created from. **NOTE — OBS-01:** the 17th column "Created from" (`createdFrom`) exports with a **BLANK header label** in `leads-results.csv` (its react-csv header entry has no `label`). Pre-existing, product-side `[OBSERVATION]` — flagged for a separate ticket. See [[application-lifecycle]] OBS-01-1321. |
 | `tooltipIdPrefix` | `overview-csv-download` | `leads-csv-download` |
 | Estimator wrap variant | `{leads, totalCount}` | `{searchResults, count}` |
 | Size limit / message | 48 MiB / same text | **48 MiB / same text** (shared `csv-response-size` util, confirmed in `leads-…js`) |

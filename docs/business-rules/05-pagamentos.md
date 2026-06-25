@@ -1,5 +1,5 @@
 ---
-title: Processamento de Pagamentos
+title: Payment Processing
 domain: business-rules
 status: stable
 volatility: volatile
@@ -15,552 +15,551 @@ sources:
 covers: [credit-card, ach, cc-peek, refunds, payment-arrangements, nsf, sweeps, rightfoot, sticky]
 ---
 
-# Processamento de Pagamentos
+# Payment Processing
 ## UOwn Leasing - SVC Platform
 
-Pagamentos CC, CC Peek, ACH, pos-pagamento, PayWallet, CC Idempotent, reembolsos, arranjos de pagamento e taxa NSF.
+CC payments, CC Peek, ACH, post-payment, PayWallet, CC Idempotent, refunds, payment arrangements and NSF fee.
 
 ---
 
-## 11. Pagamentos com Cartao de Credito
+## 11. Credit Card Payments
 
-### Fluxo de Autorizacao
+### Authorization Flow
 
-1. **Pre-autorizacao Kount** (verificacao de fraude)
-2. Se Kount DECLINED -> transacao negada, sem chamada ao gateway
-3. **Token do gateway** obtido se necessario
-4. **Chamada ao gateway** para autorizar/cobrar
-5. **Processamento da resposta** (token, auth code, decision)
+1. **Kount pre-authorization** (fraud check)
+2. If Kount DECLINED -> transaction denied, no gateway call
+3. **Gateway token** obtained if needed
+4. **Gateway call** to authorize/charge
+5. **Response processing** (token, auth code, decision)
 
-### Deteccao de NSF (Fundos Insuficientes)
+### NSF Detection (Non-Sufficient Funds)
 
-Uma transacao e marcada como NSF se:
-- Mensagem contem "Insufficient funds"
-- Codigo de erro em "50051, 57852"
-- Ultimos 2 digitos do codigo = "51"
+A transaction is flagged as NSF if:
+- Message contains "Insufficient funds"
+- Error code in "50051, 57852"
+- Last 2 digits of the code = "51"
 
-### Rerun de CC (Retentativa)
+### CC Rerun (Retry)
 
-| Situacao | Acao |
+| Situation | Action |
 |----------|------|
-| Primeiro rerun | Cria receivable de NSF fee + transacao separada RERUN_NSF |
-| Reruns seguintes | Incrementa numberOfTries |
-| Past due rerun | Se aprovado, tenta cobrar recebiveis vencidos ate limite de $10,000 |
+| First rerun | Creates an NSF fee receivable + a separate RERUN_NSF transaction |
+| Subsequent reruns | Increments numberOfTries |
+| Past due rerun | If approved, attempts to charge overdue receivables up to a $10,000 limit |
 
-### Daily Denied Rerun (Retentativa Automatica Diaria)
+### Daily Denied Rerun (Automatic Daily Retry)
 
-Executa diariamente, retentando CCs negados/erro do dia. Exclui permanentemente: cartoes expirados, numeros invalidos, contas fechadas, cartoes roubados.
+Runs daily, retrying the day's denied/errored CCs. Permanently excludes: expired cards, invalid numbers, closed accounts, stolen cards.
 
 ---
 
-## 12. CC Peek (Captura Parcial de Cartao)
+## 12. CC Peek (Partial Card Capture)
 
-### O Que e
+### What It Is
 
-CC Peek e um mecanismo que permite cobrar o cartao do cliente por **menos que o valor total** quando o cartao nao tem saldo suficiente, em vez de falhar a transacao inteira.
+CC Peek is a mechanism that allows charging the customer's card for **less than the full amount** when the card does not have sufficient balance, instead of failing the entire transaction.
 
-### Para Que Serve
+### What It's For
 
-Sem CC Peek, uma cobranca de $200 em um cartao com $150 disponiveis falha completamente (coleta $0). Com CC Peek, o gateway "espia" o saldo disponivel, captura $150, e o sistema depois retenta os $50 restantes. Isso reduz inadimplencia e melhora o fluxo de caixa.
+Without CC Peek, a $200 charge on a card with $150 available fails completely (collects $0). With CC Peek, the gateway "peeks" at the available balance, captures $150, and the system later retries the remaining $50. This reduces delinquency and improves cash flow.
 
-### Como o Consentimento e Capturado
+### How Consent Is Captured
 
-1. **Na assinatura do contrato:** Documento e-sign contem checkboxes `preauthyes` e `preauthno`
-2. **Default:** Consentimento = `true` (se o cliente nao marcar `preauthno`)
-3. O `EsignService` salva o consentimento no lead e depois na conta
+1. **At contract signing:** The e-sign document contains `preauthyes` and `preauthno` checkboxes
+2. **Default:** Consent = `true` (if the customer does not check `preauthno`)
+3. The `EsignService` saves the consent on the lead and later on the account
 
-### Quando CC Peek e Ativado
+### When CC Peek Is Activated
 
-| Condicao (TODAS devem ser verdadeiras) | |
+| Condition (ALL must be true) | |
 |---|---|
 | Config `sendCCPeek` = true |
-| Conta tem `ccPeekConsent = true` |
+| Account has `ccPeekConsent = true` |
 | Config `ccPeekOn` = true |
-| Nao e transacao same-day request (tem toggle proprio) |
+| Not a same-day request transaction (has its own toggle) |
 
-### Impacto na Retentativa
+### Impact on Retry
 
-Se uma transacao CC Peek foi aprovada mas capturou valor parcial, o rerun e feito pelo valor restante: `rerunAmount = originalAmount - capturedAmount`.
+If a CC Peek transaction was approved but captured a partial amount, the rerun is performed for the remaining amount: `rerunAmount = originalAmount - capturedAmount`.
 
-### Como Modificar o Consentimento
+### How to Modify Consent
 
-Agentes internos podem alterar o CC Peek consent via `ServicingInformationService`. Toda mudanca e registrada em activity log.
+Internal agents can change the CC Peek consent via `ServicingInformationService`. Every change is recorded in the activity log.
 
-### Gestao de Consentimento CC Peek por Portal
+### CC Peek Consent Management by Portal
 
-O consentimento de CC Peek tem comportamento diferente dependendo do portal:
+CC Peek consent behaves differently depending on the portal:
 
-| Portal | Comportamento | Editavel |
+| Portal | Behavior | Editable |
 |--------|--------------|----------|
-| **Origination** | Exibe "CC Peek Consent" abaixo da secao de Credit Card. Mostra o consentimento original da assinatura do contrato | **Nao** (read-only) |
-| **Servicing** | Exibe toggle "CC Peek Consent" na secao Servicing Information. Permite ativacao/desativacao por agentes | **Sim** (editavel) |
+| **Origination** | Displays "CC Peek Consent" below the Credit Card section. Shows the original consent from the contract signing | **No** (read-only) |
+| **Servicing** | Displays a "CC Peek Consent" toggle in the Servicing Information section. Allows agents to enable/disable it | **Yes** (editable) |
 
-**Logica de data de consentimento:**
-- **Na assinatura do contrato:** Se cliente consentiu → data = data da assinatura
-- **Ativacao em Servicing:** Toggle ativado → data = data atual da ativacao
-- **Desativacao em Servicing:** Toggle desativado → data removida/oculta
+**Consent date logic:**
+- **At contract signing:** If the customer consented → date = signing date
+- **Activation in Servicing:** Toggle enabled → date = current activation date
+- **Deactivation in Servicing:** Toggle disabled → date removed/hidden
 
-**Persistencia (`ConsentService.updateCcPeekConsent`):**
-- Comparacao null-safe usando `Objects.equals()` para detectar mudanca real
-- Activity log criado **apenas** se o valor realmente mudar (idempotente)
-- Mensagem: `"CC Peek Consent changed from [anterior] to [novo]"`
-- Tipo de log: `DATA_CHANGE`
-- Username do operador registrado via `ThreadAttributes`
+**Persistence (`ConsentService.updateCcPeekConsent`):**
+- Null-safe comparison using `Objects.equals()` to detect a real change
+- Activity log created **only** if the value actually changes (idempotent)
+- Message: `"CC Peek Consent changed from [previous] to [new]"`
+- Log type: `DATA_CHANGE`
+- Operator username recorded via `ThreadAttributes`
 
-**Importante:** Edicoes feitas em Servicing NAO alteram a exibicao em Origination (Origination sempre mostra a escolha original do contrato).
+**Important:** Edits made in Servicing do NOT change the display in Origination (Origination always shows the original contract choice).
 
 ---
 
-## 13a. Pagamentos por Cheque (Check Payment)
+## 13a. Check Payments (Check Payment)
 
-### O Que e
+### What It Is
 
-Cheques fisicos recebidos de clientes, processados manualmente por agentes via portal Servicing.
+Physical checks received from customers, processed manually by agents via the Servicing portal.
 
-### Campos Obrigatorios
+### Required Fields
 
-| Campo | Regra |
+| Field | Rule |
 |-------|-------|
-| `paymentDate` | Data do cheque (obrigatorio) |
-| `paymentAmount` | Valor > $0 (obrigatorio) |
-| `status` | Inicial: POSTED; evolui para CLEARED ou RETURNED |
-| `allocationStrategy` | DEFAULT, REGULAR_RECEIVABLES ou EPO_ONLY (obrigatorio) |
+| `paymentDate` | Check date (required) |
+| `paymentAmount` | Amount > $0 (required) |
+| `status` | Initial: POSTED; evolves to CLEARED or RETURNED |
+| `allocationStrategy` | DEFAULT, REGULAR_RECEIVABLES or EPO_ONLY (required) |
 
-### Status do Cheque
+### Check Status
 
-| Status | Descricao |
+| Status | Description |
 |--------|-----------|
-| `POSTED` | Cheque recebido e lancado no sistema |
-| `CLEARED` | Compensacao bancaria confirmada |
-| `RETURNED` | Cheque devolvido (sem fundos ou invalido) |
+| `POSTED` | Check received and posted in the system |
+| `CLEARED` | Bank clearing confirmed |
+| `RETURNED` | Check returned (insufficient funds or invalid) |
 
-### Estrategia de Alocacao
+### Allocation Strategy
 
-Mesmas regras dos pagamentos CC/ACH:
-- **DEFAULT** — aloca em recebiveis vencidos + proximo vencimento
-- **REGULAR_RECEIVABLES** — aloca apenas em parcelas regulares (sem EPO)
-- **EPO_ONLY** — aloca somente no saldo de EPO
+Same rules as CC/ACH payments:
+- **DEFAULT** — allocates to overdue receivables + next due
+- **REGULAR_RECEIVABLES** — allocates only to regular installments (no EPO)
+- **EPO_ONLY** — allocates only to the EPO balance
 
-### Restricao de Estorno/Reembolso
+### Reverse/Refund Restriction
 
-| Tipo de Pagamento | Reverse | Refund |
+| Payment Type | Reverse | Refund |
 |-------------------|---------|--------|
-| `Check` | **Permitido** (com permissao `reverse_payment`) | **NÃO disponivel** |
-| `ACH_Payment` | Permitido | Permitido (parcial ou total) |
-| `CC_Payment` | Permitido | Permitido (parcial ou total) |
+| `Check` | **Allowed** (with `reverse_payment` permission) | **NOT available** |
+| `ACH_Payment` | Allowed | Allowed (partial or full) |
+| `CC_Payment` | Allowed | Allowed (partial or full) |
 
-**Regra:** Pagamentos por cheque (`Check`) so podem ser REVERTIDOS — a opcao de reembolso e ocultada no portal Servicing para esse tipo.
+**Rule:** Check payments (`Check`) can only be REVERSED — the refund option is hidden in the Servicing portal for this type.
 
-**Reembolso parcial:** A opcao de reembolsar taxa (`refundFee`) so esta disponivel em reembolso total — em reembolso parcial, `refundFee` e forcado para `false`.
+**Partial refund:** The option to refund the fee (`refundFee`) is only available on a full refund — on a partial refund, `refundFee` is forced to `false`.
 
 ---
 
-## 13. Pagamentos ACH (Debito Bancario)
+## 13. ACH Payments (Bank Debit)
 
-### O Que e
+### What It Is
 
-ACH (Automated Clearing House) e o sistema americano de transferencia bancaria. A UOwn debita valores diretamente da conta bancaria do cliente via Profituity (processador ACH).
+ACH (Automated Clearing House) is the U.S. bank transfer system. UOwn debits amounts directly from the customer's bank account via Profituity (ACH processor).
 
-### Criacao de Pagamento ACH
+### ACH Payment Creation
 
-| Validacao | Detalhe |
+| Validation | Detail |
 |-----------|---------|
-| Bank data obrigatorio | Erro se null |
-| Auto-pay default | `false` se null |
-| Nome do cliente | Preenchido automaticamente se vazio |
-| Tipo de conta default | CHECKING |
+| Bank data required | Error if null |
+| Auto-pay default | `false` if null |
+| Customer name | Filled in automatically if empty |
+| Default account type | CHECKING |
 
 ### Rating Letter via Customer Portal
 
-Se o pagamento e do tipo REQUEST, com data futura, feito pelo "customer portal": rating atualizada para `P` (Promise to pay).
+If the payment is of type REQUEST, with a future date, made from the "customer portal": rating updated to `P` (Promise to pay).
 
-### NSF Fee no ACH
+### NSF Fee on ACH
 
-| Condicao (TODAS devem ser verdadeiras) | |
+| Condition (ALL must be true) | |
 |---|---|
 | Config `create.nsf.fee.receivable.on.rerun` = true |
-| Tipo: SCHEDULED |
-| Nao e rerun (originalACHPk = null) |
-| Primeira tentativa (numberOfTries = 1) |
+| Type: SCHEDULED |
+| Not a rerun (originalACHPk = null) |
+| First attempt (numberOfTries = 1) |
 
-**Valor:** Especifico por estado (StateConfigurations), fallback $15.00. INSTORE = estado merchant, ONLINE = estado cliente.
+**Amount:** State-specific (StateConfigurations), fallback $15.00. INSTORE = merchant state, ONLINE = customer state.
 
-### Reembolso ACH
+### ACH Refund
 
-Cria novo pagamento com `achType = ACHCredit`. Se parcial, cria novo PAID com restante.
+Creates a new payment with `achType = ACHCredit`. If partial, creates a new PAID for the remainder.
 
-### Verificacao de Saldo RightFoot (R1.53.0)
+### RightFoot Balance Check (R1.53.0)
 
-Para contas **ACTIVE com auto-pay ACH em delinquencia**, a release 1.53.0 (svc#540) introduziu o **RightFoot balance check**: antes de criar/retentar um ACH (rerun de delinquente), o saldo bancario e verificado para reduzir retornos NSF. Um ACH so e criado quando o balance check retorna `status='SUCCESS'`, mesmo routing+account number, e `exposure + requested_amount + $100 <= balance`. O novo ACH carrega a FK `right_foot_balance_check_pk` e `process_type=DAILY_RERUN_DELINQUENT`. **Guard de duplicidade:** nenhum novo ACH `DAILY_RERUN_DELINQUENT` se ja houver um in-flight (`PENDING/PICKED_TO_SEND/STATUS_UPDATE_PENDING/SENT`) para a conta. Fornecedor, sweeps e webhook completos: [09-integracoes-externas.md §48](09-integracoes-externas.md).
+For **ACTIVE accounts with ACH auto-pay in delinquency**, release 1.53.0 (svc#540) introduced the **RightFoot balance check**: before creating/retrying an ACH (delinquent rerun), the bank balance is checked to reduce NSF returns. An ACH is only created when the balance check returns `status='SUCCESS'`, same routing+account number, and `exposure + requested_amount + $100 <= balance`. The new ACH carries the FK `right_foot_balance_check_pk` and `process_type=DAILY_RERUN_DELINQUENT`. **Duplicate guard:** no new `DAILY_RERUN_DELINQUENT` ACH if one is already in-flight (`PENDING/PICKED_TO_SEND/STATUS_UPDATE_PENDING/SENT`) for the account. Full vendor, sweeps and webhook: [09-integracoes-externas.md §48](09-integracoes-externas.md).
 
 ---
 
-## 14. Pos-Pagamento e Alocacao de Recebiveis
+## 14. Post-Payment and Receivable Allocation
 
-### Estrategias de Alocacao
+### Allocation Strategies
 
-| Estrategia | Comportamento |
+| Strategy | Behavior |
 |------------|--------------|
-| DEFAULT | Aloca para recebiveis vencidos e proximo a vencer |
-| EPO_ONLY | Aloca apenas ao recebivel EPO |
-| Catch-all | Aloca para TODOS os recebiveis nao pagos |
+| DEFAULT | Allocates to overdue and next-due receivables |
+| EPO_ONLY | Allocates only to the EPO receivable |
+| Catch-all | Allocates to ALL unpaid receivables |
 
-### Pagamento Sem Recebivel
+### Payment Without a Receivable
 
-Se nao ha recebivel para alocar: cria alerta "Payment received but is not allocated to any receivable or epo".
-
----
-
-## 37. PayWallet (Pagamentos via Folha de Pagamento)
-
-### O Que e
-
-PayWallet e um servico de **desconto em folha de pagamento** onde o empregador do cliente deduz o valor do lease diretamente do salario.
-
-### Para Que Serve
-
-Alternativa ao cartao de credito e ACH. Pagamentos via folha tem taxa de inadimplencia muito menor pois sao deduzidos antes do cliente receber o salario.
-
-### Como Funciona
-
-1. **PayWallet gera arquivo Excel** (.xlsx) com pagamentos coletados
-2. **Arquivo depositado via SFTP** na pasta `/paywallet`
-3. **Sweep diario** (`processPayWalletPaymentsSweep`) le o arquivo
-4. **Processamento paralelo:** ParseIA cada linha com ExecutorService
-5. **Dados extraidos:** Data, nome do cliente, conta de coleta, conta de disbursement, referencia do lease, valor, trace number
-6. **Deduplicacao:** Verifica pagamentos existentes por data + trace number
-7. **Registro:** Converte para `PaymentInfo` e posta na conta
-8. **Arquivamento:** Move arquivo processado para `/pw/`, deleta original
-
-### Como Ativar
-
-- O sweep roda automaticamente a meia-noite
-- Para processar manualmente: `POST /uown/svc/triggerScheduledTask/processPayWalletPaymentsSweep`
-- O servico depende de conexao SFTP configurada
-
-### O Que Verificar
-
-- Novos pagamentos com source "PayWallet" na conta
-- Arquivo movido de `/paywallet` para `/pw/`
-- Logs de processamento para erros de parsing
+If there is no receivable to allocate to: creates an alert "Payment received but is not allocated to any receivable or epo".
 
 ---
 
-## 47. CC Idempotent (Retentativa de CC Timeout)
+## 37. PayWallet (Payroll Payments)
 
-### O Que e
+### What It Is
 
-Servico que **retenta transacoes CC que deram timeout** (sem resposta do gateway) garantindo **idempotencia** -- nao cobra duas vezes.
+PayWallet is a **payroll deduction** service where the customer's employer deducts the lease amount directly from their salary.
 
-### Para Que Serve
+### What It's For
 
-Gateways de pagamento podem nao responder (timeout de rede, indisponibilidade). O sistema precisa saber se a cobranca foi efetivada ou nao antes de retentar.
+An alternative to credit card and ACH. Payroll payments have a much lower delinquency rate because they are deducted before the customer receives their salary.
 
-### Como Funciona
+### How It Works
 
-1. Sweep identifica transacoes com status TIMEOUT
-2. Para cada, consulta gateway sobre status real
-3. Se cobrada: atualiza para APPROVED
-4. Se nao cobrada: retenta com mesma referencia (idempotent key)
-5. Se inconclusivo: marca para revisao manual
+1. **PayWallet generates an Excel file** (.xlsx) with collected payments
+2. **File deposited via SFTP** in the `/paywallet` folder
+3. **Daily sweep** (`processPayWalletPaymentsSweep`) reads the file
+4. **Parallel processing:** parses each line with ExecutorService
+5. **Extracted data:** Date, customer name, collection account, disbursement account, lease reference, amount, trace number
+6. **Deduplication:** Checks for existing payments by date + trace number
+7. **Recording:** Converts to `PaymentInfo` and posts to the account
+8. **Archiving:** Moves the processed file to `/pw/`, deletes the original
 
-### Como Ativar
+### How to Activate
 
-Sweep `IdempotentCCSweep` roda automaticamente. Para disparar: `POST /uown/svc/triggerScheduledTask/IdempotentCCSweep`
+- The sweep runs automatically at midnight
+- To process manually: `POST /uown/svc/triggerScheduledTask/processPayWalletPaymentsSweep`
+- The service depends on a configured SFTP connection
+
+### What to Check
+
+- New payments with source "PayWallet" on the account
+- File moved from `/paywallet` to `/pw/`
+- Processing logs for parsing errors
 
 ---
 
-## 53. Reembolso de Pagamentos (Refund Payment)
+## 47. CC Idempotent (CC Timeout Retry)
 
-### O Que e
+### What It Is
 
-Servico que processa reembolsos de pagamentos ja realizados, suportando tanto pagamentos ACH quanto CC, com capacidade de reembolso parcial ou total.
+A service that **retries CC transactions that timed out** (no gateway response) while ensuring **idempotency** -- it does not charge twice.
 
-### Para Que Serve
+### What It's For
 
-Necessario quando um pagamento deve ser revertido -- por erro, cancelamento de conta, fraude, ou acordo com o cliente.
+Payment gateways may fail to respond (network timeout, unavailability). The system needs to know whether the charge went through or not before retrying.
 
-### Tipos de Reembolso
+### How It Works
 
-| Tipo | Metodo de Pagamento | Acao |
+1. The sweep identifies transactions with TIMEOUT status
+2. For each one, it queries the gateway for the real status
+3. If charged: updates to APPROVED
+4. If not charged: retries with the same reference (idempotent key)
+5. If inconclusive: flags for manual review
+
+### How to Activate
+
+The `IdempotentCCSweep` sweep runs automatically. To trigger: `POST /uown/svc/triggerScheduledTask/IdempotentCCSweep`
+
+---
+
+## 53. Refund Payment
+
+### What It Is
+
+A service that processes refunds of already-completed payments, supporting both ACH and CC payments, with the ability to do a partial or full refund.
+
+### What It's For
+
+Needed when a payment must be reversed -- due to an error, account cancellation, fraud, or an agreement with the customer.
+
+### Refund Types
+
+| Type | Payment Method | Action |
 |------|---------------------|------|
-| **Reembolso Total** | ACH ou CC | Reverte o valor integral do pagamento |
-| **Reembolso Parcial** | ACH ou CC | Reverte parte do valor, criando novo registro para o restante |
+| **Full Refund** | ACH or CC | Reverses the full amount of the payment |
+| **Partial Refund** | ACH or CC | Reverses part of the amount, creating a new record for the remainder |
 
-### Logica de Reembolso CC
+### CC Refund Logic
 
-1. Recupera a transacao CC associada ao pagamento
-2. Chama `CCRunRefundService` para executar o reembolso no gateway
-3. **Somente prossegue** se a transacao de reembolso retornar status `APPROVED`
-4. Detecta re-reembolso verificando se a transacao original ja tinha status `REFUNDED` ou `PARTIALLY_REFUNDED`
+1. Retrieves the CC transaction associated with the payment
+2. Calls `CCRunRefundService` to execute the refund at the gateway
+3. **Only proceeds** if the refund transaction returns status `APPROVED`
+4. Detects a re-refund by checking whether the original transaction already had status `REFUNDED` or `PARTIALLY_REFUNDED`
 
-### Logica de Reembolso Parcial
+### Partial Refund Logic
 
-Quando o valor de reembolso e menor que o valor original do pagamento:
+When the refund amount is less than the original payment amount:
 
-1. Pagamento original marcado como `REVERSED` com data e timestamp de reversao
-2. **Novo registro de pagamento** criado para o valor restante (`valorOriginal - valorReembolso`)
-3. Novo pagamento herda: estrategia de alocacao, data de pagamento, status `PAID`
+1. Original payment marked as `REVERSED` with a reversal date and timestamp
+2. **New payment record** created for the remaining amount (`originalAmount - refundAmount`)
+3. New payment inherits: allocation strategy, payment date, status `PAID`
 
-### Reembolso em Lote
+### Batch Refund
 
-O servico aceita lista de PKs de pagamento (separados por virgula) e processa cada um individualmente. Se um reembolso falhar, os demais continuam -- falhas sao coletadas e retornadas na resposta consolidada.
+The service accepts a list of payment PKs (comma-separated) and processes each one individually. If one refund fails, the others continue -- failures are collected and returned in the consolidated response.
 
-### Como Disparar
+### How to Trigger
 
 ```
-POST /uown/svc/refundPayment/{paymentPk}?amount={valor}&comment={motivo}
+POST /uown/svc/refundPayment/{paymentPk}?amount={amount}&comment={reason}
 ```
 
 ---
 
-## 53b. Sticky — Recovery de CC Recusado e Refund (R1.53.0)
+## 53b. Sticky — Declined CC Recovery and Refund (R1.53.0)
 
-Sticky e o motor de **recovery/dunning de cartao de credito recusado** (vendor `com.uownleasing:sticky`). Estado por conta em `uown_sticky` (`recovery_status`). A release 1.53.0 trouxe varias mudancas confirmadas em codigo:
+Sticky is the **declined credit card recovery/dunning** engine (vendor `com.uownleasing:sticky`). Per-account state is in `uown_sticky` (`recovery_status`). Release 1.53.0 brought several code-confirmed changes:
 
-**Cancelamento de recovery nao-cancelavel:**
-- O `StickyRecoverCancelSweep` so cancela recoveries nao-terminais (`recovery_status NOT IN ('RECOVERED','FAILED','CANCELED')`, conta nao-ACTIVE). Logo `RECOVERED/FAILED/CANCELED` sao os status **terminais**.
-- Ao pedir cancel, se o Sticky responde "Cannot cancel transaction" (HTTP 400 — transacao ja terminal do lado do vendor), svc **NAO falha**: marca o recovery **CANCELED localmente**, loga WARN e grava activity log INTERNAL. Erro nao-branco diferente => `IllegalStateException`. Erro branco => sucesso (sem marcacao).
+**Cancellation of non-cancelable recovery:**
+- The `StickyRecoverCancelSweep` only cancels non-terminal recoveries (`recovery_status NOT IN ('RECOVERED','FAILED','CANCELED')`, non-ACTIVE account). So `RECOVERED/FAILED/CANCELED` are the **terminal** statuses.
+- When a cancel is requested, if Sticky responds "Cannot cancel transaction" (HTTP 400 — transaction already terminal on the vendor side), svc does **NOT** fail: it marks the recovery **CANCELED locally**, logs WARN and writes an INTERNAL activity log. A different non-whitelisted error => `IllegalStateException`. A whitelisted error => success (no marking).
 
-**Prior attempts + tempo da transacao original (svc#564):**
-- Ao submeter um CC recusado ao Sticky, svc envia o **historico de declines anteriores** (`error`, `error_code`, `completed_time`) e a **contagem** (`null` se vazia), via SQL `StickyPriorAttempts` (self-join em `uown_sv_credit_card_transaction` por `account_pk`+`amount`, tipos `RERUN`/`DAILY_SCHEDULED_DENIED_RERUN`). Da ao motor de dunning do Sticky o historico para decidir a cadencia de retry.
-- **[ATENCAO — drift]** apesar do nome do commit ("UTC"), o codigo merge resolve os timestamps via **`ZoneId.of("America/New_York")`** (`.toInstant()`), **nao UTC**. Verificar contra o DB antes de asserir horarios de recovery em testes.
+**Prior attempts + original transaction time (svc#564):**
+- When submitting a declined CC to Sticky, svc sends the **history of previous declines** (`error`, `error_code`, `completed_time`) and the **count** (`null` if empty), via the `StickyPriorAttempts` SQL (self-join on `uown_sv_credit_card_transaction` by `account_pk`+`amount`, types `RERUN`/`DAILY_SCHEDULED_DENIED_RERUN`). This gives Sticky's dunning engine the history to decide the retry cadence.
+- **[WARNING — drift]** despite the commit name ("UTC"), the merge code resolves the timestamps via **`ZoneId.of("America/New_York")`** (`.toInstant()`), **not UTC**. Verify against the DB before asserting recovery times in tests.
 
 **Duplicate payment checks:**
-- Na confirmacao de refund, svc busca **todos** os `SvPayment` PAID do `ccPk` (mais recente primeiro). Se houver **>1** PAID, e situacao de pagamento duplicado: loga WARN ("Multiple PAID SvPayments found ... using most recent") e prossegue com o **mais recente** — **nao bloqueia/aborta**. Lista vazia => activity log "no payment found" e retorna.
+- On refund confirmation, svc fetches **all** PAID `SvPayment` for the `ccPk` (most recent first). If there is **>1** PAID, it is a duplicate payment situation: it logs WARN ("Multiple PAID SvPayments found ... using most recent") and proceeds with the **most recent** one — it does **not** block/abort. An empty list => activity log "no payment found" and returns.
 
-**Idempotencia de refund (R1.53.0_add_sticky_refund_idempotency):**
-- Nao ha chave de idempotencia dedicada; a protecao e via **maquina de estado PAID**: refund so e permitido se o pagamento e `STICKY` **e** `PAID`. Reverter tira o status PAID, entao uma 2a tentativa e rejeitada ("Only PAID Sticky payments can be refunded") e webhooks tardios nao encontram linha PAID (no-op). Completa inline so quando Sticky retorna `REFUNDED` e o pagamento ainda esta `PAID`.
+**Refund idempotency (R1.53.0_add_sticky_refund_idempotency):**
+- There is no dedicated idempotency key; the protection is via the **PAID state machine**: refund is only allowed if the payment is `STICKY` **and** `PAID`. Reversing it removes the PAID status, so a 2nd attempt is rejected ("Only PAID Sticky payments can be refunded") and late webhooks find no PAID row (no-op). Completes inline only when Sticky returns `REFUNDED` and the payment is still `PAID`.
 
-**Activity log (regra #13):** cancel-local, refund-confirmado/no-payment-found e refund-submitted gravam `LogType.INTERNAL` — asserir nos testes.
+**Activity log (rule #13):** cancel-local, refund-confirmed/no-payment-found and refund-submitted write `LogType.INTERNAL` — assert on them in tests.
 
-**Fontes:** `service/cc/sticky/{StickyRecoverCancelService,StickyRecoverCancelSweepService,StickyRecoverSubmissionService,StickyRefundCompletionService,StickyRefundPaymentService}.java`, `resources/sqls/StickyPriorAttempts.sql`. Internos de enum/vendor em `com.uownleasing:sticky` (nao em disco) — **[HIPOTESE]** onde indicado. Gotchas de ambiente (sandbox-only): knowledge-base `sticky-recover-cancel-sweep.md` / `sticky-payment-refund.md`.
+**Sources:** `service/cc/sticky/{StickyRecoverCancelService,StickyRecoverCancelSweepService,StickyRecoverSubmissionService,StickyRefundCompletionService,StickyRefundPaymentService}.java`, `resources/sqls/StickyPriorAttempts.sql`. Enum/vendor internals in `com.uownleasing:sticky` (not on disk) — **[HYPOTHESIS]** where indicated. Environment gotchas (sandbox-only): knowledge-base `sticky-recover-cancel-sweep.md` / `sticky-payment-refund.md`.
 
 ---
 
-## 54. Arranjo de Pagamentos (Payment Arrangement)
+## 54. Payment Arrangement
 
-### O Que e
+### What It Is
 
-Mecanismo para criar acordos de pagamento com clientes inadimplentes, processando multiplas transacoes CC ou ACH de uma vez e atualizando o status da conta. A partir da task #446, arranjos sao persistidos na entidade `uown_sv_payment_arrangement` com rastreamento de status, tipo e vinculo com transacoes individuais.
+A mechanism to create payment agreements with delinquent customers, processing multiple CC or ACH transactions at once and updating the account status. As of task #446, arrangements are persisted in the `uown_sv_payment_arrangement` entity with tracking of status, type, and linkage to individual transactions.
 
-### Para Que Serve
+### What It's For
 
-Quando um cliente esta em atraso, um agente pode negociar um plano de pagamento. O arranjo permite agendar e processar multiplos pagamentos em uma unica operacao. Arranjos do tipo SETTLEMENT permitem quitar a conta por valor negociado (tipicamente menor que o total devido).
+When a customer is past due, an agent can negotiate a payment plan. The arrangement allows scheduling and processing multiple payments in a single operation. SETTLEMENT-type arrangements allow paying off the account for a negotiated amount (typically less than the total owed).
 
-### Entidade: uown_sv_payment_arrangement (Task #446)
+### Entity: uown_sv_payment_arrangement (Task #446)
 
-| Coluna | Tipo | Descricao |
+| Column | Type | Description |
 |--------|------|-----------|
-| `pk` | BIGINT (PK) | Chave primaria |
-| `account_pk` | BIGINT (FK) | Conta vinculada |
-| `start_date` | DATE | Data de inicio do arranjo |
-| `end_date` | DATE | Data de termino do arranjo |
-| `frequency` | VARCHAR | Frequencia dos pagamentos (WEEKLY, BI_WEEKLY, etc.) |
-| `amount` | DECIMAL | Valor de cada parcela do arranjo |
-| `arrangement_type` | VARCHAR | Tipo: `NORMAL` ou `SETTLEMENT` |
-| `payment_type` | VARCHAR | Metodo de pagamento (CC, ACH) |
-| `username` | VARCHAR | Agente que criou o arranjo |
-| `previous_rating` | CHAR(1) | Rating da conta antes do arranjo |
-| `current_rating` | CHAR(1) | Rating atual da conta |
-| `is_active` | BOOLEAN | Se o arranjo esta ativo |
+| `pk` | BIGINT (PK) | Primary key |
+| `account_pk` | BIGINT (FK) | Linked account |
+| `start_date` | DATE | Arrangement start date |
+| `end_date` | DATE | Arrangement end date |
+| `frequency` | VARCHAR | Payment frequency (WEEKLY, BI_WEEKLY, etc.) |
+| `amount` | DECIMAL | Amount of each arrangement installment |
+| `arrangement_type` | VARCHAR | Type: `NORMAL` or `SETTLEMENT` |
+| `payment_type` | VARCHAR | Payment method (CC, ACH) |
+| `username` | VARCHAR | Agent who created the arrangement |
+| `previous_rating` | CHAR(1) | Account rating before the arrangement |
+| `current_rating` | CHAR(1) | Current account rating |
+| `is_active` | BOOLEAN | Whether the arrangement is active |
 | `payment_arrangement_status` | VARCHAR | Status: `NOT_STARTED`, `IN_PROGRESS`, `SUCCESS`, `FAILED` |
-| `notes` | TEXT | Observacoes do agente |
+| `notes` | TEXT | Agent notes |
 
-### FK nas Tabelas de Transacao (Task #446)
+### FK on the Transaction Tables (Task #446)
 
-As tabelas de transacao agora possuem FK para vincular cada transacao ao arranjo que a originou:
+The transaction tables now have an FK to link each transaction to the arrangement that originated it:
 
-| Tabela | Nova Coluna |
+| Table | New Column |
 |--------|-------------|
 | `uown_sv_credit_card_transaction` | `payment_arrangement_pk` |
 | `uown_los_credit_card_transaction` | `payment_arrangement_pk` |
 | `uown_sv_achpayment` | `payment_arrangement_pk` |
 
-### Tipos de Arranjo (ArrangementType)
+### Arrangement Types (ArrangementType)
 
-| Tipo | Descricao | Impacto no Encerramento |
+| Type | Description | Impact on Closure |
 |------|-----------|------------------------|
-| `NORMAL` | Acordo de pagamento padrao (promise to pay) | Ao concluir com sucesso, arranjo marcado como SUCCESS. Conta permanece ACTIVE |
-| `SETTLEMENT` | Acordo de quitacao negociada (valor reduzido) | Ao concluir com sucesso, arranjo marcado como SUCCESS **e conta muda para SETTLED_IN_FULL** |
+| `NORMAL` | Standard payment agreement (promise to pay) | On successful completion, arrangement marked as SUCCESS. Account remains ACTIVE |
+| `SETTLEMENT` | Negotiated settlement agreement (reduced amount) | On successful completion, arrangement marked as SUCCESS **and the account changes to SETTLED_IN_FULL** |
 
-### Maquina de Estados do Arranjo (PaymentArrangementStatus)
+### Arrangement State Machine (PaymentArrangementStatus)
 
-| Status | Descricao |
+| Status | Description |
 |--------|-----------|
-| `NOT_STARTED` | Arranjo criado, nenhuma transacao processada ainda |
-| `IN_PROGRESS` | Pelo menos uma transacao processada, restam transacoes pendentes |
-| `SUCCESS` | Todas as transacoes concluidas com sucesso |
-| `FAILED` | Pelo menos uma transacao falhou |
+| `NOT_STARTED` | Arrangement created, no transaction processed yet |
+| `IN_PROGRESS` | At least one transaction processed, pending transactions remain |
+| `SUCCESS` | All transactions completed successfully |
+| `FAILED` | At least one transaction failed |
 
-### Logica de Transicao de Status (Task #446)
+### Status Transition Logic (Task #446)
 
-A avaliacao do status do arranjo segue a seguinte matriz de decisao, executada apos cada transacao ser processada:
+The arrangement status evaluation follows the decision matrix below, run after each transaction is processed:
 
 ```
-1. Alguma transacao vinculada falhou?
-   SIM → status = FAILED, is_active = false, current_rating = null
-   NAO → continua...
+1. Did any linked transaction fail?
+   YES → status = FAILED, is_active = false, current_rating = null
+   NO → continue...
 
-2. Existem transacoes pendentes (PENDING)?
-   SIM → status = IN_PROGRESS
-   NAO → continua...
+2. Are there pending transactions (PENDING)?
+   YES → status = IN_PROGRESS
+   NO → continue...
 
-3. Todas as transacoes concluidas com sucesso:
-   - Se arrangement_type = SETTLEMENT → status = SUCCESS, conta → SETTLED_IN_FULL
-   - Se arrangement_type = NORMAL → status = SUCCESS
+3. All transactions completed successfully:
+   - If arrangement_type = SETTLEMENT → status = SUCCESS, account → SETTLED_IN_FULL
+   - If arrangement_type = NORMAL → status = SUCCESS
 ```
 
-**Detalhamento das transicoes:**
+**Transition details:**
 
-| Condicao | Novo Status | is_active | current_rating | Status da Conta |
+| Condition | New Status | is_active | current_rating | Account Status |
 |----------|-------------|-----------|----------------|-----------------|
-| Qualquer transacao falhou | `FAILED` | `false` | `null` | Sem mudanca (ACTIVE) |
-| Sem falha + pendentes existem | `IN_PROGRESS` | `true` | Mantido | Sem mudanca |
-| Sem falha + sem pendentes + SETTLEMENT | `SUCCESS` | `false` | Mantido | `SETTLED_IN_FULL` |
-| Sem falha + sem pendentes + NORMAL | `SUCCESS` | `false` | Mantido | Sem mudanca |
+| Any transaction failed | `FAILED` | `false` | `null` | No change (ACTIVE) |
+| No failure + pending exist | `IN_PROGRESS` | `true` | Kept | No change |
+| No failure + no pending + SETTLEMENT | `SUCCESS` | `false` | Kept | `SETTLED_IN_FULL` |
+| No failure + no pending + NORMAL | `SUCCESS` | `false` | Kept | No change |
 
-### Processamento Sincrono (CC) vs Assincrono (ACH)
+### Synchronous Processing (CC) vs Asynchronous (ACH)
 
-| Metodo | Processamento | Status inicial | Status final (sucesso) | Requer sweep? |
+| Method | Processing | Initial status | Final status (success) | Requires sweep? |
 |--------|--------------|----------------|------------------------|--------------|
-| **CC** | **Sincrono** — transacoes processadas dentro da mesma requisicao HTTP | `NOT_STARTED` (momentaneo) | `SUCCESS` | Nao (sweep e informacional) |
-| **ACH** | **Assincrono** — pagamentos criados como PENDING; processados pela Profituity via sweeps | `NOT_STARTED` | `SUCCESS` | **Sim** (sendACHPaymentsSweep + getStatusDatePaymentsListSweep) |
+| **CC** | **Synchronous** — transactions processed within the same HTTP request | `NOT_STARTED` (momentary) | `SUCCESS` | No (sweep is informational) |
+| **ACH** | **Asynchronous** — payments created as PENDING; processed by Profituity via sweeps | `NOT_STARTED` | `SUCCESS` | **Yes** (sendACHPaymentsSweep + getStatusDatePaymentsListSweep) |
 
-**Implicacao para testes:**
-- Arranjos CC: apos `makeCreditCardPayments`, o status ja e `SUCCESS` — nao aguardar sweep.
-- Arranjos ACH: apos `createOrUpdateAchPayments`, o status e `NOT_STARTED` — aguardar sweep e polling para atingir `SUCCESS`.
+**Testing implication:**
+- CC arrangements: after `makeCreditCardPayments`, the status is already `SUCCESS` — do not wait for the sweep.
+- ACH arrangements: after `createOrUpdateAchPayments`, the status is `NOT_STARTED` — wait for the sweep and poll to reach `SUCCESS`.
 
-### Como Funciona
+### How It Works
 
-#### Transacoes CC
+#### CC Transactions
 
-1. **Primeira transacao:** Cartao e autorizado e tokenizado (`authorizeAndTokenizeCard`)
-2. **Transacoes subsequentes:** Usam o mesmo token da primeira transacao
-3. Cada transacao e processada **sincronamente** na mesma requisicao HTTP — o arranjo ja chega a `SUCCESS` antes do retorno do endpoint
-4. Username do agente registrado em cada transacao para auditoria
-5. Cada transacao CC recebe o `payment_arrangement_pk` do arranjo pai
+1. **First transaction:** Card is authorized and tokenized (`authorizeAndTokenizeCard`)
+2. **Subsequent transactions:** Use the same token from the first transaction
+3. Each transaction is processed **synchronously** within the same HTTP request — the arrangement already reaches `SUCCESS` before the endpoint returns
+4. The agent username is recorded on each transaction for auditing
+5. Each CC transaction receives the parent arrangement's `payment_arrangement_pk`
 
-#### Pagamentos ACH
+#### ACH Payments
 
-1. Cada pagamento ACH recebe o username do agente atual
-2. Pagamentos sao criados ou atualizados individualmente via `createOrUpdateAchPayment` com status `PENDING`
-3. Cada pagamento ACH recebe o `payment_arrangement_pk` do arranjo pai
-4. O campo `ach_process_type = 'REQUEST'` deve ser enviado para que o `sendACHPaymentsSweep` processe o pagamento independentemente de vencimento de recebivel (sem esse campo, o sweep so pega pagamentos com recebivel vencendo em D+1)
+1. Each ACH payment receives the current agent's username
+2. Payments are created or updated individually via `createOrUpdateAchPayment` with status `PENDING`
+3. Each ACH payment receives the parent arrangement's `payment_arrangement_pk`
+4. The field `ach_process_type = 'REQUEST'` must be sent so that `sendACHPaymentsSweep` processes the payment regardless of receivable due date (without this field, the sweep only picks up payments with a receivable due at D+1)
 
-### Sweeps de Pagamento e Arranjos (Task #446)
+### Payment Sweeps and Arrangements (Task #446)
 
-Os sweeps de envio de pagamentos consideram o arranjo ao selecionar transacoes:
+The payment-sending sweeps consider the arrangement when selecting transactions:
 
 #### sendCreditCardPaymentsSql
 
-Seleciona transacoes CC pendentes para envio ao gateway:
+Selects pending CC transactions to send to the gateway:
 - `status = 'PENDING'`
 - `posting_date <= CURRENT_DATE`
-- Conta com `account_status = 'ACTIVE'`
-- Rating **diferente** de `B` e `C` (contas bloqueadas/em cobranca sao excluidas)
-- Resultado: transacao marcada como `PICKED_TO_SEND`
+- Account with `account_status = 'ACTIVE'`
+- Rating **different** from `B` and `C` (blocked/collections accounts are excluded)
+- Result: transaction marked as `PICKED_TO_SEND`
 
 #### sendACHPaymentsSql
 
-Seleciona pagamentos ACH pendentes para envio ao Profituity:
+Selects pending ACH payments to send to Profituity:
 - `status = 'PENDING'`
-- `posting_date <= CURRENT_DATE + 1` (ACH tem D+1 de antecedencia) **OU** `ach_process_type = 'REQUEST'` (pagamentos de arranjo — ignoram a janela de vencimento)
-- Rating **diferente** de `B` e `C`
-- Resultado: pagamento marcado como `PICKED_TO_SEND`
+- `posting_date <= CURRENT_DATE + 1` (ACH has D+1 lead time) **OR** `ach_process_type = 'REQUEST'` (arrangement payments — they ignore the due-date window)
+- Rating **different** from `B` and `C`
+- Result: payment marked as `PICKED_TO_SEND`
 
-**Nota:** Pagamentos de arranjo ACH criados via API devem incluir `ach_process_type = 'REQUEST'`. Sem esse campo, o sweep so os processa se um recebivel esta vencendo em D+1 — em contas sem recebivel proximo, o pagamento ficaria preso em PENDING.
+**Note:** ACH arrangement payments created via API must include `ach_process_type = 'REQUEST'`. Without this field, the sweep only processes them if a receivable is due at D+1 — on accounts without a near-due receivable, the payment would get stuck in PENDING.
 
-#### Cron chain completa (ACH arrangement → terminal) — confirmado dev3 2026-06-01
+#### Full cron chain (ACH arrangement → terminal) — confirmed dev3 2026-06-01
 
-| Sweep / Listener | Schedule | Efeito |
+| Sweep / Listener | Schedule | Effect |
 |------------------|----------|--------|
-| `SendACHPaymentsSweep` | a cada 5 min | `PENDING → PICKED_TO_SEND` |
-| `getSendACHPaymentsStatusSweep` | a cada 6 min | polling do Profituity (status do envio) |
-| `getStatusDatePaymentsListSweep` | diario 20:30 | status final do dia |
-| `PaymentArrangementACHListener` | callback do processor | so em `SETTLED` / `RETURNED` / `ACK_ERROR` → atualiza o arranjo |
+| `SendACHPaymentsSweep` | every 5 min | `PENDING → PICKED_TO_SEND` |
+| `getSendACHPaymentsStatusSweep` | every 6 min | polls Profituity (send status) |
+| `getStatusDatePaymentsListSweep` | daily 20:30 | final status of the day |
+| `PaymentArrangementACHListener` | processor callback | only on `SETTLED` / `RETURNED` / `ACK_ERROR` → updates the arrangement |
 
-**O arranjo so muda de `NOT_STARTED` em estado terminal do payment.** Estados intermediarios (`PENDING → PICKED_TO_SEND → SENT`) NAO promovem o arranjo — so um terminal (`SETTLED`/`RETURNED`/`ACK_ERROR`) dispara o listener.
+**The arrangement only moves out of `NOT_STARTED` at a terminal payment state.** Intermediate states (`PENDING → PICKED_TO_SEND → SENT`) do NOT promote the arrangement — only a terminal state (`SETTLED`/`RETURNED`/`ACK_ERROR`) triggers the listener.
 
-**Implicacao para env sem processor real (dev3):** sem Profituity, o ACH para em `PICKED_TO_SEND` e nunca atinge terminal; `recalculateAchArrangementStatus` retorna `IN_PROGRESS` (`PICKED_TO_SEND` e status pendente). Para sintetizar o terminal em teste: UPDATE dos payments para `SETTLED` (Exception 3 — autorizacao explicita do user) ANTES do recalc. Os logs de finalizacao (`Arrangement finalized as SUCCESS/FAILED`) so sao emitidos pelo listener em callback REAL — nunca pelos paths sinteticos. Ver skill [[application-lifecycle]] pitfalls #83/#84 e [[payment-flows]] secao sweep chain.
+**Implication for an env without a real processor (dev3):** without Profituity, the ACH stops at `PICKED_TO_SEND` and never reaches terminal; `recalculateAchArrangementStatus` returns `IN_PROGRESS` (`PICKED_TO_SEND` is a pending status). To synthesize the terminal state in a test: UPDATE the payments to `SETTLED` (Exception 3 — explicit user authorization) BEFORE the recalc. The finalization logs (`Arrangement finalized as SUCCESS/FAILED`) are only emitted by the listener on a REAL callback — never by the synthetic paths. See skill [[application-lifecycle]] pitfalls #83/#84 and [[payment-flows]] sweep chain section.
 
-### Impacto no Rating
+### Impact on Rating
 
-Se a flag `paymentArrangement = true`:
-- **Rating letter da conta** atualizado para `P` (Promise to Pay) — **persistido** em `uown_sv_account.rating`
-- **previous_rating** salvo no arranjo para auditoria
-- **Auto-pay existente** e preservado e mantido
-- Se o arranjo falhar: `current_rating` volta para `null` (rating resetado)
+If the flag `paymentArrangement = true`:
+- **Account rating letter** updated to `P` (Promise to Pay) — **persisted** in `uown_sv_account.rating`
+- **previous_rating** saved on the arrangement for auditing
+- **Existing auto-pay** is preserved and kept
+- If the arrangement fails: `current_rating` reverts to `null` (rating reset)
 
-**COMPORTAMENTO CONFIRMADO (dev3, 2026-06-01) — corrige a antiga nota de "bug conhecido":** a coluna `rating` em `uown_sv_account` **E PERSISTIDA** como `'P'` na criacao do arranjo, tanto para ACH quanto para CC. A nota anterior (Task #446) afirmava que `AccountFinancialInfoService.updateRatingLetterAndAutoPay` registrava o activity log "Rating letter changed from null to P" mas NAO persistia a entidade — isso esta **incorreto/desatualizado**. DB-confirmado: o campo persiste corretamente.
+**CONFIRMED BEHAVIOR (dev3, 2026-06-01) — corrects the old "known bug" note:** the `rating` column in `uown_sv_account` **IS PERSISTED** as `'P'` on arrangement creation, for both ACH and CC. The previous note (Task #446) claimed that `AccountFinancialInfoService.updateRatingLetterAndAutoPay` logged the activity log "Rating letter changed from null to P" but did NOT persist the entity — that is **incorrect/outdated**. DB-confirmed: the field persists correctly.
 
-**Reset do rating no CC SUCCESS (comportamento correto de negocio):** quando um arranjo CC e concluido com sucesso (`SUCCESS`), o `rating` e resetado para `null` e o auto-pay e re-ligado — a conta voltou ao estado normal apos quitar. Isto NAO e bug; e o comportamento esperado. (Arranjo `FAILED` tambem reseta `current_rating` para `null`, conforme tabela de transicoes.)
+**Rating reset on CC SUCCESS (correct business behavior):** when a CC arrangement completes successfully (`SUCCESS`), the `rating` is reset to `null` and auto-pay is re-enabled — the account has returned to its normal state after being paid off. This is NOT a bug; it is the expected behavior. (A `FAILED` arrangement also resets `current_rating` to `null`, as per the transitions table.)
 
-> Catalogado em skill [[payment-flows]] (secao "Rating letter em Payment Arrangement", pitfall #18) e [[application-lifecycle]].
+> Cataloged in skill [[payment-flows]] (section "Rating letter in Payment Arrangement", pitfall #18) and [[application-lifecycle]].
 
-### Como Disparar
+### How to Trigger
 
 - **Via TMS:** `POST /uown/tms/makeCreditCardPayments` (CC)
 - **Via TMS:** `POST /uown/tms/makeAchPayment` (ACH)
-- **Via Admin:** Interface do agente de cobranca
+- **Via Admin:** Collections agent interface
 
 ---
 
-## 71. Validacao de Saldo Devedor (Overpayment Prevention)
+## 71. Outstanding Balance Validation (Overpayment Prevention)
 
-### O Que e
+### What It Is
 
-Regra de validacao que impede cobrar do cliente um valor maior que o saldo devedor restante da conta.
+A validation rule that prevents charging the customer an amount greater than the account's remaining outstanding balance.
 
-### Para Que Serve
+### What It's For
 
-Protege contra cobranças excessivas que resultariam em saldo negativo (credito) na conta, evitando necessidade de reembolso e complicacoes contabeis.
+Protects against excessive charges that would result in a negative balance (credit) on the account, avoiding the need for a refund and accounting complications.
 
-### Regra
+### Rule
 
 ```
-SE valor_cobranca > saldo_devedor_restante:
-  REJEITA a cobranca
+IF charge_amount > remaining_outstanding_balance:
+  REJECT the charge
 ```
 
-**Saldo devedor restante** = Total do contrato - Total de pagamentos ja realizados (alocados).
+**Remaining outstanding balance** = Total contract - Total payments already made (allocated).
 
-### Impacto
+### Impact
 
-- Agente nao consegue processar pagamento acima do saldo
-- Se por algum motivo uma cobranca excessiva for processada, o agente UOwn deve reverter o excedente manualmente
-- Aplica-se a todos os metodos de pagamento (CC, ACH, PayWallet)
-
----
-
-## 57. Taxa NSF por Estado (NSF Fee)
-
-### O Que e
-
-Determina o valor da taxa de NSF (Non-Sufficient Funds / Fundos Insuficientes) para uma conta, com suporte a valores especificos por estado.
-
-### Para Que Serve
-
-Quando um pagamento ACH ou CC falha por insuficiencia de fundos, uma taxa e cobrada. O valor pode variar por estado conforme regulamentacao local.
-
-### Logica de Determinacao
-
-1. **Valor default:** Config `com.uownleasing.svc.service.AccountFeeService.nsfFee` (default: `$15.00`)
-2. **Determinacao do estado:**
-   - Merchant `INSTORE` -> usa estado do **merchant**
-   - Merchant `ONLINE` -> usa estado do **endereco do cliente**
-3. **Override estadual:** Se o `StateConfigurations` do estado tiver NSF fee configurado e > $0, usa o valor estadual
-4. **Fallback:** Se nao houver override estadual, usa o valor default
+- An agent cannot process a payment above the balance
+- If for some reason an excessive charge is processed, the UOwn agent must reverse the excess manually
+- Applies to all payment methods (CC, ACH, PayWallet)
 
 ---
 
-## 72. Recibo de Pagamento — Balance e "You Save" (R1.53.0)
+## 57. NSF Fee by State (NSF Fee)
 
-O recibo de pagamento mostra dois valores: **Balance** (obrigacao restante do lease) e **"If you pay off now you save"** (`savedAmount = balance - payOffAmountBeforeEPOExpiry`, exibido **apenas quando > 0**).
+### What It Is
 
-- **Fix:** o balance era calculado por subquery SQL inline (`totalContractAmountWithTaxAndFees - SUM(PAID)`) que **ignorava as taxas** (protection plan, NSF, reinstatement, misc), produzindo balance baixo ou **negativo** quando havia fees — corrompendo tambem o "You Save". O calculo migrou para Java `AccountAmountsService.getContractBalance()`, que **inclui todas as fees** (`totalContractAmountWithTaxAndFees + protectionPlanFeesToDate + otherFees - totalPaidAmount`), injetado no SQL via parametro `:contractBalance` (default `0` quando null, arredondamento `HALF_EVEN` 2 casas). Template so renderiza "You Save" quando `savedAmount > 0`.
-- **ExtBrand (svc, branch `R1.53.0_ExtBrand-Png`):** o logo de marca nos links de pagamento **PayNearMe** (email/SMS) passou a ser `company.name().toLowerCase() + ".png"` (`uown.png`, `kornerstone.png`; company null => `uown.png`). Metodo `getExtBrandForCompany` em `config/PayNearMeConfig.java`; usado por `PayNearMeLinkDeliveryBridgeImpl`.
-- **Fontes:** `pojo/CommonDataPojo.java:199-208`, `service/AccountAmountsService.java:35-104`, `service/PaymentReceiptService.java:104-127`, `resources/correspondence/templates/payment-receipt.sql`, `templates/payment-receipt-email.html`, `config/PayNearMeConfig.java:76-81`.
+Determines the NSF fee amount (Non-Sufficient Funds) for an account, with support for state-specific amounts.
+
+### What It's For
+
+When an ACH or CC payment fails due to insufficient funds, a fee is charged. The amount may vary by state according to local regulations.
+
+### Determination Logic
+
+1. **Default amount:** Config `com.uownleasing.svc.service.AccountFeeService.nsfFee` (default: `$15.00`)
+2. **State determination:**
+   - `INSTORE` merchant -> uses the **merchant** state
+   - `ONLINE` merchant -> uses the **customer's address** state
+3. **State override:** If the state's `StateConfigurations` has an NSF fee configured and > $0, uses the state amount
+4. **Fallback:** If there is no state override, uses the default amount
 
 ---
 
+## 72. Payment Receipt — Balance and "You Save" (R1.53.0)
+
+The payment receipt shows two values: **Balance** (remaining lease obligation) and **"If you pay off now you save"** (`savedAmount = balance - payOffAmountBeforeEPOExpiry`, shown **only when > 0**).
+
+- **Fix:** the balance was calculated by an inline SQL subquery (`totalContractAmountWithTaxAndFees - SUM(PAID)`) that **ignored the fees** (protection plan, NSF, reinstatement, misc), producing a low or **negative** balance when there were fees — also corrupting the "You Save". The calculation moved to Java `AccountAmountsService.getContractBalance()`, which **includes all fees** (`totalContractAmountWithTaxAndFees + protectionPlanFeesToDate + otherFees - totalPaidAmount`), injected into the SQL via the `:contractBalance` parameter (default `0` when null, `HALF_EVEN` rounding to 2 places). The template only renders "You Save" when `savedAmount > 0`.
+- **ExtBrand (svc, branch `R1.53.0_ExtBrand-Png`):** the brand logo on the **PayNearMe** payment links (email/SMS) became `company.name().toLowerCase() + ".png"` (`uown.png`, `kornerstone.png`; company null => `uown.png`). Method `getExtBrandForCompany` in `config/PayNearMeConfig.java`; used by `PayNearMeLinkDeliveryBridgeImpl`.
+- **Sources:** `pojo/CommonDataPojo.java:199-208`, `service/AccountAmountsService.java:35-104`, `service/PaymentReceiptService.java:104-127`, `resources/correspondence/templates/payment-receipt.sql`, `templates/payment-receipt-email.html`, `config/PayNearMeConfig.java:76-81`.
+
+---

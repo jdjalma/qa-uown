@@ -17,7 +17,7 @@ promoted_to: []
 # Creating a 16-Month Lease & Controlling GowSign vs Signwell Routing (qa2)
 
 > Charter: Explore application creation + e-sign routing with Playwright MCP + read-only DB to discover **how to deterministically create a 16-month lease** and **which provider (GowSign / Signwell) it routes to**, with a reproducible recipe (merchant, state, program, income, term).
-> Origin: Ohio GowSign template task + user request 2026-06-17 ("não sei como criar a aplicação 16m com GowSign nem com Signwell — descobrir e documentar").
+> Origin: Ohio GowSign template task + user request 2026-06-17 ("I don't know how to create the 16m application with GowSign or with Signwell — discover and document it").
 > Overall confidence: **high** for the routing logic, the qa2 template map and the two creation routes (DB-confirmed); **medium** for the per-state esign-doc proof of OH/CO (signing ceremony blocked by the Kornerstone card gateway — see Gaps).
 > Env: **qa2** throughout. All DB facts are read-only SELECTs dated 2026-06-17.
 
@@ -128,7 +128,7 @@ So **a 16m-only offer can come from EITHER side**: the merchant has only a 16m p
   - `[LeadProgramService][getLTOProgramsForLead] After defaulting to 13,16 terms are : 13,16`
   - `[LeadProgramService][getLTOProgramsForLead] Found program(s) eligible for term 13,16`
 - Yet `uown_lead_approval_terms(16643)` = **`uw_terms=16, merchant_terms=16, approved_terms=16`**, and `paymentDetailsList` returned only `WK16 / BW16 / MN16` (no 13m).
-- → **the 13m program presence is irrelevant**; UW `EligibleTerms 16` is the cap. This is what the user means by *"tendo ou não programa 13m, é oferecido 16m"*.
+- → **the 13m program presence is irrelevant**; UW `EligibleTerms 16` is the cap. This is what the user means by *"whether or not there is a 13m program, 16m is offered"*.
 - **Origin of the `EligibleTerms 16`:** the log shows `[UnderwritingService][copyUnderwriting] canUsePreviousUw ? yes. Same merchant. Copy UW data` — this SSN (`082390916`) already had a **previous 16-term UW** on this merchant and the new lead **copied** it. So it is a **sticky/inherited UW for that SSN+merchant**, NOT (necessarily) the `…916` suffix being honoured fresh in qa2 (on TireAgent a fresh `…916` returned `EligibleTerms 13`). `[hypothesis]` on the exact original trigger; `[confirmed]` that it is a copied previous UW.
 
 > **Practical takeaway:** `danielsJewelers` clone + SSN `082390916` reliably yields **16m only**, because that SSN carries a 16-term UW that every new lead copies. The merchant's 13m program does not change it. To get a 13m offer there you would need a **fresh SSN with no prior 16-term UW** (and the 13m program active) — untested; see Gaps.
@@ -178,7 +178,7 @@ The Kornerstone API path stops at the `…/complete?planId=WK16` URL; `submitApp
 - **Entry signing URL** (CC pre-auth `/complete` page, provider-agnostic, Kornerstone host): `https://secure-stg.kornerstoneliving.com/6fX8HLUp/complete?planId=WK16`. The provider only materializes in `uown_esign_document.client` **after** the CC pre-auth flips the lead to `CONTRACT_CREATED` — same as Route A in qa2. The Kornerstone `/complete` page has the **NeuroID** gate (use the reload workaround above to reach the rendered contract).
 - **TireAgent+GDS route does NOT serve LA in stg.** The TireAgent+GDS path (SSN `100000053`) is **anchored to a CA profile** in stg → sending LA yields `ADDRESS_MISMATCH`. For LA-16m in stg use the Kornerstone fresh-profile/ABB route (KS10150). `[confirmed]` 2026-06-23.
 
-> Related memory (datada, cross-check — não copiar): `stg-kornerstone-16m-la-gowsign.md`. See also [[qa2-16m-eligibility-kornerstone-route]] (the qa2 origin of the Kornerstone-16m route this extends).
+> Related memory (dated, cross-check — do not copy): `stg-kornerstone-16m-la-gowsign.md`. See also [[qa2-16m-eligibility-kornerstone-route]] (the qa2 origin of the Kornerstone-16m route this extends).
 
 ---
 

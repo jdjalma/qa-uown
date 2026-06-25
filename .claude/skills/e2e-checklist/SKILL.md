@@ -1,6 +1,6 @@
 ---
 name: e2e-checklist
-description: Carregue antes de declarar teste E2E pronto. Checklist: golden path + edge cases, activity log assertion, merchant preflight, UI-first respeitado, DB validation, cleanup, tags corretos.
+description: Load before declaring an E2E test done. Checklist: golden path + edge cases, activity log assertion, merchant preflight, UI-first respected, DB validation, cleanup, correct tags.
 disable-model-invocation: true
 ---
 

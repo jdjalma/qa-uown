@@ -1,34 +1,34 @@
 ---
 name: api-client-pattern
-description: Carregue ao criar API client em src/api/clients/. Define padrao BaseClient + typed request bodies + typed responses, catalogo de clients existentes (nao duplicar), convencoes de error handling.
+description: Load when creating an API client in src/api/clients/. Defines the BaseClient pattern + typed request bodies + typed responses, a catalog of existing clients (do not duplicate), and error-handling conventions.
 disable-model-invocation: true
 ---
 
 # API Client Pattern
 
-> Padrao BaseClient + typed bodies/responses. Para catalogo completo de metodos por client, ver [references/catalog.md](references/catalog.md).
+> BaseClient pattern + typed bodies/responses. For a complete catalog of methods per client, see [references/catalog.md](references/catalog.md).
 
-## Quando aplicar
+## When to apply
 
-Ao criar ou modificar API clients em `src/api/clients/`. NAO aplicar para page objects, helpers, ou test files diretamente.
+When creating or modifying API clients in `src/api/clients/`. Do NOT apply to page objects, helpers, or test files directly.
 
-## Convencao
+## Convention
 
-- **Location:** `src/api/clients/` — todos extendem `BaseClient`
+- **Location:** `src/api/clients/` — all extend `BaseClient`
 - **Bodies:** `src/api/bodies/` — typed request bodies
 - **Responses:** `src/api/responses/` — typed response interfaces
 - **Templates:** `src/fixtures/api-templates/` — JSON templates for request bodies
-- **Selectors:** centralizados em `src/selectors/common.selectors.ts`, typed em `src/selectors/selector.types.ts`. **Nunca** hardcode selectors em tests.
+- **Selectors:** centralized in `src/selectors/common.selectors.ts`, typed in `src/selectors/selector.types.ts`. **Never** hardcode selectors in tests.
 
 ## BaseClient pattern
 
 Every client extends `BaseClient` which provides:
-- `get<T>(path)`, `post<T>(path, body)`, `put<T>(path, body)`, `patch<T>(path, body)`, `delete<T>(path)` (+ `*Raw` variants que retornam `APIResponse` para inspeção de não-2xx)
+- `get<T>(path)`, `post<T>(path, body)`, `put<T>(path, body)`, `patch<T>(path, body)`, `delete<T>(path)` (+ `*Raw` variants that return `APIResponse` for inspecting non-2xx responses)
 - Host resolution (`svc`, `origination`) via `resolveUrl(url, host)`
-- Auth headers (API key / bearer token) injected automatically pelo construtor
-- **TMS (FIVE9 key):** `tmsHeaders(extra)`, `postTms<T>(path, body, extra)`, `postRawTms(...)` — para endpoints `/uown/tms/*` que autenticam com `env.tmsApiKey`. Clients TMS estendem com `{ injectAuth: false, injectApiKey: false }`. (Consolidado em BaseClient 2026-06-18 — antes replicado em account/customers/tms-payment/tms-audit.)
+- Auth headers (API key / bearer token) injected automatically by the constructor
+- **TMS (FIVE9 key):** `tmsHeaders(extra)`, `postTms<T>(path, body, extra)`, `postRawTms(...)` — for `/uown/tms/*` endpoints that authenticate with `env.tmsApiKey`. TMS clients extend with `{ injectAuth: false, injectApiKey: false }`. (Consolidated into BaseClient 2026-06-18 — previously replicated in account/customers/tms-payment/tms-audit.)
 
-> `postWithOverride<T>` NÃO é da BaseClient — é um helper local de `los-partner-application.client.ts`. Para override de header pontual use `withHeader(name, value)` (BaseClient) ou os helpers TMS acima.
+> `postWithOverride<T>` is NOT part of BaseClient — it is a local helper of `los-partner-application.client.ts`. For a one-off header override use `withHeader(name, value)` (BaseClient) or the TMS helpers above.
 
 ## Typed bodies + responses convention
 
@@ -102,7 +102,7 @@ Canonical example: `src/api/clients/los-partner-application.client.ts` (WI-525).
 | `LosPartnerApplicationClient` | `api.losPartnerApp` | los | Partner app search (X-API-Version) |
 | `CorrespondenceClient` | `api.correspondence` | los | Email queue triggers |
 
-> Catalogo completo com metodos, signatures, response interfaces, e notas por client: [references/catalog.md](references/catalog.md)
+> Complete catalog with methods, signatures, response interfaces, and per-client notes: [references/catalog.md](references/catalog.md)
 
 ## Anti-patterns
 
@@ -112,17 +112,17 @@ Canonical example: `src/api/clients/los-partner-application.client.ts` (WI-525).
 4. **Missing builder** — every non-trivial body must have a `build*Body(overrides)` function
 5. **Capital letter drift** — some Java DTOs use `PK` (capital): `phonePK`, `customerPK`, `emailPK`. Check the backend DTO before typing.
 
-## Clients ainda não detalhados aqui (existem — NÃO recriar)
+## Clients not yet detailed here (they exist — do NOT recreate)
 
-Listados para fechar o gap da Regra #2 (auditoria 2026-06-18). Leia `src/api/clients/<arquivo>.client.ts` antes de usar:
+Listed to close the Rule #2 gap (audit 2026-06-18). Read `src/api/clients/<file>.client.ts` before using:
 
-| Client | Propósito |
+| Client | Purpose |
 |--------|-----------|
-| `credit-card.client.ts` | Transações de cartão de crédito (SVC) |
-| `invoice.client.ts` | Invoices (sendInvoice / modificação) |
-| `los-partner-auth.client.ts` | Auth de partner LOS (`postWithOverride` vive aqui) |
-| `payment-arrangement.client.ts` | Arranjos de pagamento (Task #446) |
-| `scheduled-task.client.ts` | `triggerScheduledTask`/resume — sweeps admin; métodos nomeados `dailyAchBalanceCheckSweep()` / `rerunAchBalanceCheckSweep()` + constantes `SCHEDULED_TASK_NAMES` para os sweeps RightFoot ACH (R1.53.0) |
+| `credit-card.client.ts` | Credit card transactions (SVC) |
+| `invoice.client.ts` | Invoices (sendInvoice / modification) |
+| `los-partner-auth.client.ts` | LOS partner auth (`postWithOverride` lives here) |
+| `payment-arrangement.client.ts` | Payment arrangements (Task #446) |
+| `scheduled-task.client.ts` | `triggerScheduledTask`/resume — admin sweeps; methods named `dailyAchBalanceCheckSweep()` / `rerunAchBalanceCheckSweep()` + `SCHEDULED_TASK_NAMES` constants for the RightFoot ACH sweeps (R1.53.0) |
 | `seon.client.ts` | Fraud vendor SEON |
 | `sticky-recover.client.ts` | Sticky recovery (webhooks/retry) |
 

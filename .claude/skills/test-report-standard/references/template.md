@@ -7,89 +7,89 @@
 **File path:** `docs/taskTestingUown/{testName}/{testName}-report.md`
 
 ```markdown
-# Relatório de Teste: {testName}
+# Test Report: {testName}
 
-> ⚠️ **Este arquivo é registro de execução, NÃO fonte de padrão.**
-> Pattern source = skills (`.claude/skills/`) + código (`src/`, `tests/`).
-> Categorias volatile (drift-prone) → [[volatile-knowledge-registry]].
-> Re-leitura permitida apenas para: (a) auditoria histórica, (b) reproduzir teste via leadPk/accountPk.
-> NUNCA inferir pattern a partir deste arquivo.
+> ⚠️ **This file is an execution record, NOT a pattern source.**
+> Pattern source = skills (`.claude/skills/`) + code (`src/`, `tests/`).
+> Volatile categories (drift-prone) → [[volatile-knowledge-registry]].
+> Re-reading allowed only for: (a) historical audit, (b) reproducing the test via leadPk/accountPk.
+> NEVER infer a pattern from this file.
 
-## Informações da Tarefa
+## Task Information
 
-| Campo | Valor |
+| Field | Value |
 |-------|-------|
-| **Título** | {taskTitle} |
-| **URL GitLab** | {taskUrl} |
+| **Title** | {taskTitle} |
+| **GitLab URL** | {taskUrl} |
 | **Milestone** | {taskMilestone} |
 | **Labels** | {taskLabels} |
 | **Pipeline** | {pipelineType} |
 
-## Descrição
+## Description
 
-{taskDescription — descrição completa em markdown}
+{taskDescription — full description in markdown}
 
-## Execução do Teste
+## Test Execution
 
-| Campo | Valor |
+| Field | Value |
 |-------|-------|
-| **Arquivo de Teste** | `{testFilePath}` |
-| **Ambiente** | {environment} |
-| **Projeto Playwright** | {project} |
-| **Data de Execução** | {YYYY-MM-DD HH:mm} |
-| **Duração** | {duration} |
-| **Resultado** | {N passou / N falhou / N skipped} |
-| **Vídeo** | Gravado (`VIDEO=on`) |
-| **Trace** | Habilitado (`TRACE=on-first-retry`) |
+| **Test File** | `{testFilePath}` |
+| **Environment** | {environment} |
+| **Playwright Project** | {project} |
+| **Execution Date** | {YYYY-MM-DD HH:mm} |
+| **Duration** | {duration} |
+| **Result** | {N passed / N failed / N skipped} |
+| **Video** | Recorded (`VIDEO=on`) |
+| **Trace** | Enabled (`TRACE=on-first-retry`) |
 
-> Para testes API-only (sem browser): substituir as linhas Vídeo e Trace por `N/A (API-only)`.
+> For API-only tests (no browser): replace the Video and Trace lines with `N/A (API-only)`.
 
-## Evidências (Dados Utilizados/Criados)
+## Evidence (Data Used/Created)
 
-> **MANDATORY** — toda execução DEVE listar os PKs de evidência (leads e/ou contas) usados ou criados durante o teste. Estes valores permitem rastrear e reproduzir o teste manualmente.
+> **MANDATORY** — every execution MUST list the evidence PKs (leads and/or accounts) used or created during the test. These values allow manual tracing and reproduction of the test.
 
-| Tipo | PK | Papel no Teste | Criado/Existente |
-|------|----|----------------|:----------------:|
-| Lead | leadPk={N} | {descrição — ex: aplicação aprovada, risco baixo CA} | Criado / Existente |
-| Account | accountPk={N} | {descrição — ex: conta ACTIVE para CC payment} | Criado / Existente |
-| Arrangement | arrangementPk={N} | {descrição — ex: SETTLEMENT 3 parcelas CC} | Criado |
+| Type | PK | Role in Test | Created/Existing |
+|------|----|--------------|:----------------:|
+| Lead | leadPk={N} | {description — e.g. approved application, low-risk CA} | Created / Existing |
+| Account | accountPk={N} | {description — e.g. ACTIVE account for CC payment} | Created / Existing |
+| Arrangement | arrangementPk={N} | {description — e.g. SETTLEMENT 3 installments CC} | Created |
 
-> **Regras:**
-> - Incluir TODOS os leadPk e accountPk extraídos dos logs de execução
-> - Se o teste usa contas pré-existentes (GDS bypass), marcar como "Existente"
-> - Se o teste cria novos leads/contas, marcar como "Criado"
-> - Incluir também PKs auxiliares relevantes: arrangementPk, ccTransactionPk, achPk, fundingTransactionPk
-> - Se nenhum lead/account é usado (ex: teste de config), usar: `> Nenhuma evidência de lead/account — teste de configuração.`
+> **Rules:**
+> - Include ALL leadPk and accountPk extracted from execution logs
+> - If the test uses pre-existing accounts (GDS bypass), mark as "Existing"
+> - If the test creates new leads/accounts, mark as "Created"
+> - Also include relevant auxiliary PKs: arrangementPk, ccTransactionPk, achPk, fundingTransactionPk
+> - If no lead/account is used (e.g. config test), use: `> No lead/account evidence — configuration test.`
 
-## Capturas de Tela
+## Screenshots
 
-| CT | Arquivo | Descrição |
-|----|---------|-----------|
-| CT-XX | `docs/taskTestingUown/{testName}/{testName}-NN-desc.png` | {estado capturado — prova do critério de aceite} |
+| CT | File | Description |
+|----|------|-------------|
+| CT-XX | `docs/taskTestingUown/{testName}/{testName}-NN-desc.png` | {captured state — proof of the acceptance criterion} |
 
-> Para testes API-only (sem browser): substituir o bloco por `> Sem capturas de tela — teste API-only.`
+> For API-only tests (no browser): replace the block with `> No screenshots — API-only test.`
 
-## Cenários
+## Scenarios
 
-{cenários no formato padrão — ver seção 2}
+{scenarios in the standard format — see section 2}
 
-## Cobertura dos Requisitos
+## Requirements Coverage
 
-> Incluir esta seção quando a tarefa tem critérios de aceite ou requisitos explícitos no GitLab.
+> Include this section when the task has explicit acceptance criteria or requirements in the GitLab issue.
 
-| Requisito | Coberto | Cenário |
-|-----------|:-------:|---------|
-| {requisito da tarefa} | SIM | CT-XX |
+| Requirement | Covered | Scenario |
+|-------------|:-------:|---------|
+| {task requirement} | YES | CT-XX |
 
-## Bugs de Aplicação Encontrados
+## Application Bugs Found
 
-> Incluir esta seção apenas quando bugs forem identificados durante a execução. Omitir completamente se não há bugs.
+> Include this section only when bugs are identified during execution. Omit entirely if there are no bugs.
 
-{bugs no formato padrão — ver seção 7}
+{bugs in the standard format — see section 7}
 
-## Resumo da Validação
+## Validation Summary
 
-{tabela de validação — ver seção 4}
+{validation table — see section 4}
 ```
 
 ## Scenario Output Format
@@ -99,46 +99,46 @@ Each scenario follows this exact pattern:
 ```markdown
 ### CT-XX
 
-**Objetivo:** {uma frase — o que o cenário valida}
+**Objective:** {one sentence — what the scenario validates}
 
-**O que é verificado:** {comportamento do sistema em linguagem de negócio — o que o sistema faz, não o que o teste faz; menciona a origem do dado quando relevante}
+**What is verified:** {system behavior in business language — what the system does, not what the test does; mentions the data source when relevant}
 
-Exemplos:
-| Coluna1 | Coluna2 |
+Examples:
+| Column1 | Column2 |
 |----------|----------|
-| {valor1} | {valor2} |
+| {value1} | {value2} |
 
-#### Como verificar manualmente
+#### How to verify manually
 
-1. {passo numerado — URL específica, rota, ação de navegação}
-2. {passo numerado — valor esperado e onde encontrá-lo}
-3. {para API: instrução curl/Postman; para DB: query SQL; para UI: navegação clique a clique}
+1. {numbered step — specific URL, route, navigation action}
+2. {numbered step — expected value and where to find it}
+3. {for API: curl/Postman instruction; for DB: SQL query; for UI: click-by-click navigation}
 
-**PASSOU**
+**PASSED**
 
 ---
 ```
 
 ### Golden Rule Examples
 
-**Objetivo** diz o que valida. **O que é verificado** descreve o comportamento do sistema. **Como verificar manualmente** tem os valores técnicos exatos.
+**Objective** states what it validates. **What is verified** describes the system behavior. **How to verify manually** has the exact technical values.
 
-Bad - Objetivo vago (not accepted):
+Bad - vague Objective (not accepted):
 ```
-Verifica o comportamento do endpoint.
+Verifies the endpoint behavior.
 ```
 
-Bad - O que é verificado técnico (not accepted):
+Bad - technical What is verified (not accepted):
 ```
-`rows.length > 0` — ao menos uma linha retornada após o filtro
-`row["Invoice Number"] === "R45701"` — todas as linhas exibem o invoice
+`rows.length > 0` — at least one row returned after the filter
+`row["Invoice Number"] === "R45701"` — all rows display the invoice
 ```
 
 Good:
 ```
-**Objetivo:** Verificar que filtrar por invoice number retorna apenas os leads que possuem aquele invoice.
+**Objective:** Verify that filtering by invoice number returns only leads that have that invoice.
 
-**O que é verificado:** Ao buscar por um invoice number existente, a tabela retorna somente leads cujo `merchant_invoice_number` corresponde ao valor filtrado — confirmando que o filtro é funcional e preciso.
+**What is verified:** When searching by an existing invoice number, the table returns only leads whose `merchant_invoice_number` matches the filtered value — confirming that the filter is functional and precise.
 ```
 
 ## Parsing Rules (extracting values from test output)
@@ -161,21 +161,21 @@ Good:
 ## Validation Summary Template
 
 ```markdown
-## Resumo da Validação
+## Validation Summary
 
-| Verificação | Resultado |
-| ----------- | --------- |
-| Todos os cenários da tarefa cobertos | SIM / NÃO |
-| Contratos de API conferem com Postman | SIM / NÃO / N/A |
-| Schema do BD confere com migration | SIM / NÃO / N/A |
-| Regras de negócio validadas | SIM / NÃO / N/A |
-| Bugs de aplicação encontrados | SIM ({N} bugs) / NÃO |
-| Total de cenários | {N} |
-| Passaram | {N} |
-| Falharam | {N} |
+| Check | Result |
+| ----- | ------ |
+| All task scenarios covered | YES / NO |
+| API contracts match Postman | YES / NO / N/A |
+| DB schema matches migration | YES / NO / N/A |
+| Business rules validated | YES / NO / N/A |
+| Application bugs found | YES ({N} bugs) / NO |
+| Total scenarios | {N} |
+| Passed | {N} |
+| Failed | {N} |
 | Skipped | {N} |
-| Vídeo gravado | SIM / N/A (API-only) |
-| Screenshots salvos | SIM ({N} arquivos em reports/screenshots/) / N/A (API-only) |
+| Video recorded | YES / N/A (API-only) |
+| Screenshots saved | YES ({N} files in reports/screenshots/) / N/A (API-only) |
 ```
 
 ## Screenshots Rules
@@ -189,28 +189,28 @@ Screenshots MUST be saved inside the task folder alongside the report and spec f
 - At least 1 per CT — taken immediately after the key assertion (proves the acceptance criterion)
 - Focus: screenshot must show the state that proves the CT passed (not generic page captures)
 - API-only tests: no screenshot needed (no browser)
-- Reference in `.md` Capturas de Tela table: `docs/taskTestingUown/{testName}/{file}.png`
+- Reference in `.md` Screenshots table: `docs/taskTestingUown/{testName}/{file}.png`
 - **NEVER use `reports/screenshots/` or `reports/test-results/`** — those are cleaned by Playwright between runs
 
 ## Bug Report Format (Application Bugs Only)
 
-**Section name:** always `## Bugs de Aplicação Encontrados` — no variations allowed.
+**Section name:** always `## Application Bugs Found` — no variations allowed.
 
 Each bug within the section:
 
 ```markdown
-### BUG-{N} — {título descritivo do bug}
+### BUG-{N} — {descriptive bug title}
 
-**Status:** OPEN / RESOLVED / PARCIALMENTE RESOLVIDO
-**Severidade:** Critical / High / Medium / Low
+**Status:** OPEN / RESOLVED / PARTIALLY RESOLVED
+**Severity:** Critical / High / Medium / Low
 
-**Descrição:** {o que era esperado vs. o que aconteceu}
-**Como Reproduzir:**
-1. {passo numerado}
-2. {passo numerado}
-**Evidência:** {API response, screenshot path, DB query result}
-**Cenário que detectou:** CT-XX
-**Causa provável:** {análise técnica breve}
+**Description:** {what was expected vs. what happened}
+**How to Reproduce:**
+1. {numbered step}
+2. {numbered step}
+**Evidence:** {API response, screenshot path, DB query result}
+**Scenario that detected it:** CT-XX
+**Probable cause:** {brief technical analysis}
 ```
 
 Rules:
@@ -219,37 +219,37 @@ Rules:
 - If a bug from a previous execution is still open, preserve it and update status if changed
 - Omit the entire section if no bugs found
 
-## Cobertura dos Requisitos (optional section)
+## Requirements Coverage (optional section)
 
 Include when the task has explicit acceptance criteria or a requirements list in the GitLab issue.
 
 ```markdown
-## Cobertura dos Requisitos
+## Requirements Coverage
 
-| Requisito | Coberto | Cenário |
-|-----------|:-------:|---------|
-| {requisito 1 — texto exato ou parafrasado da tarefa} | SIM | CT-01 |
-| {requisito 2} | SIM | CT-02, CT-03 |
-| {requisito 3 — não implementado ou fora do escopo} | NÃO | — |
+| Requirement | Covered | Scenario |
+|-------------|:-------:|---------|
+| {requirement 1 — exact text or paraphrase from task} | YES | CT-01 |
+| {requirement 2} | YES | CT-02, CT-03 |
+| {requirement 3 — not implemented or out of scope} | NO | — |
 ```
 
 Rules:
 - One row per acceptance criterion from the GitLab issue
-- "Coberto" = SIM only if there is a CT that directly validates the requirement
+- "Covered" = YES only if there is a CT that directly validates the requirement
 - Multiple CTs per requirement allowed (comma-separated)
-- If not covered: NÃO + note why (out of scope, environment limitation, etc.)
+- If not covered: NO + note why (out of scope, environment limitation, etc.)
 
 ## Source-Tagging Examples
 
-Bad - no tag (not accepted as `[CONFIRMADO]`):
+Bad - no tag (not accepted as `[CONFIRMED]`):
 ```
-**Causa provável:** O sweep não considera scheduled SALE.
+**Probable cause:** The sweep does not consider scheduled SALE.
 ```
 
-Good - with tags (accepted as `[CONFIRMADO]`):
+Good - with tags (accepted as `[CONFIRMED]`):
 ```
-**Causa provável:** O sweep filtra apenas COMPLETED, ignorando SCHEDULED SALE.
+**Probable cause:** The sweep filters only COMPLETED, ignoring SCHEDULED SALE.
 [svc-source:StickyRecoverScheduledTask.java:78]
-[db-observation:uown_scheduled_task WHERE pk=80, coluna sql_to_pick_accounts]
+[db-observation:uown_scheduled_task WHERE pk=80, column sql_to_pick_accounts]
 [user-provided:Priyanka 2026-05-15]
 ```

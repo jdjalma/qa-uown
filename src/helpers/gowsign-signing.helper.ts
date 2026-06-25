@@ -1,20 +1,20 @@
 /**
- * GowSign signing helper — automatiza assinatura programaticamente em qa2.
+ * GowSign signing helper — automates signing programmatically on qa2.
  *
- * Mapeamento via exploracao real (TireAgent qa2):
+ * Mapping via real exploration (TireAgent qa2):
  *   - Pre-Start: #startSignatureButton
- *   - Header pos-Start: botao "Sign" (text exato), #saveUnifiedButton no wizard
- *   - Wizard de 2 steps (Signature → Initials):
- *     - Step navigator: pills "Signature" / "Initials" (segundo desabilita ate primeiro completo)
- *     - Modo: botoes "Type" (default) / "Draw"
- *     - Type mode: input[name="signature"|"initials"] pre-preenchido + 3 botoes de fonte
+ *   - Post-Start header: "Sign" button (exact text), #saveUnifiedButton in the wizard
+ *   - 2-step wizard (Signature → Initials):
+ *     - Step navigator: "Signature" / "Initials" pills (the second is disabled until the first is complete)
+ *     - Mode: "Type" (default) / "Draw" buttons
+ *     - Type mode: pre-filled input[name="signature"|"initials"] + 3 font buttons
  *     - Draw mode: <canvas width=528 height=211>
- *     - Acao: #saveSignatureButton / #saveInitialsButton / #saveUnifiedButton
+ *     - Action: #saveSignatureButton / #saveInitialsButton / #saveUnifiedButton
  *
- * Estrategia: usar Type mode (mais robusto que canvas draw) — o input ja vem
- * pre-preenchido pelo backend; basta clicar a 1a fonte e Save.
+ * Strategy: use Type mode (more robust than canvas draw) — the input already comes
+ * pre-filled by the backend; just click the 1st font and Save.
  *
- * Uso tipico:
+ * Typical usage:
  * ```typescript
  * const modal = new AlternativeContractModalPage(page);
  * await modal.waitForOpen();
@@ -28,15 +28,15 @@ import type { Page, FrameLocator } from '@playwright/test';
 export interface SignGowSignOptions {
   /** PreAuthorization Consent (input[name="preauth_choice-{yes|no}"]). Default: 'yes' */
   preauthChoice?: 'yes' | 'no';
-  /** Timeout total em ms. Default: 90_000 */
+  /** Total timeout in ms. Default: 90_000 */
   timeoutMs?: number;
-  /** Aguardar postMessage 'completed' apos clicar Sign. Default: true */
+  /** Wait for the 'completed' postMessage after clicking Sign. Default: true */
   waitForCompleted?: boolean;
-  /** Indice da fonte a usar no Type mode (0=Pinyon Script, 1=Oooh Baby, 2=Lavishly Yours). Default: 0 */
+  /** Index of the font to use in Type mode (0=Pinyon Script, 1=Oooh Baby, 2=Lavishly Yours). Default: 0 */
   fontIndex?: number;
   /**
-   * Pula auto-check do preauth e de outros checkboxes required. Use para testar
-   * que o documento NAO completa sem todos os required preenchidos
+   * Skips the auto-check of preauth and other required checkboxes. Use to test
+   * that the document does NOT complete without all required fields filled in
    * (US-FLD-06.1). Default: false
    */
   skipPreauth?: boolean;
@@ -45,7 +45,7 @@ export interface SignGowSignOptions {
 export interface SignGowSignResult {
   startClicked: boolean;
   preauthMarked: 'yes' | 'no' | null;
-  fieldsSigned: number;        // # campos assinados (signature + initials saves combinados)
+  fieldsSigned: number;        // # of signed fields (signature + initials saves combined)
   signClicked: boolean;
   capturedCompleted: boolean;
 }
@@ -59,9 +59,9 @@ const DEFAULTS = {
 };
 
 /**
- * Orquestra fluxo completo de assinatura no widget GowSign.
+ * Orchestrates the complete signing flow on the GowSign widget.
  *
- * Pre-condicao: iframe carregado, `#startSignatureButton` visivel.
+ * Pre-condition: iframe loaded, `#startSignatureButton` visible.
  */
 export async function signGowSignInFrame(
   page: Page,
@@ -77,7 +77,7 @@ export async function signGowSignInFrame(
     capturedCompleted: false,
   };
 
-  // 1. Click Start — aguarda ate 30s o iframe renderizar o botao
+  // 1. Click Start — waits up to 30s for the iframe to render the button
   const startBtn = frame.locator('#startSignatureButton');
   try {
     await startBtn.waitFor({ state: 'visible', timeout: 30_000 });
@@ -86,10 +86,10 @@ export async function signGowSignInFrame(
     result.startClicked = true;
     await page.waitForTimeout(2_000);
   } catch {
-    // Pode ja estar no estado pos-Start
+    // May already be in the post-Start state
   }
 
-  // 2. PreAuthorization choice (input opcional — checkbox real fica no doc)
+  // 2. PreAuthorization choice (optional input — the real checkbox is in the doc)
   if (!opts.skipPreauth) {
     const preauthInput = frame.locator(`input[name="preauth_choice-${opts.preauthChoice}"]`);
     if (await preauthInput.isVisible().catch(() => false)) {
@@ -98,12 +98,12 @@ export async function signGowSignInFrame(
     }
   }
 
-  // 3. State machine — loop ate terminar:
-  //   wizard aberto      → completa step (Type mode + font + Next/Save)
-  //   #signAllButton     → click (preenche todas signature/initials restantes)
-  //   "Next Step" button → click (navega ate proximo campo required)
-  //   checkbox required  → marca (preauth Yes/No no doc)
-  //   sem nada actionable → break
+  // 3. State machine — loop until done:
+  //   wizard open         → complete step (Type mode + font + Next/Save)
+  //   #signAllButton      → click (fills all remaining signature/initials)
+  //   "Next Step" button  → click (navigates to next required field)
+  //   required checkbox   → check (preauth Yes/No in the doc)
+  //   nothing actionable  → break
   const deadline = Date.now() + opts.timeoutMs;
   let lastAction = '';
   let stagnant = 0;
@@ -114,7 +114,7 @@ export async function signGowSignInFrame(
     if (action === 'none') break;
     if (action === lastAction) {
       stagnant++;
-      if (stagnant >= 3) break; // mesmo action 3x seguidas = travado
+      if (stagnant >= 3) break; // same action 3x in a row = stuck
     } else {
       stagnant = 0;
       lastAction = action;
@@ -122,10 +122,10 @@ export async function signGowSignInFrame(
     await page.waitForTimeout(700);
   }
 
-  // 3b. Safety net — o dialog de confirmacao "All fields are complete. Click
-  // Finish to finalize your document." (pos "Sign All") pode aparecer logo apos o
-  // loop encerrar. Seu Finish e o finalizador real (a toolbar fica sob o overlay).
-  // isVisible() e instantaneo quando nao ha dialog (ex: CA) — custo ~0.
+  // 3b. Safety net — the confirmation dialog "All fields are complete. Click
+  // Finish to finalize your document." (after "Sign All") may appear right after the
+  // loop ends. Its Finish is the real finalizer (the toolbar sits under the overlay).
+  // isVisible() is instant when there is no dialog (e.g. CA) — cost ~0.
   const confirmFinish = frame
     .getByRole('dialog')
     .getByRole('button', { name: /^Finish$/i })
@@ -136,7 +136,7 @@ export async function signGowSignInFrame(
     await page.waitForTimeout(1_000);
   }
 
-  // 4. Aguarda postMessage 'completed' (sinal definitivo de doc assinado)
+  // 4. Wait for the 'completed' postMessage (definitive signal of a signed doc)
   if (opts.waitForCompleted && result.signClicked) {
     const captured = await waitForPostMessage(page, 'completed', { timeoutMs: 30_000 });
     result.capturedCompleted = captured !== null;
@@ -148,8 +148,8 @@ export async function signGowSignInFrame(
 type SigningAction = 'wizard' | 'signAll' | 'nextStep' | 'checkbox' | 'submit' | 'none';
 
 /**
- * Executa UMA acao do state machine de signing. Retorna o tipo de acao tomada.
- * Prioridade: wizard > signAll > checkbox > nextStep > submit > none.
+ * Executes ONE action of the signing state machine. Returns the type of action taken.
+ * Priority: wizard > signAll > checkbox > nextStep > submit > none.
  */
 async function runSigningStateMachine(
   page: Page,
@@ -158,7 +158,7 @@ async function runSigningStateMachine(
   preauthChoice: 'yes' | 'no',
   skipPreauth: boolean,
 ): Promise<SigningAction> {
-  // 1. Wizard aberto? Completa step (max prioridade — modal blocking)
+  // 1. Wizard open? Complete step (max priority — modal blocking)
   if (await isWizardOpen(frame)) {
     const ok = await completeCurrentStep(page, frame, fontIndex);
     return ok ? 'wizard' : 'none';
@@ -180,9 +180,9 @@ async function runSigningStateMachine(
     }
   }
 
-  // 3. Checkbox required nao marcado? (preauth Yes/No, etc.)
-  // Pulado quando skipPreauth=true — usado para testar que documento NAO
-  // assina sem todos os required (FLD-06.1).
+  // 3. Required checkbox unchecked? (preauth Yes/No, etc.)
+  // Skipped when skipPreauth=true — used to test that the document does NOT
+  // sign without all required fields (FLD-06.1).
   if (!skipPreauth) {
     const choiceInput = frame.locator(`input[name="preauth_choice-${preauthChoice}"]`);
     if (await choiceInput.isVisible().catch(() => false)) {
@@ -192,7 +192,7 @@ async function runSigningStateMachine(
         return 'checkbox';
       }
     }
-    // Generico: qualquer checkbox required nao marcado
+    // Generic: any required checkbox that is unchecked
     const requiredUnchecked = frame.locator('input[type="checkbox"][required]:not(:checked)').first();
     if (await requiredUnchecked.isVisible().catch(() => false)) {
       await requiredUnchecked.check({ force: true }).catch(() => {});
@@ -200,7 +200,7 @@ async function runSigningStateMachine(
     }
   }
 
-  // 4. "Next Step" — navega pro proximo campo required
+  // 4. "Next Step" — navigates to the next required field
   const nextStepBtn = frame.getByRole('button', { name: /^Next Step$/i }).first();
   if (await nextStepBtn.isVisible().catch(() => false)) {
     if (await nextStepBtn.isEnabled().catch(() => false)) {
@@ -211,13 +211,13 @@ async function runSigningStateMachine(
     }
   }
 
-  // 5. Final submit (Finish / Submit / Done / Sign) — completa documento.
-  // PRIORIDADE: o dialog de confirmacao "All fields are complete. Click Finish
-  // to finalize your document." (aparece apos "Sign All" em contratos multi-campo).
-  // O Finish DENTRO do dialog e o finalizador real; o #finishSignatureButton da
-  // toolbar fica INTERCEPTADO pelo overlay (bg-black/25) do dialog e o click falha.
-  // Contratos com muitos campos (ex: NY 16 paginas) exibem este dialog apos "Sign All".
-  // #finishSignatureButton continua como fallback para contratos sem dialog (ex: CA).
+  // 5. Final submit (Finish / Submit / Done / Sign) — completes the document.
+  // PRIORITY: the confirmation dialog "All fields are complete. Click Finish
+  // to finalize your document." (appears after "Sign All" in multi-field contracts).
+  // The Finish INSIDE the dialog is the real finalizer; the toolbar's #finishSignatureButton
+  // is INTERCEPTED by the dialog's overlay (bg-black/25) and the click fails.
+  // Contracts with many fields (e.g. NY 16 pages) show this dialog after "Sign All".
+  // #finishSignatureButton remains as a fallback for contracts without a dialog (e.g. CA).
   const submitCandidates = [
     () => frame.getByRole('dialog').getByRole('button', { name: /^Finish$/i }),
     () => frame.locator('#finishSignatureButton'),
@@ -233,22 +233,22 @@ async function runSigningStateMachine(
     try {
       await btn.click({ timeout: 5_000 });
       return 'submit';
-    } catch { /* tenta proximo */ }
+    } catch { /* try next */ }
   }
 
   return 'none';
 }
 
 /**
- * Detecta se o wizard modal esta aberto.
- * Sinais: pills "Signature"/"Initials" OU botao "Cancel" OU input name=signature/initials.
+ * Detects whether the modal wizard is open.
+ * Signals: "Signature"/"Initials" pills OR "Cancel" button OR input name=signature/initials.
  */
 async function isWizardOpen(frame: FrameLocator): Promise<boolean> {
-  // Cancel button so existe dentro do modal wizard
+  // Cancel button only exists inside the modal wizard
   const cancelBtn = frame.getByRole('button', { name: /^Cancel$/i });
   if (await cancelBtn.first().isVisible().catch(() => false)) return true;
 
-  // Input de assinatura — so existe dentro do modal Type mode
+  // Signature input — only exists inside the Type mode modal
   const sigInput = frame.locator('input[name="signature"], input[name="initials"]');
   if (await sigInput.first().isVisible().catch(() => false)) return true;
 
@@ -256,19 +256,19 @@ async function isWizardOpen(frame: FrameLocator): Promise<boolean> {
 }
 
 /**
- * Completa o step ativo do wizard (Signature → Next, Initials → Save).
- * - Garante Type mode ativo
- * - Clica na fonte indicada
- * - Click no botao de avanco: "Next" (steps intermediarios) ou "Save"/"Submit" (final)
+ * Completes the active wizard step (Signature → Next, Initials → Save).
+ * - Ensures Type mode is active
+ * - Clicks the indicated font
+ * - Clicks the advance button: "Next" (intermediate steps) or "Save"/"Submit" (final)
  *
- * Retorna true se conseguiu avancar.
+ * Returns true if it managed to advance.
  */
 async function completeCurrentStep(
   page: Page,
   frame: FrameLocator,
   fontIndex: number,
 ): Promise<boolean> {
-  // 1. Garante Type mode (se Draw estiver ativo, clica Type)
+  // 1. Ensure Type mode (if Draw is active, click Type)
   const typeBtn = frame.getByRole('button', { name: /^Type$/i }).first();
   if (await typeBtn.isVisible().catch(() => false)) {
     const isTypeActive = await typeBtn.evaluate((el) =>
@@ -280,7 +280,7 @@ async function completeCurrentStep(
     }
   }
 
-  // 2. Click no botao de fonte (botoes com font-family inline)
+  // 2. Click the font button (buttons with inline font-family)
   const fontButtons = frame.locator('button[style*="font-family"]');
   const fontCount = await fontButtons.count().catch(() => 0);
   if (fontCount > 0) {
@@ -289,9 +289,9 @@ async function completeCurrentStep(
     await page.waitForTimeout(300);
   }
 
-  // 3. Click no botao de avanco — varia por step:
-  //    - Step intermediario: "Next"
-  //    - Step final: "Save" (#saveUnifiedButton/#saveSignatureButton/#saveInitialsButton)
+  // 3. Click the advance button — varies by step:
+  //    - Intermediate step: "Next"
+  //    - Final step: "Save" (#saveUnifiedButton/#saveSignatureButton/#saveInitialsButton)
   //    - Fallback: "Submit" / "Done"
   const advanceCandidates = [
     () => frame.locator('#saveUnifiedButton'),
@@ -311,14 +311,14 @@ async function completeCurrentStep(
       await btn.click({ timeout: 5_000 });
       return true;
     } catch {
-      // tenta proximo
+      // try next
     }
   }
 
   return false;
 }
 
-/** Instala recorder de postMessages na page (usar antes de page.goto). */
+/** Installs a postMessage recorder on the page (use before page.goto). */
 export async function installPostMessageRecorder(page: Page): Promise<void> {
   await page.addInitScript(() => {
     interface Recorded { origin: string; data: unknown; ts: number; }
@@ -331,7 +331,7 @@ export async function installPostMessageRecorder(page: Page): Promise<void> {
   });
 }
 
-/** Le os postMessages capturados. */
+/** Reads the captured postMessages. */
 export async function readPostMessages(
   page: Page,
 ): Promise<Array<{ origin: string; data: unknown; ts: number }>> {
@@ -340,7 +340,7 @@ export async function readPostMessages(
   });
 }
 
-/** Aguarda um postMessage especifico ser capturado. */
+/** Waits for a specific postMessage to be captured. */
 export async function waitForPostMessage(
   page: Page,
   type: string,

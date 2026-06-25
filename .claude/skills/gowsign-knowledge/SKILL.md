@@ -1,195 +1,195 @@
 ---
 name: gowsign-knowledge
-description: Carregue ao planejar/implementar/debugar teste que envolve signing — GowSign, SignWell, contract content, iframe events, post-signing, recovery, multi-state. Cobre rollout GoSign, regressão SignWell obrigatória, diff visual.
+description: Load when planning/implementing/debugging a test that involves signing — GowSign, SignWell, contract content, iframe events, post-signing, recovery, multi-state. Covers the GoSign rollout, mandatory SignWell regression, visual diff.
 disable-model-invocation: true
 ---
 
 # GowSign / SignWell Knowledge
 
-> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **COMO TESTAR** signing — suites, regressão obrigatória, diff visual, helpers. O **comportamento canônico do produto** (routing GowSign/SignWell por estado, matriz de provider, conteúdo de template) NÃO mora aqui — é fonte única em `docs/business-rules/03-contratos-esign.md` e `src/data/state-merchant-matrix.ts`. Para resolver "qual provider para o estado X", rode `node scripts/docs-tooling.mjs resolve gowsign-routing` (retorna o canônico + KB fresco). Investigações recentes por estado: `docs/knowledge-base/*gowsign*`. **Não duplique fatos de routing aqui** — eles driftam (foi o caso NY/OH).
+> **Authority boundary** (`docs/_docs-conventions.md` §7): this skill covers **HOW TO TEST** signing — suites, mandatory regression, visual diff, helpers. The **canonical product behavior** (GowSign/SignWell routing by state, provider matrix, template content) does NOT live here — it is the single source in `docs/business-rules/03-contratos-esign.md` and `src/data/state-merchant-matrix.ts`. To resolve "which provider for state X", run `node scripts/docs-tooling.mjs resolve gowsign-routing` (returns the canonical + fresh KB). Recent investigations by state: `docs/knowledge-base/*gowsign*`. **Do not duplicate routing facts here** — they drift (it was the NY/OH case).
 
-## Estado do rollout (2026-05-20)
+## Rollout status (2026-05-20)
 
-Projeto está migrando de **SignWell** (provider legado) para **GoSign/GowSign** (novo provider). Regras críticas:
+The project is migrating from **SignWell** (legacy provider) to **GoSign/GowSign** (new provider). Critical rules:
 
-1. **Regressão SignWell é OBRIGATÓRIA** em qualquer task que toque signing — não basta validar GoSign.
-2. **Diff visual SignWell vs GoSign** é necessário — bug Daniel's Jewelers CA (colunas faltantes página 1 do PDF) confirmou em 2026-05-06 que API-only não detecta regressão de rendering.
-3. **Padronização "Items Purchased"** entrou no escopo em 2026-05-14 — testes que cobrem contract content devem validar essa seção em ambos providers.
+1. **SignWell regression is MANDATORY** in any task that touches signing — validating GoSign alone is not enough.
+2. **Visual diff SignWell vs GoSign** is necessary — the Daniel's Jewelers CA bug (missing columns on page 1 of the PDF) confirmed on 2026-05-06 that API-only does not detect rendering regression.
+3. **"Items Purchased" standardization** entered scope on 2026-05-14 — tests covering contract content must validate that section in both providers.
 
 Memory: `project_gosign_rollout`.
 
-## Suítes existentes
+## Existing suites
 
 ### `tests/e2e/gowsign/` (20+ specs)
 
-Cobertura por dimensão:
+Coverage by dimension:
 
-| Spec | Foco |
+| Spec | Focus |
 |------|------|
-| `gowsign-smoke-flow.spec.ts` | Sanity geral do fluxo de signing |
-| `gowsign-create-contract.spec.ts` | Criação do contrato |
-| `gowsign-contract-content.spec.ts` + `-qa2.spec.ts` | Validação de conteúdo renderizado (PDF, iframe) |
-| `gowsign-iframe-events.spec.ts` + `-qa2.spec.ts` | Eventos JS do iframe GowSign |
-| `gowsign-signing-completion.spec.ts` | Fluxo até signed |
-| `gowsign-signature-fields.spec.ts` | Campos de assinatura (placeholders, signers) |
-| `gowsign-operations-and-fields.spec.ts` | Operações pós-criação |
-| `gowsign-post-signing.spec.ts` | Eventos pós-assinatura |
-| `gowsign-lease-status.spec.ts` | Transição de status do lease |
+| `gowsign-smoke-flow.spec.ts` | General sanity of the signing flow |
+| `gowsign-create-contract.spec.ts` | Contract creation |
+| `gowsign-contract-content.spec.ts` + `-qa2.spec.ts` | Validation of rendered content (PDF, iframe) |
+| `gowsign-iframe-events.spec.ts` + `-qa2.spec.ts` | GowSign iframe JS events |
+| `gowsign-signing-completion.spec.ts` | Flow through to signed |
+| `gowsign-signature-fields.spec.ts` | Signature fields (placeholders, signers) |
+| `gowsign-operations-and-fields.spec.ts` | Post-creation operations |
+| `gowsign-post-signing.spec.ts` | Post-signature events |
+| `gowsign-lease-status.spec.ts` | Lease status transition |
 | `gowsign-modify-and-recovery.spec.ts` + `gowsign-modify-lease-qa2.spec.ts` | Modify lease + recovery flow |
-| `gowsign-recovery-qa2.spec.ts` | Recovery isolado |
+| `gowsign-recovery-qa2.spec.ts` | Recovery in isolation |
 | `gowsign-cross-role-consistency-qa2.spec.ts` | Customer vs Agent vs Admin views |
 | `gowsign-edge-and-accessibility-qa2.spec.ts` | Edge cases + a11y |
-| `gowsign-servicing-portal-qa2.spec.ts` | Servicing-side do signing |
-| `gowsign-provider-lifecycle-qa2.spec.ts` | Lifecycle do provider |
+| `gowsign-servicing-portal-qa2.spec.ts` | Servicing-side of the signing |
+| `gowsign-provider-lifecycle-qa2.spec.ts` | Provider lifecycle |
 
 ### `tests/e2e/signing-regression/`
 
-- `multi-state-signing.spec.ts` — cobre múltiplos estados americanos (CA, NY, etc.) — diff de templates por estado/locale.
+- `multi-state-signing.spec.ts` — covers multiple US states (CA, NY, etc.) — template diff by state/locale.
 
-## Quando rodar a suíte inteira
+## When to run the whole suite
 
-- **Mudança em template** → todo `gowsign-contract-content*` + `gowsign-signature-fields` + diff visual SignWell.
-- **Mudança em provider config** → `gowsign-provider-lifecycle` + `gowsign-iframe-events`.
-- **Mudança em status transition** → `gowsign-lease-status` + `gowsign-post-signing`.
-- **Mudança em endpoint admin** (ex: `PATCH /uown/svc/gowsign-templates/{id}`) → API-only OK pra esse endpoint, mas roda `gowsign-contract-content` em UI depois pra confirmar render.
+- **Template change** → all of `gowsign-contract-content*` + `gowsign-signature-fields` + SignWell visual diff.
+- **Provider config change** → `gowsign-provider-lifecycle` + `gowsign-iframe-events`.
+- **Status transition change** → `gowsign-lease-status` + `gowsign-post-signing`.
+- **Admin endpoint change** (e.g., `PATCH /uown/svc/gowsign-templates/{id}`) → API-only OK for that endpoint, but then run `gowsign-contract-content` in the UI to confirm the render.
 
-## Pitfalls específicos
+## Specific pitfalls
 
-### 1. Bug Daniel's Jewelers CA (placeholders vazios no PDF)
-Descoberto manualmente em 2026-05-06. Causa raiz: testes API-only liam logs sem renderizar PDF. **Forçou regra inviolável #14 (UI-first)** e regra #15 (DOM investigation).
+### 1. Daniel's Jewelers CA bug (empty placeholders in the PDF)
+Discovered manually on 2026-05-06. Root cause: API-only tests read logs without rendering the PDF. **Forced inviolable rule #14 (UI-first)** and rule #15 (DOM investigation).
 
 ### 2. Items Purchased (2026-05-14)
-Seção padronizada entre providers — validar presença + ordem + valores em ambos SignWell e GoSign.
+Section standardized across providers — validate presence + order + values in both SignWell and GoSign.
 
-### 3. Float representation em valores monetários
-`"18.46"` vs `"18.459999999999997"` é arredondamento IEEE 754, não bug funcional. Comparar com `toBeCloseTo`, não `toEqual` (memory `feedback_float_repr_not_bug`).
+### 3. Float representation in monetary values
+`"18.46"` vs `"18.459999999999997"` is IEEE 754 rounding, not a functional bug. Compare with `toBeCloseTo`, not `toEqual` (memory `feedback_float_repr_not_bug`).
 
-### 4. Iframe content é difícil de inspecionar
-GowSign renderiza dentro de iframe. Use `frameLocator` do Playwright, não `locator` direto. Para snapshot, capture o frame inteiro.
+### 4. Iframe content is hard to inspect
+GowSign renders inside an iframe. Use Playwright's `frameLocator`, not a direct `locator`. For a snapshot, capture the whole frame.
 
-### 5. Roteamento qa2 vs outros envs
-Agent memory `project_qa2_esign_routing` (em `.claude/agent-memory/qa-planner/`) tem detalhes específicos de routing. Consultar antes de assumir endpoint igual entre envs.
+### 5. qa2 routing vs other envs
+Agent memory `project_qa2_esign_routing` (in `.claude/agent-memory/qa-planner/`) has env-specific routing details. Consult it before assuming the endpoint is the same across envs.
 
 ### 6. Servicing portal sweep timing
-Sweeps de scheduled tasks (post-signing, recovery) podem demorar — não bater timeout curto.
+Sweeps of scheduled tasks (post-signing, recovery) can take a while — don't hit a short timeout.
 
-### 7. Host do iframe GowSign varia por ambiente — seletor `src*="gowsign.com"` quebra em sandbox (descoberto 2026-06-12, lead 97457)
-O seletor `iframe[src*="gowsign.com"]` (antigo `signingGowSignIframeByUrl`) **não casa em sandbox**: o host real do vendor é `gowsign-app-dev-uown.azurewebsites.net` (URL completa observada: `https://gowsign-app-dev-uown.azurewebsites.net/document/{uuid}?embedMode=true`), NÃO `*.gowsign.com`. O seletor foi **broadened para `iframe[src*="gowsign"]`** (substring `gowsign`) — casa tanto o host azurewebsites de sandbox/dev quanto `*.gowsign.com` de prod.
+### 7. The GowSign iframe host varies by environment — selector `src*="gowsign.com"` breaks in sandbox (discovered 2026-06-12, lead 97457)
+The selector `iframe[src*="gowsign.com"]` (formerly `signingGowSignIframeByUrl`) **does not match in sandbox**: the real vendor host is `gowsign-app-dev-uown.azurewebsites.net` (full URL observed: `https://gowsign-app-dev-uown.azurewebsites.net/document/{uuid}?embedMode=true`), NOT `*.gowsign.com`. The selector was **broadened to `iframe[src*="gowsign"]`** (substring `gowsign`) — it matches both the sandbox/dev azurewebsites host and the prod `*.gowsign.com`.
 
-**Regra:**
-- Detecção de iframe GowSign → preferir o seletor por **classe** `iframe.alternative-contract-vendor_iframe__nSb3A` (`SELECTORS.signingGowSignIframe`) ou o container do modal `.alternative-contract-vendor_iframeContainer__yAn5c` — são estáveis entre envs (CSS-module hash do frontend UOwn, não do vendor). Verificados MATCH na live DOM 2026-06-12.
-- Detecção por URL → usar substring `gowsign` (não `gowsign.com`). Nunca assumir host do vendor por env.
-- A classe `alternative-contract-vendor_iframe__nSb3A` é hash de CSS-module (frágil se o frontend rebuildar — ver pitfall #26 em [[application-lifecycle]]), mas hoje é o discriminador GowSign vs SignWell.
+**Rule:**
+- GowSign iframe detection → prefer the **class** selector `iframe.alternative-contract-vendor_iframe__nSb3A` (`SELECTORS.signingGowSignIframe`) or the modal container `.alternative-contract-vendor_iframeContainer__yAn5c` — they are stable across envs (UOwn frontend CSS-module hash, not the vendor's). Verified MATCH on the live DOM 2026-06-12.
+- Detection by URL → use the substring `gowsign` (not `gowsign.com`). Never assume the vendor host by env.
+- The class `alternative-contract-vendor_iframe__nSb3A` is a CSS-module hash (fragile if the frontend rebuilds — see pitfall #26 in [[application-lifecycle]]), but today it is the GowSign vs SignWell discriminator.
 
-### 8. `ContractPage.completeESign` precisa do branch GowSign (gap corrigido 2026-06-12)
-`completeESign` (consumer contract page, `src/pages/origination/contract.page.ts`) auto-detecta o provider por polling de iframe. Antes só tinha branch PandaDocs + SignWell → quando o backend roteava o lead para GowSign (ex: NY com template `NY_2025_SAC`), o método caía no fallback SignWell e estourava `TimeoutError` em `#SignWell-Embedded-Iframe`. **Não era timing — era provider não suportado.**
+### 8. `ContractPage.completeESign` needs the GowSign branch (gap fixed 2026-06-12)
+`completeESign` (consumer contract page, `src/pages/origination/contract.page.ts`) auto-detects the provider by polling the iframe. Before, it only had a PandaDocs + SignWell branch → when the backend routed the lead to GowSign (e.g., NY with template `NY_2025_SAC`), the method fell into the SignWell fallback and threw `TimeoutError` on `#SignWell-Embedded-Iframe`. **It wasn't timing — it was an unsupported provider.**
 
-**Implementação canônica do branch GowSign (reuso, não recriar):**
-- `AlternativeContractModalPage.waitForOpen` + `.getGowSignFrame` → `FrameLocator` do iframe.
-- Helper `signGowSignInFrame(page, frame, { preauthChoice: 'yes', waitForCompleted: true })` de `src/helpers/gowsign-signing.helper.ts` dirige a cerimônia inteira: Start → adota signature/initials em Type mode (1ª fonte) → "Sign All" → "Finish" → aguarda postMessage `completed`.
-- Sequência de botões internos validada na live DOM 2026-06-12 (lead 97457): **Start → [fonte] → Next → [fonte] → Save → Sign All → Finish** → redirect `/appComplete?...document_status=completed`. PreAuth "Yes" já vem checado por default.
-- Os IDs internos (`#startSignatureButton`, `#signAllButton`, `#finishSignatureButton`) não são visíveis cross-origin, mas os accessible names ("Start", "Sign All", "Finish", "Close document") batem com o que o helper espera.
+**Canonical implementation of the GowSign branch (reuse, do not recreate):**
+- `AlternativeContractModalPage.waitForOpen` + `.getGowSignFrame` → the iframe's `FrameLocator`.
+- The helper `signGowSignInFrame(page, frame, { preauthChoice: 'yes', waitForCompleted: true })` from `src/helpers/gowsign-signing.helper.ts` drives the entire ceremony: Start → adopt signature/initials in Type mode (1st font) → "Sign All" → "Finish" → wait for the `completed` postMessage.
+- Internal button sequence validated on the live DOM 2026-06-12 (lead 97457): **Start → [font] → Next → [font] → Save → Sign All → Finish** → redirect `/appComplete?...document_status=completed`. PreAuth "Yes" already comes checked by default.
+- The internal IDs (`#startSignatureButton`, `#signAllButton`, `#finishSignatureButton`) are not visible cross-origin, but the accessible names ("Start", "Sign All", "Finish", "Close document") match what the helper expects.
 
-## Templates conhecidos com problema histórico
+## Templates known to have historical problems
 
-- `KORNERSTONE_FinalizePurchaseEmail` — display name técnico no log; spec em `example.md` (deletado, mas estava no escopo de 2026-05-19) propõe rename para "Finalize Purchase Email".
-- Daniel's Jewelers CA template — placeholders vazios em página 1.
+- `KORNERSTONE_FinalizePurchaseEmail` — technical display name in the log; the spec in `example.md` (deleted, but it was in the scope of 2026-05-19) proposes a rename to "Finalize Purchase Email".
+- Daniel's Jewelers CA template — empty placeholders on page 1.
 
-## Tabela canônica de templates GowSign
+## Canonical GowSign templates table
 
-A tabela de templates GowSign no svc DB é **`uown_gow_sign_template`** (snake_case com 3 partes: `gow_sign`), NÃO `uown_gowsign_template` (2 partes). Query inline com o nome errado retorna 0 rows silenciosamente e dispara `[OBSERVAÇÃO]` falso.
+The GowSign templates table in the svc DB is **`uown_gow_sign_template`** (snake_case with 3 parts: `gow_sign`), NOT `uown_gowsign_template` (2 parts). An inline query with the wrong name returns 0 rows silently and triggers a false `[OBSERVATION]`.
 
-**Regra:**
-- Usar sempre o helper `getGowSignTemplatesForState(db, state)` de `src/helpers/gowsign-template-db.helpers.ts:148` — aponta para a tabela correta.
-- NÃO escrever SELECT inline com `uown_gowsign_template` — nome errado, zero rows.
-- Para listar templates existentes: `SELECT * FROM uown_gow_sign_template WHERE state = $1 AND (is_active IS NULL OR is_active = true)`.
+**Rule:**
+- Always use the helper `getGowSignTemplatesForState(db, state)` from `src/helpers/gowsign-template-db.helpers.ts:148` — it points to the correct table.
+- Do NOT write an inline SELECT with `uown_gowsign_template` — wrong name, zero rows.
+- To list existing templates: `SELECT * FROM uown_gow_sign_template WHERE state = $1 AND (is_active IS NULL OR is_active = true)`.
 
-Source: `src/helpers/gowsign-template-db.helpers.ts:148` + DB introspection qa1 `information_schema.tables WHERE table_name ILIKE '%gowsign%'` → 0 rows; `uown_gow_sign_template` encontrado via `information_schema.tables WHERE table_name ILIKE '%gow_sign%'`.
+Source: `src/helpers/gowsign-template-db.helpers.ts:148` + DB introspection qa1 `information_schema.tables WHERE table_name ILIKE '%gowsign%'` → 0 rows; `uown_gow_sign_template` found via `information_schema.tables WHERE table_name ILIKE '%gow_sign%'`.
 
-## Enum de status do e-sign document (`uown_esign_document.status`) — descoberto S7 qa1 2026-06-10
+## e-sign document status enum (`uown_esign_document.status`) — discovered S7 qa1 2026-06-10
 
-A coluna de status do documento de assinatura é **`status`** (varchar 255, schema doc col 37) — NÃO `document_status`. Valores reais do enum:
+The status column of the signature document is **`status`** (varchar 255, schema doc col 37) — NOT `document_status`. Real enum values:
 
-| Valor | Significado |
-|-------|-------------|
-| `STORED` | documento gerado/armazenado, ainda não enviado |
-| `SENT_TO_CUSTOMER` | enviado ao cliente para assinatura (NÃO `SENT`) |
-| `COMPLETED` | assinatura concluída (NÃO `SIGNED`) |
-| `ERROR` | falha de processamento |
-| `CANCELLED` | cancelado |
+| Value | Meaning |
+|-------|------------|
+| `STORED` | document generated/stored, not yet sent |
+| `SENT_TO_CUSTOMER` | sent to the customer for signature (NOT `SENT`) |
+| `COMPLETED` | signature completed (NOT `SIGNED`) |
+| `ERROR` | processing failure |
+| `CANCELLED` | canceled |
 
-**Regra:**
-- Em assertions de e-sign, usar `status='SENT_TO_CUSTOMER'` para envio e `status='COMPLETED'` para conclusão.
-- NÃO usar `SENT` (esse é valor de `uown_email_queue`, tabela diferente).
-- Schema autoritativo: [`docs/database-schema.md`](../../../docs/database-schema.md) seção `uown_esign_document`. Cross-link: app-lifecycle pitfall #96.
+**Rule:**
+- In e-sign assertions, use `status='SENT_TO_CUSTOMER'` for sending and `status='COMPLETED'` for completion.
+- Do NOT use `SENT` (that is a value of `uown_email_queue`, a different table).
+- Authoritative schema: [`docs/database-schema.md`](../../../docs/database-schema.md) section `uown_esign_document`. Cross-link: app-lifecycle pitfall #96.
 
-### CORREÇÃO (qa2, 2026-06-22): `SIGNED` e `STORED` EXISTEM no progresso pós-assinatura
+### CORRECTION (qa2, 2026-06-22): `SIGNED` and `STORED` EXIST in the post-signature progression
 
-A nota antiga "`SENT_TO_CUSTOMER`/`COMPLETED`, NÃO `SIGNED`" foi derivada de leads **NÃO assinados** (até envio). Um lead **genuinamente assinado** alcança **`SIGNED` e depois `STORED`** — o progresso real observado em qa2 (leads 16865/16866/16867) é:
+The old note "`SENT_TO_CUSTOMER`/`COMPLETED`, NOT `SIGNED`" was derived from **unsigned** leads (up to sending). A **genuinely signed** lead reaches **`SIGNED` and then `STORED`** — the real progression observed in qa2 (leads 16865/16866/16867) is:
 
 **`SENT_TO_CUSTOMER` → `SIGNED` → `STORED` → (`COMPLETED`)**
 
-- Quando atinge `STORED`, o `document_name` vira `*_signed.pdf`.
-- Logo: NÃO afirme que `SIGNED` "não existe nesse enum" — ele existe para leads que efetivamente assinaram. O caveat antigo aplica-se só a leads pré-assinatura.
+- When it reaches `STORED`, the `document_name` becomes `*_signed.pdf`.
+- Therefore: do NOT claim that `SIGNED` "doesn't exist in this enum" — it exists for leads that actually signed. The old caveat applies only to pre-signature leads.
 
-### GOTCHA pós-assinatura: o campo `request` é SOBRESCRITO para a string `getDocumentStatus`
+### Post-signature GOTCHA: the `request` field is OVERWRITTEN to the string `getDocumentStatus`
 
-Após o lead assinar, a row de dispatch em `uown_esign_document` tem o campo **`request` sobrescrito** — de um JSON de dispatch `{...}` para a **string crua `getDocumentStatus`**. Consequência: um helper que filtra `request LIKE '{%'` (ex.: `getEsignDocumentByLeadAndClient`) **NÃO acha a row pós-assinatura** (ela já não começa com `{`).
+After the lead signs, the dispatch row in `uown_esign_document` has the **`request` field overwritten** — from a dispatch JSON `{...}` to the **raw string `getDocumentStatus`**. Consequence: a helper that filters `request LIKE '{%'` (e.g., `getEsignDocumentByLeadAndClient`) **does NOT find the post-signature row** (it no longer starts with `{`).
 
-**Regra:**
-- Para status **pós-assinatura**, consultar por **lead + client diretamente** (`WHERE lead_pk=$1 AND client='GOWSIGN'`), NÃO por `request LIKE '{%'`.
-- Pré-assinatura, a row autoritativa ainda é `uown_esign_document` com o JSON de dispatch.
+**Rule:**
+- For **post-signature** status, query by **lead + client directly** (`WHERE lead_pk=$1 AND client='GOWSIGN'`), NOT by `request LIKE '{%'`.
+- Pre-signature, the authoritative row is still `uown_esign_document` with the dispatch JSON.
 
-### Activity log de assinatura (Rule #13)
+### Signature activity log (Rule #13)
 
-A assinatura emite notas em `uown_los_lead_notes`:
+The signature emits notes in `uown_los_lead_notes`:
 - `[ContractService]...Updating lead status to SIGNED`
 - `[EsignRedirectService][updateSignStatus]`
 - `[ESIGNSERVICE]`
 
-Logo a Rule #13 é satisfeita via `uown_los_lead_notes` DEPOIS da assinatura; ANTES da assinatura o registro autoritativo é `uown_esign_document` (não `lead_notes`).
+So Rule #13 is satisfied via `uown_los_lead_notes` AFTER the signature; BEFORE the signature, the authoritative record is `uown_esign_document` (not `lead_notes`).
 
-## OH template — fatos de render (qa2, 2026-06-22 — primary-source)
+## OH template — render facts (qa2, 2026-06-22 — primary-source)
 
-O template `OH_2025_SAC_16_MONTHS` (16m SAC, Ohio) — BUG-01 (`{{nextPaymentDueAmount}}` em branco em Item 3/4a) está **FIXED/validado** (renderiza 95.16/22.07/43.50; zero notas de dispatch "variables map missing"). Fatos de render confirmados no PDF flatten:
+The template `OH_2025_SAC_16_MONTHS` (16m SAC, Ohio) — BUG-01 (`{{nextPaymentDueAmount}}` blank in Item 3/4a) is **FIXED/validated** (renders 95.16/22.07/43.50; zero "variables map missing" dispatch notes). Render facts confirmed in the PDF flatten:
 
-- **Header token = `AGREEMENT-OH`** — a palavra literal **"Ohio" NÃO aparece** no PDF flatten. Um copy-check pela string "Ohio" dá **falso-negativo**; ancorar em `AGREEMENT-OH`.
-- **Appendix EPO** renderiza `"For a 16-\nmonth lease, the EPO price is calculated as:"` — note a **quebra de linha dentro de "16-month"** (`16-\nmonth`); um match exato por `"16-month"` falha por causa do `\n`.
-- **Brand phone** resolve para **(877)357-5474**.
+- **Header token = `AGREEMENT-OH`** — the literal word **"Ohio" does NOT appear** in the PDF flatten. A copy-check for the string "Ohio" gives a **false negative**; anchor on `AGREEMENT-OH`.
+- **EPO Appendix** renders `"For a 16-\nmonth lease, the EPO price is calculated as:"` — note the **line break inside "16-month"** (`16-\nmonth`); an exact match for `"16-month"` fails because of the `\n`.
+- **Brand phone** resolves to **(877)357-5474**.
 
 ## Anti-patterns
 
-- ❌ Validar signing só via DB (não renderiza)
-- ❌ Assertar `status='SENT'` em `uown_esign_document` — `SENT` é de `uown_email_queue`; usar `SENT_TO_CUSTOMER` (envio) na coluna `status`
-- ❌ Afirmar que `SIGNED`/`STORED` "não existem" no enum — existem para leads efetivamente assinados (progresso `SENT_TO_CUSTOMER → SIGNED → STORED → COMPLETED`)
-- ❌ Buscar a row pós-assinatura por `request LIKE '{%'` — o `request` vira a string `getDocumentStatus`; query por lead+client direto
-- ❌ Copy-check do contrato OH pela palavra "Ohio" — não aparece no flatten; usar `AGREEMENT-OH`
-- ❌ Esquecer regressão SignWell quando muda GoSign
-- ❌ Não validar diff visual quando muda template
-- ❌ Usar `toEqual` em valor float monetário
-- ❌ Escrever SELECT inline com `uown_gowsign_template` — tabela errada; usar helper `getGowSignTemplatesForState`
-- ❌ Detectar iframe GowSign por `src*="gowsign.com"` — host varia por env (sandbox = `gowsign-app-dev-uown.azurewebsites.net`); usar classe `alternative-contract-vendor_iframe__nSb3A` ou substring `gowsign`
-- ❌ Assumir que `completeESign` cobre só PandaDocs/SignWell — quando o estado tem template GowSign (ex: NY), o lead roteia para GowSign e exige o branch dedicado; não confundir o `TimeoutError` resultante com flakiness de timing
+- ❌ Validating signing only via DB (it doesn't render)
+- ❌ Asserting `status='SENT'` in `uown_esign_document` — `SENT` belongs to `uown_email_queue`; use `SENT_TO_CUSTOMER` (sending) in the `status` column
+- ❌ Claiming that `SIGNED`/`STORED` "don't exist" in the enum — they exist for actually-signed leads (progression `SENT_TO_CUSTOMER → SIGNED → STORED → COMPLETED`)
+- ❌ Looking up the post-signature row by `request LIKE '{%'` — the `request` becomes the string `getDocumentStatus`; query by lead+client directly
+- ❌ Copy-check of the OH contract by the word "Ohio" — it doesn't appear in the flatten; use `AGREEMENT-OH`
+- ❌ Forgetting SignWell regression when GoSign changes
+- ❌ Not validating the visual diff when a template changes
+- ❌ Using `toEqual` on a monetary float value
+- ❌ Writing an inline SELECT with `uown_gowsign_template` — wrong table; use the helper `getGowSignTemplatesForState`
+- ❌ Detecting the GowSign iframe by `src*="gowsign.com"` — the host varies by env (sandbox = `gowsign-app-dev-uown.azurewebsites.net`); use the class `alternative-contract-vendor_iframe__nSb3A` or the substring `gowsign`
+- ❌ Assuming `completeESign` covers only PandaDocs/SignWell — when the state has a GowSign template (e.g., NY), the lead routes to GowSign and requires the dedicated branch; don't confuse the resulting `TimeoutError` with timing flakiness
 
-## Correlacao enum vendor GowSign ↔ `uown_esign_document.status` (vendor API ref 2026-06-23)
+## Correlation of GowSign vendor enum ↔ `uown_esign_document.status` (vendor API ref 2026-06-23)
 
-A API do vendor GowSign (contrato externo em [`appendix-a-integracoes.md`](../../../docs/business-rules/appendix-a-integracoes.md) §GowSign Vendor API) expoe dois enums proprios do vendor que NAO sao a coluna interna `uown_esign_document.status` — sao do lado do vendor:
+The GowSign vendor API (external contract in [`appendix-a-integracoes.md`](../../../docs/business-rules/appendix-a-integracoes.md) §GowSign Vendor API) exposes two vendor-specific enums that are NOT the internal `uown_esign_document.status` column — they belong to the vendor side:
 
 - **vendor `status`:** `CREATED → OUTSTANDING → SIGNED → COMPLETED` (+ `EXPIRED`/`CANCELED`)
 - **vendor `pdfStatus`:** `CREATED_PENDING/CREATED_GENERATED/SIGNED_PENDING/SIGNED_GENERATED/AUDIT_TRAIL_PENDING/AUDIT_TRAIL_GENERATED`
 
-Correlacao (`[HIPOTESE]` — alinhamento de nomes, nao confirmado por trace cross-system):
-- vendor `SIGNED`/`COMPLETED` ↔ progressao interna `SIGNED → STORED → COMPLETED` (documentada acima). O `STORED` interno (`*_signed.pdf`) e o estado UOWn pos-assinatura; nao ha valor `STORED` no enum do vendor.
-- Nao assertar igualdade direta de nome entre o enum do vendor e a coluna interna — eles vivem em sistemas diferentes; usar `uown_esign_document.status` (coluna interna) para assertions de teste, vendor `status`/`pdfStatus` so se inspecionando a API do vendor diretamente.
+Correlation (`[HYPOTHESIS]` — name alignment, not confirmed by a cross-system trace):
+- vendor `SIGNED`/`COMPLETED` ↔ internal progression `SIGNED → STORED → COMPLETED` (documented above). The internal `STORED` (`*_signed.pdf`) is the UOwn post-signature state; there is no `STORED` value in the vendor enum.
+- Do not assert direct name equality between the vendor enum and the internal column — they live in different systems; use `uown_esign_document.status` (internal column) for test assertions, and the vendor `status`/`pdfStatus` only when inspecting the vendor API directly.
 
-Fonte do enum vendor: `[external-doc:postman/gowsign-api,2026-06-23]`. Comportamento canonico de routing/template NAO mora aqui (fronteira de autoridade) → ver business-rules.
+Source of the vendor enum: `[external-doc:postman/gowsign-api,2026-06-23]`. Canonical routing/template behavior does NOT live here (authority boundary) → see business-rules.
 
 ## Cross-links
 
-- Registro de templates EPO 16-meses (conteudo de contrato por estado) → [`appendix-h-epo-template-registry.md`](../../../docs/business-rules/appendix-h-epo-template-registry.md)
-- API do vendor GowSign (contrato externo: status/pdfStatus, bracket syntax, webhook) → [`appendix-a-integracoes.md`](../../../docs/business-rules/appendix-a-integracoes.md) §GowSign Vendor API
+- EPO 16-month templates registry (contract content by state) → [`appendix-h-epo-template-registry.md`](../../../docs/business-rules/appendix-h-epo-template-registry.md)
+- GowSign vendor API (external contract: status/pdfStatus, bracket syntax, webhook) → [`appendix-a-integracoes.md`](../../../docs/business-rules/appendix-a-integracoes.md) §GowSign Vendor API
 - Memory: `project_gosign_rollout`, `feedback_float_repr_not_bug`
-- Skill [[ui-first-principle]] — base da regra #14
-- Skill [[dom-investigation]] — usar MCP Playwright em iframe
-- Skill [[regression-suites-map]] — quando expandir pra suite completa
-- Agent memory: `.claude/agent-memory/qa-planner/project_qa2_esign_routing.md` (se relevante)
+- Skill [[ui-first-principle]] — basis of rule #14
+- Skill [[dom-investigation]] — use MCP Playwright on the iframe
+- Skill [[regression-suites-map]] — when to expand to the full suite
+- Agent memory: `.claude/agent-memory/qa-planner/project_qa2_esign_routing.md` (if relevant)

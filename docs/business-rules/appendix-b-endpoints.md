@@ -1,5 +1,5 @@
 ---
-title: "Apendice B: Referencia Rapida de Endpoints"
+title: "Appendix B: Endpoints Quick Reference"
 domain: business-rules
 status: stable
 volatility: volatile
@@ -12,91 +12,91 @@ sources:
 covers: [endpoints, sweeps, pagamentos, contas, administracao, config, rightfoot, customer-journey]
 ---
 
-# Apendice B: Referencia Rapida de Endpoints
+# Appendix B: Endpoints Quick Reference
 ## UOwn Leasing - SVC Platform
 
-Endpoints para configuracao, sweeps, pagamentos, contas e administracao.
+Endpoints for configuration, sweeps, payments, accounts, and administration.
 
 ---
 
-## Apendice B: Referencia Rapida de Endpoints para Ativacao
+## Appendix B: Quick Reference of Activation Endpoints
 
-### Configuracoes
+### Configurations
 
-| Acao | Endpoint |
+| Action | Endpoint |
 |------|----------|
-| Alterar configuracao | `POST /ConfigurationManagement/createOrUpdateConfig` body: `{"key":"...", "value":"..."}` |
-| Recarregar todas configs | `GET /ConfigurationManagement/forceReloadConfig` |
+| Change configuration | `POST /ConfigurationManagement/createOrUpdateConfig` body: `{"key":"...", "value":"..."}` |
+| Reload all configs | `GET /ConfigurationManagement/forceReloadConfig` |
 
 ### Sweeps
 
-| Acao | Endpoint |
+| Action | Endpoint |
 |------|----------|
-| Disparar sweep | `POST /uown/svc/triggerScheduledTask/{taskName}` |
-| Pausar sweep | `POST /uown/svc/pauseScheduledTask/{taskName}` |
-| Resumir sweep | `POST /uown/svc/resumeScheduledTask/{taskName}` |
-| Reagendar sweep | `POST /uown/svc/rescheduleScheduledTask/{taskName}?cronTrigger={cron}` |
-| Listar todos | `GET /uown/svc/getAllScheduledTasks` |
-| Detalhes | `GET /uown/svc/getScheduledTaskByName/{name}` |
+| Trigger sweep | `POST /uown/svc/triggerScheduledTask/{taskName}` |
+| Pause sweep | `POST /uown/svc/pauseScheduledTask/{taskName}` |
+| Resume sweep | `POST /uown/svc/resumeScheduledTask/{taskName}` |
+| Reschedule sweep | `POST /uown/svc/rescheduleScheduledTask/{taskName}?cronTrigger={cron}` |
+| List all | `GET /uown/svc/getAllScheduledTasks` |
+| Details | `GET /uown/svc/getScheduledTaskByName/{name}` |
 
-### Pagamentos
+### Payments
 
-| Acao | Endpoint |
+| Action | Endpoint |
 |------|----------|
 | CC Vintage Run | `POST /uown/svc/executeCCVintageRun/{startDate}/{endDate}` |
 | CC Payment Sweep | `POST /uown/svc/sendCCPaymentsSweep` |
 | ACH Payment Sweep | `POST /uown/svc/sendACHPaymentsSweep` |
 | Rewind & Replay | `POST /uown/svc/rewindAndReplayAccount/{accountPk}` |
-| Calcular EPO | Via `getPayoffAmount` no TMS |
+| Calculate EPO | Via `getPayoffAmount` in the TMS |
 
-### Contas
+### Accounts
 
-| Acao | Endpoint |
+| Action | Endpoint |
 |------|----------|
-| Mover due dates | `POST /uown/svc/moveDueDatesByDays/{accountPk}?moveNumberOfDays=N` |
-| Cancelar conta | `POST /uown/svc/cancelAccount/{accountPk}` |
+| Move due dates | `POST /uown/svc/moveDueDatesByDays/{accountPk}?moveNumberOfDays=N` |
+| Cancel account | `POST /uown/svc/cancelAccount/{accountPk}` |
 | Settlement | `POST /uown/los/settleApplication` |
 | Modify Invoice | `POST /uown/los/modifyInvoiceForLead/{leadPk}` |
 
-### Administracao
+### Administration
 
-| Acao | Endpoint |
+| Action | Endpoint |
 |------|----------|
 | Cleanup logs | `DELETE /uown/cleanupLogEntries?to=YYYY-MM-DD` |
-| Cleanup dados | `DELETE /uown/cleanupFunctionalEntities?to=YYYY-MM-DD` |
-| Limpar maps | `GET /uown/clearApplicationRequestMap` |
-| Carregar approved amounts | `POST /uown/loadApprovedAmountsFromExcel` |
+| Cleanup data | `DELETE /uown/cleanupFunctionalEntities?to=YYYY-MM-DD` |
+| Clear maps | `GET /uown/clearApplicationRequestMap` |
+| Load approved amounts | `POST /uown/loadApprovedAmountsFromExcel` |
 
-### RightFoot — Verificacao de Saldo ACH (R1.53.0)
+### RightFoot — ACH Balance Verification (R1.53.0)
 
-Sweeps (disparaveis via `POST /uown/svc/triggerScheduledTask/{taskName}`):
+Sweeps (triggerable via `POST /uown/svc/triggerScheduledTask/{taskName}`):
 
-| Sweep (taskName) | Cron seedado | process_type |
+| Sweep (taskName) | Seeded cron | process_type |
 |------------------|--------------|--------------|
-| `DailyAchBalanceCheckSweep` | `0 0 15 * * ?` (15:00 diario) | `DAILY_RERUN_DELINQUENT` |
-| `RerunAchBalanceCheckSweep` | `0 0 9 ? * THU` (Qui 09:00) | `RERUN` |
+| `DailyAchBalanceCheckSweep` | `0 0 15 * * ?` (15:00 daily) | `DAILY_RERUN_DELINQUENT` |
+| `RerunAchBalanceCheckSweep` | `0 0 9 ? * THU` (Thu 09:00) | `RERUN` |
 
-Endpoints dedicados:
+Dedicated endpoints:
 
-| Acao | Endpoint |
+| Action | Endpoint |
 |------|----------|
-| Webhook de batch pronto (RightFoot -> SVC) | `POST /uown/webhooks/rightfoot/batch-ready` |
-| Reprocessar 1 batch (ops) | `POST /uown/rightfoot/batch-result` |
-| Criar ACH daily-rerun a partir de batchIds (ops) | `POST /uown/rightfoot/ach-payments/daily-rerun` |
+| Batch-ready webhook (RightFoot -> SVC) | `POST /uown/webhooks/rightfoot/batch-ready` |
+| Reprocess 1 batch (ops) | `POST /uown/rightfoot/batch-result` |
+| Create ACH daily-rerun from batchIds (ops) | `POST /uown/rightfoot/ach-payments/daily-rerun` |
 
-> A criacao do ACH (`DailyRerunAchCreationService`) NAO e Quartz -- e disparada pelo evento `RightFootBatchCompleteEvent` (AFTER_COMMIT) ou pelo endpoint ops acima. Cron seeds em `BootstrapService` ~linha 2275 (drift-prone -- conferir `uown_scheduled_task` antes de citar). Ver [09-integracoes-externas.md](09-integracoes-externas.md) secao 48.
+> The ACH creation (`DailyRerunAchCreationService`) is NOT Quartz -- it's triggered by the `RightFootBatchCompleteEvent` event (AFTER_COMMIT) or by the ops endpoint above. Cron seeds in `BootstrapService` ~line 2275 (drift-prone -- check `uown_scheduled_task` before quoting). See [09-integracoes-externas.md](09-integracoes-externas.md) section 48.
 
 ### Customer Journey Tracking — Ingest (R1.53.0)
 
-Telemetria do funil de originacao (origination#1308). Endpoints path-scoped por journey:
+Origination funnel telemetry (origination#1308). Path-scoped endpoints per journey:
 
-| Acao | Endpoint |
+| Action | Endpoint |
 |------|----------|
-| Registrar evento | `POST /api/journeys/{journeyId}/events` |
-| Iniciar sessao | `POST /api/journeys/{journeyId}/session/start` |
-| Encerrar sessao | `POST /api/journeys/{journeyId}/session/{sessionId}/end` |
+| Record event | `POST /api/journeys/{journeyId}/events` |
+| Start session | `POST /api/journeys/{journeyId}/session/start` |
+| End session | `POST /api/journeys/{journeyId}/session/{sessionId}/end` |
 
-> `journeyId` = `leadPk`. Idempotencia por `event_id` UNIQUE (DB). Evento cujo `sessionId` pertence a outro journey -> HTTP 409. Ingest sincrono, fire-and-forget no cliente.
+> `journeyId` = `leadPk`. Idempotency via `event_id` UNIQUE (DB). An event whose `sessionId` belongs to another journey -> HTTP 409. Synchronous ingest, fire-and-forget on the client.
 
 ---
 

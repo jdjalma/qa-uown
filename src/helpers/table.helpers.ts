@@ -93,9 +93,9 @@ export async function getNormalizedHeaders(page: Page): Promise<string[]> {
 
 /**
  * Reads the value of column `header` for every visible row, in order.
- * Pure column extraction (não checa empty-state — o caller decide). Retorna []
- * quando o header não existe na tabela. Usado pelas report pages de Origination
- * (antes reimplementado inline em ≥4 page objects).
+ * Pure column extraction (does not check empty-state — the caller decides). Returns []
+ * when the header does not exist in the table. Used by the Origination report pages
+ * (previously reimplemented inline in >= 4 page objects).
  */
 export async function getColumnValues(page: Page, header: string): Promise<string[]> {
   const headers = await getNormalizedHeaders(page);

@@ -1,5 +1,5 @@
 ---
-title: Produto Lease — Deep Dive Tecnico
+title: Lease Product — Technical Deep Dive
 domain: business-rules
 status: stable
 volatility: stable
@@ -10,20 +10,20 @@ sources:
 covers: [formulas-financeiras, calculator, contrato, parcelas, money-factor, tax, epo]
 ---
 
-# Produto Lease — Deep Dive Tecnico
-## UOwn Leasing - Regras Extraidas do Codigo-Fonte
+# Lease Product — Technical Deep Dive
+## UOwn Leasing - Rules Extracted from Source Code
 
-Complementa os documentos existentes (01-11) com regras de negocio extraidas diretamente dos repositorios `svc`, `origination`, `servicing`, `common`, `uwengine`.
+Complements the existing documents (01-11) with business rules extracted directly from the `svc`, `origination`, `servicing`, `common`, `uwengine` repositories.
 
-**Ultima atualizacao:** 2026-03-20
+**Last updated:** 2026-03-20
 
 ---
 
-## 1. Formulas Financeiras com Precisao Decimal
+## 1. Financial Formulas with Decimal Precision
 
-### 1.1 Contrato — Calculo Completo
+### 1.1 Contract — Full Calculation
 
-Fonte: `CalculatorService.java` linhas 192-207
+Source: `CalculatorService.java` lines 192-207
 
 ```
 baseCost                  = totalInvoiceAmount - taxAmount - depositAmount
@@ -33,28 +33,28 @@ contractAmountAfterTax    = contractAmountBeforeTax + contractTax
                           + processingFee - companyDiscount                    [scale 2, HALF_EVEN]
 ```
 
-O `moneyFactor` armazenado em `sched_summary` e o fator **acumulado**: `programMoneyFactor * termMonths` (scale 4, HALF_EVEN).
+The `moneyFactor` stored in `sched_summary` is the **accumulated** factor: `programMoneyFactor * termMonths` (scale 4, HALF_EVEN).
 
-### 1.2 Parcela Regular.
+### 1.2 Regular Installment.
 
-Fonte: `CalculatorService.java` linhas 416-451
+Source: `CalculatorService.java` lines 416-451
 
-**Padrao (todos estados exceto NC):**
+**Standard (all states except NC):**
 ```
 regularPaymentNoTax       = contractAmountBeforeTax / numberOfPayments        [scale 2, HALF_EVEN]
 firstPaymentNoTaxWithFees = regularPaymentNoTax + processingFee - companyDiscount
 nextPaymentWithTax        = regularPaymentNoTax * (1 + taxRate)               [scale 2, HALF_EVEN]
 ```
 
-**NC — regra do ultimo pagamento minimo:**
-Taxa padrao: `0.11` (config: `last.payment.percent.rate.for.state.NC`)
+**NC — minimum last payment rule:**
+Default rate: `0.11` (config: `last.payment.percent.rate.for.state.NC`)
 ```
 minLastPaymentAmount      = baseCost * 0.11                                    [scale 2, HALF_EVEN]
 regularPaymentNoTax       = (contractAmountBeforeTax - minLastPaymentAmount) / (numPayments - 1)
 lastPaymentNoTaxNoFees    = minLastPaymentAmount
 ```
 
-**Imposto por parcela:**
+**Tax per installment:**
 ```
 firstPaymentTax    = max(regularPaymentNoTax - companyDiscount, 0) * taxRate   [scale 4]
 regularPaymentTax  = regularPaymentNoTax * taxRate                             [scale 4]
@@ -63,34 +63,34 @@ totalTaxAmount     = firstPaymentTax + lastPaymentTax
                    + regularPaymentTax * (numPayments - 2)                     [scale 2]
 ```
 
-**Ultimo pagamento:**
+**Last payment:**
 ```
 lastPaymentNoTaxWithFees = lastPaymentNoTaxNoFees - securityDeposit
 lastPaymentWithTax       = lastPaymentNoTaxWithFees + lastPaymentTax           [scale 2]
 ```
 
-### 1.3 Numero de Parcelas
+### 1.3 Number of Installments
 
-Resolucao (em ordem): `CalculatorService.java` linhas 406-412, 904-913
+Resolution (in order): `CalculatorService.java` lines 406-412, 904-913
 
 1. Config `numOfPayments.{termMonths}.{frequency}`
 2. Config `number.of.payments.{termMonths}.{frequency}`
-3. Se MONTHLY: `numberOfPayments = termMonths`
-4. Senao: `SvcException`
+3. If MONTHLY: `numberOfPayments = termMonths`
+4. Otherwise: `SvcException`
 
-**Dias do lease por frequencia:**
-| Frequencia | Formula |
+**Lease days by frequency:**
+| Frequency | Formula |
 |------------|---------|
 | WEEKLY | `numPayments * 7` |
 | BI_WEEKLY | `numPayments * 14` |
 | SEMI_MONTHLY | `numPayments * 15` |
 | MONTHLY | `ChronoUnit.DAYS.between(activationDate, activationDate.plusMonths(numPayments))` |
 
-### 1.4 Prorate Amount (Valor Proporcional)
+### 1.4 Prorate Amount
 
-Fonte: `getProrateAmount.sql`
+Source: `getProrateAmount.sql`
 
-Calcula valor proporcional quando pagamento ocorre no meio do periodo:
+Calculates the proportional amount when a payment occurs mid-period:
 ```
 periodDays = WEEKLY:7 | BI_WEEKLY:14 | SEMI_MONTHLY:15 | MONTHLY:30
 prorateAmount = greatest(
@@ -101,55 +101,55 @@ prorateAmount = greatest(
 ) + overdueAmount
 ```
 
-Se conta nao ACTIVE: retorna `0`. Se nao ha proximo recebivel: retorna apenas overdueAmount.
+If the account is not ACTIVE: returns `0`. If there is no next receivable: returns only overdueAmount.
 
 ---
 
-## 2. EPO — Cascata Completa de Calculo por Estado
+## 2. EPO — Full Calculation Cascade by State
 
 ### 2.1 Dispatch (PayOffAmountService.getPayOffAmount)
 
-| Condicao | Caminho |
+| Condition | Path |
 |----------|---------|
-| `termMonths == 16` | Anytime Buyout (formula diaria) |
-| Company=KORNERSTONE e programa in (Kleverwise, Prime10, KWChoice) | Formula Kornerstone |
-| Todos os outros | SQL `getEpoBalance.sql` |
+| `termMonths == 16` | Anytime Buyout (daily formula) |
+| Company=KORNERSTONE and program in (Kleverwise, Prime10, KWChoice) | Kornerstone formula |
+| All others | SQL `getEpoBalance.sql` |
 
-Apos calculo: se `EPO > contractBalance`, usa `contractBalance` (config: `check.contract.balance.for.epo`, default `true`).
+After calculation: if `EPO > contractBalance`, uses `contractBalance` (config: `check.contract.balance.for.epo`, default `true`).
 
-### 2.2 EPO Padrao — Prioridades no SQL
+### 2.2 Standard EPO — Priorities in the SQL
 
-**Prioridade 1 — Conta elegivel 90 dias (janela ativa):**
+**Priority 1 — Account eligible for 90 days (active window):**
 ```
 EPO = epoReceivable.total - totalPaid + totalFees + overdueAmount
 ```
-Onde: `totalPaid` = SUM(PAID) - `remainingPaymentAmount`; `totalFees` = recebiveis ativos excluindo REGULAR, PROCESSING_FEE, EPO.
-Especial MI: `overdueAmount = pastDue * 0.55` (outros estados: `pastDue`).
+Where: `totalPaid` = SUM(PAID) - `remainingPaymentAmount`; `totalFees` = active receivables excluding REGULAR, PROCESSING_FEE, EPO.
+MI special case: `overdueAmount = pastDue * 0.55` (other states: `pastDue`).
 
-**Prioridade 2 — Estado tem `discount_on_paid`:**
+**Priority 2 — State has `discount_on_paid`:**
 ```
 EPO = epoReceivable.total - ((totalPaid - totalFees) * discountOnPaid) + overdueAmount
 ```
 
-**Prioridade 3 — Estados CA, HI, NY, WV:**
+**Priority 3 — States CA, HI, NY, WV:**
 ```
 EPO = (epoReceivable.total * (totalScheduledPayments - pastOrPaidPayments) / totalScheduledPayments)
     - epoReceivable.partialPaymentAmount + overdueAmount
 ```
-`pastOrPaidPayments` = count de REGULAR_PAYMENT com `due_date <= today` OU `allocation_status = PAID_IN_FULL`.
+`pastOrPaidPayments` = count of REGULAR_PAYMENT with `due_date <= today` OR `allocation_status = PAID_IN_FULL`.
 
-**Prioridade 4 — NC e EPO calculado < ultimo pagamento:**
+**Priority 4 — NC and the calculated EPO < last payment:**
 ```
 EPO = lastPayment(no_tax_with_fees + tax) + overdueAmount
 ```
 
-**Default — todos outros estados:**
+**Default — all other states:**
 ```
 EPO = (totalContractAmount - (totalPaid - totalFees)) * (1 - COALESCE(sc.epo_discount, mp.payoff_discount))
     + overdueAmount
 ```
 
-### 2.3 EPO Kornerstone (PayOffAmountService linhas 105-143)
+### 2.3 EPO Kornerstone (PayOffAmountService lines 105-143)
 ```
 paidTowardsEpo = totalPayments - leftOverPayment - ppFeesToDate - allOtherFees
 paidTowardsEpo = (paidTowardsEpo > 0 && moneyFactor > 0) ? paidTowardsEpo / moneyFactor : 0
@@ -157,10 +157,10 @@ paidTowardsEpo = (paidTowardsEpo > 0 && moneyFactor > 0) ? paidTowardsEpo / mone
 kwBuyoutAmount = epoAmountWithTax - paidTowardsEpo + regularPastDue           [CEILING]
 ```
 
-### 2.4 Anytime Buyout 16 Meses (AnytimeBuyOutService linhas 41-58)
+### 2.4 Anytime Buyout 16 Months (AnytimeBuyOutService lines 41-58)
 ```
 leaseAmount      = (baseCost * moneyFactor) - baseCost                         [scale 4, HALF_EVEN]
-leaseDays        = config("totalLeaseDaysForTerm{term}") OU term * 30
+leaseDays        = config("totalLeaseDaysForTerm{term}") OR term * 30
 dailyLeaseAmount = leaseAmount / leaseDays                                     [scale 2, HALF_EVEN]
 
 buyoutAmount     = baseCost + (dailyLeaseAmount * daysUsed)
@@ -171,285 +171,285 @@ buyoutWithTax    = buyoutNoTax + costTax                                        
 finalBalance     = buyoutWithTax - actualPaymentsMade
 ```
 `daysUsed = ChronoUnit.DAYS.between(activationDate, today)`.
-Se `finalBalance <= 0` ou `daysUsed <= 0`: fallback para `contractBalance`.
+If `finalBalance <= 0` or `daysUsed <= 0`: falls back to `contractBalance`.
 
-### 2.5 Data de Expiracao do EPO
+### 2.5 EPO Expiration Date
 ```
 epoStartDate = config("getEpoDateFromFpd") ? firstPaymentDate : today
-epoExpiry    = epoStartDate + config("epo.months.for.state.{state}") meses
-             OU epoStartDate + program.epoDays
+epoExpiry    = epoStartDate + config("epo.months.for.state.{state}") months
+             OR epoStartDate + program.epoDays
 ```
-Contas 16 meses: `earlyPayoffDateExpiry = LocalDate.now()` (desabilita janela 90 dias).
+16-month accounts: `earlyPayoffDateExpiry = LocalDate.now()` (disables the 90-day window).
 
 ---
 
-## 3. Hierarquia de Taxas Pre-Assinatura
+## 3. Pre-Signing Fee Hierarchy
 
-### 3.1 Processing Fee (CalculatorService linhas 932-960)
+### 3.1 Processing Fee (CalculatorService lines 932-960)
 
-Resolucao em ordem:
+Resolution in order:
 1. `merchant.chargeProcessingFee == false` → `$0`
-2. `program.amountChargedAtSigning > 0` → `$0` (signing amount substitui)
-3. `program.processingFeeOverride > 0` → usa override
-4. `stateConfigurations.processingFee` → taxa por estado
+2. `program.amountChargedAtSigning > 0` → `$0` (signing amount replaces it)
+3. `program.processingFeeOverride > 0` → uses the override
+4. `stateConfigurations.processingFee` → fee per state
 5. Fallback → `$0`
 
-### 3.2 Signing Fee (CalculatorService linhas 1008-1037)
+### 3.2 Signing Fee (CalculatorService lines 1008-1037)
 
-Resolucao em ordem:
-1. `program.amountChargedAtSigning > 0` → usa esse valor
-2. `(merchant.chargeProcessingFee AND chargeProcessingFeeBeforeEsign) OR (checkUwForVerification AND uwData.chargeProcessingFee)` → usa processing fee
-3. Senao → usa security deposit
-4. Sempre `>= 0`
+Resolution in order:
+1. `program.amountChargedAtSigning > 0` → uses that value
+2. `(merchant.chargeProcessingFee AND chargeProcessingFeeBeforeEsign) OR (checkUwForVerification AND uwData.chargeProcessingFee)` → uses the processing fee
+3. Otherwise → uses the security deposit
+4. Always `>= 0`
 
 `SigningFeeService.getSigningFeeAmount()`: `MAX(amountChargedAtSigning, processingFee, securityDeposit, protectionPlanFee, 0)`.
 
-### 3.3 Security Deposit (CalculatorService linhas 966-1001)
+### 3.3 Security Deposit (CalculatorService lines 966-1001)
 
-Cobrado quando:
+Charged when:
 - `merchant.holdDeposit == true` AND `stateConfigs.securityDeposit != null`
-- OU `merchant.checkUwForVerification AND uwData.chargeProcessingFee` AND `stateConfigs.securityDeposit != null`
+- OR `merchant.checkUwForVerification AND uwData.chargeProcessingFee` AND `stateConfigs.securityDeposit != null`
 
-NAO cobrado se `processingFeeOverride > 0` OU `amountChargedAtSigning > 0`.
+NOT charged if `processingFeeOverride > 0` OR `amountChargedAtSigning > 0`.
 
-### 3.4 NSF Fee (AccountFeeService linhas 27-37)
+### 3.4 NSF Fee (AccountFeeService lines 27-37)
 - Default: `$15.00` (config: `AccountFeeService.nsfFee`)
-- Override por estado: `stateConfigurations.nsf` (se `> 0`)
-- Estado: INSTORE usa estado do merchant; outros usa estado do cliente
+- Override per state: `stateConfigurations.nsf` (if `> 0`)
+- State: INSTORE uses the merchant's state; others use the customer's state
 
 ### 3.5 Buyout Fee
-Por merchant: `uown_merchant.buyout_fee`. Adicionado ao EPO na originacao.
+Per merchant: `uown_merchant.buyout_fee`. Added to the EPO at origination.
 
-### 3.6 EPO Fee (percentual)
-`program.epoFeePercent`: `epoFeeAmount = baseCost * epoFeeRate` (se rate > 0).
+### 3.6 EPO Fee (percentage)
+`program.epoFeePercent`: `epoFeeAmount = baseCost * epoFeeRate` (if rate > 0).
 
 ---
 
-## 4. Importacao LOS para SVC — 16 Entidades
+## 4. LOS to SVC Import — 16 Entities
 
-Fonte: `LosToSvcImportService.java`
+Source: `LosToSvcImportService.java`
 
-Quando um lead e importado, as seguintes entidades sao criadas **em ordem**:
+When a lead is imported, the following entities are created **in order**:
 
-| # | Entidade | Origem |
+| # | Entity | Origin |
 |---|----------|--------|
-| 1 | `SvAccount` | `lead.getLeadInfo()` (dados da conta: merchant, valores, status) |
-| 2 | `SvCustomer` | Um por `LosCustomer` (titular + co-signatarios) |
-| 3 | `SvAddress` | Por customer |
-| 4 | `SvEmail` | Por customer |
-| 5 | `SvPhone` | Por customer |
-| 6 | `SvEmployment` | Por customer |
-| 7 | `SvBankAccount` | Por customer (dedup por routing+account) |
-| 8 | `UWData` | Dados de underwriting da conta |
-| 9 | `SvInvoice` | Invoice do lead (`LosInvoice`) |
-| 10 | `SvItem` | Itens da invoice |
-| 11 | `SvSchedSummary` | Cronograma (FPD, frequencia, termo, data EPO) |
-| 12 | `SvReceivable` | Gerados do cronograma (REGULAR, PROCESSING_FEE, EPO) |
-| 13 | `SvCreditCard` | Copiados do LOS |
-| 14 | `SvCreditCardTransaction` | Transacoes APPROVED SALE/CAPTURE (nao PURCHASE) |
-| 15 | `SvProtectionPlan` | Se plano de protecao existe no lead |
-| 16 | Welcome email | Enviado ao customer (async ou sync por config) |
+| 1 | `SvAccount` | `lead.getLeadInfo()` (account data: merchant, amounts, status) |
+| 2 | `SvCustomer` | One per `LosCustomer` (primary holder + co-signers) |
+| 3 | `SvAddress` | Per customer |
+| 4 | `SvEmail` | Per customer |
+| 5 | `SvPhone` | Per customer |
+| 6 | `SvEmployment` | Per customer |
+| 7 | `SvBankAccount` | Per customer (dedup by routing+account) |
+| 8 | `UWData` | Account underwriting data |
+| 9 | `SvInvoice` | Lead invoice (`LosInvoice`) |
+| 10 | `SvItem` | Invoice items |
+| 11 | `SvSchedSummary` | Schedule (FPD, frequency, term, EPO date) |
+| 12 | `SvReceivable` | Generated from the schedule (REGULAR, PROCESSING_FEE, EPO) |
+| 13 | `SvCreditCard` | Copied from LOS |
+| 14 | `SvCreditCardTransaction` | APPROVED SALE/CAPTURE transactions (not PURCHASE) |
+| 15 | `SvProtectionPlan` | If a protection plan exists on the lead |
+| 16 | Welcome email | Sent to the customer (async or sync per config) |
 
-**Re-importacao:** Se conta ja existe, `updateAccountFromLead` regenera itens, invoice, cronograma e recebiveis. Se conta CANCELLED, cancelamento e re-aplicado.
+**Re-import:** If the account already exists, `updateAccountFromLead` regenerates items, invoice, schedule and receivables. If the account is CANCELLED, the cancellation is re-applied.
 
-**ImportLog:** Registro criado antes e depois da importacao.
+**ImportLog:** A record created before and after the import.
 
-**Regra 16 meses:** Se `termMonths` esta em `noEpoForTermMonths` (default: `"16"`): `earlyPayoffDateExpiry = LocalDate.now()`.
+**16-month rule:** If `termMonths` is in `noEpoForTermMonths` (default: `"16"`): `earlyPayoffDateExpiry = LocalDate.now()`.
 
 ---
 
-## 5. Estrategias de Alocacao de Pagamento
+## 5. Payment Allocation Strategies
 
-Fonte: `UownAllocationService.java`
+Source: `UownAllocationService.java`
 
 ### 5.1 AllocationStrategy enum
-| Estrategia | Descricao |
+| Strategy | Description |
 |------------|-----------|
-| `DEFAULT` | Seleciona proximo recebivel nao pago por due date. Se REGULAR_PAYMENT, coleta todos com mesma data ou anteriores |
-| `EPO_ONLY` | Aloca apenas ao recebivel EPO ativo |
-| `REGULAR_RECEIVABLES` | Aloca a todos recebiveis nao pagos |
+| `DEFAULT` | Selects the next unpaid receivable by due date. If REGULAR_PAYMENT, it collects all with the same date or earlier |
+| `EPO_ONLY` | Allocates only to the active EPO receivable |
+| `REGULAR_RECEIVABLES` | Allocates to all unpaid receivables |
 
-### 5.2 Ordem de Alocacao Dentro de um Pagamento
+### 5.2 Allocation Order Within a Payment
 
-1. Recebiveis **nao-EPO** primeiro (ordenados por due date ASC)
-2. Recebivel **EPO** por ultimo (com valor restante do pagamento)
-3. Se valor restante apos todos recebiveis >= payoff amount → conta `PAID_OUT_EARLY`, ultimo recebivel recebe `PAID_OFF_BALANCE`
-4. Qualquer valor nao alocado → `account.overPaymentAmount`
+1. **Non-EPO** receivables first (ordered by due date ASC)
+2. **EPO** receivable last (with the remaining amount of the payment)
+3. If the remaining amount after all receivables >= payoff amount → account `PAID_OUT_EARLY`, last receivable gets `PAID_OFF_BALANCE`
+4. Any unallocated amount → `account.overPaymentAmount`
 
 ### 5.3 ReceivableAllocationStatus
-| Status | Significado |
+| Status | Meaning |
 |--------|------------|
-| `UNPAID` | Nenhum pagamento aplicado |
-| `PARTIALLY_PAID` | Pagamento parcial aplicado |
-| `PAID_IN_FULL` | Valor total pago |
-| `PAID_OFF_BALANCE` | Saldo quitado (payoff) |
-| `NOT_APPLICABLE` | Nao aplicavel |
+| `UNPAID` | No payment applied |
+| `PARTIALLY_PAID` | Partial payment applied |
+| `PAID_IN_FULL` | Full amount paid |
+| `PAID_OFF_BALANCE` | Balance paid off (payoff) |
+| `NOT_APPLICABLE` | Not applicable |
 
-### 5.4 Realocacao
-`reallocateFromReceivable`: move alocacoes entre recebiveis.
-Bloqueada se conta em: `PAID_OUT, PAID_OUT_EARLY, PAID_OUT_EARLY_EPO, CANCELLED`.
-Bloqueada se recebivel destino em: `PAID_IN_FULL, PAID_OFF_BALANCE`.
+### 5.4 Reallocation
+`reallocateFromReceivable`: moves allocations between receivables.
+Blocked if the account is in: `PAID_OUT, PAID_OUT_EARLY, PAID_OUT_EARLY_EPO, CANCELLED`.
+Blocked if the destination receivable is in: `PAID_IN_FULL, PAID_OFF_BALANCE`.
 
 ### 5.5 Auto PAID_OUT
-Apos CADA alocacao: `AutoPaidOutEligibilityService.isAccountEligibleForAutoPaidOut()` e verificado. Se elegivel → status `PAID_OUT` imediatamente.
+After EACH allocation: `AutoPaidOutEligibilityService.isAccountEligibleForAutoPaidOut()` is checked. If eligible → status `PAID_OUT` immediately.
 
-### 5.6 Tipo DEPOSIT
-`PaymentType.DEPOSIT` sempre usa estrategia `EPO_ONLY` — bypassa selecao normal de recebiveis.
+### 5.6 DEPOSIT Type
+`PaymentType.DEPOSIT` always uses the `EPO_ONLY` strategy — bypasses normal receivable selection.
 
 ---
 
-## 6. Rewind/Replay — Mecanica Detalhada
+## 6. Rewind/Replay — Detailed Mechanics
 
-Fonte: `RewindReplayService.java`, `RewindPaymentsService.java`, `ReplayPaymentsService.java`
+Source: `RewindReplayService.java`, `RewindPaymentsService.java`, `ReplayPaymentsService.java`
 
-### 6.1 Tres Pontos de Entrada
+### 6.1 Three Entry Points
 
-**A. `rewindReplayForReversePayment(svPayment)`** (reversao de pagamento):
-1. Coleta todos pagamentos PAID apos o pagamento revertido (por `rowCreatedTimestamp`)
-2. Se conta em status terminal (PAID_OUT, PAID_OUT_EARLY, PAID_OUT_EARLY_EPO, SETTLED_IN_FULL): reseta para ACTIVE
-3. Reverte alocacoes do pagamento revertido
-4. Se nao ha pagamentos nao-alocados: faz replay dos subsequentes
-5. Se ha pagamentos nao-alocados: faz `rewindAndReplayAccount` completo
+**A. `rewindReplayForReversePayment(svPayment)`** (payment reversal):
+1. Collects all PAID payments after the reversed payment (by `rowCreatedTimestamp`)
+2. If the account is in a terminal status (PAID_OUT, PAID_OUT_EARLY, PAID_OUT_EARLY_EPO, SETTLED_IN_FULL): resets to ACTIVE
+3. Reverses the allocations of the reversed payment
+4. If there are no unallocated payments: replays the subsequent ones
+5. If there are unallocated payments: performs a full `rewindAndReplayAccount`
 
-**B. `rewindAndReplayAccount(accountPk)`** (rebuild completo):
-1. Busca TODOS pagamentos PAID em ordem de data ASC
-2. Zera `overPaymentAmount`
-3. Reverte TODAS alocacoes (`TransactionType.REWIND_PAYMENT`)
-4. Re-aplica todos pagamentos via `postPaymentService.postPaymentToAccount()`
+**B. `rewindAndReplayAccount(accountPk)`** (full rebuild):
+1. Fetches ALL PAID payments in date ASC order
+2. Zeroes `overPaymentAmount`
+3. Reverses ALL allocations (`TransactionType.REWIND_PAYMENT`)
+4. Re-applies all payments via `postPaymentService.postPaymentToAccount()`
 
-**C. `rewindAndReplayPayment(paymentPk)`** (parcial):
-1. Reverte apenas o pagamento especificado e todos subsequentes
-2. Re-aplica em ordem cronologica
+**C. `rewindAndReplayPayment(paymentPk)`** (partial):
+1. Reverses only the specified payment and all subsequent ones
+2. Re-applies in chronological order
 
 ### 6.2 Rewind
-- Para cada pagamento: reverte todas alocacoes (marca recebiveis como UNPAID)
-- Se conta em status terminal e pagamento tinha alocacoes: reseta conta para ACTIVE
+- For each payment: reverses all allocations (marks receivables as UNPAID)
+- If the account is in a terminal status and the payment had allocations: resets the account to ACTIVE
 
 ### 6.3 Replay
-- Ordena pagamentos por `paymentDate` depois `rowCreatedTimestamp`
-- Para cada: `postPaymentService.postPaymentToAccount(payment, replayTransactionType)`
+- Orders payments by `paymentDate` then `rowCreatedTimestamp`
+- For each: `postPaymentService.postPaymentToAccount(payment, replayTransactionType)`
 
-### 6.4 Status Revertiveis
-Configuravel via `statuses.to.active.for.rewind`:
+### 6.4 Reversible Statuses
+Configurable via `statuses.to.active.for.rewind`:
 `PAID_OUT, PAID_OUT_EARLY, PAID_OUT_EARLY_EPO, SETTLED_IN_FULL` → `ACTIVE`
 
 ---
 
 ## 7. Invoice Modification (Lease Mod)
 
-Fonte: `ModifyInvoiceService.java` linhas 62-127
+Source: `ModifyInvoiceService.java` lines 62-127
 
-### 7.1 Pre-condicoes
-- Lead em status `SIGNED` ou alem (`lead.isSignedOrBeyond()`)
+### 7.1 Preconditions
+- Lead in status `SIGNED` or beyond (`lead.isSignedOrBeyond()`)
 
-### 7.2 Fluxo
-1. Conta e **cancelada** (pagamentos NAO reembolsados)
+### 7.2 Flow
+1. The account is **cancelled** (payments are NOT refunded)
 2. Lead status → `LEASE_MOD_REQUESTED`
-3. Se lead FUNDED: `fundingStatus → REQUEST_REFUND`
-4. **Novo lead** criado re-executando o application processor no request original
-5. CC e bank account linkados do lead antigo ao novo
-6. Merchant notificado
+3. If the lead is FUNDED: `fundingStatus → REQUEST_REFUND`
+4. A **new lead** is created by re-running the application processor on the original request
+5. CC and bank account are linked from the old lead to the new one
+6. Merchant notified
 
-### 7.3 Restricoes (SendInvoiceService linhas 243-252)
-- Conta deve estar em `ACTIVE` ou `CANCELLED`
-- Nao pode modificar apos **80 dias** da data de ativacao (config: `num.days.past.creation.for.lease.mod`)
-- Usuarios especificos podem bypass (config: `users.allowed.bypass.lease.mod.check`)
-- Nao pode modificar se itens PAID existem e novo total > approval amount
+### 7.3 Restrictions (SendInvoiceService lines 243-252)
+- The account must be in `ACTIVE` or `CANCELLED`
+- Cannot modify after **80 days** from the activation date (config: `num.days.past.creation.for.lease.mod`)
+- Specific users can bypass (config: `users.allowed.bypass.lease.mod.check`)
+- Cannot modify if PAID items exist and the new total > approval amount
 
 ---
 
-## 8. Funding Lifecycle Completo
+## 8. Full Funding Lifecycle
 
-Fonte: `LeadFundingService.java`
+Source: `LeadFundingService.java`
 
-### 8.1 Status
-| FundingQueueStatus | LeadStatus Correspondente |
+### 8.1 Statuses
+| FundingQueueStatus | Corresponding LeadStatus |
 |--------------------|--------------------------|
 | `FUNDING` | `FUNDING` |
 | `FUNDED` | `FUNDED` |
 | `REQUEST_REFUND` | — |
 | `REFUNDED` | — |
 
-### 8.2 Transicoes
+### 8.2 Transitions
 
 **SIGNED/READY_TO_FUND → FUNDING:**
-- Valida lead em: `SIGNED, READY_TO_FUND, FUNDING, FUNDED`
-- Seta `fundRequestDateTime = now`, `fundingStatus = FULL_FUNDING`
-- Chama `importToServicing()` (LOS → SVC import)
-- Cria registro `FundingTransaction`
+- Validates the lead is in: `SIGNED, READY_TO_FUND, FUNDING, FUNDED`
+- Sets `fundRequestDateTime = now`, `fundingStatus = FULL_FUNDING`
+- Calls `importToServicing()` (LOS → SVC import)
+- Creates a `FundingTransaction` record
 
 **FUNDING → FUNDED:**
-- Seta `fundDateTime = now`, `fundingStatus = FULLY_FUNDED`
+- Sets `fundDateTime = now`, `fundingStatus = FULLY_FUNDED`
 - Lead status → `FUNDED`
-- Marca `FundingTransaction` antiga como `INACTIVE`, cria nova com `FULLY_FUNDED`
-- Registra em `FundingModification`
+- Marks the old `FundingTransaction` as `INACTIVE`, creates a new one with `FULLY_FUNDED`
+- Records it in `FundingModification`
 
-**FUNDED → FUNDING (reversao):**
-- Apenas se lead atualmente em `FUNDED`
-- Seta `fundingStatus = FULL_FUNDING`, lead → `FUNDING`
+**FUNDED → FUNDING (reversal):**
+- Only if the lead is currently in `FUNDED`
+- Sets `fundingStatus = FULL_FUNDING`, lead → `FUNDING`
 
 **FUNDED → REQUEST_REFUND → REFUNDED:**
-- Cria `FundingTransaction` de refund com `refundRequestDateTime`
-- Na confirmacao: atualiza para `REFUNDED`
+- Creates a refund `FundingTransaction` with `refundRequestDateTime`
+- On confirmation: updates to `REFUNDED`
 
-### 8.3 Calculo do Valor Fundado
+### 8.3 Funded Amount Calculation
 ```
 amountToBeFunded = invoiceAmount - (invoiceAmount * merchant.ccProcessingFeePercent)
 ```
 
 ### 8.4 Merchant Funding Exceptions
-Duas flags por merchant: `twoDayFundingException`, `fiveDayFundingException` (default: `false`).
-Usadas como filtro na fila de funding.
+Two flags per merchant: `twoDayFundingException`, `fiveDayFundingException` (default: `false`).
+Used as a filter in the funding queue.
 
 ---
 
-## 9. Sweep Processing — Catalogo Completo
+## 9. Sweep Processing — Full Catalog
 
 ### 9.1 ACH Sweeps
 
-| Sweep | Metodo | Descricao |
+| Sweep | Method | Description |
 |-------|--------|-----------|
-| `CreateScheduledACHPaymentsSweep` | `createScheduledACHPayments()` | Cria registros ACH para contas com vencimento hoje |
-| `SendACHPaymentsSweep` | `sendACHPayments()` | Envia arquivo ACH ao Profituity. Multi-thread opcional |
-| `getSendACHPaymentsStatusSweep` | `getSendACHPaymentsStatus()` | Poll Profituity ACK para pagamentos enviados |
-| `getStatusDatePaymentsListSweep` | `getStatusDatePaymentsList()` | Poll resultados por date range; processa RETURNED |
-| `rerunACHPaymentsSweep` | `rerunACHPayments()` | Re-executa ACH falhos: cria NSF fee + RERUN ACH |
-| `reverseAchPaymentsSweep` | `reverseAchPaymentsSweep()` | Reverte ACH retornados. **Thread size = 1** |
+| `CreateScheduledACHPaymentsSweep` | `createScheduledACHPayments()` | Creates ACH records for accounts due today |
+| `SendACHPaymentsSweep` | `sendACHPayments()` | Sends the ACH file to Profituity. Optional multi-thread |
+| `getSendACHPaymentsStatusSweep` | `getSendACHPaymentsStatus()` | Polls Profituity ACK for sent payments |
+| `getStatusDatePaymentsListSweep` | `getStatusDatePaymentsList()` | Polls results by date range; processes RETURNED |
+| `rerunACHPaymentsSweep` | `rerunACHPayments()` | Re-runs failed ACH: creates NSF fee + RERUN ACH |
+| `reverseAchPaymentsSweep` | `reverseAchPaymentsSweep()` | Reverses returned ACH. **Thread size = 1** |
 
 ### 9.2 CC Sweeps
 
-| Sweep | Descricao |
+| Sweep | Description |
 |-------|-----------|
-| `CreateScheduledCreditCardPaymentsSweep` | Cria transacoes CC para contas com vencimento hoje |
-| `SendCreditCardPaymentsSweep` | Processa transacoes CC pendentes via gateway. Async thread pool |
-| `rerunCCPaymentsSweep` | Re-executa CC DENIED/ERROR. Roda dia seguinte ou Thu/Fri/Sat. Representment 1 |
-| `delinquencyRerunCCPaymentsSweep` | Rerun 100 dias. Contas com `delinquency_as_of_date < today - 100` e rating NOT IN (B,C,P,S,D,E,F,G,L,U) |
-| `dailyDelinquencyRerunCCPaymentsSweep` | Rerun diario. SALE do dia + contas inadimplentes. NSF fee apenas se antes de 9h |
+| `CreateScheduledCreditCardPaymentsSweep` | Creates CC transactions for accounts due today |
+| `SendCreditCardPaymentsSweep` | Processes pending CC transactions via the gateway. Async thread pool |
+| `rerunCCPaymentsSweep` | Re-runs DENIED/ERROR CC. Runs the next day or Thu/Fri/Sat. Representment 1 |
+| `delinquencyRerunCCPaymentsSweep` | 100-day rerun. Accounts with `delinquency_as_of_date < today - 100` and rating NOT IN (B,C,P,S,D,E,F,G,L,U) |
+| `dailyDelinquencyRerunCCPaymentsSweep` | Daily rerun. SALE of the day + delinquent accounts. NSF fee only if before 9 AM |
 
-### 9.3 Delinquency CC Rerun — Logica de Valor
+### 9.3 Delinquency CC Rerun — Amount Logic
 ```
-nextRegularAmount = proximo recebivel regular remaining amount
-pastDueAmount = valor em atraso
-amountCharged = min(pastDueAmount, nextRegularAmount) se pastDue > full receivable
-              SENAO: remainingRegularAmount
+nextRegularAmount = next regular receivable remaining amount
+pastDueAmount = amount past due
+amountCharged = min(pastDueAmount, nextRegularAmount) if pastDue > full receivable
+              OTHERWISE: remainingRegularAmount
 ```
-Usa CC auto-pay ativo; fallback para ultimo cartao tokenizado.
+Uses the active CC auto-pay; falls back to the last tokenized card.
 
-### 9.4 Outros Sweeps
+### 9.4 Other Sweeps
 
-| Sweep | Descricao |
+| Sweep | Description |
 |-------|-----------|
-| `paidOutAccountsSweep` | Marca contas elegiveis como PAID_OUT |
-| `sendEmailsSweep` | Envia emails pendentes |
-| `sendFirstPaymentRemindersSweep` | Lembretes de primeiro pagamento |
-| `sendRecurringPaymentRemindersSweep` | Lembretes de pagamentos recorrentes |
-| `delinquencyOfferEmailSweep` | Emails de oferta por faixa de inadimplencia |
-| `latePaymentNoticeEmailSweep` | Aviso mensal com dias exatos em atraso |
-| `settledInFullEmailSweep` | Email "Settled in Full" (Mon-Fri 02:00) |
-| `checkLeadExpirationSweep` | Verifica leads expirados |
-| `cancelProtectionPlanSweep` | Cancela planos de protecao |
-| `createSkitDelinquentFileSweep` | Gera arquivo para Skit.AI (cobranca automatizada) |
-| `removeRatingLetterSweep` | Remove ratings de contas que nao atendem mais criterios |
+| `paidOutAccountsSweep` | Marks eligible accounts as PAID_OUT |
+| `sendEmailsSweep` | Sends pending emails |
+| `sendFirstPaymentRemindersSweep` | First payment reminders |
+| `sendRecurringPaymentRemindersSweep` | Recurring payment reminders |
+| `delinquencyOfferEmailSweep` | Offer emails by delinquency tier |
+| `latePaymentNoticeEmailSweep` | Monthly notice with the exact days past due |
+| `settledInFullEmailSweep` | "Settled in Full" email (Mon-Fri 02:00) |
+| `checkLeadExpirationSweep` | Checks expired leads |
+| `cancelProtectionPlanSweep` | Cancels protection plans |
+| `createSkitDelinquentFileSweep` | Generates a file for Skit.AI (automated collections) |
+| `removeRatingLetterSweep` | Removes ratings from accounts that no longer meet the criteria |
 
 ---
 
@@ -461,28 +461,28 @@ PENDING, FUTURE_PENDING, APPROVED, DENIED, ERROR, REFUNDED, CANCELLED,
 MANUAL_REVERSE, PICKED_TO_SEND, PARTIALLY_REFUNDED, SKIPPED, REUSED
 ```
 
-### 10.2 Fluxo CC
-1. **Autorizacao**: $0.01 (ou config) — `CCAction.AUTHENTICATION`
-2. **Tokenizacao**: `CCAction.TOKENIZATION` — gera token no gateway
-3. **Cobranca**: `CCAction.SALE` — processa pagamento
-4. **Pos-processamento**: Receipt criado, pagamento alocado
+### 10.2 CC Flow
+1. **Authorization**: $0.01 (or config) — `CCAction.AUTHENTICATION`
+2. **Tokenization**: `CCAction.TOKENIZATION` — generates a token at the gateway
+3. **Charge**: `CCAction.SALE` — processes the payment
+4. **Post-processing**: Receipt created, payment allocated
 
 ### 10.3 NSF CC (CCNsfFeeService)
-Deteccao: mensagem contem "Insufficient funds" OU codigo em "50051, 57852" OU ultimos 2 digitos = "51".
+Detection: the message contains "Insufficient funds" OR a code in "50051, 57852" OR the last 2 digits = "51".
 Fee due date: `today` (config: `setCurrentDateForNsf`, default `true`).
 
 ### 10.4 Refund CC
-- Apenas se status original = `APPROVED` ou `PARTIALLY_REFUNDED`
-- Valor <= `remainingRefundableAmount + chargedFeeAmount` (se refundFee=true)
-- Parcial: original → `PARTIALLY_REFUNDED`
-- Total: original → `REFUNDED`, `remainingRefundableAmount = 0`
-- Cria transacao `CCAction.CREDIT` via gateway
+- Only if the original status = `APPROVED` or `PARTIALLY_REFUNDED`
+- Amount <= `remainingRefundableAmount + chargedFeeAmount` (if refundFee=true)
+- Partial: original → `PARTIALLY_REFUNDED`
+- Full: original → `REFUNDED`, `remainingRefundableAmount = 0`
+- Creates a `CCAction.CREDIT` transaction via the gateway
 
 ---
 
 ## 11. ACH Lifecycle
 
-### 11.1 ACHStatus (todos)
+### 11.1 ACHStatus (all)
 ```
 PENDING, SENT, ACK_ERROR, ERROR_SENDING, ERROR, CANCELLED, COMPLETED,
 ACK_RECEIVED, INACTIVE, RETURNED, REVERSED, SETTLED, CORRECTION,
@@ -496,152 +496,152 @@ BLOCKED_ACCOUNT, SKIPPED, SETTLED_IN_RERUN, ACCOUNT_VALIDATION_ERROR
 SCHEDULED, RERUN, RERUN_NSF, REQUEST, REFUND
 ```
 
-### 11.3 Fluxo Assincrono
-1. `createOrUpdateACHPayment` armazena registro
-2. `SendACHPaymentsSweep` envia arquivo ao Profituity (vendor)
-3. `getSendACHPaymentsStatusSweep` poll ACK
-4. `getStatusDatePaymentsListSweep` poll resultados finais
-5. `addPaymentAfterAch()` cria SvPayment apenas para `ACHType.ACHDebit` (nao ACHCredit)
+### 11.3 Asynchronous Flow
+1. `createOrUpdateACHPayment` stores the record
+2. `SendACHPaymentsSweep` sends the file to Profituity (vendor)
+3. `getSendACHPaymentsStatusSweep` polls the ACK
+4. `getStatusDatePaymentsListSweep` polls the final results
+5. `addPaymentAfterAch()` creates a SvPayment only for `ACHType.ACHDebit` (not ACHCredit)
 
-### 11.4 NSF ACH — Condicoes para Criacao de Fee
-Todas devem ser verdadeiras:
+### 11.4 NSF ACH — Conditions for Fee Creation
+All must be true:
 1. Config `create.nsf.fee.receivable.on.rerun == true`
 2. `achProcessType == SCHEDULED`
-3. `originalACHPk == null` (primeira ocorrencia)
+3. `originalACHPk == null` (first occurrence)
 4. `numberOfTries == 1`
 
-### 11.5 Rerun ACH (apos NSF)
-1. Cria NSF fee receivable
-2. Cria novo ACH com `ACHProcessType.RERUN` e `originalACHPk` apontando para original
-3. Se config `create.ach.payment.for.nsf.fee.on.rerun == true`: cria segundo ACH `RERUN_NSF` para cobrar o fee
+### 11.5 Rerun ACH (after NSF)
+1. Creates an NSF fee receivable
+2. Creates a new ACH with `ACHProcessType.RERUN` and `originalACHPk` pointing to the original
+3. If config `create.ach.payment.for.nsf.fee.on.rerun == true`: creates a second `RERUN_NSF` ACH to charge the fee
 
 ### 11.6 R08 Stop Payment
-`updateAfterAchPaymentReturnCodeR08()`: cria alerta "R08: Customer placed a stop on payment".
+`updateAfterAchPaymentReturnCodeR08()`: creates the alert "R08: Customer placed a stop on payment".
 
 ---
 
-## 12. SMS — Regras de Opt-In/Opt-Out
+## 12. SMS — Opt-In/Opt-Out Rules
 
-Fonte: `SmsService.java`
+Source: `SmsService.java`
 
-### 12.1 Opt-In Automatico
-Na primeira SMS enviada para lead ou account (verificado via `SmsOptInConfirmationResponse` SQL):
-- Prepende mensagem de opt-in automatica (1 segundo antes)
+### 12.1 Automatic Opt-In
+On the first SMS sent to a lead or account (checked via the `SmsOptInConfirmationResponse` SQL):
+- Prepends an automatic opt-in message (1 second earlier)
 - KORNERSTONE: "Welcome to Kornerstone. Msg&data rates may apply..."
 
-### 12.2 Opt-Out Automatico por Erro
-Se delivery retorna: `"invalid 'to' phone number"`, `"empty to number"`, `"the message from/to pair violates a blacklist rule"`, `"attempt to send to unsubscribed recipient"` → marca `doNotText = true` em todos registros de telefone com aquele numero.
+### 12.2 Automatic Opt-Out on Error
+If delivery returns: `"invalid 'to' phone number"`, `"empty to number"`, `"the message from/to pair violates a blacklist rule"`, `"attempt to send to unsubscribed recipient"` → marks `doNotText = true` on all phone records with that number.
 
 ### 12.3 Vendors
-- **TextGrid** (default) e **Twilio** — split configuravel
+- **TextGrid** (default) and **Twilio** — configurable split
 - Config: `split.texts.between.twilio.and.textgrid`, `percent.texts.sent.via.textgrid`
-- Numeros TextGrid: `+16465829473, +16263856892, +14695051760, +12153157135`
+- TextGrid numbers: `+16465829473, +16263856892, +14695051760, +12153157135`
 
 ### 12.4 KORNERSTONE Template Routing
-Se `company = KORNERSTONE`: nome do template prefixado com `KORNERSTONE_` antes do lookup.
+If `company = KORNERSTONE`: the template name is prefixed with `KORNERSTONE_` before the lookup.
 
-### 12.5 Janela de SMS para Delinquencia
-Configuravel, default: **12:00-19:00**. SMS de delinquencia nao sao enviados fora dessa janela.
+### 12.5 SMS Window for Delinquency
+Configurable, default: **12:00-19:00**. Delinquency SMS are not sent outside this window.
 
 ---
 
 ## 13. Customer Portal
 
-Fonte: `CustomerPortalController.java`
+Source: `CustomerPortalController.java`
 
 ### 13.1 Capabilities
-| Endpoint | Funcao |
+| Endpoint | Function |
 |----------|--------|
-| `POST /authenticateCustomer` | Autenticacao do cliente |
-| `POST /sendVerificationCode/{phoneOrEmail}` | Envia codigo de verificacao |
-| `POST /verifyCode/{phoneOrEmail}/{code}` | Verifica codigo → `CustomerLoginResult` |
-| `GET /getAllCustomerPayments/{accountPk}` | Lista pagamentos da conta |
-| `POST /createOrUpdateCustomerPayment` | Cria/atualiza pagamento |
-| `POST /createOrUpdateCorrespondenceTracking` | Rastreia interacoes |
-| `POST /submitSupportTicket` | Integra com Zendesk |
-| `GET /getZendeskEmailCategories` | Categorias de suporte |
+| `POST /authenticateCustomer` | Customer authentication |
+| `POST /sendVerificationCode/{phoneOrEmail}` | Sends a verification code |
+| `POST /verifyCode/{phoneOrEmail}/{code}` | Verifies the code → `CustomerLoginResult` |
+| `GET /getAllCustomerPayments/{accountPk}` | Lists the account's payments |
+| `POST /createOrUpdateCustomerPayment` | Creates/updates a payment |
+| `POST /createOrUpdateCorrespondenceTracking` | Tracks interactions |
+| `POST /submitSupportTicket` | Integrates with Zendesk |
+| `GET /getZendeskEmailCategories` | Support categories |
 
-### 13.2 Rating P no Portal
-Pagamentos ACH/CC via customer portal com data futura: account rating automaticamente setado para `P` (Promise-to-Pay).
+### 13.2 Rating P in the Portal
+ACH/CC payments via the customer portal with a future date: the account rating is automatically set to `P` (Promise-to-Pay).
 Config: `ach.customer.portal.add.rating.letter` / `cc.customer.portal.add.rating.letter` (default: `true`).
 
 ---
 
-## 14. Merchant Config — Flags Completas
+## 14. Merchant Config — Full Flags
 
-Fonte: `MerchantInfo.java`
+Source: `MerchantInfo.java`
 
-### 14.1 Flags de Verificacao
-| Flag | Default | Efeito |
+### 14.1 Verification Flags
+| Flag | Default | Effect |
 |------|---------|--------|
-| `isIntellicheckRequired` | `false` | Exige scan de ID na assinatura |
-| `isSeonIdCheckRequired` | `false` | Exige SEON ID check na assinatura |
-| `checkUwForVerification` | `false` | Consulta UW response para decidir ID requirement |
-| `useNeuroIdCheck` | `false` | Biometria comportamental NeuroID no sendApp + submitApp |
+| `isIntellicheckRequired` | `false` | Requires an ID scan at signing |
+| `isSeonIdCheckRequired` | `false` | Requires a SEON ID check at signing |
+| `checkUwForVerification` | `false` | Consults the UW response to decide the ID requirement |
+| `useNeuroIdCheck` | `false` | NeuroID behavioral biometrics on sendApp + submitApp |
 | `isFraudCheckRequired` | `false` | SEON email/phone/IP verification |
-| `useSentilink` | `false` | Sentilink nos extra data do UW |
-| `useNeustar` | `false` | Neustar nos extra data do UW |
-| `useLexisNexis` | `false` | LexisNexis nos extra data do UW |
+| `useSentilink` | `false` | Sentilink in the UW extra data |
+| `useNeustar` | `false` | Neustar in the UW extra data |
+| `useLexisNexis` | `false` | LexisNexis in the UW extra data |
 
-### 14.2 Flags de Pagamento
-| Flag | Default | Efeito |
+### 14.2 Payment Flags
+| Flag | Default | Effect |
 |------|---------|--------|
-| `isCcRequired` | `true` | CC obrigatorio na assinatura |
-| `isAchRequired` | `true` | Conta bancaria obrigatoria |
-| `isFpdRequired` | `false` | Primeira data de pagamento explicita requerida |
-| `isBankVerificationRequired` | `false` | Verificacao bancaria (Plaid-style) |
-| `isPlaidVerificationRequired` | `false` | Verificacao de renda Plaid |
+| `isCcRequired` | `true` | CC required at signing |
+| `isAchRequired` | `true` | Bank account required |
+| `isFpdRequired` | `false` | Explicit first payment date required |
+| `isBankVerificationRequired` | `false` | Bank verification (Plaid-style) |
+| `isPlaidVerificationRequired` | `false` | Plaid income verification |
 
-### 14.3 Flags de Aplicacao
-| Flag | Default | Efeito |
+### 14.3 Application Flags
+| Flag | Default | Effect |
 |------|---------|--------|
-| `autoDenyApplication` | `false` | Auto-nega todas aplicacoes |
-| `isItemSplit` | `false` | Split carrinho CC purchase-now + lease |
-| `offerInsurance` | `false` | Oferece plano de protecao |
-| `acceptNewApps` | — | Para de receber novas aplicacoes |
-| `verifyPhoneBeforeSigning` | `false` | OTP de telefone antes da assinatura |
-| `recordSigningFlow` | `false` | Sentry session replay para assinatura |
+| `autoDenyApplication` | `false` | Auto-denies all applications |
+| `isItemSplit` | `false` | Splits the cart into CC purchase-now + lease |
+| `offerInsurance` | `false` | Offers a protection plan |
+| `acceptNewApps` | — | Stops accepting new applications |
+| `verifyPhoneBeforeSigning` | `false` | Phone OTP before signing |
+| `recordSigningFlow` | `false` | Sentry session replay for signing |
 
-### 14.4 Flags de E-Sign e UI
-| Flag | Default | Efeito |
+### 14.4 E-Sign and UI Flags
+| Flag | Default | Effect |
 |------|---------|--------|
-| `esignMode` | `EMBEDDED` | `EMBEDDED` (iFrame) ou `EMAIL` |
+| `esignMode` | `EMBEDDED` | `EMBEDDED` (iFrame) or `EMAIL` |
 | `esignClient` | `SIGNWELL` | E-sign vendor |
-| `removeParentOrTopOnIframe` | `false` | Previne iframe breakout |
-| `allowCloseOnIframe` | `false` | Mostra botao fechar no SignWell embed |
+| `removeParentOrTopOnIframe` | `false` | Prevents iframe breakout |
+| `allowCloseOnIframe` | `false` | Shows the close button on the SignWell embed |
 
-### 14.5 Configuracoes Financeiras
-| Campo | Default | Efeito |
+### 14.5 Financial Settings
+| Field | Default | Effect |
 |-------|---------|--------|
-| `merchantType` | `ONLINE` | ONLINE usa estado do cliente; INSTORE usa estado do merchant |
-| `numDaysApprovalExp` | `0` | Dias ate aprovacao expirar |
-| `allowedFrequencies` | `WEEKLY, BI_WEEKLY` | Frequencias de pagamento oferecidas |
-| `defaultLoanAmount` | `$1,400` | Valor enviado ao UW se nao especificado |
-| `minimumLeaseAmount` | `$250` | Valor minimo do lease |
-| `maxApprovalAmount` | null | Teto de aprovacao |
-| `ccProcessingFeePercent` | — | Desconto no funding |
+| `merchantType` | `ONLINE` | ONLINE uses the customer's state; INSTORE uses the merchant's state |
+| `numDaysApprovalExp` | `0` | Days until the approval expires |
+| `allowedFrequencies` | `WEEKLY, BI_WEEKLY` | Payment frequencies offered |
+| `defaultLoanAmount` | `$1,400` | Amount sent to UW if not specified |
+| `minimumLeaseAmount` | `$250` | Minimum lease amount |
+| `maxApprovalAmount` | null | Approval cap |
+| `ccProcessingFeePercent` | — | Discount on funding |
 
 ### 14.6 Program Fields (ProgramInfo)
-| Campo | Default | Efeito |
+| Field | Default | Effect |
 |-------|---------|--------|
-| `moneyFactor` | — | Multiplicador de custo |
-| `termMonths` | 13 | Duracao do lease |
-| `epoDays` | 90 | Janela EPO |
-| `epoFeePercent` | — | Fee percentual sobre EPO |
-| `dealerDiscount` / `dealerRebate` | — | Ajustes no funding |
-| `processingFeeOverride` | — | Override do processing fee |
-| `amountChargedAtSigning` | — | Valor cobrado na assinatura |
-| `programType` | — | ex: `SAME_AS_CASH` |
-| `states` | — | Estados onde programa disponivel |
-| `maxCartAmount` / `minCartAmount` | — | Limites de invoice |
+| `moneyFactor` | — | Cost multiplier |
+| `termMonths` | 13 | Lease duration |
+| `epoDays` | 90 | EPO window |
+| `epoFeePercent` | — | Percentage fee on EPO |
+| `dealerDiscount` / `dealerRebate` | — | Funding adjustments |
+| `processingFeeOverride` | — | Processing fee override |
+| `amountChargedAtSigning` | — | Amount charged at signing |
+| `programType` | — | e.g.: `SAME_AS_CASH` |
+| `states` | — | States where the program is available |
+| `maxCartAmount` / `minCartAmount` | — | Invoice limits |
 
 ---
 
-## 15. Application Pipeline — 18 Steps Detalhados
+## 15. Application Pipeline — 18 Detailed Steps
 
-Fonte: `ApplicationProcessor.java` linha 94-95
+Source: `ApplicationProcessor.java` line 94-95
 
-Ordem padrao:
+Default order:
 ```
 stateCheck, merchantAutoDenyCheck, sourceCheck, blacklistCheck, dataMismatchCheck,
 previousLeadsCheck, previousUwDeniedCheck, futureFpdCheck, duplicateCheck,
@@ -650,143 +650,143 @@ invoicePlaceHolderStep, calculateMaxApprovalAmount, compareCostCheck,
 itemSplitCheck, calculatorCheck
 ```
 
-### Steps Criticos com Regras Novas
+### Critical Steps with New Rules
 
-**Step 3 — sourceCheck:** Apenas para `BUY_ON_TRUST`. Deny rates por categoria: `111706798993` = 80%, `105561120370` = 70%.
+**Step 3 — sourceCheck:** Only for `BUY_ON_TRUST`. Deny rates by category: `111706798993` = 80%, `105561120370` = 70%.
 
-**Step 6 — previousLeadsCheck:** Cancela leads anteriores. Calcula `consumedApprovalAmount` de todos leads signed/funded anteriores.
+**Step 6 — previousLeadsCheck:** Cancels previous leads. Computes `consumedApprovalAmount` from all previous signed/funded leads.
 
-**Step 7 — previousUwDeniedCheck:** Re-usa UW denied anterior EXCETO se `isEligibleForExtraInfo=true` E novo request tem dados bancarios → re-executa UW fresco.
+**Step 7 — previousUwDeniedCheck:** Re-uses the previous UW denial EXCEPT if `isEligibleForExtraInfo=true` AND the new request has banking data → re-runs a fresh UW.
 
-**Step 8 — futureFpdCheck:** Nega se ja existe lead SIGNED com `firstPaymentDueDate > today` e sem accountPk.
+**Step 8 — futureFpdCheck:** Denies if a SIGNED lead already exists with `firstPaymentDueDate > today` and no accountPk.
 
-**Step 9 — duplicateCheck:** Limites hard (default 3): `emailCount >= 3` → `EMAIL_COUNT_FAILED`; `phoneCount >= 3` → `PHONE_COUNT_FAILED`.
+**Step 9 — duplicateCheck:** Hard limits (default 3): `emailCount >= 3` → `EMAIL_COUNT_FAILED`; `phoneCount >= 3` → `PHONE_COUNT_FAILED`.
 
-**Step 15 — calculateMaxApprovalAmount:** Fatora `approvalAmount` + open-to-buy. Se `maxApprovalAmount <= 0` → `NO_REMAINING_AMOUNT`.
+**Step 15 — calculateMaxApprovalAmount:** Factors `approvalAmount` + open-to-buy. If `maxApprovalAmount <= 0` → `NO_REMAINING_AMOUNT`.
 
-**Step 16 — compareCostCheck:** Se cost > maxApproval E nao elegivel item split → retorna `DECLINED` com status `UW_APPROVED` (UW aprovado mas carrinho muito grande).
+**Step 16 — compareCostCheck:** If cost > maxApproval AND not eligible for item split → returns `DECLINED` with status `UW_APPROVED` (UW approved but the cart is too large).
 
 ### Second Opportunity (isEligibleForExtraInfo)
 
-NAO e um pipeline separado. UW retorna `isEligibleForExtraInfo=true` no denied. Na re-aplicacao com dados bancarios, UW e re-executado fresh com banking data nos extra fields.
+It is NOT a separate pipeline. UW returns `isEligibleForExtraInfo=true` on the denial. On re-application with banking data, UW is re-run fresh with the banking data in the extra fields.
 
-### Missing Required Fields (Campos Faltantes)
+### Missing Required Fields
 
 Endpoint: `GET /uown/los/missing-fields/{shortCode}?planId=X`
 
-**Critico:** `resolveAndSetMerchantProgramFromPlanId` — se `planId` fornecido e `lead.merchantProgramPk == null`, resolve o programa. **Sem isso:** "Merchant program is required to determine fee".
+**Critical:** `resolveAndSetMerchantProgramFromPlanId` — if `planId` is provided and `lead.merchantProgramPk == null`, it resolves the program. **Without this:** "Merchant program is required to determine fee".
 
-**Link expiry:** 36 horas (configuravel). Links mais antigos sao rejeitados.
+**Link expiry:** 36 hours (configurable). Older links are rejected.
 
 ### Add Lease
 
 Endpoint: `POST /uown/los/addLease`
 
-- Lead deve estar em `FUNDED` (config: `valid.statuses.for.add.lease`)
-- Executa o **pipeline completo de 18 steps** como nova aplicacao
-- Novo lead recebe `refLeadPk` do lead original
-- Lead original recebe `addedSecondLease=true`
+- The lead must be in `FUNDED` (config: `valid.statuses.for.add.lease`)
+- Runs the **full 18-step pipeline** as a new application
+- The new lead receives the `refLeadPk` of the original lead
+- The original lead receives `addedSecondLease=true`
 
 ---
 
-## 16. Blacklist — Detalhamento
+## 16. Blacklist — Detail
 
-Fonte: `BlackListService.java`
+Source: `BlackListService.java`
 
-### 16.1 Campos Verificados na Blacklist
-| Campo | Como verificado |
+### 16.1 Fields Checked Against the Blacklist
+| Field | How it is checked |
 |-------|----------------|
-| firstName + lastName | Match combinado |
-| SSN | Match exato |
+| firstName + lastName | Combined match |
+| SSN | Exact match |
 | phoneNumber | areaCode + number |
-| emailAddress | Match exato |
-| bankAccountNumber | Match exato |
-| bankRoutingNumber | Match exato |
-| streetAddress1 + zipCode | Match combinado |
-| CC BIN | 6 digitos exatos |
+| emailAddress | Exact match |
+| bankAccountNumber | Exact match |
+| bankRoutingNumber | Exact match |
+| streetAddress1 + zipCode | Combined match |
+| CC BIN | 6 digits exact |
 
-### 16.2 O Que Dispara Blacklisting
-- `LeadService.blackListLead()`: cria entradas separadas para CADA campo PII
+### 16.2 What Triggers Blacklisting
+- `LeadService.blackListLead()`: creates separate entries for EACH PII field
 - Lead status → `BLACKLISTED`
 
-### 16.3 O Que a Blacklist Bloqueia
-- **Pipeline step 4** (`blacklistCheck`): bloqueia nova aplicacao → `BLACKLIST_DENIED`
-- **Submit application** (`SubmitApplicationService` linha 186): verifica bank account e routing antes de prosseguir → `BLACKLIST_APPROVED`
+### 16.3 What the Blacklist Blocks
+- **Pipeline step 4** (`blacklistCheck`): blocks a new application → `BLACKLIST_DENIED`
+- **Submit application** (`SubmitApplicationService` line 186): checks the bank account and routing before proceeding → `BLACKLIST_APPROVED`
 
 ### 16.4 Export
-Relatorio mensal automatico: `cron = "0 0 0 1 * ?"` — `generateExportBlacklistReport`.
+Automatic monthly report: `cron = "0 0 0 1 * ?"` — `generateExportBlacklistReport`.
 
 ---
 
-## 17. State Configurations — Campos Financeiros
+## 17. State Configurations — Financial Fields
 
-Fonte: `StateConfigurationsInfo.java`
+Source: `StateConfigurationsInfo.java`
 
-| Campo | Funcao |
+| Field | Function |
 |-------|--------|
-| `processingFee` | Processing fee padrao por estado |
-| `nsf` | NSF fee override por estado |
-| `securityDeposit` | Valor do deposito de seguranca |
-| `discountOnPaid` | Desconto EPO aplicado sobre total pago (Prioridade 2 no SQL) |
-| `epoDiscount` | Taxa de desconto EPO para formula default (Prioridade 4/Default no SQL) |
-| `recycleFee` | Fee de reciclagem por item (atualmente `ZERO` no codigo) |
-| `maxProcessingAndDeliveryFee` | Teto de processing + delivery fee |
-| `maxCostPriceFactor` | Fator maximo de custo permitido |
+| `processingFee` | Default processing fee per state |
+| `nsf` | NSF fee override per state |
+| `securityDeposit` | Security deposit amount |
+| `discountOnPaid` | EPO discount applied to the total paid (Priority 2 in the SQL) |
+| `epoDiscount` | EPO discount rate for the default formula (Priority 4/Default in the SQL) |
+| `recycleFee` | Recycling fee per item (currently `ZERO` in the code) |
+| `maxProcessingAndDeliveryFee` | Cap on processing + delivery fee |
+| `maxCostPriceFactor` | Maximum allowed cost factor |
 
 ---
 
 ## 18. Tax Calculation
 
-Fonte: `TaxService.java` linhas 31-54
+Source: `TaxService.java` lines 31-54
 
-### 18.1 Fluxo
-1. Normaliza campos de endereco (trim, collapse whitespace)
-2. Verifica se merchant e tax-exempt para o estado (`merchant.taxExemptedStates`, lista separada por virgula). Se exempt: retorna `0`
-3. Se `taxConfig.useTaxCloudApi() == true`: chama `TaxCloudService.getTaxForZip()`
-4. Senao: chama `TaxJarService.getTaxForZip()`
+### 18.1 Flow
+1. Normalizes address fields (trim, collapse whitespace)
+2. Checks whether the merchant is tax-exempt for the state (`merchant.taxExemptedStates`, comma-separated list). If exempt: returns `0`
+3. If `taxConfig.useTaxCloudApi() == true`: calls `TaxCloudService.getTaxForZip()`
+4. Otherwise: calls `TaxJarService.getTaxForZip()`
 
-### 18.2 Determinacao de Endereco
-- INSTORE: endereco do merchant
-- ONLINE: endereco do cliente
+### 18.2 Address Determination
+- INSTORE: the merchant's address
+- ONLINE: the customer's address
 
-### 18.3 O Que e Taxado
-- Contract amount (por parcela, por cronograma)
-- EPO amount (`baseCost * taxRate` ou anytime buyout tax)
+### 18.3 What Is Taxed
+- Contract amount (per installment, per schedule)
+- EPO amount (`baseCost * taxRate` or anytime buyout tax)
 - Kornerstone EPO (`epoAmountWithTax`)
 
-### 18.4 O Que NAO e Taxado
+### 18.4 What Is NOT Taxed
 - Processing fee
 - Signing fee
-(Fee adicionada ao contract amount APOS calculo de imposto sobre o contrato base)
+(The fee is added to the contract amount AFTER the tax is calculated on the base contract)
 
 ---
 
-## 19. Frequencia de Pagamento — Detalhamento
+## 19. Payment Frequency — Detail
 
-### 19.1 Valores Validos
-| Frequencia | Abreviacao (planId) | Backend Enum |
+### 19.1 Valid Values
+| Frequency | Abbreviation (planId) | Backend Enum |
 |------------|--------------------|-|
 | Weekly | WK | `WEEKLY` |
-| Bi-Weekly | BW (nao BWK) | `BI_WEEKLY` |
+| Bi-Weekly | BW (not BWK) | `BI_WEEKLY` |
 | Semi-Monthly | SM | `SEMI_MONTHLY` |
 | Monthly | MN | `MONTHLY` |
 
-### 19.2 Mudanca de Frequencia
-- Se nova frequencia = atual: no-op
-- Recalcula cronograma completo via `CalculatorService.calculateForAccount()`
-- Incrementa `frequencyChanges` (inicia em 1 se null)
-- Registra em `FrequencyMods` (old freq, new freq, old amount, new amount)
+### 19.2 Frequency Change
+- If the new frequency = current: no-op
+- Recalculates the full schedule via `CalculatorService.calculateForAccount()`
+- Increments `frequencyChanges` (starts at 1 if null)
+- Records in `FrequencyMods` (old freq, new freq, old amount, new amount)
 - Log `LogType.FREQUENCY_CHANGE`
 
 ### 19.3 Due Date Move
-- **WEEKLY**: max offset **3 dias**
-- **Outros**: max offset **7 dias** (BUG: `validateOffsetByFrequency` sempre usa branch WEEKLY)
-- Dois tipos: `SCHEDULE_SHIFT` (todas futuras) e `NEXT_DUE_DATE` (apenas proxima)
-- Incrementa `dueDateMoves`
+- **WEEKLY**: max offset **3 days**
+- **Others**: max offset **7 days** (BUG: `validateOffsetByFrequency` always uses the WEEKLY branch)
+- Two types: `SCHEDULE_SHIFT` (all future) and `NEXT_DUE_DATE` (only the next one)
+- Increments `dueDateMoves`
 
 ---
 
-## 20. Enums de Referencia Completos
+## 20. Full Reference Enums
 
 ### PaymentType
 ```

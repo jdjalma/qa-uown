@@ -1,5 +1,5 @@
 ---
-title: Gestão do Ciclo de Vida da Conta
+title: Account Lifecycle Management
 domain: business-rules
 status: stable
 volatility: volatile
@@ -12,274 +12,274 @@ sources:
 covers: [receivables, auto-pay, rating-letters, delinquency, account-status, cancellation, paid-out, sweeps]
 ---
 
-# Gestao do Ciclo de Vida da Conta
+# Account Lifecycle Management
 ## UOwn Leasing - SVC Platform
 
-Recebiveis, auto-pay, rating letters, inadimplencia, status de conta/lead, cancelamento, gestao de autopay e elegibilidade para paid-out.
+Receivables, auto-pay, rating letters, delinquency, account/lead status, autopay management, and paid-out eligibility.
 
 ---
 
-## 16. Recebiveis e Cronograma de Pagamentos
+## 16. Receivables and Payment Schedule
 
-### Tipos de Recebiveis
+### Receivable Types
 
-| Tipo | Descricao | Quando criado |
+| Type | Description | When created |
 |------|-----------|---------------|
-| `REGULAR_PAYMENT` | Parcela regular do lease | Sempre (cronograma) |
-| `PROCESSING_FEE` | Taxa de processamento | Se fee > 0 |
-| `EARLY_PAY_OFF` | Valor do EPO | Se EPO calculado |
-| `PROTECTION_PLAN_FEE` | Taxa do plano de protecao | Contas Kornerstone migradas |
-| `NSF_FEE` | Taxa de fundos insuficientes | Evento de NSF (ACH/CC) |
-| `REINSTATEMENT_FEE` | Taxa de reativacao de conta | Reativacao apos cancelamento ou inadimplencia severa |
-| `MANUAL_FEE` | Taxa manual lancada por agente | Cobranca administrativa manual |
-| `MISC_FEE` | Taxa diversa / miscelanea | Cobranças avulsas nao categorizadas |
+| `REGULAR_PAYMENT` | Regular lease installment | Always (schedule) |
+| `PROCESSING_FEE` | Processing fee | If fee > 0 |
+| `EARLY_PAY_OFF` | EPO amount | If EPO calculated |
+| `PROTECTION_PLAN_FEE` | Protection plan fee | Migrated Kornerstone accounts |
+| `NSF_FEE` | Insufficient funds fee | NSF event (ACH/CC) |
+| `REINSTATEMENT_FEE` | Account reinstatement fee | Reinstatement after cancellation or severe delinquency |
+| `MANUAL_FEE` | Manual fee posted by an agent | Manual administrative charge |
+| `MISC_FEE` | Miscellaneous / sundry fee | One-off uncategorized charges |
 
-### Calculo de Imposto nos Recebiveis
+### Tax Calculation on Receivables
 
 ```
 taxAmount = baseAmount * taxRate
 totalAmount = baseAmount + taxAmount
 ```
 
-### Next Due Amount (Proximo Vencimento)
+### Next Due Amount
 
-Soma todas as taxas anteriores ao primeiro recebivel regular + valor da primeira parcela regular + recebiveis no mesmo due date.
+Sum of all fees prior to the first regular receivable + the amount of the first regular installment + receivables on the same due date.
 
-### Past Due Amount (Valor em Atraso)
+### Past Due Amount
 
 ```
-pastDue = SUM(totalAmount - partialPaymentAmount) para recebiveis com dueDate <= hoje
+pastDue = SUM(totalAmount - partialPaymentAmount) for receivables with dueDate <= today
 ```
 
 ---
 
-## 18. Auto-Pay (Pagamento Automatico)
+## 18. Auto-Pay (Automatic Payment)
 
-### Tipos Suportados
+### Supported Types
 
-`ACH` (debito bancario), `CC` (cartao de credito), `NONE`
+`ACH` (bank debit), `CC` (credit card), `NONE`
 
-### Validacoes
+### Validations
 
-| Auto-Pay | Requer |
+| Auto-Pay | Requires |
 |----------|--------|
-| ACH | Conta bancaria ativa com auto-pay habilitado |
-| CC | Cartao de credito ativo com auto-pay habilitado |
+| ACH | Active bank account with auto-pay enabled |
+| CC | Active credit card with auto-pay enabled |
 
-### Remocao Automatica por Rating
+### Automatic Removal by Rating
 
-Ratings que desligam auto-pay (default: C, P, M):
-- Se rating corresponde e ACH ativo -> Remove ACH, cria log e alerta
-- Se rating corresponde e CC ativo -> Remove CC, cria log e alerta
+Ratings that turn off auto-pay (default: C, P, M):
+- If the rating matches and ACH is active -> Removes ACH, creates a log and an alert
+- If the rating matches and CC is active -> Removes CC, creates a log and an alert
 
 ---
 
-## 19. Rating Letters (Classificacao de Risco da Conta)
+## 19. Rating Letters (Account Risk Classification)
 
-### O Que e
+### What It Is
 
-O rating letter e uma classificacao de uma unica letra que indica o **status de risco/comportamento** da conta. Funciona como um "estado de cobranca" da conta.
+The rating letter is a single-letter classification that indicates the **risk/behavior status** of the account. It works as a "collections state" for the account.
 
-### Significado de Cada Rating
+### Meaning of Each Rating
 
-> **Fonte de verdade:** `common/src/main/java/com/uownleasing/common/enumeration/RatingLetter.java` — qualquer divergencia entre esta tabela e o enum deve ser resolvida em favor do enum.
+> **Source of truth:** `common/src/main/java/com/uownleasing/common/enumeration/RatingLetter.java` — any discrepancy between this table and the enum must be resolved in favor of the enum.
 
-| Rating | Significado (enum) | Impacto sistemico (filtros SQL reais) |
+| Rating | Meaning (enum) | Systemic impact (actual SQL filters) |
 |--------|--------------------|--------------------------------------|
-| `NULL` | Conta sem rating — saudavel | Sem exclusao. Processamento padrao de auto-pay e sweeps. |
-| **P** | Payment Arrangement | Excluido de `ScheduledACHPayments`, `ScheduledCreditCardPayments`, `RerunACH/CC`, `CCDailyScheduledDeniedRerun`, `StickyRecoverSweep`, `CCVintageRun`, `DelinquencyRerunCC`. **Removido automaticamente apos 60 dias** (`RemoveRatingLetterSql`). |
-| **C** | Confirmed Bankruptcy (falencia confirmada) | Maior exclusao do sistema — excluido de `FirstPaymentReminder`, `ScheduledACH/CC`, `RerunACH/CC`, `CustomerPortalReminder`, `CCDailyScheduledDeniedRerun`, `StickyRecoverSweep`, `CCVintageRun`, `DelinquencyRerunCC`. |
-| **D** | Pending Bankruptcy (falencia pendente) | Excluido de `RerunACH/CC`, `CCDailyScheduledDeniedRerun`, `CustomerPortalReminder`, `StickyRecoverSweep`, `CCVintageRun`, `DelinquencyRerunCC`. NAO excluido do scheduled inicial. |
-| **B** | Discharged Bankruptcy (falencia encerrada) | Excluido de `FirstPaymentReminder`, `ScheduledACH/CC`, `CustomerPortalReminder`, `StickyRecoverSweep`, `CCVintageRun`, `DelinquencyRerunCC`. NAO excluido de `RerunACH/CC`. |
-| **M** | MR Money Owed | **Nao consta em nenhum filtro SQL conhecido no svc.** Doc anterior afirmava que `M` desliga auto-pay; o codigo nao evidencia exclusao via SQL. Possivel toggle separado em `cc.auto_pay`/`account.auto_pay_types` — TBD investigacao confirmatoria. |
-| **F** | Fraud (fraude confirmada) | Excluido de email "Settled in Full" + `CustomerPortalReminder` + `CCVintageRun` + `DelinquencyRerunCC`. **NAO excluido** de Scheduled/Rerun/Sticky — fraude confirmada ainda passa pelos sweeps de cobranca. |
-| **E** | Pickup Requested (retirada solicitada) | Excluido de email "Settled in Full" + `CCVintageRun` + `DelinquencyRerunCC`. |
-| **U** | Pickup Completed Product (produto retirado, cliente manteve responsabilidade) | Excluido de email "Settled in Full" + `CustomerPortalReminder` + `CCVintageRun` + `DelinquencyRerunCC`. |
-| **G** | Pickup Completed Settlement (retirada + acordo negociado) | Excluido de `CustomerPortalReminder` + `CCVintageRun` + `DelinquencyRerunCC`. |
-| **S** | Sold Accounts (conta vendida a debt buyer) | Excluido de `CustomerPortalReminder` + `CCVintageRun` + `DelinquencyRerunCC`. **NAO excluido** de Scheduled/Rerun/Sticky. |
-| **R** | DNC Dialer/Revoke (nao ligar / consentimento revogado) | Sem exclusao SQL conhecida — provavelmente bloqueia discador automatico/SMS via flag separada nao-SQL. |
-| **J** | Opt Out Payment Reminders (opt-out de lembretes) | Usado em `= 'J'` no `CreateSkitDelinquentSweep` (bypassa criacao de tarefas Skit/dialer/SMS). |
-| **L** | Legal (em processo juridico) | Excluido de `CCVintageRun` + `DelinquencyRerunCC`. |
+| `NULL` | Account with no rating — healthy | No exclusion. Standard auto-pay and sweep processing. |
+| **P** | Payment Arrangement | Excluded from `ScheduledACHPayments`, `ScheduledCreditCardPayments`, `RerunACH/CC`, `CCDailyScheduledDeniedRerun`, `StickyRecoverSweep`, `CCVintageRun`, `DelinquencyRerunCC`. **Automatically removed after 60 days** (`RemoveRatingLetterSql`). |
+| **C** | Confirmed Bankruptcy | The largest exclusion in the system — excluded from `FirstPaymentReminder`, `ScheduledACH/CC`, `RerunACH/CC`, `CustomerPortalReminder`, `CCDailyScheduledDeniedRerun`, `StickyRecoverSweep`, `CCVintageRun`, `DelinquencyRerunCC`. |
+| **D** | Pending Bankruptcy | Excluded from `RerunACH/CC`, `CCDailyScheduledDeniedRerun`, `CustomerPortalReminder`, `StickyRecoverSweep`, `CCVintageRun`, `DelinquencyRerunCC`. NOT excluded from the initial scheduled run. |
+| **B** | Discharged Bankruptcy | Excluded from `FirstPaymentReminder`, `ScheduledACH/CC`, `CustomerPortalReminder`, `StickyRecoverSweep`, `CCVintageRun`, `DelinquencyRerunCC`. NOT excluded from `RerunACH/CC`. |
+| **M** | MR Money Owed | **Not present in any known SQL filter in svc.** A prior doc claimed that `M` turns off auto-pay; the code shows no evidence of exclusion via SQL. Possibly a separate toggle in `cc.auto_pay`/`account.auto_pay_types` — confirmatory investigation TBD. |
+| **F** | Fraud (confirmed fraud) | Excluded from the "Settled in Full" email + `CustomerPortalReminder` + `CCVintageRun` + `DelinquencyRerunCC`. **NOT excluded** from Scheduled/Rerun/Sticky — confirmed fraud still goes through the collections sweeps. |
+| **E** | Pickup Requested | Excluded from the "Settled in Full" email + `CCVintageRun` + `DelinquencyRerunCC`. |
+| **U** | Pickup Completed Product (product picked up, customer retained liability) | Excluded from the "Settled in Full" email + `CustomerPortalReminder` + `CCVintageRun` + `DelinquencyRerunCC`. |
+| **G** | Pickup Completed Settlement (pickup + negotiated settlement) | Excluded from `CustomerPortalReminder` + `CCVintageRun` + `DelinquencyRerunCC`. |
+| **S** | Sold Accounts (account sold to a debt buyer) | Excluded from `CustomerPortalReminder` + `CCVintageRun` + `DelinquencyRerunCC`. **NOT excluded** from Scheduled/Rerun/Sticky. |
+| **R** | DNC Dialer/Revoke (do not call / consent revoked) | No known SQL exclusion — probably blocks the auto-dialer/SMS via a separate non-SQL flag. |
+| **J** | Opt Out Payment Reminders | Used in `= 'J'` in `CreateSkitDelinquentSweep` (bypasses creation of Skit/dialer/SMS tasks). |
+| **L** | Legal (in legal proceedings) | Excluded from `CCVintageRun` + `DelinquencyRerunCC`. |
 
-> **Observacoes importantes:**
+> **Important notes:**
 >
-> 1. **Nao existe letra "Standard"** — conta normal tem `rating IS NULL`. A presenca da letra **S** indica `Sold Accounts`, nao "Standard".
-> 2. **Nenhum filtro SQL exclui `M`** atualmente. Documentacao historica menciona que `M` desliga auto-pay, mas o codigo nao evidencia esse comportamento via filtro SQL — pode ser feito por outro mecanismo (toggle de `cc.auto_pay`, intervencao do agente, etc.).
-> 3. **Sweeps de "rerun/recovery" (RerunACH/CC, DelinquencyRerunCC, StickyRecoverSweep) tem listas de exclusao diferentes entre si** — `StickyRecoverSweep` exclui apenas `B,C,D,P`, enquanto `DelinquencyRerunCC` exclui `B,C,P,S,D,E,F,G,L,U`. A inconsistencia e candidata a revisao de produto.
+> 1. **There is no "Standard" letter** — a normal account has `rating IS NULL`. The presence of the letter **S** indicates `Sold Accounts`, not "Standard".
+> 2. **No SQL filter currently excludes `M`.** Historical documentation mentions that `M` turns off auto-pay, but the code shows no evidence of that behavior via a SQL filter — it may be done through another mechanism (a `cc.auto_pay` toggle, agent intervention, etc.).
+> 3. **The "rerun/recovery" sweeps (RerunACH/CC, DelinquencyRerunCC, StickyRecoverSweep) have different exclusion lists from one another** — `StickyRecoverSweep` excludes only `B,C,D,P`, while `DelinquencyRerunCC` excludes `B,C,P,S,D,E,F,G,L,U`. The inconsistency is a candidate for product review.
 
-### Como o Rating Muda
+### How the Rating Changes
 
-| Evento | Novo Rating |
+| Event | New Rating |
 |--------|------------|
-| Payment arrangement criado | P (previous_rating salvo no arranjo) |
-| Payment arrangement falhou (Task #446) | null (rating resetado, current_rating no arranjo = null) |
-| Pagamento ACH via customer portal com data futura | P |
-| Conta vendida para debt buyer | S (Sold) |
-| Agente muda manualmente | Qualquer |
+| Payment arrangement created | P (previous_rating saved on the arrangement) |
+| Payment arrangement failed (Task #446) | null (rating reset, current_rating on the arrangement = null) |
+| ACH payment via customer portal with a future date | P |
+| Account sold to a debt buyer | S (Sold) |
+| Agent changes it manually | Any |
 
 ---
 
-## 20. Inadimplencia e Cobranca
+## 20. Delinquency and Collections
 
-### Como a Inadimplencia e Rastreada
+### How Delinquency Is Tracked
 
-O campo `delinquencyAsOfDate` no schedule summary representa a data do recebivel mais antigo nao pago. `daysPastDue = dias entre delinquencyAsOfDate e hoje`.
+The `delinquencyAsOfDate` field in the schedule summary represents the date of the oldest unpaid receivable. `daysPastDue = days between delinquencyAsOfDate and today`.
 
-### Faixas de Inadimplencia e Acoes
+### Delinquency Bands and Actions
 
-| Dias em Atraso | Acao Automatica |
+| Days Past Due | Automatic Action |
 |---------------|----------------|
-| 31-60 | Email Delinquency30DayOffer |
-| 61-90 | Email + SMS Delinquency60DayOffer |
-| 91-150 | Email + SMS Delinquency90DayOffer |
-| 150+ | Email + SMS Delinquency150DayOffer |
-| 100 | CC rerun especial `_100_DAY_DELINQUENCY_RUN` |
-| Diario | CC rerun `DAILY_DELINQUENCY_RUN` em contas inadimplentes |
+| 31-60 | Delinquency30DayOffer email |
+| 61-90 | Delinquency60DayOffer email + SMS |
+| 91-150 | Delinquency90DayOffer email + SMS |
+| 150+ | Delinquency150DayOffer email + SMS |
+| 100 | Special CC rerun `_100_DAY_DELINQUENCY_RUN` |
+| Daily | CC rerun `DAILY_DELINQUENCY_RUN` on delinquent accounts |
 
-### Lembretes Adicionais
+### Additional Reminders
 
-- `delinquencyReminderEmailSweep`: lembretes genericos "Past Due"
-- `latePaymentNoticeEmailSweep`: avisos mensais com dias exatos em atraso
+- `delinquencyReminderEmailSweep`: generic "Past Due" reminders
+- `latePaymentNoticeEmailSweep`: monthly notices with the exact number of days past due
 
 ---
 
-## 21. Status de Conta (Account Status)
+## 21. Account Status
 
 ### ACTIVE
 
-**O que significa:** Lease ativo, cliente devendo dinheiro e fazendo pagamentos.
-**Quando acontece:** Conta criada/importada do LOS. Tambem quando conta quitada e revertida.
-**Impacto:** Processamento normal de pagamentos, monitoramento de inadimplencia, auto-pay ativo.
+**What it means:** Active lease, customer owing money and making payments.
+**When it happens:** Account created/imported from the LOS. Also when a paid-off account is reverted.
+**Impact:** Normal payment processing, delinquency monitoring, auto-pay active.
 
 ### PAID_OUT
 
-**O que significa:** Cliente completou todos os pagamentos ate o fim do contrato. Lease concluido normalmente.
-**Quando acontece:** Automaticamente quando saldo restante e menor ou igual a uma parcela E data atual >= ultima data de pagamento.
-**Impacto:** Nenhum pagamento futuro coletado. Email "Paid in Full" enviado. Conta encerrada.
+**What it means:** The customer completed all payments through the end of the contract. Lease concluded normally.
+**When it happens:** Automatically when the remaining balance is less than or equal to one installment AND the current date >= the last payment date.
+**Impact:** No future payments collected. "Paid in Full" email sent. Account closed.
 
 ### PAID_OUT_EARLY
 
-**O que significa:** Cliente quitou antecipadamente pagando o saldo total (mas FORA da janela de 90 dias do EPO).
-**Quando acontece:** Pagamento causa alocacao que cobre o valor total de payoff.
-**Impacto:** Conta encerrada. Data de payoff registrada.
+**What it means:** The customer paid off early by covering the full balance (but OUTSIDE the 90-day EPO window).
+**When it happens:** A payment causes an allocation that covers the full payoff amount.
+**Impact:** Account closed. Payoff date recorded.
 
 ### PAID_OUT_EARLY_EPO
 
-**O que significa:** Cliente exerceu a opcao de compra antecipada em 90 dias (EPO). Pagou o preco "a vista" do produto.
-**Quando acontece:** Total de pagamentos (menos taxas) >= valor do EPO, dentro da janela de elegibilidade.
-**Impacto:** Todos os pagamentos sao rewindados e realocados ao EPO. Conta encerrada com status especial.
+**What it means:** The customer exercised the early purchase option within 90 days (EPO). Paid the product's "cash" price.
+**When it happens:** Total payments (minus fees) >= the EPO amount, within the eligibility window.
+**Impact:** All payments are rewound and reallocated to the EPO. Account closed with a special status.
 
-**Reabertura automatica por retorno de pagamento ACH:**
+**Automatic reopening on ACH payment return:**
 
-Quando um pagamento ACH que quitou a conta via EPO e retornado pelo banco, a conta deve reabrir automaticamente:
+When an ACH payment that paid off the account via EPO is returned by the bank, the account must reopen automatically:
 
-| Etapa | Sweep | Acao |
+| Step | Sweep | Action |
 |-------|-------|------|
-| 1 | `sendACHPaymentsSweep` | Envia pagamento ao Profituity, marca como SENT |
-| 2 | `getSendACHPaymentsStatusSweep` | Apos ~5 min, verifica status, posta na conta → PAID_OUT_EARLY_EPO |
-| 3 | `getStatusDatePaymentsListSweep` | Apos 2-3 dias, verifica se retornou → marca como RETURNED |
-| 4 | `reverseAchPaymentsSweep` | Reverte pagamento e **reabre a conta automaticamente** |
+| 1 | `sendACHPaymentsSweep` | Sends the payment to Profituity, marks it as SENT |
+| 2 | `getSendACHPaymentsStatusSweep` | After ~5 min, checks the status, posts to the account → PAID_OUT_EARLY_EPO |
+| 3 | `getStatusDatePaymentsListSweep` | After 2-3 days, checks whether it was returned → marks it as RETURNED |
+| 4 | `reverseAchPaymentsSweep` | Reverses the payment and **reopens the account automatically** |
 
-**Transicao de status:**
+**Status transition:**
 ```
-ACTIVE → (pagamento ACH enviado) → PAID_OUT_EARLY_EPO → (pagamento retornado) → ACTIVE
+ACTIVE → (ACH payment sent) → PAID_OUT_EARLY_EPO → (payment returned) → ACTIVE
 ```
 
-**Impacto em queries SQL de producao:** O status PAID_OUT_EARLY_EPO e considerado nos seguintes SQLs:
-- `isEligibleForReapproval` - inclui contas EPO para reaprovacao
-- `openToBuyCustomers` / `openToBuyByClientType` - lista contas disponiveis
-- `rerun_ach` - inclui para retentativa ACH
-- `getFundingReport` / `getFundingTransactionsForDateRange` - relatorios
-- `paidInFullAccountEmailSweep` - envio de email de quitacao
-- `sendDailyBorrowingBaseReport` - relatorio diario
+**Impact on production SQL queries:** The PAID_OUT_EARLY_EPO status is considered in the following SQLs:
+- `isEligibleForReapproval` - includes EPO accounts for reapproval
+- `openToBuyCustomers` / `openToBuyByClientType` - lists available accounts
+- `rerun_ach` - includes them for ACH retry
+- `getFundingReport` / `getFundingTransactionsForDateRange` - reports
+- `paidInFullAccountEmailSweep` - sends the payoff email
+- `sendDailyBorrowingBaseReport` - daily report
 
 ### CANCELLED
 
-**O que significa:** Lease cancelado. Contrato anulado.
-**Quando acontece:** Fraude, pedido do merchant, periodo de cooling-off, acao administrativa.
-**Impacto:** `cancelledDateTime` registrado. Opcionalmente todos pagamentos reembolsados. Nenhum pagamento futuro.
+**What it means:** Lease cancelled. Contract voided.
+**When it happens:** Fraud, merchant request, cooling-off period, administrative action.
+**Impact:** `cancelledDateTime` recorded. Optionally all payments refunded. No future payments.
 
-**Transicao CANCELLED → ACTIVE (reativacao):**
-- Requer permissao `change_account_status_cancelled_to_active` + `change_account_status`
-- Sistema exibe modal de confirmacao com avisos:
+**CANCELLED → ACTIVE transition (reactivation):**
+- Requires the `change_account_status_cancelled_to_active` + `change_account_status` permissions
+- The system shows a confirmation modal with warnings:
   - "Refunded payments will NOT be cancelled"
   - "Pending ACH refunds will be marked cancelled and Payments will be re-posted"
-- Agente deve marcar explicitamente o campo "Refund Payments" para definir se pagamentos previamente reembolsados devem ser re-lançados
+- The agent must explicitly check the "Refund Payments" field to decide whether previously refunded payments should be re-posted
 
 ### SETTLED_IN_FULL
 
-**O que significa:** A UOwn aceitou um pagamento negociado (tipicamente menor que o total devido) para encerrar a conta. Comum para contas muito inadimplentes onde um agente de IA ou humano liga para o cliente e oferece um acordo de quitacao.
-**Quando acontece:**
-- **Via CC direto:** Transacao CC do tipo SALE, same-day, marcada como `isSettlementPayment = true`, e aprovada.
-- **Via Payment Arrangement (Task #446):** Arranjo do tipo `SETTLEMENT` com todas as transacoes concluidas com sucesso (status = `SUCCESS`). O sistema automaticamente transiciona a conta para SETTLED_IN_FULL quando o arranjo de settlement e completado.
-**Impacto:** Email "Settled in Full" enviado. `settledInFullDateTime` registrado. Se pagamento revertido, conta volta para ACTIVE.
+**What it means:** UOwn accepted a negotiated payment (typically less than the total owed) to close the account. Common for severely delinquent accounts where an AI or human agent calls the customer and offers a settlement.
+**When it happens:**
+- **Via direct CC:** A CC transaction of type SALE, same-day, marked as `isSettlementPayment = true`, and approved.
+- **Via Payment Arrangement (Task #446):** An arrangement of type `SETTLEMENT` with all transactions completed successfully (status = `SUCCESS`). The system automatically transitions the account to SETTLED_IN_FULL when the settlement arrangement is completed.
+**Impact:** "Settled in Full" email sent. `settledInFullDateTime` recorded. If the payment is reversed, the account returns to ACTIVE.
 
 ### CHARGED_OFF
 
-**O que significa:** Conta lançada como perda contabil. A UOwn determinou que a divida e incobravel (tipicamente 180+ dias em atraso).
-**Quando acontece:** Processo administrativo/batch de charge-off.
-**Impacto:** Excluida de processamento normal de pagamentos. Pode ser vendida (-> SOLD).
+**What it means:** Account written off as an accounting loss. UOwn determined that the debt is uncollectible (typically 180+ days past due).
+**When it happens:** Administrative/batch charge-off process.
+**Impact:** Excluded from normal payment processing. May be sold (-> SOLD).
 
 ### SOLD
 
-**O que significa:** A divida da conta foi vendida a um comprador de divida (debt buyer) externo.
-**Quando acontece:** Processo de venda de portfolio via `DocumentService.setDataForSoldAccount()`.
-**Impacto:** Documentos da conta enviados ao comprador via SharePoint. Rating -> S (Sold). `soldDateTime` registrado.
+**What it means:** The account's debt was sold to an external debt buyer.
+**When it happens:** Portfolio sale process via `DocumentService.setDataForSoldAccount()`.
+**Impact:** Account documents sent to the buyer via SharePoint. Rating -> S (Sold). `soldDateTime` recorded.
 
 ### CLOSED
 
-**O que significa:** Conta encerrada por motivos administrativos genericos.
-**Impacto:** Sem processamento de pagamentos.
+**What it means:** Account closed for generic administrative reasons.
+**Impact:** No payment processing.
 
 ---
 
-## 22. Status de Lead (Lead Status)
+## 22. Lead Status
 
-### Fase de Aplicacao/Underwriting
+### Application/Underwriting Phase
 
-| Status | Significado |
+| Status | Meaning |
 |--------|-----------|
-| `NEW` | Aplicacao recebida, nenhum processamento iniciado |
-| `PENDING_UW` | Checks iniciais passaram, underwriting em andamento |
-| `UW_APPROVED` | Aprovado pelo underwriting. Elegivel para contrato |
-| `UW_DENIED` | Negado pelo underwriting (risco de credito) |
-| `UW_REVIEW` | Requer revisao manual ou verificacao adicional (Plaid) |
-| `UW_ERROR` | Erro no processo de underwriting |
-| `DENIED` | Negado em step pre-underwriting (fraude, estado, duplicidade) |
-| `ERROR` | Erro de sistema durante processamento |
+| `NEW` | Application received, no processing started |
+| `PENDING_UW` | Initial checks passed, underwriting in progress |
+| `UW_APPROVED` | Approved by underwriting. Eligible for a contract |
+| `UW_DENIED` | Denied by underwriting (credit risk) |
+| `UW_REVIEW` | Requires manual review or additional verification (Plaid) |
+| `UW_ERROR` | Error in the underwriting process |
+| `DENIED` | Denied in a pre-underwriting step (fraud, state, duplicate) |
+| `ERROR` | System error during processing |
 
-### Fase de Contrato/Assinatura
+### Contract/Signing Phase
 
-| Status | Significado |
+| Status | Meaning |
 |--------|-----------|
-| `CONTRACT_CREATED` | Contrato gerado e enviado para assinatura |
-| `SIGNED` | Cliente assinou o contrato eletronicamente |
-| `EXPIRED_CONTRACT` | Contrato expirou sem assinatura |
-| `CANCELLED_CONTRACT` | Contrato cancelado antes do funding |
-| `ORDER_CANCELLED` | Pedido/invoice do merchant cancelado |
-| `LEASE_MOD_REQUESTED` | Modificacao do lease solicitada (lead em processo de alteracao de termos) |
+| `CONTRACT_CREATED` | Contract generated and sent for signing |
+| `SIGNED` | Customer signed the contract electronically |
+| `EXPIRED_CONTRACT` | Contract expired without a signature |
+| `CANCELLED_CONTRACT` | Contract cancelled before funding |
+| `ORDER_CANCELLED` | Merchant order/invoice cancelled |
+| `LEASE_MOD_REQUESTED` | Lease modification requested (lead in the process of changing terms) |
 
-### Fase de Funding
+### Funding Phase
 
-| Status | Significado |
+| Status | Meaning |
 |--------|-----------|
-| `READY_TO_FUND` | Pronto para fila de funding |
-| `FUNDING` | Processo de funding iniciado, dinheiro em transito |
-| `FUNDED` | Merchant recebeu pagamento. Conta criada no SVC |
+| `READY_TO_FUND` | Ready for the funding queue |
+| `FUNDING` | Funding process started, money in transit |
+| `FUNDED` | Merchant received payment. Account created in SVC |
 
-### Status Terminais
+### Terminal Statuses
 
-| Status | Significado |
+| Status | Meaning |
 |--------|-----------|
-| `EXPIRED` | Aprovacao expirou sem acao |
-| `INCOMPLETE` | Aplicacao abandonada antes do UW |
-| `CANCELLED_DUP_SSN` | Cancelado por lead mais novo com mesmo SSN |
-| `CANCELLED_DUP_DENIAL` | Cancelado por duplicidade de SSN negado |
-| `BLACKLISTED` | Todos os dados do cliente adicionados a lista negra |
+| `EXPIRED` | Approval expired without action |
+| `INCOMPLETE` | Application abandoned before UW |
+| `CANCELLED_DUP_SSN` | Cancelled by a newer lead with the same SSN |
+| `CANCELLED_DUP_DENIAL` | Cancelled due to a denied SSN duplicate |
+| `BLACKLISTED` | All of the customer's data added to the blacklist |
 
-### Status Internos de Fraude (internalStatus)
+### Internal Fraud Statuses (internalStatus)
 
-| Prefixo | Servico |
+| Prefix | Service |
 |---------|---------|
 | `SENTILINK_DENIED/ERROR/SSN_TYPO` | Sentilink |
 | `NEUSTAR_DENIED/ERROR` | Neustar |
@@ -293,39 +293,39 @@ ACTIVE → (pagamento ACH enviado) → PAID_OUT_EARLY_EPO → (pagamento retorna
 
 ---
 
-## 52. Cancelamento de Conta (Account Cancellation)
+## 52. Account Cancellation
 
-### O Que e
+### What It Is
 
-Processo de encerramento de uma conta de lease, anulando o contrato. Pode incluir reembolso total de todos os pagamentos realizados.
+The process of closing a lease account, voiding the contract. It can include a full refund of all payments made.
 
-### Para Que Serve
+### What It's For
 
-Usado quando ha fraude confirmada, pedido do merchant, periodo de cooling-off legal, ou acao administrativa que exija anulacao do contrato.
+Used when there is confirmed fraud, a merchant request, a legal cooling-off period, or an administrative action that requires voiding the contract.
 
-### Como Funciona
+### How It Works
 
-1. **Status da conta** muda para `CANCELLED`
-2. **Timestamp** de cancelamento registrado (`cancelledDateTime = now()`)
-3. **Comentario obrigatorio** explicando a razao do cancelamento
-4. **Activity log** criado com o evento de mudanca de status
-5. **Reembolso opcional:** Se `refundAllPayments = true`, todos os pagamentos aplicados sao reembolsados via `RefundPaymentService`
+1. **Account status** changes to `CANCELLED`
+2. **Cancellation timestamp** recorded (`cancelledDateTime = now()`)
+3. **Mandatory comment** explaining the reason for the cancellation
+4. **Activity log** created with the status-change event
+5. **Optional refund:** If `refundAllPayments = true`, all applied payments are refunded via `RefundPaymentService`
 
-### Cancelamento de Conta via Lead
+### Account Cancellation via Lead
 
-Quando o cancelamento e iniciado a partir de um lead (sistema LOS):
+When the cancellation is initiated from a lead (LOS system):
 
-| Passo | Acao |
+| Step | Action |
 |-------|------|
-| 1 | Valida existencia do lead e vinculo com conta |
-| 2 | Opcionalmente reembolsa transacoes CC do LOS (config-driven) |
-| 3 | Apenas transacoes com `action = SALE` e `status = APPROVED` sao reembolsadas |
-| 4 | Transacoes reembolsadas recebem status `REFUNDED` |
-| 5 | Executa cancelamento padrao da conta |
+| 1 | Validates the lead's existence and its link to an account |
+| 2 | Optionally refunds the LOS CC transactions (config-driven) |
+| 3 | Only transactions with `action = SALE` and `status = APPROVED` are refunded |
+| 4 | Refunded transactions get the `REFUNDED` status |
+| 5 | Runs the standard account cancellation |
 
-**Configuracao:** `com.uownleasing.svc.service.CancelAccountService.refund.los.payments` (default: `false`)
+**Configuration:** `com.uownleasing.svc.service.CancelAccountService.refund.los.payments` (default: `false`)
 
-### Como Disparar
+### How to Trigger
 
 ```
 POST /uown/svc/cancelAccount/{accountPk}
@@ -334,68 +334,68 @@ Body: CancelAccountRequest { comment, refundAllPayments }
 
 ---
 
-## 58. Gestao de AutoPay e Instrumentos Financeiros
+## 58. AutoPay and Financial Instruments Management
 
-### O Que e
+### What It Is
 
-Servico que sincroniza automaticamente os metodos de pagamento automatico (AutoPay) da conta com base nos instrumentos financeiros disponiveis (contas bancarias e cartoes de credito).
+A service that automatically syncs the account's automatic payment (AutoPay) methods based on the available financial instruments (bank accounts and credit cards).
 
-### Para Que Serve
+### What It's For
 
-Garante que o AutoPay reflita corretamente os metodos de pagamento disponiveis. Quando um cartao e adicionado ou removido, o AutoPay se ajusta automaticamente.
+Ensures that AutoPay correctly reflects the available payment methods. When a card is added or removed, AutoPay adjusts automatically.
 
-### Regras de Sincronizacao
+### Synchronization Rules
 
-| Evento | Acao no AutoPay |
+| Event | AutoPay Action |
 |--------|----------------|
-| Conta bancaria adicionada | ACH habilitado automaticamente (se nao presente) |
-| Ultima conta bancaria removida | ACH removido do AutoPay |
-| Cartao de credito adicionado | CC habilitado automaticamente (se nao presente) |
-| Ultimo cartao de credito ativo removido | CC removido do AutoPay |
-| Conta bancaria removida mas CC existe | CC permanece ativo |
-| CC removido mas conta bancaria existe | ACH permanece ativo |
+| Bank account added | ACH enabled automatically (if not present) |
+| Last bank account removed | ACH removed from AutoPay |
+| Credit card added | CC enabled automatically (if not present) |
+| Last active credit card removed | CC removed from AutoPay |
+| Bank account removed but CC exists | CC remains active |
+| CC removed but bank account exists | ACH remains active |
 
-### Impacto do Rating Letter
+### Rating Letter Impact
 
-| Evento | Acao |
+| Event | Action |
 |--------|------|
-| Rating alterado para `C` (Confirmed Bankruptcy) ou `P` (Payment Arrangement) | **Excluido de todos os sweeps de pagamento** (ACH/CC scheduled, rerun, sticky recover) via filtros SQL — comportamento equivalente a "AutoPay desligado" |
-| Rating alterado para `M` (MR Money Owed) | **Comportamento sistemico nao confirmado** — doc historica afirmava que desliga AutoPay, mas nenhum filtro SQL atual exclui `M`. Investigar se ha toggle separado em `cc.auto_pay` ou intervencao manual do agente |
-| Rating removido (setado para `NULL`) | Conta volta ao processamento padrao; instrumentos de AutoPay re-elegiveis |
-| Rating alterado para outro valor | Impacto varia por filtro SQL — ver tabela §19 acima |
+| Rating changed to `C` (Confirmed Bankruptcy) or `P` (Payment Arrangement) | **Excluded from all payment sweeps** (ACH/CC scheduled, rerun, sticky recover) via SQL filters — behavior equivalent to "AutoPay off" |
+| Rating changed to `M` (MR Money Owed) | **Systemic behavior not confirmed** — historical doc claimed it turns off AutoPay, but no current SQL filter excludes `M`. Investigate whether there is a separate toggle in `cc.auto_pay` or manual agent intervention |
+| Rating removed (set to `NULL`) | Account returns to standard processing; AutoPay instruments re-eligible |
+| Rating changed to another value | Impact varies by SQL filter — see the §19 table above |
 
-### Auditoria
+### Auditing
 
-Toda mudanca de rating ou AutoPay gera activity log com valores anteriores e novos. Mudancas so sao logadas se o valor realmente mudar.
+Every rating or AutoPay change generates an activity log with the previous and new values. Changes are only logged if the value actually changed.
 
 ---
 
-## 69. Elegibilidade para Auto Paid-Out
+## 69. Auto Paid-Out Eligibility
 
-### O Que e
+### What It Is
 
-Servico que determina automaticamente se uma conta e elegivel para status `PAID_OUT` (quitada), baseado no saldo restante e datas de vencimento.
+A service that automatically determines whether an account is eligible for the `PAID_OUT` (paid off) status, based on the remaining balance and due dates.
 
-### Para Que Serve
+### What It's For
 
-Automatiza o encerramento de contas que ja pagaram o suficiente, sem necessidade de acao manual.
+Automates the closing of accounts that have already paid enough, without the need for manual action.
 
-### Criterios de Elegibilidade
+### Eligibility Criteria
 
-| Criterio | Descricao |
+| Criterion | Description |
 |----------|-----------|
-| **Data minima** | Data atual deve ser >= ultima data de vencimento regular (conta nao pode ser encerrada antes do vencimento programado) |
-| **Saldo restante** | `Saldo = Total do Contrato - Total de Pagamentos Realizados` |
-| **Threshold de pagamento** | Saldo restante <= valor de uma parcela regular programada |
-| **OU Threshold de taxa** | Saldo restante <= total de taxas elegiveis (MANUAL_FEE, MISC_FEE, NSF_FEE) |
+| **Minimum date** | The current date must be >= the last regular due date (the account cannot be closed before the scheduled due date) |
+| **Remaining balance** | `Balance = Contract Total - Total Payments Made` |
+| **Payment threshold** | Remaining balance <= the amount of one scheduled regular installment |
+| **OR Fee threshold** | Remaining balance <= the total of eligible fees (MANUAL_FEE, MISC_FEE, NSF_FEE) |
 
-### Tipos de Taxa Elegiveis
+### Eligible Fee Types
 
-Configuravel via `eligibility.fee.types` (default: `MANUAL_FEE, MISC_FEE, NSF_FEE`). Apenas esses tipos de taxa sao considerados no threshold de taxa para elegibilidade.
+Configurable via `eligibility.fee.types` (default: `MANUAL_FEE, MISC_FEE, NSF_FEE`). Only these fee types are considered in the fee threshold for eligibility.
 
-### Resultado
+### Result
 
-Se elegivel: conta muda para `PAID_OUT`, email "Paid in Full" enviado, data de quitacao registrada.
+If eligible: the account changes to `PAID_OUT`, the "Paid in Full" email is sent, and the payoff date is recorded.
 
 ---
 

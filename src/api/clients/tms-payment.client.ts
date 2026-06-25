@@ -49,8 +49,8 @@ export class TmsPaymentClient extends BaseClient {
     super(request, env, { injectAuth: false, injectApiKey: false });
   }
 
-  // tmsHeaders/postRawTms herdados de BaseClient (FIVE9 key) — CT-7..CT-10 usam
-  // postRawTms para inspecionar 2xx/não-2xx sem parsear bodies texto.
+  // tmsHeaders/postRawTms inherited from BaseClient (FIVE9 key) — CT-7..CT-10 use
+  // postRawTms to inspect 2xx/non-2xx without parsing text bodies.
 
   // ── Credit-card payment ──────────────────────────────────────────
 

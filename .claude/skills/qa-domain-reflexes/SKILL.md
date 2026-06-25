@@ -1,240 +1,240 @@
 ---
 name: qa-domain-reflexes
-description: Carregue quando o agent vai criar, validar ou debugar teste que toca em signing, payment, status transition, vendor callback, refund, recovery ou qualquer business action — fornece checklist obrigatório de validações pós-ação (audit log, activity log, rating letter, DB notes). Sem log = nada aconteceu.
+description: Load when the agent is going to create, validate, or debug a test that touches signing, payment, status transition, vendor callback, refund, recovery, or any business action — provides a mandatory checklist of post-action validations (audit log, activity log, rating letter, DB notes). No log = nothing happened.
 disable-model-invocation: true
 ---
 
 # QA Domain Reflexes — UOWN Leasing
 
-> **Propósito:** catálogo de validações que um QA experiente do UOWN faz **no automático** após cada ação do sistema. Não são heurísticas genéricas de UX — são reflexos de domínio: "ação X sempre implica checar Y, porque o usuário real faz isso."
+> **Purpose:** a catalog of validations that an experienced UOWN QA performs **automatically** after each system action. These are not generic UX heuristics — they are domain reflexes: "action X always implies checking Y, because the real user does it."
 >
-> **Como usar (agents):** `qa-planner` DEVE carregar este arquivo antes de fechar o spec. Para cada passo do cenário, consultar o catálogo — se a ação tiver reflexo listado, incluir as validações no spec como passos obrigatórios.
+> **How to use (agents):** `qa-planner` MUST load this file before closing the spec. For each scenario step, consult the catalog — if the action has a listed reflex, include the validations in the spec as mandatory steps.
 >
-> **Como alimentar (humanos):** toda vez que um bug escapar porque faltou uma validação óbvia, adicione aqui. Sem alimentação o arquivo morre.
+> **How to feed it (humans):** every time a bug escapes because an obvious validation was missing, add it here. Without feeding, this file dies.
 >
-> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **HOW TO VALIDATE** — checklist de reflexos por tipo de ação. Para regras de produto (quando cada ação gera log, quais tabelas, quais enums) rode `node scripts/docs-tooling.mjs resolve <topic>` (ex: `cc-payments`, `pipeline`, `gowsign-routing`) antes de adicionar um reflex que depende de comportamento canônico.
+> **Authority boundary** (`docs/_docs-conventions.md` §7): this skill covers **HOW TO VALIDATE** — a checklist of reflexes per action type. For product rules (when each action generates a log, which tables, which enums), run `node scripts/docs-tooling.mjs resolve <topic>` (e.g., `cc-payments`, `pipeline`, `gowsign-routing`) before adding a reflex that depends on canonical behavior.
 
 ---
 
-## Convenção
+## Convention
 
-Cada entrada segue o formato:
+Each entry follows the format:
 
 ```
-### Ação
-- [ ] Validação 1
-- [ ] Validação 2
-**Why (user perspective):** razão pela qual o usuário real confere isso
+### Action
+- [ ] Validation 1
+- [ ] Validation 2
+**Why (user perspective):** the reason the real user checks this
 ```
 
 ---
 
-## 1. Pagamento / Charge
+## 1. Payment / Charge
 
-- [ ] Valor cobrado == valor acordado (principal + juros + fees + taxes decompostos)
-- [ ] Saldo da conta antes vs. depois (diff == valor pago)
-- [ ] Rating letter atualizado (valor e data)
-- [ ] Status da parcela/invoice transicionou (pending → paid)
-- [ ] Transaction record criado no DB com payment_method correto
-- [ ] Log de auditoria gerado (user, timestamp, action)
-- [ ] Email/notificação de confirmação enviado
-- [ ] Próxima due date recalculada se aplicável
+- [ ] Amount charged == amount agreed (principal + interest + fees + taxes broken down)
+- [ ] Account balance before vs. after (diff == amount paid)
+- [ ] Rating letter updated (value and date)
+- [ ] Installment/invoice status transitioned (pending → paid)
+- [ ] Transaction record created in the DB with the correct payment_method
+- [ ] Audit log generated (user, timestamp, action)
+- [ ] Confirmation email/notification sent
+- [ ] Next due date recalculated if applicable
 
-**Why:** usuário confere extrato, quer prova de pagamento, e checa cobranças futuras.
-
----
-
-## 2. Payment Agreement (acordo de pagamento)
-
-- [ ] Rating letter **antes** da criação do acordo
-- [ ] Rating letter **depois** da criação do acordo
-- [ ] Novo schedule de pagamento gerado (N parcelas com valores corretos)
-- [ ] Soma das novas parcelas == saldo acordado
-- [ ] Status da conta atualizado (ex: "On Payment Plan")
-- [ ] Documento do acordo disponível para download
-- [ ] Log de auditoria
-- [ ] Email com termos do acordo
-
-**Why:** usuário guarda o acordo em papel, confere valores parcela a parcela, e usa rating letter para disputas.
+**Why:** the user checks their statement, wants proof of payment, and checks future charges.
 
 ---
 
-## 3. Payoff / Quitação
+## 2. Payment Agreement
 
-- [ ] Rating letter **antes** do payoff
-- [ ] Rating letter **depois** do payoff (saldo zerado)
-- [ ] Saldo da conta == 0
-- [ ] Status final = "Paid Off" / "Closed"
-- [ ] Documento de quitação (payoff letter) gerado e acessível
-- [ ] Log de auditoria
-- [ ] Email de confirmação de quitação
-- [ ] Parcelas futuras canceladas/removidas do schedule
+- [ ] Rating letter **before** creating the agreement
+- [ ] Rating letter **after** creating the agreement
+- [ ] New payment schedule generated (N installments with correct values)
+- [ ] Sum of the new installments == agreed balance
+- [ ] Account status updated (e.g., "On Payment Plan")
+- [ ] Agreement document available for download
+- [ ] Audit log
+- [ ] Email with the agreement terms
 
-**Why:** usuário precisa da prova de quitação para credit bureau, refinanciamento, ou disputa futura.
+**Why:** the user keeps the agreement on paper, checks the values installment by installment, and uses the rating letter for disputes.
+
+---
+
+## 3. Payoff / Settlement
+
+- [ ] Rating letter **before** the payoff
+- [ ] Rating letter **after** the payoff (zeroed balance)
+- [ ] Account balance == 0
+- [ ] Final status = "Paid Off" / "Closed"
+- [ ] Settlement document (payoff letter) generated and accessible
+- [ ] Audit log
+- [ ] Payoff confirmation email
+- [ ] Future installments canceled/removed from the schedule
+
+**Why:** the user needs proof of payoff for the credit bureau, refinancing, or a future dispute.
 
 ---
 
 ## 4. Credit Application / Origination
 
-- [ ] Decisão (approved/denied/pending) persistida
-- [ ] Score/tier calculado e salvo
-- [ ] Log de auditoria da decisão (regra aplicada, timestamp, user/system)
-- [ ] Status transition correto (submitted → underwriting → approved/denied)
-- [ ] Email ao cliente com resultado
-- [ ] Se aprovado: contrato/lease document gerado
-- [ ] Se negado: reason codes persistidos (regulatório — ECOA/FCRA)
+- [ ] Decision (approved/denied/pending) persisted
+- [ ] Score/tier calculated and saved
+- [ ] Audit log of the decision (rule applied, timestamp, user/system)
+- [ ] Correct status transition (submitted → underwriting → approved/denied)
+- [ ] Email to the customer with the result
+- [ ] If approved: contract/lease document generated
+- [ ] If denied: reason codes persisted (regulatory — ECOA/FCRA)
 
-**Why:** auditoria regulatória exige rastro completo; usuário acompanha status e precisa do motivo da negativa.
+**Why:** regulatory auditing requires a complete trail; the user tracks the status and needs the reason for the denial.
 
-### sendApplication — campos obrigatórios por client type
+### sendApplication — required fields by client type
 
-| Client Type | mainNextPayDate obrigatório? | Campos opcionais |
+| Client Type | mainNextPayDate required? | Optional fields |
 |---|---|---|
-| PAY_POSSIBLE | **NÃO** — config YAML exclui `mainNextPayDate` | mainPayFrequency, mainLastPayDate, mainEmploymentDuration |
-| SYNCHRONY | **NÃO** — config YAML exclui `mainNextPayDate` | mainPayFrequency, mainLastPayDate, mainEmploymentDuration |
-| DANIELS_JEWELERS | **SIM** por padrão (requer cherry-pick `62e2fc20` em `uown-qa1` + pod restart para remover) | — |
-| Qualquer outro sem config explícita | **SIM** — default do `LosRequestMessageConstraintValidatorConfig` | — |
+| PAY_POSSIBLE | **NO** — YAML config excludes `mainNextPayDate` | mainPayFrequency, mainLastPayDate, mainEmploymentDuration |
+| SYNCHRONY | **NO** — YAML config excludes `mainNextPayDate` | mainPayFrequency, mainLastPayDate, mainEmploymentDuration |
+| DANIELS_JEWELERS | **YES** by default (requires cherry-pick `62e2fc20` in `uown-qa1` + pod restart to remove) | — |
+| Any other without explicit config | **YES** — default of `LosRequestMessageConstraintValidatorConfig` | — |
 
-**Reflexo:** ao criar CT de sendApplication para PAY_POSSIBLE ou SYNCHRONY, incluir um cenário que omite `mainNextPayDate`, `mainPayFrequency`, `mainLastPayDate` e `mainEmploymentDuration` — valida que a config YAML está correta e o backend não exige campos desnecessários. Se retornar 400 `mainNextPayDate is required`, a causa é config YAML no branch `uown-<env>` (não DB, não `ConfigurationManagement` API).
+**Reflex:** when creating a sendApplication CT for PAY_POSSIBLE or SYNCHRONY, include a scenario that omits `mainNextPayDate`, `mainPayFrequency`, `mainLastPayDate` and `mainEmploymentDuration` — it validates that the YAML config is correct and that the backend does not require unnecessary fields. If it returns 400 `mainNextPayDate is required`, the cause is the YAML config in the `uown-<env>` branch (not the DB, not the `ConfigurationManagement` API).
 
 ---
 
 ## 5. Refund / Chargeback / Reversal
 
-- [ ] Valor revertido == valor original (ou parcial conforme solicitado)
-- [ ] Rating letter atualizado
-- [ ] Saldo da conta ajustado corretamente
-- [ ] Status da transação original = "refunded" / "reversed"
-- [ ] Nova transaction record de reversal criada
-- [ ] Log de auditoria (quem autorizou, motivo)
-- [ ] Notificação ao cliente
+- [ ] Reversed amount == original amount (or partial as requested)
+- [ ] Rating letter updated
+- [ ] Account balance adjusted correctly
+- [ ] Original transaction status = "refunded" / "reversed"
+- [ ] New reversal transaction record created
+- [ ] Audit log (who authorized, reason)
+- [ ] Notification to the customer
 
-**Why:** usuário confere se estorno entrou na conta bancária e se rating letter reflete.
+**Why:** the user checks whether the refund landed in their bank account and whether the rating letter reflects it.
 
 ---
 
 ## 6. Late Fee / Penalty
 
-- [ ] Valor aplicado segue regra do contrato (percentual ou flat)
-- [ ] Aplicado na parcela correta (não em parcela errada)
-- [ ] Rating letter atualizado
-- [ ] Log de auditoria (regra aplicada, grace period respeitado)
-- [ ] Não aplicado duas vezes para o mesmo atraso
+- [ ] Amount applied follows the contract rule (percentage or flat)
+- [ ] Applied to the correct installment (not the wrong one)
+- [ ] Rating letter updated
+- [ ] Audit log (rule applied, grace period respected)
+- [ ] Not applied twice for the same delinquency
 
-**Why:** fees geram disputa frequente; QA sempre confere se aplicou certo e uma vez só.
+**Why:** fees generate frequent disputes; QA always checks whether it was applied correctly and only once.
 
 ---
 
-## 7. Cancelamento / Void
+## 7. Cancellation / Void
 
 - [ ] Status = canceled/voided
-- [ ] Rollback de saldos (se houve cobrança)
-- [ ] Rating letter atualizado
-- [ ] Parcelas futuras removidas do schedule
-- [ ] Log de auditoria (quem cancelou, motivo)
-- [ ] Notificação ao cliente
-- [ ] Documentos relacionados (contratos) marcados como void
+- [ ] Rollback of balances (if there was a charge)
+- [ ] Rating letter updated
+- [ ] Future installments removed from the schedule
+- [ ] Audit log (who canceled, reason)
+- [ ] Notification to the customer
+- [ ] Related documents (contracts) marked as void
 
-**Why:** usuário confere que não será cobrado após cancelar.
-
----
-
-## 8. Criação / Edição de Merchant
-
-- [ ] Status inicial correto (active/pending approval)
-- [ ] Permissions e limites aplicados
-- [ ] Log de auditoria
-- [ ] Email de welcome/ativação
-- [ ] Dados fiscais (EIN, W9) persistidos
-- [ ] Visibilidade correta nos portais (Origination, AMS)
-
-**Why:** merchant mal configurado = problemas em cascata nas aplicações de crédito.
+**Why:** the user checks that they will not be charged after canceling.
 
 ---
 
-## 9. Criação / Edição de Usuário Interno
+## 8. Merchant Creation / Edit
 
-- [ ] Permissões/role aplicadas
-- [ ] Acesso aos portais corretos
-- [ ] Log de auditoria (quem criou, role atribuída)
-- [ ] Email de welcome com reset de senha
-- [ ] MFA configurável
+- [ ] Correct initial status (active/pending approval)
+- [ ] Permissions and limits applied
+- [ ] Audit log
+- [ ] Welcome/activation email
+- [ ] Tax data (EIN, W9) persisted
+- [ ] Correct visibility in the portals (Origination, AMS)
 
-**Why:** controle de acesso é foco de auditoria SOC/PCI.
-
----
-
-## 10. Login / Autenticação
-
-- [ ] Session criada com expiração correta
-- [ ] Log de acesso (IP, user agent, timestamp)
-- [ ] Falhas de login registradas (brute force detection)
-- [ ] MFA exigido quando configurado
-- [ ] Redirect para URL correta pós-login
-
-**Why:** compliance + segurança; auditorias pedem trilha de acesso.
+**Why:** a misconfigured merchant = cascading problems in credit applications.
 
 ---
 
-## 11. Qualquer Mutation (genérico — CRUD)
+## 9. Internal User Creation / Edit
 
-Aplicar SEMPRE que não houver reflexo mais específico:
+- [ ] Permissions/role applied
+- [ ] Access to the correct portals
+- [ ] Audit log (who created it, role assigned)
+- [ ] Welcome email with password reset
+- [ ] MFA configurable
 
-- [ ] Log de auditoria gerado (who, when, what changed, old → new)
-- [ ] `updated_at` atualizado
-- [ ] `updated_by` preenchido
-- [ ] Campos required não aceitam null/empty
-
-**Why:** rastreabilidade regulatória é não-negociável em fintech.
-
----
-
-## 12. Geração de Documento (contrato, acordo, payoff letter)
-
-- [ ] Documento gerado e persistido (S3/storage)
-- [ ] Link de download funciona
-- [ ] PDF contém dados corretos (nome, valores, datas, assinaturas)
-- [ ] Log de geração
-- [ ] Versionamento se documento for regerado
-
-**Why:** usuário baixa e guarda; documento errado vira disputa legal.
+**Why:** access control is a focus of SOC/PCI auditing.
 
 ---
 
-## 13. Envio de Email / Notificação
+## 10. Login / Authentication
 
-- [ ] Email disparado para o endereço correto
-- [ ] Template correto (confirmação vs. lembrete vs. cobrança)
-- [ ] Dados dinâmicos preenchidos (nome, valor, data)
-- [ ] Log de envio (sent, delivered, bounced)
-- [ ] Links do email apontam para ambiente correto
+- [ ] Session created with correct expiration
+- [ ] Access log (IP, user agent, timestamp)
+- [ ] Login failures recorded (brute force detection)
+- [ ] MFA required when configured
+- [ ] Redirect to the correct URL post-login
 
-**Why:** usuário age a partir do email; email errado = ação errada.
-
----
-
-## 14. Ativação / Desativação de Programa de Merchant (Origination)
-
-- [ ] `is_active` derivado das datas: `activation_date <= today AND (deactivation_date IS NULL OR deactivation_date > today)` — NÃO confiar no campo `is_active` booleano diretamente
-- [ ] `uown_merchant_activity_log` contém entrada com `log_type = 'PROGRAM_DATA_CHANGE'` e `program_pk` correto
-- [ ] `uown_merchant_to_program.is_active` reflete o estado calculado após sweep ou chamada de API
-- [ ] Propagação para portal de merchant: Programs section exibe badge de status correto (ativo/inativo)
-- [ ] Propagação para aplicações existentes: `uown_los_lead.merchant_program_pk` ainda aponta para o programa; programa inativo NÃO impede visualização de aplicações históricas
-- [ ] Sweep `ProgramActivationDeactivationSweep` processa datas na virada correta (ativação = dia da `activation_date`; desativação = dia da `deactivation_date`)
-- [ ] Validação backend: ativar com `activation_date > deactivation_date` retorna erro (esperado 400 — BUG-01 em qa2 retorna 500)
-- [ ] Datas prevalecem sobre flag: Source of Truth são `activation_date`/`deactivation_date`, não o booleano `is_active`
-
-**Why:** config de programa define quais programas de financiamento estão disponíveis para merchant. Programa inativo deve bloquear novas aplicações mas não invalidar histórico.
+**Why:** compliance + security; audits require an access trail.
 
 ---
 
-## Checklist-guia para `qa-planner`
+## 11. Any Mutation (generic — CRUD)
 
-Ao montar cada cenário, para cada passo de ação perguntar:
+Apply ALWAYS when there is no more specific reflex:
 
-1. Essa ação está no catálogo acima?
-2. Se sim → copiar as validações do bloco correspondente como passos do cenário.
-3. Se não se encaixa em nenhum bloco específico → aplicar o bloco **11. Qualquer Mutation**.
-4. Se a ação combina múltiplos blocos (ex: payment dentro de um agreement) → aplicar os dois.
+- [ ] Audit log generated (who, when, what changed, old → new)
+- [ ] `updated_at` updated
+- [ ] `updated_by` filled in
+- [ ] Required fields do not accept null/empty
 
-Marcar no spec quais validações vieram deste catálogo com tag `[reflex]` pra facilitar review humano.
+**Why:** regulatory traceability is non-negotiable in fintech.
+
+---
+
+## 12. Document Generation (contract, agreement, payoff letter)
+
+- [ ] Document generated and persisted (S3/storage)
+- [ ] Download link works
+- [ ] PDF contains correct data (name, values, dates, signatures)
+- [ ] Generation log
+- [ ] Versioning if the document is regenerated
+
+**Why:** the user downloads and keeps it; a wrong document becomes a legal dispute.
+
+---
+
+## 13. Email / Notification Sending
+
+- [ ] Email dispatched to the correct address
+- [ ] Correct template (confirmation vs. reminder vs. collection)
+- [ ] Dynamic data filled in (name, value, date)
+- [ ] Send log (sent, delivered, bounced)
+- [ ] Email links point to the correct environment
+
+**Why:** the user acts based on the email; a wrong email = a wrong action.
+
+---
+
+## 14. Merchant Program Activation / Deactivation (Origination)
+
+- [ ] `is_active` derived from the dates: `activation_date <= today AND (deactivation_date IS NULL OR deactivation_date > today)` — do NOT trust the `is_active` boolean field directly
+- [ ] `uown_merchant_activity_log` contains an entry with `log_type = 'PROGRAM_DATA_CHANGE'` and the correct `program_pk`
+- [ ] `uown_merchant_to_program.is_active` reflects the calculated state after a sweep or API call
+- [ ] Propagation to the merchant portal: the Programs section displays the correct status badge (active/inactive)
+- [ ] Propagation to existing applications: `uown_los_lead.merchant_program_pk` still points to the program; an inactive program does NOT prevent viewing historical applications
+- [ ] The `ProgramActivationDeactivationSweep` sweep processes the dates at the correct turnover (activation = day of the `activation_date`; deactivation = day of the `deactivation_date`)
+- [ ] Backend validation: activating with `activation_date > deactivation_date` returns an error (expected 400 — BUG-01 in qa2 returns 500)
+- [ ] Dates prevail over the flag: the Source of Truth is `activation_date`/`deactivation_date`, not the `is_active` boolean
+
+**Why:** the program config defines which financing programs are available to a merchant. An inactive program should block new applications but not invalidate history.
+
+---
+
+## Guiding checklist for `qa-planner`
+
+When assembling each scenario, for each action step ask:
+
+1. Is this action in the catalog above?
+2. If yes → copy the validations from the corresponding block as scenario steps.
+3. If it doesn't fit any specific block → apply block **11. Any Mutation**.
+4. If the action combines multiple blocks (e.g., payment within an agreement) → apply both.
+
+Mark in the spec which validations came from this catalog with the tag `[reflex]` to make human review easier.

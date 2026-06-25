@@ -1,5 +1,5 @@
 ---
-title: "Apendice C: Tabelas de Banco Importantes"
+title: "Appendix C: Important Database Tables"
 domain: business-rules
 status: stable
 volatility: volatile
@@ -14,128 +14,128 @@ sources:
 covers: [tabelas, schema, postgres, indexes, troubleshooting, merchant-snapshot, rightfoot, customer-journey]
 ---
 
-# Apendice C: Tabelas de Banco Importantes
+# Appendix C: Important Database Tables
 ## UOwn Leasing - SVC Platform
 
-Tabelas PostgreSQL mais importantes para verificacao e troubleshooting.
+The most important PostgreSQL tables for verification and troubleshooting.
 
 ---
 
-## Apendice C: Tabelas de Banco Importantes para Verificacao
+## Appendix C: Important Database Tables for Verification
 
-| Tabela | Uso | Quando Consultar |
+| Table | Use | When to Query |
 |--------|-----|-----------------|
-| `uown_sv_account` | Contas de servicing | Verificar status, saldo, rating |
-| `uown_los_lead` | Leads de aplicacao | Verificar status do lead, UW result |
-| `uown_los_lead_short_code` | Short codes de lead (migrado de uown_los_lead) | Verificar short_code apos migracao V20260226100000 |
-| `uown_lead_approval_terms` | Termos aprovados por lead (Task #1239) | Verificar termos UW/merchant/aprovados apos `termsStep` ou `CalculatorStep` |
-| `uown_sv_cctransaction` | Transacoes CC | Apos sweeps de CC |
-| `uown_sv_achpayment` | Pagamentos ACH | Apos sweeps de ACH |
-| `uown_sv_receivable` | Recebiveis | Verificar parcelas, EPO, due dates |
-| `uown_sweep_logs` | Logs de sweep | Verificar execucao de qualquer sweep |
-| `uown_scheduled_task` | Definicao de sweeps | Verificar cron, SQL, is_active |
-| `uown_email_queue` | Fila de emails | Verificar correspondencia enviada |
-| `uown_sms_queue` | Fila de SMS (opt-in e notificacoes) | Verificar envio de SMS por lead/conta; indexes otimizados (Task #455) |
-| `uown_sv_protection_plan` | Plano de protecao | Verificar inscricoes/cancelamentos |
-| `uown_sv_contract` | Contratos | Verificar status de e-sign |
-| `uown_blacklist_*` | Listas negras | Verificar entradas de fraude |
-| `uown_frequency_mods` | Mudancas de frequencia | Auditoria de mudancas |
-| `uown_due_date_moves` | Movimentacoes de due date | Auditoria de ajustes |
-| `uown_sv_payment_arrangement` | Arranjos de pagamento (Task #446) | Verificar status (NOT_STARTED/IN_PROGRESS/SUCCESS/FAILED), tipo (NORMAL/SETTLEMENT), FK com transacoes CC/ACH |
-| `uown_right_foot_balance_check` | Resultado de saldo bancario RightFoot (R1.53.0) | Decide se o rerun ACH e criado (`status=SUCCESS` + saldo); ver secao RightFoot abaixo |
-| `uown_right_foot_batch` | Auditoria de batch/webhook RightFoot (R1.53.0) | Verificar `status`, `webhook_payload`, `batch_complete_event_fired` |
-| `uown_right_foot_outbound_api_log` | Log de chamadas externas RightFoot (R1.53.0) | Troubleshooting de integracao |
-| `uown_customer_journey` / `uown_customer_session` / `uown_customer_event` | Telemetria do funil de originacao (R1.53.0, origination#1308) | Analise de drop-off/friccao; ver secao Customer Journey abaixo |
-| `qrtz_*` | Quartz scheduler | Estado dos jobs agendados |
+| `uown_sv_account` | Servicing accounts | Check status, balance, rating |
+| `uown_los_lead` | Application leads | Check lead status, UW result |
+| `uown_los_lead_short_code` | Lead short codes (migrated from uown_los_lead) | Check short_code after migration V20260226100000 |
+| `uown_lead_approval_terms` | Approved terms per lead (Task #1239) | Check UW/merchant/approved terms after `termsStep` or `CalculatorStep` |
+| `uown_sv_cctransaction` | CC transactions | After CC sweeps |
+| `uown_sv_achpayment` | ACH payments | After ACH sweeps |
+| `uown_sv_receivable` | Receivables | Check installments, EPO, due dates |
+| `uown_sweep_logs` | Sweep logs | Check execution of any sweep |
+| `uown_scheduled_task` | Sweep definitions | Check cron, SQL, is_active |
+| `uown_email_queue` | Email queue | Check sent correspondence |
+| `uown_sms_queue` | SMS queue (opt-in and notifications) | Check SMS delivery per lead/account; optimized indexes (Task #455) |
+| `uown_sv_protection_plan` | Protection plan | Check enrollments/cancellations |
+| `uown_sv_contract` | Contracts | Check e-sign status |
+| `uown_blacklist_*` | Blacklists | Check fraud entries |
+| `uown_frequency_mods` | Frequency changes | Change audit |
+| `uown_due_date_moves` | Due date moves | Adjustment audit |
+| `uown_sv_payment_arrangement` | Payment arrangements (Task #446) | Check status (NOT_STARTED/IN_PROGRESS/SUCCESS/FAILED), type (NORMAL/SETTLEMENT), FK with CC/ACH transactions |
+| `uown_right_foot_balance_check` | RightFoot bank balance result (R1.53.0) | Decides whether the ACH rerun is created (`status=SUCCESS` + balance); see RightFoot section below |
+| `uown_right_foot_batch` | RightFoot batch/webhook audit (R1.53.0) | Check `status`, `webhook_payload`, `batch_complete_event_fired` |
+| `uown_right_foot_outbound_api_log` | RightFoot external call log (R1.53.0) | Integration troubleshooting |
+| `uown_customer_journey` / `uown_customer_session` / `uown_customer_event` | Origination funnel telemetry (R1.53.0, origination#1308) | Drop-off/friction analysis; see Customer Journey section below |
+| `qrtz_*` | Quartz scheduler | State of scheduled jobs |
 
 ---
 
-## Indexes de Performance — SmsOptInConfirmationResponse (Task #455)
+## Performance Indexes — SmsOptInConfirmationResponse (Task #455)
 
-Indexes parciais criados pela migracao Flyway V20260220050615 para otimizar a query `SmsOptInConfirmationResponse`. Substituem o index combinado antigo (`idx_uown_sms_queue_lead_account_pk`) por dois indexes parciais independentes, reduzindo CPU em consultas de opt-in SMS.
+Partial indexes created by the Flyway migration V20260220050615 to optimize the `SmsOptInConfirmationResponse` query. They replace the old combined index (`idx_uown_sms_queue_lead_account_pk`) with two independent partial indexes, reducing CPU on SMS opt-in queries.
 
-| Index | Tabela | Coluna | Tipo |
+| Index | Table | Column | Type |
 |-------|--------|--------|------|
 | `idx_uown_sms_queue_lead_pk` | `uown_sms_queue` | `lead_pk` | Partial (WHERE lead_pk IS NOT NULL) |
 | `idx_uown_sms_queue_account_pk` | `uown_sms_queue` | `account_pk` | Partial (WHERE account_pk IS NOT NULL) |
-| ~~`idx_uown_sms_queue_lead_account_pk`~~ | `uown_sms_queue` | — | **Removido** pela migracao |
+| ~~`idx_uown_sms_queue_lead_account_pk`~~ | `uown_sms_queue` | — | **Removed** by the migration |
 
 ---
 
-## Indexes de Performance — getDataMismatchForLead (Task #449)
+## Performance Indexes — getDataMismatchForLead (Task #449)
 
-Indexes compostos criados para otimizar a query `getDataMismatchForLead` (Step 5 do pipeline de originacao). Reduzem CPU e I/O em verificacoes de fraude por impersonacao.
+Composite indexes created to optimize the `getDataMismatchForLead` query (Step 5 of the origination pipeline). They reduce CPU and I/O on impersonation fraud checks.
 
-| Index | Tabela | Colunas | Finalidade |
+| Index | Table | Columns | Purpose |
 |-------|--------|---------|-----------|
-| `idx_uwdata_status_expiration` | `uown_los_uwdata` | `uw_status, approval_expiration_date` | Filtrar leads com UW aprovado dentro da validade |
-| `idx_lead_timestamp_status` | `uown_los_lead` | `row_created_timestamp, lead_status` | Filtrar leads ativos por periodo de criacao |
-| `idx_address_zip_code` | `uown_los_address` | `zip_code` | Joins de verificacao de endereco |
-| `idx_address_state` | `uown_los_address` | `state` | Joins de verificacao de endereco por estado |
+| `idx_uwdata_status_expiration` | `uown_los_uwdata` | `uw_status, approval_expiration_date` | Filter leads with UW approved within validity |
+| `idx_lead_timestamp_status` | `uown_los_lead` | `row_created_timestamp, lead_status` | Filter active leads by creation period |
+| `idx_address_zip_code` | `uown_los_address` | `zip_code` | Address verification joins |
+| `idx_address_state` | `uown_los_address` | `state` | Address verification joins by state |
 
 ---
 
-## Indexes de Performance — getLosActivityLog (Task #457)
+## Performance Indexes — getLosActivityLog (Task #457)
 
-Index composto criado pela migracao Flyway V20260225120421 para otimizar a query de activity log (alta CPU). Permite buscas por `lead_pk + log_type` com ordenacao por `row_created_timestamp DESC` sem seq-scan.
+Composite index created by the Flyway migration V20260225120421 to optimize the activity log query (high CPU). Enables searches by `lead_pk + log_type` ordered by `row_created_timestamp DESC` without a seq-scan.
 
-| Index | Tabela | Colunas | Tipo |
+| Index | Table | Columns | Type |
 |-------|--------|---------|------|
-| `idx_los_activity_lead_type_created_ts` | `uown_los_activity_log` | `lead_pk, log_type, row_created_timestamp DESC` | Composto |
+| `idx_los_activity_lead_type_created_ts` | `uown_los_activity_log` | `lead_pk, log_type, row_created_timestamp DESC` | Composite |
 
 ---
 
-## Indexes de Performance — getLeadSummaryResults (Task #461)
+## Performance Indexes — getLeadSummaryResults (Task #461)
 
-Indexes criados pela migracao Flyway V20260220064821 para otimizar a query `getLeadSummaryResults`. Inclui um index funcional de concatenacao de telefone e quatro indexes compartilhados com `getDataMismatchForLead` (Task #449).
+Indexes created by the Flyway migration V20260220064821 to optimize the `getLeadSummaryResults` query. Includes a functional phone-concatenation index and four indexes shared with `getDataMismatchForLead` (Task #449).
 
-| Index | Tabela | Colunas / Expressao | Tipo |
+| Index | Table | Columns / Expression | Type |
 |-------|--------|---------------------|------|
-| `idx_phone_full_number_active` | `uown_los_phone` | `(area_code \|\| phone_number)` | Funcional (expressao) |
-| `idx_uwdata_status_expiration` | `uown_los_uwdata` | `uw_status, approval_expiration_date` | Composto (compartilhado com #449) |
-| `idx_lead_timestamp_status` | `uown_los_lead` | `row_created_timestamp, lead_status` | Composto (compartilhado com #449) |
-| `idx_address_zip_code` | `uown_los_address` | `zip_code` | Simples (compartilhado com #449) |
-| `idx_address_state` | `uown_los_address` | `state` | Simples (compartilhado com #449) |
+| `idx_phone_full_number_active` | `uown_los_phone` | `(area_code \|\| phone_number)` | Functional (expression) |
+| `idx_uwdata_status_expiration` | `uown_los_uwdata` | `uw_status, approval_expiration_date` | Composite (shared with #449) |
+| `idx_lead_timestamp_status` | `uown_los_lead` | `row_created_timestamp, lead_status` | Composite (shared with #449) |
+| `idx_address_zip_code` | `uown_los_address` | `zip_code` | Simple (shared with #449) |
+| `idx_address_state` | `uown_los_address` | `state` | Simple (shared with #449) |
 
-**Nota:** Indexes funcionais (expressao) devem ser verificados via `pg_indexes.indexdef` — o helper `getIndexColumns()` usa `pg_attribute` e nao retorna colunas de indexes baseados em expressao.
+**Note:** Functional (expression) indexes must be verified via `pg_indexes.indexdef` — the helper `getIndexColumns()` uses `pg_attribute` and does not return columns of expression-based indexes.
 
 ---
 
-## Indexes de Performance — getLosSimpleSearchResults (Task #463)
+## Performance Indexes — getLosSimpleSearchResults (Task #463)
 
-Indexes funcionais criados pela migracao Flyway V20260227113249 para otimizar busca case-insensitive por nome de cliente na query `getLosSimpleSearchResults`. PostgreSQL armazena a expressao como `upper((col)::text)`.
+Functional indexes created by the Flyway migration V20260227113249 to optimize case-insensitive search by customer name in the `getLosSimpleSearchResults` query. PostgreSQL stores the expression as `upper((col)::text)`.
 
-| Index | Tabela | Expressao | Tipo |
+| Index | Table | Expression | Type |
 |-------|--------|-----------|------|
-| `idx_customer_first_name_upper` | `uown_los_customer` | `UPPER(first_name)` | Funcional (UPPER) |
-| `idx_customer_last_name_upper` | `uown_los_customer` | `UPPER(last_name)` | Funcional (UPPER) |
+| `idx_customer_first_name_upper` | `uown_los_customer` | `UPPER(first_name)` | Functional (UPPER) |
+| `idx_customer_last_name_upper` | `uown_los_customer` | `UPPER(last_name)` | Functional (UPPER) |
 
-**Regra de verificacao:** A query de busca DEVE usar `UPPER(first_name) = UPPER($1)` (e nao `ILIKE` ou comparacao direta) para que o planner utilize o index funcional.
+**Verification rule:** The search query MUST use `UPPER(first_name) = UPPER($1)` (and not `ILIKE` or direct comparison) for the planner to use the functional index.
 
 ---
 
-## Indexes de Performance — Login e Account Status
+## Performance Indexes — Login and Account Status
 
-Indexes criados pelas migracoes V20260306062454 e V20260311070247 para otimizar consultas de seguranca e rastreamento de status de conta.
+Indexes created by the migrations V20260306062454 and V20260311070247 to optimize security queries and account status tracking.
 
-| Index | Tabela | Colunas | Migracao | Finalidade |
+| Index | Table | Columns | Migration | Purpose |
 |-------|--------|---------|----------|-----------|
-| `idx_uown_login_attempt` | `uown_login_attempt` | `(username, created_date)` | V20260306062454 | Otimiza verificacao de rate limiting e auditoria de tentativas de login |
-| `idx_account_status_leadpk` | `uown_sv_account` | `(account_status, lead_pk)` | V20260311070247 | Otimiza queries de busca de conta por status + lead (ex: sweeps de cobranca, relatorios) |
+| `idx_uown_login_attempt` | `uown_login_attempt` | `(username, created_date)` | V20260306062454 | Optimizes rate-limiting verification and login attempt auditing |
+| `idx_account_status_leadpk` | `uown_sv_account` | `(account_status, lead_pk)` | V20260311070247 | Optimizes account lookup queries by status + lead (e.g., collections sweeps, reports) |
 
-**Contexto:** O index de login foi adicionado em conjunto com o sistema de tracking de tentativas de autenticacao (auditoria de seguranca). O index de account_status + lead_pk acelera sweeps que filtram contas por status e depois fazem join com o lead de origem.
+**Context:** The login index was added together with the authentication attempt tracking system (security audit). The account_status + lead_pk index speeds up sweeps that filter accounts by status and then join with the originating lead.
 
 ---
 
-## Indexes de Performance — getLeadSummaryResults (V20260309065837)
+## Performance Indexes — getLeadSummaryResults (V20260309065837)
 
-Indexes adicionais criados para otimizar a query `getLeadSummaryResults` (tela de pesquisa de leads no Origination portal).
+Additional indexes created to optimize the `getLeadSummaryResults` query (leads search screen in the Origination portal).
 
-| Index | Tabela | Colunas | Finalidade |
+| Index | Table | Columns | Purpose |
 |-------|--------|---------|-----------|
-| Indexes de lead summary | `uown_los_lead`, `uown_los_customer`, `uown_los_address` | Varies | Busca rapida por nome, status, data e merchant na listagem de leads |
+| Lead summary indexes | `uown_los_lead`, `uown_los_customer`, `uown_los_address` | Varies | Fast search by name, status, date, and merchant in the leads listing |
 
-**Nota:** Os detalhes exatos das colunas indexadas podem ser verificados via:
+**Note:** The exact details of the indexed columns can be verified via:
 ```sql
 SELECT indexname, indexdef FROM pg_indexes
 WHERE tablename IN ('uown_los_lead', 'uown_los_customer', 'uown_los_address')
@@ -147,24 +147,24 @@ ORDER BY indexname;
 
 ## uown_los_sched_summary — Term Month Display (Task #1242)
 
-Tabela de schedule summary que contem informacoes do plano selecionado pelo cliente. O campo `term_in_months` e a fonte de dados para a coluna "Term Month" nas tabelas Overview e Leads do Origination portal.
+Schedule summary table that contains information about the plan selected by the customer. The `term_in_months` field is the data source for the "Term Month" column in the Overview and Leads tables of the Origination portal.
 
-| Coluna | Tipo | Descricao |
-|--------|------|-----------|
-| `pk` | BIGSERIAL PK | Identificador unico |
-| `lead_pk` | BIGINT FK | Referencia ao lead (`uown_los_lead.pk`) |
-| `account_pk` | BIGINT FK | Referencia a conta (null ate funding) |
-| `term_in_months` | INTEGER | Termo selecionado pelo cliente (13 ou 16 meses) |
-| `plan_id` | VARCHAR | Identificador do plano (ex: `WK13`, `BWK16`) |
-| `payment_frequency` | VARCHAR | Frequencia de pagamento selecionada |
+| Column | Type | Description |
+|--------|------|-------------|
+| `pk` | BIGSERIAL PK | Unique identifier |
+| `lead_pk` | BIGINT FK | Reference to the lead (`uown_los_lead.pk`) |
+| `account_pk` | BIGINT FK | Reference to the account (null until funding) |
+| `term_in_months` | INTEGER | Term selected by the customer (13 or 16 months) |
+| `plan_id` | VARCHAR | Plan identifier (e.g., `WK13`, `BWK16`) |
+| `payment_frequency` | VARCHAR | Selected payment frequency |
 
-**Ciclo de vida:**
-- Registro criado durante `submitApplication` (NAO durante `sendApplication`)
-- `term_in_months` populado a partir do `planId` selecionado pelo cliente
-- Leads sem `submitApplication` completado nao tem registro — coluna "Term Month" exibe vazio no frontend
-- JOIN: `LEFT JOIN uown_los_sched_summary ON lead_pk` (permite null)
+**Lifecycle:**
+- Record created during `submitApplication` (NOT during `sendApplication`)
+- `term_in_months` populated from the `planId` selected by the customer
+- Leads without a completed `submitApplication` have no record — the "Term Month" column displays empty in the frontend
+- JOIN: `LEFT JOIN uown_los_sched_summary ON lead_pk` (allows null)
 
-**Query de verificacao:**
+**Verification query:**
 
 ```sql
 SELECT term_in_months, plan_id, payment_frequency
@@ -178,23 +178,23 @@ LIMIT 1;
 
 ## uown_lead_approval_terms (Task #1239)
 
-Registra os termos aprovados para cada lead apos o `termsStep` (leads sem invoice) ou `CalculatorStep` (leads com invoice).
+Records the approved terms for each lead after the `termsStep` (leads without invoice) or `CalculatorStep` (leads with invoice).
 
-| Coluna | Tipo | Descricao |
-|--------|------|-----------|
-| `pk` | BIGSERIAL PK | Identificador unico do registro |
-| `lead_pk` | BIGINT FK | Referencia ao lead (`uown_los_lead.pk`) |
-| `uw_terms` | VARCHAR | Termos retornados pelo underwriting (ex: `"13,16"`) |
-| `merchant_terms` | VARCHAR | Termos configurados para o merchant (ex: `"13,16"`) |
-| `approved_terms` | VARCHAR | Intersecao de UW e merchant — termos efetivos aprovados (ex: `"13,16"`) |
-| `row_created_timestamp` | TIMESTAMP | Data/hora de criacao do registro |
+| Column | Type | Description |
+|--------|------|-------------|
+| `pk` | BIGSERIAL PK | Unique record identifier |
+| `lead_pk` | BIGINT FK | Reference to the lead (`uown_los_lead.pk`) |
+| `uw_terms` | VARCHAR | Terms returned by underwriting (e.g., `"13,16"`) |
+| `merchant_terms` | VARCHAR | Terms configured for the merchant (e.g., `"13,16"`) |
+| `approved_terms` | VARCHAR | Intersection of UW and merchant — effective approved terms (e.g., `"13,16"`) |
+| `row_created_timestamp` | TIMESTAMP | Record creation date/time |
 
-**Regras:**
-- Cada execucao do `termsStep` ou `CalculatorStep` **insere** um novo registro — nunca faz UPDATE/UPSERT
-- Historico completo preservado por lead
-- Valores exibidos no frontend via `approvedTermMonthsDisplay` do endpoint `GET /uown/los/getMerchantInfo/{leadPk}` (ex: `"13 months, 16 months"`)
+**Rules:**
+- Each execution of `termsStep` or `CalculatorStep` **inserts** a new record — never does an UPDATE/UPSERT
+- Complete history preserved per lead
+- Values displayed in the frontend via `approvedTermMonthsDisplay` from the `GET /uown/los/getMerchantInfo/{leadPk}` endpoint (e.g., `"13 months, 16 months"`)
 
-**Query de verificacao:**
+**Verification query:**
 
 ```sql
 SELECT pk, lead_pk, uw_terms, merchant_terms, approved_terms, row_created_timestamp
@@ -207,64 +207,64 @@ ORDER BY row_created_timestamp DESC;
 
 ## Merchant Settings Snapshot (R1.53.0 — Flyway 20260609155406)
 
-Tabelas criadas pela release 1.53.0 (deploy qa2 2026-06-15) para preservar a configuracao de underwriting do merchant no momento da aprovacao. Garante que mudancas posteriores no merchant nao afetam leads/contas ja aprovados.
+Tables created by release 1.53.0 (qa2 deploy 2026-06-15) to preserve the merchant's underwriting configuration at the moment of approval. Ensures that later changes to the merchant do not affect already-approved leads/accounts.
 
-| Tabela | Propósito | Chave unica |
+| Table | Purpose | Unique key |
 |--------|-----------|-------------|
-| `uown_los_lead_merchant_settings_snapshot` | Snapshot gravado na aprovacao UW do lead (LOS) | `lead_pk` UNIQUE |
-| `uown_sv_account_merchant_settings_snapshot` | Snapshot herdado do lead, gravado na criacao da conta (SVC) | `account_pk` UNIQUE |
+| `uown_los_lead_merchant_settings_snapshot` | Snapshot written at the lead's UW approval (LOS) | `lead_pk` UNIQUE |
+| `uown_sv_account_merchant_settings_snapshot` | Snapshot inherited from the lead, written at account creation (SVC) | `account_pk` UNIQUE |
 
-**Colunas de negocio (ambas, confirmadas no DDL):** `merchant_pk`, `program_pk` (nullable), `epo5` BOOLEAN (EPO 5%), `epo10` BOOLEAN (EPO 10%), `uw_pipeline` VARCHAR(10) (valores `GDS` / `ABBR` / `TAKTILE`), `fraud_threshold` INTEGER. A tabela de account adiciona `lead_pk`. (+ audit: `tenant_id`, `web_user_id`, `agent`, `row_created/updated_timestamp`.)
+**Business columns (both, confirmed in the DDL):** `merchant_pk`, `program_pk` (nullable), `epo5` BOOLEAN (EPO 5%), `epo10` BOOLEAN (EPO 10%), `uw_pipeline` VARCHAR(10) (values `GDS` / `ABBR` / `TAKTILE`), `fraud_threshold` INTEGER. The account table adds `lead_pk`. (+ audit: `tenant_id`, `web_user_id`, `agent`, `row_created/updated_timestamp`.)
 
-**Ciclo de vida (confirmado em codigo R1.53.0):**
-- **Snapshot LOS (lead):** escrito por `MerchantSettingsSnapshotListener` em **nova transacao, AFTER_COMMIT**, ao receber `ApplicationApprovedEvent` — publicado por `ApplicationProcessor` apenas quando `isUwApproved` (status `UW_APPROVED`) **E** `maxApprovalAmount > 0`. Falha do snapshot **nao** falha a aplicacao (excecao engolida).
-- **Snapshot SVC (account):** escrito inline no import LOS→SVC (`LosToSvcImportService`) **copiando os dados do snapshot do lead** — NAO reconsulta o merchant live. Se nao existir snapshot do lead, o snapshot da conta e **pulado**.
-- Ambas as escritas sao **idempotentes** (skip se ja existe linha para o `lead_pk`/`account_pk`).
-- `merchant_pk`/`program_pk` resolvidos via `findByLeadPk`; `epo5`/`epo10`/`uw_pipeline`/`fraud_threshold` vem de `MerchantInfo` (colunas GDS-config, Flyway `V20260312100000`).
-- Leads/contas anteriores a R1.53.0 (pre-2026-06-15) NAO possuem snapshot (Path A para testes de ausencia).
+**Lifecycle (confirmed in R1.53.0 code):**
+- **LOS snapshot (lead):** written by `MerchantSettingsSnapshotListener` in a **new transaction, AFTER_COMMIT**, on receiving `ApplicationApprovedEvent` — published by `ApplicationProcessor` only when `isUwApproved` (status `UW_APPROVED`) **AND** `maxApprovalAmount > 0`. A snapshot failure does **not** fail the application (exception swallowed).
+- **SVC snapshot (account):** written inline in the LOS→SVC import (`LosToSvcImportService`) **copying the lead's snapshot data** — it does NOT re-query the live merchant. If the lead snapshot does not exist, the account snapshot is **skipped**.
+- Both writes are **idempotent** (skip if a row already exists for the `lead_pk`/`account_pk`).
+- `merchant_pk`/`program_pk` resolved via `findByLeadPk`; `epo5`/`epo10`/`uw_pipeline`/`fraud_threshold` come from `MerchantInfo` (GDS-config columns, Flyway `V20260312100000`).
+- Leads/accounts prior to R1.53.0 (pre-2026-06-15) do NOT have a snapshot (Path A for absence tests).
 
-**Fontes:** `service/MerchantSettingsSnapshotService.java`, `service/application/sendApp/listener/MerchantSettingsSnapshotListener.java`, `service/application/sendApp/ApplicationProcessor.java`, `service/LosToSvcImportService.java`, `pojo/MerchantInfo.java`. Entidades em JARs de dependencia (`los-common`/`svc-common`) — mapeamento `@Table` inferido por convencao JPA, **[HIPOTESE]**.
-
----
-
-## Scores de Underwriting: npm_segment & tam_score (R1.53.0 — Flyway 20260603054943)
-
-Colunas `npm_segment INTEGER` e `tam_score INTEGER` adicionadas a **`uown_los_uwdata`** (lead) E **`uown_sv_uwdata`** (account), ambas nullable.
-
-- Origem: parseadas da resposta GDS (`out.npm_segment` / `out.tam_score`) -> `UWInfo` -> `uown_los_uwdata`; copiadas para `uown_sv_uwdata` no import LOS->SVC (mesmo objeto `UWInfo`).
-- Significado: **[HIPOTESE]** — `tam_score` (modelo TireAgent, live 475 em stg per memoria), `npm_segment` (segmento de risco); pass-through de chaves JSON do GDS, svc nao filtra por client-type.
-- Detalhe: [02-originacao-pipeline.md §40](02-originacao-pipeline.md).
+**Sources:** `service/MerchantSettingsSnapshotService.java`, `service/application/sendApp/listener/MerchantSettingsSnapshotListener.java`, `service/application/sendApp/ApplicationProcessor.java`, `service/LosToSvcImportService.java`, `pojo/MerchantInfo.java`. Entities in dependency JARs (`los-common`/`svc-common`) — `@Table` mapping inferred by JPA convention, **[HYPOTHESIS]**.
 
 ---
 
-## RightFoot — Verificacao de Saldo ACH (R1.53.0 — Flyway 20260612102430 / 20260616122043 / 20260619131000)
+## Underwriting Scores: npm_segment & tam_score (R1.53.0 — Flyway 20260603054943)
 
-| Tabela | Propósito | Colunas-chave |
+Columns `npm_segment INTEGER` and `tam_score INTEGER` added to **`uown_los_uwdata`** (lead) AND **`uown_sv_uwdata`** (account), both nullable.
+
+- Origin: parsed from the GDS response (`out.npm_segment` / `out.tam_score`) -> `UWInfo` -> `uown_los_uwdata`; copied to `uown_sv_uwdata` in the LOS->SVC import (same `UWInfo` object).
+- Meaning: **[HYPOTHESIS]** — `tam_score` (TireAgent model, live 475 in stg per memory), `npm_segment` (risk segment); pass-through of GDS JSON keys, svc does not filter by client-type.
+- Detail: [02-originacao-pipeline.md §40](02-originacao-pipeline.md).
+
+---
+
+## RightFoot — ACH Balance Verification (R1.53.0 — Flyway 20260612102430 / 20260616122043 / 20260619131000)
+
+| Table | Purpose | Key columns |
 |--------|-----------|---------------|
-| `uown_right_foot_balance_check` | 1 linha por request de balance check | `authorizer_unique_id` UNIQUE (`RFBC-{accountPk}-{snowflake}`), `account_pk`, `batch_id`, `routing_number`, `account_number`, `requested_amount`, `balance`, `status`, `failure_reason`, `process_type` |
-| `uown_right_foot_batch` | Audit do webhook/batch | `batch_id`, `status`, `webhook_payload`, `errors`, `process_type`, `batch_complete_event_fired` |
-| `uown_right_foot_outbound_api_log` | Log de chamadas de saida | `json_api_endpoint`, `request_url`, `http_method`, `request/response_body`, `http_status`, `stack_trace` |
+| `uown_right_foot_balance_check` | 1 row per balance check request | `authorizer_unique_id` UNIQUE (`RFBC-{accountPk}-{snowflake}`), `account_pk`, `batch_id`, `routing_number`, `account_number`, `requested_amount`, `balance`, `status`, `failure_reason`, `process_type` |
+| `uown_right_foot_batch` | Webhook/batch audit | `batch_id`, `status`, `webhook_payload`, `errors`, `process_type`, `batch_complete_event_fired` |
+| `uown_right_foot_outbound_api_log` | Outbound call log | `json_api_endpoint`, `request_url`, `http_method`, `request/response_body`, `http_status`, `stack_trace` |
 
-- `uown_sv_achpayment.right_foot_balance_check_pk` (BIGINT) — FK do ACH criado para o balance check aprovado.
-- `status` confirmado: `SUCCESS` (gate). Demais valores na lib `com.uownleasing:rightfoot` — **[HIPOTESE]**.
-- Cleanup: `CleanupService.deleteOldEntries` purga linhas antigas. Regra completa: [09-integracoes-externas.md §48](09-integracoes-externas.md).
+- `uown_sv_achpayment.right_foot_balance_check_pk` (BIGINT) — FK of the ACH created for the approved balance check.
+- `status` confirmed: `SUCCESS` (gate). Other values live in the `com.uownleasing:rightfoot` lib — **[HYPOTHESIS]**.
+- Cleanup: `CleanupService.deleteOldEntries` purges old rows. Full rule: [09-integracoes-externas.md §48](09-integracoes-externas.md).
 
 ---
 
-## Customer Journey / Session / Event — Analytics de Funil (R1.53.0 — Flyway 20260611054944/45/46)
+## Customer Journey / Session / Event — Funnel Analytics (R1.53.0 — Flyway 20260611054944/45/46)
 
-Rastreamento do funil de aplicacao do cliente (abandono, refreshes, timing por pagina). Alimentado pelo **frontend** (Website/origination, iframe-embeddable) via `POST /api/journeys/...`. `journey_id` = `leadPk`.
+Tracking of the customer's application funnel (abandonment, refreshes, per-page timing). Fed by the **frontend** (Website/origination, iframe-embeddable) via `POST /api/journeys/...`. `journey_id` = `leadPk`.
 
-| Tabela | Propósito | Colunas-chave |
+| Table | Purpose | Key columns |
 |--------|-----------|---------------|
-| `uown_customer_journey` | 1 por jornada | `journey_id` UNIQUE, `status`, `current_step`, `total_sessions`, `total_refreshes`, `total_submit_attempts`, `started_at`, `completed_at`, `last_activity_at`, `source`, `application_id`, `merchant_id`, `shortcode` |
-| `uown_customer_session` | N por jornada | `session_id` UNIQUE, `journey_id`, `status`, `browser`, `device_type`, `operating_system`, `iframe_ind`, `embedder_origin`, `refresh_count` |
-| `uown_customer_event` | N por sessao | `event_id` UNIQUE, `session_id`, `journey_id`, `event_type`, `page_name`, `api_duration_ms`, `render_duration_ms`, `page_duration_ms`, `error_code`, `error_message` |
+| `uown_customer_journey` | 1 per journey | `journey_id` UNIQUE, `status`, `current_step`, `total_sessions`, `total_refreshes`, `total_submit_attempts`, `started_at`, `completed_at`, `last_activity_at`, `source`, `application_id`, `merchant_id`, `shortcode` |
+| `uown_customer_session` | N per journey | `session_id` UNIQUE, `journey_id`, `status`, `browser`, `device_type`, `operating_system`, `iframe_ind`, `embedder_origin`, `refresh_count` |
+| `uown_customer_event` | N per session | `event_id` UNIQUE, `session_id`, `journey_id`, `event_type`, `page_name`, `api_duration_ms`, `render_duration_ms`, `page_duration_ms`, `error_code`, `error_message` |
 
-- **JourneyStatus:** `IN_PROGRESS` -> `COMPLETED` (evento `REDIRECT_COMPLETED`); `ABANDONED` declarado mas **nunca setado** em codigo ([OBSERVACAO]).
-- **event_type** com branch: `PAGE_REFRESHED` (incrementa refreshes), `REDIRECT_COMPLETED` (completa); demais = texto livre. **Session status** (texto livre): `ACTIVE`/`ENDED`.
-- **[OBSERVACAO]** `total_submit_attempts`, `application_id`, `merchant_id`, `shortcode`, `source` declarados mas nunca populados em codigo svc R1.53.0; possivel no-op de persistencia em `CustomerJourneyService.complete()`. Confirmar com produto.
-- Fontes: pacote `svc/analytics/`. Detalhe: [02-originacao-pipeline.md](02-originacao-pipeline.md) · [appendix-d D.37](appendix-d-constantes-enums.md).
+- **JourneyStatus:** `IN_PROGRESS` -> `COMPLETED` (event `REDIRECT_COMPLETED`); `ABANDONED` declared but **never set** in code ([OBSERVATION]).
+- **event_type** with branch: `PAGE_REFRESHED` (increments refreshes), `REDIRECT_COMPLETED` (completes); the rest = free text. **Session status** (free text): `ACTIVE`/`ENDED`.
+- **[OBSERVATION]** `total_submit_attempts`, `application_id`, `merchant_id`, `shortcode`, `source` declared but never populated in svc code R1.53.0; possible persistence no-op in `CustomerJourneyService.complete()`. Confirm with product.
+- Sources: `svc/analytics/` package. Detail: [02-originacao-pipeline.md](02-originacao-pipeline.md) · [appendix-d D.37](appendix-d-constantes-enums.md).
 
 ---
 

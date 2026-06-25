@@ -1,22 +1,22 @@
-<!-- PT-BR: Documento consolidado do projeto — overview + structure + architecture. Substitui os 3 arquivos anteriores: project-overview.md, project-structure.md, architecture.md. -->
+<!-- Consolidated project document — overview + structure + architecture. Replaces the 3 previous files: project-overview.md, project-structure.md, architecture.md. -->
 
 # Project — fintech-playwright
 
-Consolidação de visão geral + estrutura + arquitetura. Este é o documento único de projeto — os antigos `project-overview.md`, `project-structure.md` e `architecture.md` foram unificados aqui.
+Consolidated overview + structure + architecture. This is the single project document — the former `project-overview.md`, `project-structure.md`, and `architecture.md` have been merged here.
 
 ---
 
 ## 1. Overview
 
-Test automation framework com **Playwright + TypeScript** para a plataforma fintech UOWN Leasing.
+Test automation framework with **Playwright + TypeScript** for the UOWN Leasing fintech platform.
 
 ### Stack
 
 - **Playwright** `^1.50.0` + **TypeScript** `^5.6.0` strict
 - **Node.js** ESModules (`"module": "NodeNext"`)
-- **PostgreSQL** via `pg` (pool, polling com backoff)
+- **PostgreSQL** via `pg` (pool, polling with backoff)
 - **Email**: IMAP via `imapflow` (Gmail OTP)
-- **Reporters**: HTML, list, custom JSON, Allure (opcional)
+- **Reporters**: HTML, list, custom JSON, Allure (optional)
 
 ### 4 Portais
 
@@ -36,7 +36,7 @@ Test automation framework com **Playwright + TypeScript** para a plataforma fint
 - **Mobile:** `website-mobile-ios`, `website-mobile-android`
 - **Tablet:** `website-tablet`
 - **API:** `api-only`
-- **Task testing:** `task-testing` (para `docs/taskTestingUown/`)
+- **Task testing:** `task-testing` (for `docs/taskTestingUown/`)
 
 ### Path Aliases
 
@@ -57,7 +57,7 @@ fintech-playwright/
 │   ├── skills/                        # /qa-flow, /new-*, /audit, etc.
 │   ├── context/                       # Reference documentation (this file + specialized)
 │   │   ├── INDEX.md
-│   │   ├── project.md                 # (this file — consolidação)
+│   │   ├── project.md                 # (this file — consolidated)
 │   │   ├── coding-standards.md
 │   │   ├── test-patterns-core.md       # naming, fixtures, risk tier, env limitations
 │   │   ├── test-patterns-ui.md         # UI: hybrid, triple validation, tables, mobx, downloads
@@ -68,7 +68,7 @@ fintech-playwright/
 │   │   ├── glossary.md
 │   │   ├── app-repos.md
 │   │   └── shared/                    # Cross-agent shared contexts
-│   │       ├── qa-flow-protocol.md    # Protocolo detalhado do /qa-flow
+│   │       ├── qa-flow-protocol.md    # Detailed /qa-flow protocol
 │   │       ├── qa-domain-reflexes.md
 │   │       ├── ssn-test-catalog.md
 │   │       ├── bug-classification-rules.md
@@ -125,8 +125,8 @@ fintech-playwright/
 │   └── smoke/                         # Smoke tests
 │
 ├── docs/
-│   ├── adrs/                          # Architecture Decision Records (ADR-001 ..)
-│   ├── business-rules/                # 11 chapters + 6 appendices (PT-BR)
+│   ├── adrs/                          # Architecture Decision Records (ADR-NNN)
+│   ├── business-rules/                # 11 chapters + 6 appendices (in Portuguese)
 │   ├── AGENTS.md
 │   ├── PROJECT.md
 │   └── TESTING.md
@@ -142,8 +142,8 @@ fintech-playwright/
 
 ### File Placement Conventions
 
-| Tipo | Pattern | Localização |
-|------|---------|-------------|
+| Type | Pattern | Location |
+|------|---------|----------|
 | Page object | `{name}.page.ts` | `src/pages/{portal}/` |
 | API client | `{domain}.client.ts` | `src/api/clients/` |
 | Request body | `{domain}.body.ts` | `src/api/bodies/` |
@@ -163,7 +163,7 @@ fintech-playwright/
 
 ### Page Object Hierarchy
 
-> **Source of truth.** Outros arquivos (`rules/page-objects.md`, skill [[page-object-pattern]]) referenciam esta seção — não duplicar a árvore em outro lugar.
+> **Source of truth.** Other files (`rules/page-objects.md`, skill [[page-object-pattern]]) reference this section — do not duplicate the tree elsewhere.
 
 ```
 BasePage                              # Never instantiate directly — src/pages/base.page.ts
@@ -201,7 +201,7 @@ BasePage                              # Never instantiate directly — src/pages
     └── AmsUserDetailsPage
 ```
 
-**Regra de ouro:** page objects nunca chamam `expect()` internamente — sempre retornam valores para o teste asserir. Ver `rules/page-objects.md`.
+**Golden rule:** page objects never call `expect()` internally — they always return values for the test to assert. See `rules/page-objects.md`.
 
 ### API Client Architecture
 
@@ -216,7 +216,7 @@ BaseClient
 ApiResponse<T> = { ok, status, statusText, headers, body: T, raw }
 ```
 
-**Domain Clients** (catálogo completo + métodos em skills [[api-client-pattern]], [[helpers-catalog]], [[page-object-pattern]]):
+**Domain Clients** (full catalog + methods in skills [[api-client-pattern]], [[helpers-catalog]], [[page-object-pattern]]):
 
 - `ApplicationClient` — sendApplication, getApplicationStatus, submitApplication, getMissingFields, authorizeCreditCard
 - `InvoiceClient` — sendInvoice
@@ -228,11 +228,11 @@ ApiResponse<T> = { ok, status, statusText, headers, body: T, raw }
 - `AccountClient` — cancelAccount, getFrequencyChanges, getDueDateMoves, moveDueDatesByDays
 - `MerchantClient` — getMerchantsByRefCode, updateMerchants, etc.
 - `SvcContactClient` / `SvcPhoneClient` / `SvcEmailClient` / `SvcPayoffClient` — servicing contact ops
-- `LosPartnerAuthClient` / `LosPartnerApplicationClient` — Bearer token issuance e partner API
+- `LosPartnerAuthClient` / `LosPartnerApplicationClient` — Bearer token issuance and partner API
 
-#### GET com Content-Type header
+#### GET with Content-Type header
 
-Alguns endpoints Spring exigem `Content-Type: application/json` mesmo em GET. `BaseClient.get()` não envia Content-Type por default (só `Accept`). Para esses casos, chamada custom:
+Some Spring endpoints require `Content-Type: application/json` even on GET requests. `BaseClient.get()` does not send Content-Type by default (only `Accept`). For those cases, use a custom call:
 
 ```typescript
 async getFinalApprovalDetails(leadPk: string | number): Promise<ApiResponse<T>> {
@@ -244,35 +244,35 @@ async getFinalApprovalDetails(leadPk: string | number): Promise<ApiResponse<T>> 
 }
 ```
 
-Aplica atualmente a: `getFinalApprovalDetails` (`ApplicationClient`).
+Currently applies to: `getFinalApprovalDetails` (`ApplicationClient`).
 
 #### FilterTable React-Select CSS Prefix
 
-O `FilterTable` de `@uownleasing/common-ui` usa `filter__` como `classNamePrefix` para react-selects dentro de filter panels. Distinto do send form / wizard (usa react-select genérico).
+The `FilterTable` from `@uownleasing/common-ui` uses `filter__` as the `classNamePrefix` for react-selects inside filter panels. This is distinct from the send form / wizard (which uses generic react-select).
 
-| Contexto | Pattern | Exemplo |
+| Context | Pattern | Example |
 |---------|---------|---------|
-| Send form / wizard | genérico | `[class*='control']`, `[class*='option']` |
+| Send form / wizard | generic | `[class*='control']`, `[class*='option']` |
 | FilterTable filter panel | prefix `filter__` | `[class*='filter__control']`, `div[class*='filter__option']` |
 
-**Backdrop portal:** ao abrir react-select com prefix `filter__`, renderiza portal em `<body>` com backdrop transparente interceptando clicks. Para interagir com opções no portal:
-- Clicar com `{ force: true }` para bypassar o backdrop
-- Após ler, `Escape` para fechar o portal
-- Poll `.filter__menu-portal` com `state: 'hidden'` para confirmar fechamento
+**Backdrop portal:** when opening a react-select with the `filter__` prefix, it renders a portal in `<body>` with a transparent backdrop intercepting clicks. To interact with options in the portal:
+- Click with `{ force: true }` to bypass the backdrop
+- After reading, press `Escape` to close the portal
+- Poll `.filter__menu-portal` with `state: 'hidden'` to confirm closure
 
-**`clickSearch()` pattern:** antes de clicar Search em filter panel, sempre `Escape` + `waitForSpinner()`.
+**`clickSearch()` pattern:** before clicking Search in a filter panel, always press `Escape` + `waitForSpinner()`.
 
 ### Fixtures (base-test.ts)
 
-| Fixture | Tipo | Uso |
-|---------|------|-----|
+| Fixture | Type | Usage |
+|---------|------|-------|
 | `testEnv` | `ConfigEnvironment` | URLs, credentials, DB config |
 | `api` | `ApiClients` | Typed domain clients |
 | `db` | `DatabaseHelpers` | PostgreSQL pool, polling |
 | `email` | `EmailHelpers` | IMAP OTP (Gmail) |
-| `ctx` | `TestContext` | Shared state dentro do teste |
+| `ctx` | `TestContext` | Shared state within the test |
 | `consoleLogs` | `() => string[]` | Captured console errors |
-| `page` | `Page` | Com auto-hooks |
+| `page` | `Page` | With auto-hooks |
 
 ### Auto-hooks (base-test)
 
@@ -284,27 +284,24 @@ O `FilterTable` de `@uownleasing/common-ui` usa `filter__` como `classNamePrefix
 
 - `src/support/base-test.ts` — Unified fixture + hooks
 - `src/support/config.ts` — TestConfig singleton
-- `src/config/environment.ts` — `ConfigEnvironment` por env
+- `src/config/environment.ts` — `ConfigEnvironment` per env
 - `src/config/constants.ts` — Timeouts, `TEST_CARDS`, `TEST_BANK`, `generateTestSSN`, `generateTestPhone`
-- `src/selectors/common.selectors.ts` — TODOS os selectors (const `SELECTORS`)
-- `src/helpers/database.helpers.ts` — Pool + polling com backoff
+- `src/selectors/common.selectors.ts` — ALL selectors (const `SELECTORS`)
+- `src/helpers/database.helpers.ts` — Pool + polling with backoff
 - `src/helpers/template-engine.ts` — JSON template interpolation
 - `src/pages/origination/paypair-portal.page.ts` — PayPair portal (iframe nesting, OTP intercept)
 - `src/data/tire-agent.data.ts` — TireAgent/PayPair data builders
 
 ### ADRs
 
-| ADR | Decisão | Status |
-|-----|---------|--------|
-| [001](../../docs/adrs/ADR-001-playwright-typescript.md) | Playwright + TypeScript strict + ESModules | Accepted |
-| [002](../../docs/adrs/ADR-002-monorepo-4-portals.md) | Monorepo para 4 portais com 12 projects | Accepted |
-| [003](../../docs/adrs/ADR-003-page-object-model-hierarchy.md) | POM: BasePage → PortalBase → Page | Accepted |
-| [004](../../docs/adrs/ADR-004-centralized-selectors.md) | Selectors centralizados em `SELECTORS` const | Accepted |
-| [005](../../docs/adrs/ADR-005-api-client-baseclient.md) | API Clients: `BaseClient` + `ApiResponse<T>` | Accepted |
-| [006](../../docs/adrs/ADR-006-exponential-backoff-polling.md) | Polling com backoff exponencial (DB) | Accepted |
-| [007](../../docs/adrs/ADR-007-postgresql-pg-pool.md) | PostgreSQL via `pg` com connection pool | Accepted |
-| [008](../../docs/adrs/ADR-008-imap-otp-extraction.md) | IMAP via `imapflow` para OTP | Accepted |
-| [009](../../docs/adrs/ADR-009-json-template-engine.md) | JSON template engine para request bodies | Accepted |
-| [010](../../docs/adrs/ADR-010-custom-json-reporter.md) | Custom JSON reporter para CI | Accepted |
-| [011](../../docs/adrs/ADR-011-unified-fixture-base-test.md) | Unified fixture em `base-test.ts` | Accepted |
-| [013](../../docs/adrs/ADR-013-app-source-integration.md) | Application source integration para test validation | Accepted |
+| ADR | Decision | Status |
+|-----|----------|--------|
+| [001](../../docs/adrs/ADR-001-monorepo-4-portals.md) | Multi-portal monorepo (Playwright projects in `playwright.config.ts`) | Accepted |
+| [002](../../docs/adrs/ADR-002-page-object-model-hierarchy.md) | POM: BasePage → PortalBase → Page | Accepted |
+| [003](../../docs/adrs/ADR-003-centralized-selectors.md) | Selectors centralized in `SELECTORS` const | Accepted |
+| [004](../../docs/adrs/ADR-004-api-client-baseclient.md) | API Clients: `BaseClient` + `ApiResponse<T>` | Accepted |
+| [005](../../docs/adrs/ADR-005-postgresql-pg-pool.md) | PostgreSQL via `pg` with connection pool | Accepted |
+| [006](../../docs/adrs/ADR-006-imap-otp-extraction.md) | IMAP via `imapflow` for OTP | Accepted |
+| [007](../../docs/adrs/ADR-007-json-template-engine.md) | JSON template engine for request bodies | Accepted |
+| [008](../../docs/adrs/ADR-008-unified-fixture-base-test.md) | Unified fixture in `base-test.ts` | Accepted |
+| [009](../../docs/adrs/ADR-009-redirect-assertion-strategy-spa.md) | Redirect assertion strategy for SPA (does not assert HTTP status) | Accepted |

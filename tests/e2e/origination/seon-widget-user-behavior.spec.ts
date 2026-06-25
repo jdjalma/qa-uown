@@ -210,7 +210,7 @@ test.describe.serial(
       let dismissed = false;
       await test.step('Click the real X and wait (generously) for the widget to dismiss', async () => {
         await seon.closeSeonWidget();
-        // [OBSERVAÇÃO] Live probe (sandbox 2026-06-23) found the X did NOT dismiss the
+        // [OBSERVATION] Live probe (sandbox 2026-06-23) found the X did NOT dismiss the
         // widget within 1.5s — the cancel UX is non-trivial (possible in-frame
         // confirmation OR async dismiss). We wait for the heading to go hidden with a
         // generous timeout (waitFor state, NOT a fixed sleep; NO force:true). The real
@@ -221,20 +221,20 @@ test.describe.serial(
           // Capture the post-X state for the report instead of failing the build.
           const startStillThere = await seon.isStartVerificationEnabled().catch(() => false);
           console.log(
-            `[CT-03][OBSERVAÇÃO] X did not dismiss within 15s — widget still present `
+            `[CT-03][OBSERVATION] X did not dismiss within 15s — widget still present `
             + `(startVerificationReachable=${startStillThere}). Cancel UX is non-trivial; `
             + `documenting as observation, not a build failure.`,
           );
         }
       });
 
-      await test.step('[Rule #13] Cancel note — assert presence; if absent, OBSERVAÇÃO (log gap)', async () => {
+      await test.step('[Rule #13] Cancel note — assert presence; if absent, OBSERVATION (log gap)', async () => {
         // A real cancel SHOULD produce a note (Rule #13). It may be async; poll briefly.
         const cancelNote = (await findLeadNoteContaining(db, lead.leadPk, 'cancel'))
           ?? (await findLeadNoteContaining(db, lead.leadPk, 'SEON'));
         if (!cancelNote) {
           console.log(
-            `[CT-03][OBSERVAÇÃO] No cancel/SEON note in uown_los_lead_notes for lead ${lead.leadPk} `
+            `[CT-03][OBSERVATION] No cancel/SEON note in uown_los_lead_notes for lead ${lead.leadPk} `
             + `after clicking X — potential Rule #13 observability gap. NOT failing the build; `
             + `flagged for the report.`,
           );
@@ -333,7 +333,7 @@ test.describe.serial(
         // (see seon-id-verification-bypass.spec.ts CT-07b). Observe rather than hard-fail.
         if (!note) {
           console.log(
-            `[CT-06][OBSERVAÇÃO] No contract/SEON note after API submit for lead ${lead.leadPk} `
+            `[CT-06][OBSERVATION] No contract/SEON note after API submit for lead ${lead.leadPk} `
             + `(known Kornerstone API/sandbox limitation). Flagged for the report.`,
           );
         } else {

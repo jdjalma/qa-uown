@@ -1,62 +1,62 @@
 ---
 name: test-data-hierarchy
-description: Carregue ao planejar setup de dados ou debugar falha que parece data-related. Hierarquia obrigatória — fresh data via automação é PADRÃO, reuso de registro existente é EXCEÇÃO com justificativa. UPDATE direto no DB proibido sem autorização (Exception 3).
+description: Load when planning data setup or debugging a failure that looks data-related. Mandatory hierarchy — fresh data via automation is the DEFAULT, reusing an existing record is the EXCEPTION with justification. Direct UPDATE on the DB is forbidden without authorization (Exception 3).
 disable-model-invocation: true
 ---
 
-# Test Data Hierarchy — Regra Inviolável #9
+# Test Data Hierarchy — Inviolable Rule #9
 
-## Hierarquia (ordem obrigatória)
+## Hierarchy (mandatory order)
 
-1. **Fresh via automação** (PADRÃO) — criar dado novo via UI/API a cada execução
-2. **Fresh via fixture** — usar fixture/factory que gera dado novo (ainda é fresh)
-3. **Reuso de registro existente** — EXCEÇÃO com justificativa escrita + reprodução em fresh antes de classificar bug
-4. **SELECT direto no DB** — leitura é sempre OK (read-only)
-5. **INSERT/UPDATE/DELETE direto no DB** — PROIBIDO sem autorização explícita do user (Exception 3 do CLAUDE.md)
+1. **Fresh via automation** (DEFAULT) — create new data via UI/API on every run
+2. **Fresh via fixture** — use a fixture/factory that generates new data (still fresh)
+3. **Reuse of an existing record** — EXCEPTION with written justification + reproduction in fresh data before classifying a bug
+4. **Direct SELECT on the DB** — reading is always OK (read-only)
+5. **Direct INSERT/UPDATE/DELETE on the DB** — FORBIDDEN without explicit user authorization (Exception 3 of CLAUDE.md)
 
-> **Realistic fresh data é first-class (camada 1/2).** A factory `src/data/realistic/`
-> (e o atalho `buildTestData({ realistic: true, ssn })`) gera applicant/cart realista e
-> **único por chamada** — `randomAddress` randomiza house#+unit, tornando o endereço
-> inerentemente **blacklist-immune** (resolve o blacklist-poisoning da fixture estática
-> compartilhada). É a forma PREFERIDA de obter applicants/carts frescos. Use
-> `categoryForMerchant(clientType)` para manter os itens coerentes com o merchant.
-> Catálogo completo em [[helpers-catalog]] · fontes: `src/data/realistic/`, `src/helpers/test-data.helpers.ts`.
+> **Realistic fresh data is first-class (layer 1/2).** The factory `src/data/realistic/`
+> (and the shortcut `buildTestData({ realistic: true, ssn })`) generates a realistic applicant/cart that is
+> **unique per call** — `randomAddress` randomizes house#+unit, making the address
+> inherently **blacklist-immune** (it resolves the blacklist-poisoning of the shared static
+> fixture). It is the PREFERRED way to obtain fresh applicants/carts. Use
+> `categoryForMerchant(clientType)` to keep the items consistent with the merchant.
+> Full catalog in [[helpers-catalog]] · sources: `src/data/realistic/`, `src/helpers/test-data.helpers.ts`.
 
-## Quando aplicar
+## When to apply
 
-Sempre que planejar:
-- Setup de teste novo
-- Repro de bug reportado
-- Verificação de hipótese durante debug
+Whenever planning:
+- A new test setup
+- Reproduction of a reported bug
+- Hypothesis verification during debug
 
-## Por que importa
+## Why it matters
 
-- **Determinismo**: dado pré-existente acumula side-effects de outros testes → flakiness
-- **Bug classification** (regra #10): observação em dado pré-existente NÃO é bug — pode ser artefato de mutação anterior
-- **Audit trail**: fresh data tem trail completo no log; dado mutado tem trail truncado
-- **Compliance**: UPDATE direto pode violar requirements de auditoria (UOWN é fintech)
+- **Determinism**: pre-existing data accumulates side-effects from other tests → flakiness
+- **Bug classification** (rule #10): an observation in pre-existing data is NOT a bug — it may be an artifact of a previous mutation
+- **Audit trail**: fresh data has a complete trail in the log; mutated data has a truncated trail
+- **Compliance**: direct UPDATE may violate audit requirements (UOWN is fintech)
 
-## Procedimento
+## Procedure
 
-### Setup default
+### Default setup
 
 ```ts
-// CERTO — fresh via automação
+// RIGHT — fresh via automation
 const lead = await createPreQualifiedApplication({
  merchant: "UOWN_DEMO",
- ssn: generateTestSsn, // SSN novo a cada execução
+ ssn: generateTestSsn, // a new SSN on every run
 });
 ```
 
-### Quando reuso é justificável
+### When reuse is justifiable
 
-Cenários OK:
-- Teste de performance que precisa de massa pré-carregada (e o autor documentou)
-- Validação de regressão histórica em conta legada
-- Smoke check de conta master (raro)
+OK scenarios:
+- A performance test that needs pre-loaded mass data (and the author documented it)
+- Historical regression validation on a legacy account
+- Smoke check of a master account (rare)
 
-Cenários OK (exemplo canônico — transição sem UI affordance):
-- **Reuso read-only de registro gerado por webhook/sistema, quando a transição NÃO é reproduzível deterministicamente via portal.** Caso `#1315 CT-04` (2026-06-18): a transição `CONTRACT_CREATED → SIGNED` só nasce de um webhook GowSign/SignWell quando um cliente real completa o self-signing — não há botão de agent que a dispare. O teste valida que ESSE registro renderiza `Agent Name = SYSTEM` (comportamento legítimo, BR-02). Reuso é justificado porque: (a) o registro é apenas **lido**, nunca mutado; (b) a asserção é sobre um *display* de registro pré-existente, não sobre uma transição que o teste provoca; (c) há **`test.skip` guard** quando o ambiente não tem o registro — o teste pula em vez de inventar dado. Padrão:
+OK scenarios (canonical example — transition without UI affordance):
+- **Read-only reuse of a record generated by a webhook/system, when the transition is NOT deterministically reproducible via the portal.** Case `#1315 CT-04` (2026-06-18): the `CONTRACT_CREATED → SIGNED` transition is only born from a GowSign/SignWell webhook when a real customer completes self-signing — there is no agent button that triggers it. The test validates that THIS record renders `Agent Name = SYSTEM` (legitimate behavior, BR-02). Reuse is justified because: (a) the record is only **read**, never mutated; (b) the assertion is about a *display* of a pre-existing record, not about a transition the test causes; (c) there is a **`test.skip` guard** when the environment does not have the record — the test skips instead of inventing data. Pattern:
 
 ```ts
 const record = await db.queryOne<SystemRecord>(
@@ -66,103 +66,103 @@ const record = await db.queryOne<SystemRecord>(
       AND agent_username='SYSTEM'
     ORDER BY pk DESC LIMIT 1`);
 test.skip(record === null, 'No CONTRACT_CREATED → SIGNED SYSTEM record available in this env');
-// ...filtra o Modification Report pelo lead_pk e asserta Agent Name = SYSTEM (read-only)
+// ...filters the Modification Report by lead_pk and asserts Agent Name = SYSTEM (read-only)
 ```
 
-  > A justificativa fica **inline no spec** (comentário do CT). Contraste com CT-01/CT-02/CT-03 do mesmo arquivo: essas exercem transições *agent-triggered* (Set to Expired / Change to Signed) e usam **fresh lead por CT** via `createPreQualifiedApplication` — fresh é o default; reuso é a exceção isolada à transição sem affordance.
+  > The justification stays **inline in the spec** (CT comment). Contrast with CT-01/CT-02/CT-03 in the same file: those exercise *agent-triggered* transitions (Set to Expired / Change to Signed) and use a **fresh lead per CT** via `createPreQualifiedApplication` — fresh is the default; reuse is the isolated exception for the transition without affordance.
 
-Cenários NÃO OK:
-- "Levou muito tempo pra criar fresh, vou reusar" → flag de design problemático
-- "Esse lead já está no estado certo, é mais rápido" → vai mascarar bug de transição
+NOT OK scenarios:
+- "It took too long to create fresh, I'll reuse" → a flag of problematic design
+- "This lead is already in the right state, it's faster" → it will mask a transition bug
 
-### Se precisar reusar, antes de declarar bug
+### If you need to reuse, before declaring a bug
 
-1. Reproduzir em fresh data — manda em `tests/e2e/` o caso isolado
-2. Se reproduz: BUG CONFIRMADO
-3. Se não reproduz em fresh: provável artefato — investigar diferença entre o dado reusado e o fresh
+1. Reproduce in fresh data — drop the isolated case in `tests/e2e/`
+2. If it reproduces: BUG CONFIRMED
+3. If it does not reproduce in fresh: probable artifact — investigate the difference between the reused data and the fresh data
 
-### UPDATE direto — fluxo de exceção
+### Direct UPDATE — exception flow
 
-Apenas com:
-1. Solicitação explícita do user
-2. Justificativa escrita no commit/PR
-3. Backup do estado anterior se possível
+Only with:
+1. Explicit user request
+2. Written justification in the commit/PR
+3. Backup of the previous state if possible
 
 ```sql
--- Não fazer sem user dizer "pode atualizar"
+-- Do not do this without the user saying "you may update"
 UPDATE uown_los_lead SET status = 'QUALIFIED' WHERE id = 11366;
 ```
 
-Memory `feedback_no_db_mutation_to_force_pass`: skip/timeout é resultado válido; **nunca UPDATE pra satisfazer precondição** de teste.
+Memory `feedback_no_db_mutation_to_force_pass`: skip/timeout is a valid result; **never UPDATE to satisfy a test precondition**.
 
-## Diversificação de Merchant
+## Merchant Diversification
 
-### Regra
+### Rule
 
-Testes que **não** exercitam comportamento específico de um merchant (fluxo KS, config regional, quirk de portal) devem usar `pickRandomMerchantKey` em vez de hardcodar sempre o mesmo merchant.
+Tests that do **not** exercise merchant-specific behavior (KS flow, regional config, portal quirk) should use `pickRandomMerchantKey` instead of always hardcoding the same merchant.
 
-**Por que:** quando todos os testes criam aplicações para `PayPossible`/`DanielsJewelers`, bugs de configuração em outros merchants ficam invisíveis até produção.
+**Why:** when all tests create applications for `PayPossible`/`DanielsJewelers`, configuration bugs in other merchants stay invisible until production.
 
-### Como usar
+### How to use
 
 ```typescript
 import { pickRandomMerchantKey, getMerchant } from '@data/index.js';
 
-// Em vez de:
+// Instead of:
 const merchant = getMerchant('PayPossible', env);
 
-// Usar:
+// Use:
 const merchantKey = pickRandomMerchantKey; // UOWN pool (default)
 const merchant = getMerchant(merchantKey, env);
-// Log automático: "[pickRandomMerchant] selected: TerraceFinance"
+// Automatic log: "[pickRandomMerchant] selected: TerraceFinance"
 ```
 
-Para Kornerstone-brand:
+For Kornerstone-brand:
 ```typescript
 import { pickRandomMerchantKey, KORNERSTONE_GENERAL_MERCHANT_POOL } from '@data/index.js';
 const merchantKey = pickRandomMerchantKey(KORNERSTONE_GENERAL_MERCHANT_POOL);
 ```
 
-### Quando hardcodar é correto (exceções legítimas)
+### When hardcoding is correct (legitimate exceptions)
 
-| Situação | Razão |
+| Situation | Reason |
 |---|---|
-| Teste verifica routing GOWSIGN para CA | `TireAgent` tem evidência empírica confirmada (leads 15741-15748) |
-| Teste verifica template específico de KS3015 | merchant é parte do AC |
-| `validMerchant` em `STATE_MATRIX` | matriz de estado depende de merchant com cobertura confirmada |
-| Teste de configuração de merchant (preflight, drift) | o merchant É o objeto do teste |
-| sendApplication com `ClientType=PAY_POSSIBLE/SYNCHRONY` | clientType e merchant são acoplados (username/password da enum) |
+| Test verifies GOWSIGN routing for CA | `TireAgent` has confirmed empirical evidence (leads 15741-15748) |
+| Test verifies a KS3015-specific template | merchant is part of the AC |
+| `validMerchant` in `STATE_MATRIX` | the state matrix depends on a merchant with confirmed coverage |
+| Merchant configuration test (preflight, drift) | the merchant IS the object of the test |
+| sendApplication with `ClientType=PAY_POSSIBLE/SYNCHRONY` | clientType and merchant are coupled (username/password from the enum) |
 
-### Pools disponíveis
+### Available pools
 
-- `UOWN_GENERAL_MERCHANT_POOL` (default) — 12 merchants UOWN, env-agnostic
-- `KORNERSTONE_GENERAL_MERCHANT_POOL` — 3 merchants KS (FifthAveFurnitureNY, ComfortZoneMattress, BodegaFurniture)
+- `UOWN_GENERAL_MERCHANT_POOL` (default) — 12 UOWN merchants, env-agnostic
+- `KORNERSTONE_GENERAL_MERCHANT_POOL` — 3 KS merchants (FifthAveFurnitureNY, ComfortZoneMattress, BodegaFurniture)
 
-Ambas exportadas de `src/data/merchants.ts` via `@data/index.js`.
+Both exported from `src/data/merchants.ts` via `@data/index.js`.
 
-### Reproduzindo falha após random
+### Reproducing a failure after random
 
-O `pickRandomMerchantKey` faz `console.log('[pickRandomMerchant] selected: <key>')`. Para reproduzir, hardcode temporariamente o merchant que apareceu no log e re-execute.
+`pickRandomMerchantKey` does `console.log('[pickRandomMerchant] selected: <key>')`. To reproduce, temporarily hardcode the merchant that appeared in the log and re-run.
 
 ## Pitfalls
 
-1. **Cleanup omitido** — fresh data acumula; rodando 1000x sem cleanup polui DB de teste. Adicionar cleanup é parte do setup fresh.
-2. **SSN colisão** — usar generator com timestamp/random suficiente para evitar colisão em paralelo.
-3. **Email plus-addressing** — `fintechgroup777+{runId}@gmail.com` (memory `reference_imap_fintechgroup777`) garante isolamento por execução.
-4. **Race em paralelo** — fresh em paralelo pode disputar merchant config. Ver skill [[merchant-preflight]] sobre `skipMerchantPreflight`.
+1. **Cleanup omitted** — fresh data accumulates; running 1000x without cleanup pollutes the test DB. Adding cleanup is part of fresh setup.
+2. **SSN collision** — use a generator with enough timestamp/randomness to avoid collision in parallel.
+3. **Email plus-addressing** — `fintechgroup777+{runId}@gmail.com` (memory `reference_imap_fintechgroup777`) guarantees per-run isolation.
+4. **Race in parallel** — fresh in parallel can contend for merchant config. See skill [[merchant-preflight]] about `skipMerchantPreflight`.
 
 ## Anti-patterns
 
-- ❌ `UPDATE uown_los_lead SET status = ...` para "deixar no estado certo"
-- ❌ Reusar lead `11366` em múltiplos testes diferentes
-- ❌ Criar lead na UI uma vez e referenciar id hardcoded em outros testes
-- ❌ Pedir "permissão genérica" pra UPDATE no DB — autorização é por operação
+- ❌ `UPDATE uown_los_lead SET status = ...` to "leave it in the right state"
+- ❌ Reusing lead `11366` across multiple different tests
+- ❌ Creating a lead in the UI once and referencing a hardcoded id in other tests
+- ❌ Asking for "generic permission" to UPDATE the DB — authorization is per operation
 
 ## Cross-links
 
-- Regra inviolável #9 em `CLAUDE.md`
-- Regra inviolável #10 (bug classification) — exige fresh repro
-- Exception 3 (CLAUDE.md) — DB mutation requer autorização explícita
-- Skill [[bug-classification]] — usa este princípio para validar bug claim
-- Skill [[merchant-preflight]] — preflight respeita hierarquia (sem UPDATE direto)
+- Inviolable rule #9 in `CLAUDE.md`
+- Inviolable rule #10 (bug classification) — requires fresh repro
+- Exception 3 (CLAUDE.md) — DB mutation requires explicit authorization
+- Skill [[bug-classification]] — uses this principle to validate a bug claim
+- Skill [[merchant-preflight]] — preflight respects the hierarchy (no direct UPDATE)
 - Memory: `feedback_no_db_mutation_to_force_pass`

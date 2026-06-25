@@ -476,13 +476,13 @@ export async function findEligibleStickyCct(
 
 // ── 7. createStickyEligibleFromExistingAccount (fast-path setup) ──────────
 //
-// Authorized 2026-05-20 by the user: "para o teste de sucesso do sticky,
-// pegue um cc de sucesso com pagamento para amanhã por exemplo e mude para
-// denied". Replaces the slow `sendApplication` → fund → wait-for-rating path
+// Authorized 2026-05-20 by the user: "for the sticky success test, take a
+// successful CC with a payment scheduled for tomorrow, for example, and change
+// it to denied". Replaces the slow `sendApplication` → fund → wait-for-rating path
 // (~7 min) with a targeted UPDATE on an existing healthy account (~30s).
 //
 // This helper does NOT INSERT into any `uown_sticky*` audit table (forbidden
-// per SPEC § "UPDATEs autorizados"). It UPDATES an existing future-dated cct
+// per SPEC § "Authorized UPDATEs"). It UPDATES an existing future-dated cct
 // to look like a denied SCHEDULED SALE eligible for `StickyRecoverSweep`:
 //
 //   - status='DENIED'
@@ -501,7 +501,7 @@ export async function findEligibleStickyCct(
 //   - gateway_transaction_id, cc_vendor preserved when present
 //
 // Use ONLY for happy-path CTs (CT-01..CT-09, CT-11). The rating-specific
-// melhorias (#1 fields-mandatórios, #2 backend rating attribution) still
+// improvements (#1 mandatory-fields, #2 backend rating attribution) still
 // require fresh accounts produced by `sticky-recover-rating-setup.spec.ts`.
 
 export interface StickyEligibleResult {
@@ -526,7 +526,7 @@ export interface StickyEligibleResult {
  *  4. UPDATE the cct to denied SCHEDULED SALE (today-7) with safe error/comment.
  *  5. Return ids.
  *
- * Note (regra inviolável #10): all mutations here are pre-authorized by the
+ * Note (inviolable rule #10): all mutations here are pre-authorized by the
  * user message of 2026-05-20 (see comment block above). Callers must not
  * re-authorize.
  */

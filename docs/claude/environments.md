@@ -1,12 +1,12 @@
 # Environments & Configuration
 
-> Ambientes, URLs, variáveis de ambiente, timeouts e projetos Playwright. Referenciado pelo CLAUDE.md.
+> Environments, URLs, environment variables, timeouts, and Playwright projects. Referenced by CLAUDE.md.
 
 ---
 
-## Ambientes suportados
+## Supported environments
 
-| Ambiente | URL Pattern | DB Suffix |
+| Environment | URL Pattern | DB Suffix |
 |----------|-------------|-----------|
 | `sandbox` | `*-sandbox.uownleasing.com` | `SBX` (fallback: `SANDBOX`) |
 | `qa1` | `*-qa1.uownleasing.com` | `QA1` (fallback: `QA`) |
@@ -14,7 +14,7 @@
 | `stg` / `staging` | `*-stg.uownleasing.com` | `STG` |
 | `dev1` / `dev2` / `dev3` | `*-dev{N}.uownleasing.com` | `DEV{N}` |
 
-## URLs por portal
+## URLs per portal
 
 | Portal | Pattern |
 |--------|---------|
@@ -26,21 +26,21 @@
 
 ---
 
-## Variáveis de ambiente
+## Environment variables
 
-**Loading order:** `.env` base → `.env.{env}` override. Todos gitignored.
+**Loading order:** `.env` base → `.env.{env}` override. All gitignored.
 
-**`.env` base (compartilhados):**
-* `UOWN_API_KEY`, `UOWN_API_AUTHORIZATION` — API keys cross-environment
-* `EMAIL`, `EMAIL_PASSWORD` — Gmail compartilhado para OTP
-* `UOWN_DB_URL_{SUFFIX}`, `UOWN_DB_USER_{SUFFIX}`, `UOWN_DB_PASS_{SUFFIX}` — DB por ambiente
+**`.env` base (shared):**
+* `UOWN_API_KEY`, `UOWN_API_AUTHORIZATION` — cross-environment API keys
+* `EMAIL`, `EMAIL_PASSWORD` — shared Gmail for OTP
+* `UOWN_DB_URL_{SUFFIX}`, `UOWN_DB_USER_{SUFFIX}`, `UOWN_DB_PASS_{SUFFIX}` — DB per environment
 * Tokens: `ORIGINATION_TOKEN`, `PAYPAIR_TOKEN`, `FIVE9_TMS_API_KEY`, `GITLAB_TOKEN`
-* Credit cards de teste: `CC_SUBSCRIPTION_*`, `SERV_CC_*`
+* Test credit cards: `CC_SUBSCRIPTION_*`, `SERV_CC_*`
 
-**`.env.{env}` (por ambiente):**
+**`.env.{env}` (per environment):**
 * `ORIGINATION_URL`, `SERVICING_URL`, `WEBSITE_URL`, `AMS_URL`
 * `{ROLE}_USERNAME`, `{ROLE}_PASSWORD` (admin, manager, readonly, merchant, supervisor, agent)
-* **Nota:** `MERCHANT_USERNAME` difere — sandbox usa `manager`, demais `manager`
+* **Note:** `MERCHANT_USERNAME` differs — sandbox uses `manager`, the others use `manager`
 
 **CI detection:** `CI=true` ou `GITHUB_ACTIONS` ou `JENKINS_URL` → headless, 1 retry, screenshots only-on-failure, trace on-first-retry.
 
@@ -48,7 +48,7 @@
 
 ## Timeouts
 
-| Timeout | Valor | Multiplicável | Fonte |
+| Timeout | Value | Multipliable | Source |
 |---------|-------|---------------|-------|
 | Test global | 120s | Yes | `config.ts` |
 | Action | 15s | Yes | `config.ts` |
@@ -63,9 +63,9 @@
 
 ---
 
-## Projetos Playwright (12)
+## Playwright projects (12)
 
-| Projeto | Diretório | Browser | Auth |
+| Project | Directory | Browser | Auth |
 |---------|-----------|---------|------|
 | `auth-origination` | `tests/` | Desktop Chrome | setup only |
 | `auth-servicing` | `tests/` | Desktop Chrome | setup only |
@@ -78,11 +78,11 @@
 | `website-mobile-ios` | `tests/e2e/website` | iPhone 12 Pro | none |
 | `website-mobile-android` | `tests/e2e/website` | Pixel 5 | none |
 | `website-tablet` | `tests/e2e/website` | iPad Pro 11 | none |
-| `api-only` | `tests/api` | nenhum | none |
+| `api-only` | `tests/api` | none | none |
 
 ---
 
-## Scripts npm
+## npm scripts
 
 ```json
 {
@@ -103,11 +103,11 @@
 }
 ```
 
-## CI e métricas
+## CI and metrics
 
-* Pipeline: `lint` → `test:cicd` → relatório HTML + JSON summary.
-* Custom reporter gera `reports/test-summary.json`.
-* Allure opcional (`ALLURE=true`).
+* Pipeline: `lint` → `test:cicd` → HTML report + JSON summary.
+* Custom reporter generates `reports/test-summary.json`.
+* Allure optional (`ALLURE=true`).
 
 ---
 

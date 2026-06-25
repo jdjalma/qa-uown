@@ -1,40 +1,40 @@
 ---
 name: application-lifecycle
-description: Carregue quando o teste cria/manipula uma application UOWN (lead -> pre-qualified -> qualified -> leased -> signed). Define os 13+ steps do ciclo, ordem obrigatoria de chamadas, pitfalls conhecidos (merchant config, OTP timing, fraud callbacks).
+description: Load when the test creates/manipulates a UOWN application (lead -> pre-qualified -> qualified -> leased -> signed). Defines the 13+ steps of the cycle, mandatory call order, known pitfalls (merchant config, OTP timing, fraud callbacks).
 disable-model-invocation: true
 ---
 
 # Application Lifecycle Protocol - UOWN Leasing
 
-> **Proposito:** sequencia canonica de chamadas para criar uma aplicacao end-to-end via API + catalogo de pitfalls conhecidos. OBRIGATORIO para qualquer teste/feature que envolva `sendApplication` ou transicoes de estado de lease.
+> **Purpose:** canonical sequence of calls to create an application end-to-end via API + catalog of known pitfalls. MANDATORY for any test/feature that involves `sendApplication` or lease state transitions.
 >
-> **Por que existe:** cada nova task que cria aplicacao costuma sangrar 20-60 min redescobrindo os mesmos requisitos implicitos. Este arquivo e a memoria institucional que evita isso.
+> **Why it exists:** every new task that creates an application tends to bleed 20-60 min rediscovering the same implicit requirements. This file is the institutional memory that avoids that.
 >
-> **Quem consulta:** `qa-planner`, `qa-implementer`, `qa-debugger`, `/qa-flow`, e analises diretas.
+> **Who consults it:** `qa-planner`, `qa-implementer`, `qa-debugger`, `/qa-flow`, and direct analyses.
 
-> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **HOW TO TEST** — canonical sequence, pitfalls catalog, helpers list. O **comportamento canônico do produto** (máquina de estado do lease, enums de `LeadStatus`, regras de UW) NÃO mora aqui — é fonte única em `docs/business-rules/02-originacao-pipeline.md` + `06-conta-ciclo-vida.md` e `src/helpers/api-setup.helpers.ts`. Para resolver um tópico, rode `node scripts/docs-tooling.mjs resolve pipeline` (ou `account-lifecycle`, `underwriting`). Investigações recentes: `docs/knowledge-base/underwriting-and-funding-test-data-paths.md`. **Não duplique regras de produto aqui** — elas driftam.
+> **Authority boundary** (`docs/_docs-conventions.md` §7): this skill covers **HOW TO TEST** — canonical sequence, pitfalls catalog, helpers list. The **canonical product behavior** (lease state machine, `LeadStatus` enums, UW rules) does NOT live here — it is single-sourced in `docs/business-rules/02-originacao-pipeline.md` + `06-conta-ciclo-vida.md` and `src/helpers/api-setup.helpers.ts`. To resolve a topic, run `node scripts/docs-tooling.mjs resolve pipeline` (or `account-lifecycle`, `underwriting`). Recent investigations: `docs/knowledge-base/underwriting-and-funding-test-data-paths.md`. **Do not duplicate product rules here** — they drift.
 
-> Detalhes completos dos steps: [references/canonical-sequence-detail.md](references/canonical-sequence-detail.md)
+> Full step details: [references/canonical-sequence-detail.md](references/canonical-sequence-detail.md)
 >
-> Catalogo completo de pitfalls (#1 a #137, indice + fatias): [references/pitfalls.md](references/pitfalls.md)
+> Complete pitfalls catalog (#1 to #137, index + slices): [references/pitfalls.md](references/pitfalls.md)
 
 ---
 
-## 1. Sequencia canonica (overview)
+## 1. Canonical sequence (overview)
 
-| # | Chamada | Resultado |
+| # | Call | Result |
 |---|---------|-----------|
-| 1 | `buildTestData({ env, state, merchant, orderTotal })` | email unico, SSN aprovado |
+| 1 | `buildTestData({ env, state, merchant, orderTotal })` | unique email, approved SSN |
 | 2 | `api.application.sendApplication(merchant, applicant, order)` | `leadPk`, `leadUuid` |
 | 3 | `sleep(5000)` + `getApplicationStatus(merchant, leadUuid)` | status approved |
 | 4 | `api.invoice.sendInvoice(merchant, leadUuid, { orderTotal })` | `redirectUrl` |
-| 5 | Extrair `shortCode` + `planId` de `redirectUrl` | - |
-| 6 | `api.application.getMissingFields(shortCode, { planId })` | seta `merchantProgramPk` |
+| 5 | Extract `shortCode` + `planId` from `redirectUrl` | - |
+| 6 | `api.application.getMissingFields(shortCode, { planId })` | sets `merchantProgramPk` |
 | 7 | `submitApplication(leadPk, ..., { ccNumber: MASTERCARD_APPROVED })` | CC_AUTH_PASSED |
 | 8 | `changeLeadStatus(merchant, leadPk, 'SIGNED')` | SIGNED |
 | 9 | `settleApplication(merchant, leadUuid)` | SETTLED |
 | 10 | `updateFundingStatus([leadPk], 'FUNDING')` | FUNDING |
-| 11 | `updateFundingStatus([leadPk], 'FUNDED')` | FUNDED, cria account |
+| 11 | `updateFundingStatus([leadPk], 'FUNDED')` | FUNDED, creates account |
 | 12 | `db.waitForAccountByLeadPk(leadPk)` | accountPk |
 | 13 | `db.waitForAccountStatus(accountPk, 'ACTIVE')` | ACTIVE |
 
@@ -43,121 +43,121 @@ disable-model-invocation: true
 
 ---
 
-## 2. Principios
+## 2. Principles
 
-- **Ordem e inviolavel:** pular steps causa 400/500 silencioso
-- **MASTERCARD_APPROVED (BIN 5500) apenas:** VISA causa `UnexpectedRollbackException` (pitfall #3)
-- **`getMissingFields` obrigatorio:** sem ele, `submitApplication` retorna 500 (pitfall #2)
-- **Email unico por run:** reuso causa `ADDRESS_MISMATCH` denial (pitfall #1)
-- **Kornerstone exige bank data:** `mainBankRoutingNumber` + `mainBankAccountNumber` (pitfall #5)
-- **SETTLED_IN_FULL via payment real:** UPDATE direto nao popula `uown_sv_payment` (pitfall #9)
-- **Merchant preflight automatico:** `createPreQualifiedApplication` chama `ensureMerchantReady` (pitfall #10)
-- **`mainNextPayDate` obrigatorio:** pos , campo validado no body (pitfall #63)
+- **Order is inviolable:** skipping steps causes a silent 400/500
+- **MASTERCARD_APPROVED (BIN 5500) only:** VISA causes `UnexpectedRollbackException` (pitfall #3)
+- **`getMissingFields` mandatory:** without it, `submitApplication` returns 500 (pitfall #2)
+- **Unique email per run:** reuse causes `ADDRESS_MISMATCH` denial (pitfall #1)
+- **Kornerstone requires bank data:** `mainBankRoutingNumber` + `mainBankAccountNumber` (pitfall #5)
+- **SETTLED_IN_FULL via real payment:** a direct UPDATE does not populate `uown_sv_payment` (pitfall #9)
+- **Automatic merchant preflight:** `createPreQualifiedApplication` calls `ensureMerchantReady` (pitfall #10)
+- **`mainNextPayDate` mandatory:** afterward, field validated in the body (pitfall #63)
 
 ---
 
-## 3. Helpers que implementam a sequencia
+## 3. Helpers that implement the sequence
 
-| Helper | Completo ate | Notas |
+| Helper | Complete up to | Notes |
 |--------|--------------|-------|
-| `setupApplicationViaApi` | Passo 7 | Inclui `getMissingFields` |
-| `createPreQualifiedApplication` | Passo 7 | Inclui `getMissingFields` + merchant preflight |
-| `driveLeadToSigned` | Passo 8 | `changeLeadStatus('SIGNED')` |
-| `driveLeadToFunding` | Passo 10 | SIGNED - settle - FUNDING |
+| `setupApplicationViaApi` | Step 7 | Includes `getMissingFields` |
+| `createPreQualifiedApplication` | Step 7 | Includes `getMissingFields` + merchant preflight |
+| `driveLeadToSigned` | Step 8 | `changeLeadStatus('SIGNED')` |
+| `driveLeadToFunding` | Step 10 | SIGNED - settle - FUNDING |
 
 ---
 
-## 4. Checklist rapido antes de implementar
+## 4. Quick checklist before implementing
 
-- [ ] `buildTestData` sem `emailOverride` (pitfall #1)
-- [ ] Kornerstone? bankData no `createPreQualifiedApplication` (pitfall #5)
-- [ ] `getMissingFields` chamado antes de `submitApplication` (pitfall #2)
-- [ ] CC = `MASTERCARD_APPROVED`, NUNCA `VISA_APPROVED` (pitfall #3)
-- [ ] Merchant provisionado no LOS do ambiente alvo (pitfall #4)
-- [ ] Ordem `SIGNED - settle - FUNDING - FUNDED` (pitfall #6)
+- [ ] `buildTestData` without `emailOverride` (pitfall #1)
+- [ ] Kornerstone? bankData in `createPreQualifiedApplication` (pitfall #5)
+- [ ] `getMissingFields` called before `submitApplication` (pitfall #2)
+- [ ] CC = `MASTERCARD_APPROVED`, NEVER `VISA_APPROVED` (pitfall #3)
+- [ ] Merchant provisioned in the target environment's LOS (pitfall #4)
+- [ ] Order `SIGNED - settle - FUNDING - FUNDED` (pitfall #6)
 - [ ] Email template? `makeCreditCardPayments(SETTLEMENT)` (pitfall #9)
-- [ ] Merchant preflight se nao usa `createPreQualifiedApplication` (pitfall #10)
-- [ ] Default payment frequency e WEEKLY (pitfall #53); override se necessario
+- [ ] Merchant preflight if not using `createPreQualifiedApplication` (pitfall #10)
+- [ ] Default payment frequency is WEEKLY (pitfall #53); override if necessary
 
 ---
 
-## 5. Pitfalls mais criticos (quick reference)
+## 5. Most critical pitfalls (quick reference)
 
-| # | Sintoma | Fix rapido |
+| # | Symptom | Quick fix |
 |---|---------|------------|
-| 1 | DENIED sem motivo | Email unico (sem `emailOverride`) |
-| 2 | 500 "Merchant program required" | `getMissingFields` antes |
+| 1 | DENIED with no reason | Unique email (no `emailOverride`) |
+| 2 | 500 "Merchant program required" | `getMissingFields` first |
 | 3 | `UnexpectedRollbackException` | MASTERCARD (BIN 5500) |
-| 5 | 400 Kornerstone | Adicionar bank data |
-| 9 | Sweep falha silenciosamente | `makeCreditCardPayments(SETTLEMENT)` |
-| 10 | 400/500 aleatorio | Merchant preflight / config drift |
-| 39 | 500 rollback todos merchants | **[env-blocker]** bug svc (mitigado qa1) |
+| 5 | 400 Kornerstone | Add bank data |
+| 9 | Sweep fails silently | `makeCreditCardPayments(SETTLEMENT)` |
+| 10 | Random 400/500 | Merchant preflight / config drift |
+| 39 | 500 rollback all merchants | **[env-blocker]** svc bug (mitigated qa1) |
 | 48 | Backdrop intercepts clicks | `dismissCustomerInfoConfirmation` |
-| 66 | 0 rows em timestamp filter | TZ drift: usar PK monoton. ou AT TIME ZONE |
-| 69 | Auth fails apos CT-10 | ensureAuthenticated v8 (JWT exp check) |
-| 87 | `sweep_logs.processed=0` em leitura imediata | Assertir `uown_email_queue` (PK monoton.), nao sweep_logs |
-| 88 | Sweep nao processa conta "elegivel" | Usar query EXATA do sweep (CASE-WHEN DOW) |
-| 89 | FirstPaymentReminder pula conta | Alinhar sched_summary + receivable.due_date |
-| 90 | Re-trigger retorna processed=0 | Dedup same-day Java; assertir row de hoje |
-| 91 | OTP Website pega codigo de outro run | `snapshotInboxUid` antes + `getVerificationCode({ sinceUid })` |
-| 92 | Click sidebar Website intercepted pos-pagamento | `goToSidebarLink` chama `waitForSpinner` antes |
-| 98 | Quick search nao navega a partir de /funding (3x retry) | `searchAndSelectFirst` faz `input.click` (foco) antes de fill — dropdown so renderiza com input focado |
-| 99 | Sidebar Website "passa" mas update-contact da timeout/spinner infinito | `page.goto` fallback perde auth + `waitForSpinner` engole timeout → pass silencioso. Causa real: força-logout em /documents (OBS-WS-DOCS-LOGOUT) |
-| 102 | NeuroID nunca dispara / `count>=1` guard falha (falso-negativo) | `useNeuroIdCheck=true` em `mustBeFalse` → auto-heal reseta. `skipMerchantPreflight:true` + pre-assert read-only da flag |
-| 103 | Contagem NeuroID por `uown_sv_outbound_api_log WHERE lead_pk` retorna 0 | Sem correlação `lead_pk` pré-funding (NULLs). Usar `countNeuroIdCalls` (`uown_neuro_id_verification`) |
-| 104 | `configColumnsPanel` retorna 0 elementos em `/merchant` | Bootstrap dropdown, não dialog. Usar `configColumnsPanelMerchants` |
-| 105 | `label:has-text(...) input[type=checkbox]` não acha coluna em `/merchant` | Checkboxes nativos sem `<label>`; `input[type=checkbox][name="<label>"]` |
-| 106 | Wait por Apply/Save após toggle de coluna em `/merchant` nunca resolve | Seleção imediata (BR-01); não há Apply |
-| 107 | Filtro Active `/merchant` sem "All"; mudança não re-filtra | react-select `#isActive` (Active/Inactive); aplicar via Search (BR-06) |
-| 108 | `/merchantSetting` row timeout — merchant não está nas ~20 rows default | Digitar o código na caixa "Search table" (`msMerchantSearchTableInput`) + aplicar ANTES de selecionar a row; tabela não carrega todos por padrão |
-| 109 | ending-in-9 SSN APROVA em qa2 (esperava UW_DENIED) | Short-circuit ending-in-9 é da engine UW MOCKADA; TERRACE_FINANCE em qa2 pode rotear engine real → mock não dispara. Sem trigger UW_DENIED determinístico confirmado em qa2 (≠ qa1) |
-| 110 | `#epo5-false`/`#epo10-false` "not visible" em `/merchantSetting` (check timeout) | EPO triple é dropdown `.collapse`: True/False vivem em painel `display:none`. Checar `-main` NÃO revela; clicar o **caret-down** (`#toggler:has(#epoN-main) svg.fa-caret-down`) abre. Depois check SEM `force:true` |
-| 111 | Último sub-test de `describe.serial` falha com `"context"/"page"/"testEnv" fixtures are not supported in afterAll` + teardown não executa (drift vaza) | `afterAll` só aceita fixtures **worker-scoped**. `db` é worker (OK); `page`/`context`/`testEnv` são test-scoped (PROIBIDO). Usar `{ browser, db }` e criar o próprio `browser.newContext()`; derivar env via `new ConfigEnvironment(process.env.ENV)` |
-| 112 | Merchant-settings snapshot não em `lead_notes` / account snapshot não reflete merchant vivo | Lead snapshot no `ApplicationApprovedEvent` (só APROVADAS); account snapshot **copia** o lead (não re-lê merchant), gated na existência do lead snapshot (ausente → conta criada, snapshot pulado silenciosamente). Audit = logs INFO/WARN da app, **NÃO `uown_los_lead_notes`**. Tabelas `uown_los_lead_merchant_settings_snapshot`/`uown_sv_account_merchant_settings_snapshot` (`epo5,epo10,uw_pipeline,fraud_threshold`). Escopo audit/reporting only |
-| 113 | qa2 fail-fast no 1º read DB (`assertMerchantContract`) | Tunnel qa2 `127.0.0.1:5445` cai mid-run / `svc_user` rejeita transitoriamente. **Infra, não drift de contrato nem feature** — re-probar DB e re-rodar (≈ #18) |
-| 115 | Overview: `nth()` em input de data acerta o form ERRADO (KPI vs tabela) | Overview tem 2 forms: top-bar KPI (`#from`/`#to`, toggle `overview_filterButton__`, drives cards) vs TABLE panel (`#fromDate`/`#toDate`, toggle `index-module_filterButton__`, drives tabela+CSV). Alvejar table-panel por **id**, nunca posicional. Ver [[selector-hardening]] |
-| 116 | Overview: janela de data future-only NÃO esvazia a tabela | `#fromDate` (table panel) **reseta para hoje** (Formik default) → não é lever de empty-set confiável. Usar `searchTable(value)` com valor não-existente (free-text "Search table" `overviewTableSearch`) |
-| 117 | Overview: painel de table-filter re-colapsa logo após o toggle | `verifyDashboardLoaded` retorna no Promise.race quando o botão Filters aparece, ANTES da tabela carregar em QA2; painel é width-collapse animation → re-render re-colapsa. `expandTableFilters` precisa de **retry loop**, não 1 clique |
-| 118 | "Download CSV" abre o modal de EMAIL (clica o botão errado) | Email CSV e Download CSV compartilham `filtered-csv-download_csvButton`; Email é 1º no DOM → class nua + `.first()` resolve Email. Desambiguar Download por `:has-text('Download CSV')`. Ver [[selector-hardening]] / [[page-object-pattern]] |
-| 119 | Leads CSV 17ª coluna "Created from" exporta header EM BRANCO | **[OBSERVAÇÃO]** `createdFrom` — entry react-csv sem `label`. Pré-existente, product-side; flag p/ ticket separado. NÃO é bug do teste (OBS-01 #1321) |
-| 120 | Origination "Download CSV" ausente para certos usuários — qual permissão controla? | Gate = AMS → **Roles → aba Origination** → clicar role → "Edit Role Permissions" (chips = perms CONCEDIDAS; ausente ⇒ role não tem). Perms: `overview download csv` → `/overview`; `leads download csv` → `/leads`. **TÊM perm:** `admin`, `manager`. **NÃO têm:** `agent`, `isr`, `auditor`. NÃO confundir com `overview csv [modify]` (governa config de filtro/coluna, não o botão). `email csv` é independente — Email CSV renderiza sempre que tabela não está vazia. Conta candidate sem perm: `evedovatto.gow_clone` (role `agent`, sandbox, password desconhecida). Recipe CT-09: AMS → Add User com role `agent`/`isr` → login no Origination → confirmar Download CSV ausente. (sandbox 2026-06-18, #1321 / MR !1481) |
-| 121 | Location filter "not visible"/disabled em `/merchantModificationHistory` e `/modificationReport` mesmo com a página carregada | **Divergência intra-componente** — em MMH e ModReport o Location recebe `filter__control--is-disabled` até ≥1 Merchant ser selecionado (BR-01). No **Funding Queue** (`/funding`) Location é INDEPENDENTE (não disabled, BR-02). Testes de Location em MMH/ModReport DEVEM selecionar Merchant primeiro; não copiar o assumption do Funding. (qa2 2026-06-18, #1319 — `[CONFIRMADO]` via MCP DOM) |
-| 122 | Funding Queue retorna só leads FUNDING ao filtrar por Funded/Refunded | Status filter tem **"Funding" PRÉ-SELECIONADO** ao carregar `/funding` (BR-03). Quem usa `selectOptions('Status', ...)` direto soma ao default e o resultado fica contaminado. `FundingPage.filterByStatuses()` chama `clearStatusFilter` antes — usar o método, não o `selectOptions` cru. (qa2 2026-06-18, #1319 — `[CONFIRMADO]` via MCP DOM) |
-| 123 | Overview TABLE-panel `#fromDate`/`#toDate` ignoram `fill()` — Formik não atualiza | Inputs são `type="search"`. `fill()` seta DOM mas NÃO dispara `onChange` do Formik → query submitted usa valor anterior. Fix: acessar `element.__reactProps.onChange` via `page.evaluate`, com `setTimeout(150ms)` entre fromDate e toDate (re-render do fromDate recria o nó toDate). Adicionalmente: `submitFilters()` detecta `<tr>` do spinner como "row visible" em datasets grandes (79k rows) — usar `page.waitForFunction` aguardando paginação `>1000` antes de checar estado de botões. Tooltip do guard é portal Bootstrap (`div[role='tooltip'].tooltip.show`), não texto interno do span wrapper. (sandbox 2026-06-18, #1321) |
-| 124 | Origination "Set to Expired" confirm clica nada — modal abre mas `changeLeadStatus` nunca dispara (lead não expira) | A ação abre o modal **"Add a Comment"** dentro de `.modal.fade.show` (`role="dialog"`). O botão de confirmar é **"Save"** (`button[type='submit']`) — NÃO "CONFIRM"/"Yes" e SEM classe `.submit-button`. Campo comment (`input[name='comment']`, placeholder "Type here...") é **OPCIONAL** (Save fica habilitado vazio), mas o texto digitado VAI para o activity log (`uown_los_activity_log.notes` = "ChangeLeadStatus requested from X to EXPIRED. Reason : {comment}"). Selector antigo (`CONFIRM`/`Yes`/`.submit-button`) casava 0 elementos; a espera de visibilidade tinha `.catch(()=>false)` → falha silenciosa, método retornava sem clicar. Fix: `setToExpiredConfirm` ancora em `button[type='submit']`+`Save`; método preenche o comment opcional e remove o swallow. **NÃO confundir** com o "Move Contract to Signed" modal (CT-02), que tem comment OBRIGATÓRIO e botão CONFIRM. (qa2 lead 16728, 2026-06-18, #1315 — `[CONFIRMADO]` via DOM live + XHR 200 + status UW_APPROVED→EXPIRED + `uown_lead_modifications.mod_type=LEAD_STATUS_CHANGE`. Ver [[selector-hardening]]) |
-| 125 | Modification Report (`/modificationReport`) filtra e a tabela volta com o set inteiro (filtro ignorado), OU a linha do lead recém-criado "não aparece" | Dois requisitos implícitos do painel de filtros: **(a)** os campos `input#agentName`, `input#from`, `input#to` são **React/Formik-controlled** — `page.fill()` é **no-op silencioso** (sem `TimeoutError`); o `onChange` nunca dispara e a busca roda com o campo vazio. Setar via native-setter (`forceReactInputValue`): prototype value setter + `input`/`change`/`blur`. Datas em `MM/DD/YYYY`. **(b)** a tabela é **rdt paginada em 10 linhas/página** — `getRowByLeadPk` DEVE caminhar as páginas (`goToNextPage` até Next desabilitar); um `getAllRows().find(...)` de página única perde silenciosamente o lead em page 2+. `filterByAgentName`/`filterByDateRange`/`getRowByLeadPk` já encapsulam ambos. (qa2 `jmendes.gow`, 2026-06-18, #1315 — `[CONFIRMADO]` via DOM live, CT-03/CT-04 PASS. Ver [[selector-hardening]] "React-controlled date/text input" + [[page-object-pattern]] catálogo `ModificationReportPage`) |
+| 66 | 0 rows on timestamp filter | TZ drift: use monotonic PK or AT TIME ZONE |
+| 69 | Auth fails after CT-10 | ensureAuthenticated v8 (JWT exp check) |
+| 87 | `sweep_logs.processed=0` on immediate read | Assert `uown_email_queue` (monotonic PK), not sweep_logs |
+| 88 | Sweep does not process "eligible" account | Use the EXACT sweep query (CASE-WHEN DOW) |
+| 89 | FirstPaymentReminder skips account | Align sched_summary + receivable.due_date |
+| 90 | Re-trigger returns processed=0 | Same-day dedup in Java; assert today's row |
+| 91 | Website OTP picks up code from another run | `snapshotInboxUid` before + `getVerificationCode({ sinceUid })` |
+| 92 | Website sidebar click intercepted post-payment | `goToSidebarLink` calls `waitForSpinner` first |
+| 98 | Quick search does not navigate from /funding (3x retry) | `searchAndSelectFirst` does `input.click` (focus) before fill — dropdown only renders with the input focused |
+| 99 | Website sidebar "passes" but update-contact times out/spins infinitely | `page.goto` fallback loses auth + `waitForSpinner` swallows timeout → silent pass. Real cause: force-logout on /documents (OBS-WS-DOCS-LOGOUT) |
+| 102 | NeuroID never fires / `count>=1` guard fails (false negative) | `useNeuroIdCheck=true` in `mustBeFalse` → auto-heal resets it. `skipMerchantPreflight:true` + read-only pre-assert of the flag |
+| 103 | NeuroID count via `uown_sv_outbound_api_log WHERE lead_pk` returns 0 | No `lead_pk` correlation pre-funding (NULLs). Use `countNeuroIdCalls` (`uown_neuro_id_verification`) |
+| 104 | `configColumnsPanel` returns 0 elements on `/merchant` | Bootstrap dropdown, not dialog. Use `configColumnsPanelMerchants` |
+| 105 | `label:has-text(...) input[type=checkbox]` does not find the column on `/merchant` | Native checkboxes without `<label>`; `input[type=checkbox][name="<label>"]` |
+| 106 | Wait for Apply/Save after column toggle on `/merchant` never resolves | Immediate selection (BR-01); there is no Apply |
+| 107 | Active filter `/merchant` has no "All"; change does not re-filter | react-select `#isActive` (Active/Inactive); apply via Search (BR-06) |
+| 108 | `/merchantSetting` row timeout — merchant not in the default ~20 rows | Type the code into the "Search table" box (`msMerchantSearchTableInput`) + apply BEFORE selecting the row; the table does not load all by default |
+| 109 | ending-in-9 SSN is APPROVED in qa2 (expected UW_DENIED) | The ending-in-9 short-circuit belongs to the MOCKED UW engine; TERRACE_FINANCE in qa2 may route to the real engine → mock does not fire. No deterministic UW_DENIED trigger confirmed in qa2 (≠ qa1) |
+| 110 | `#epo5-false`/`#epo10-false` "not visible" on `/merchantSetting` (check timeout) | EPO triple is a `.collapse` dropdown: True/False live in a `display:none` panel. Checking `-main` does NOT reveal it; clicking the **caret-down** (`#toggler:has(#epoN-main) svg.fa-caret-down`) opens it. Then check WITHOUT `force:true` |
+| 111 | Last sub-test of `describe.serial` fails with `"context"/"page"/"testEnv" fixtures are not supported in afterAll` + teardown does not run (drift leaks) | `afterAll` only accepts **worker-scoped** fixtures. `db` is worker (OK); `page`/`context`/`testEnv` are test-scoped (FORBIDDEN). Use `{ browser, db }` and create your own `browser.newContext()`; derive env via `new ConfigEnvironment(process.env.ENV)` |
+| 112 | Merchant-settings snapshot not in `lead_notes` / account snapshot does not reflect live merchant | Lead snapshot in `ApplicationApprovedEvent` (APPROVED only); account snapshot **copies** the lead (does not re-read merchant), gated on the existence of the lead snapshot (absent → account created, snapshot silently skipped). Audit = app INFO/WARN logs, **NOT `uown_los_lead_notes`**. Tables `uown_los_lead_merchant_settings_snapshot`/`uown_sv_account_merchant_settings_snapshot` (`epo5,epo10,uw_pipeline,fraud_threshold`). Scope: audit/reporting only |
+| 113 | qa2 fail-fast on the 1st DB read (`assertMerchantContract`) | qa2 tunnel `127.0.0.1:5445` drops mid-run / `svc_user` rejects transiently. **Infra, not contract drift nor feature** — re-probe DB and re-run (≈ #18) |
+| 115 | Overview: `nth()` on a date input hits the WRONG form (KPI vs table) | Overview has 2 forms: top-bar KPI (`#from`/`#to`, toggle `overview_filterButton__`, drives cards) vs TABLE panel (`#fromDate`/`#toDate`, toggle `index-module_filterButton__`, drives table+CSV). Target the table panel by **id**, never positionally. See [[selector-hardening]] |
+| 116 | Overview: a future-only date window does NOT empty the table | `#fromDate` (table panel) **resets to today** (Formik default) → not a reliable empty-set lever. Use `searchTable(value)` with a non-existent value (free-text "Search table" `overviewTableSearch`) |
+| 117 | Overview: the table-filter panel re-collapses right after the toggle | `verifyDashboardLoaded` resolves the Promise.race when the Filters button appears, BEFORE the table loads in QA2; the panel is a width-collapse animation → re-render re-collapses it. `expandTableFilters` needs a **retry loop**, not 1 click |
+| 118 | "Download CSV" opens the EMAIL modal (clicks the wrong button) | Email CSV and Download CSV share `filtered-csv-download_csvButton`; Email is 1st in the DOM → bare class + `.first()` resolves to Email. Disambiguate Download by `:has-text('Download CSV')`. See [[selector-hardening]] / [[page-object-pattern]] |
+| 119 | Leads CSV 17th column "Created from" exports a BLANK header | **[OBSERVATION]** `createdFrom` — react-csv entry without `label`. Pre-existing, product-side; flag for a separate ticket. NOT a test bug (OBS-01 #1321) |
+| 120 | Origination "Download CSV" absent for certain users — which permission controls it? | Gate = AMS → **Roles → Origination tab** → click role → "Edit Role Permissions" (chips = GRANTED perms; absent ⇒ role lacks it). Perms: `overview download csv` → `/overview`; `leads download csv` → `/leads`. **HAVE perm:** `admin`, `manager`. **DO NOT have:** `agent`, `isr`, `auditor`. Do NOT confuse with `overview csv [modify]` (governs filter/column config, not the button). `email csv` is independent — Email CSV renders whenever the table is not empty. Candidate account without perm: `evedovatto.gow_clone` (role `agent`, sandbox, password unknown). Recipe CT-09: AMS → Add User with role `agent`/`isr` → login to Origination → confirm Download CSV absent. (sandbox 2026-06-18, #1321 / MR !1481) |
+| 121 | Location filter "not visible"/disabled on `/merchantModificationHistory` and `/modificationReport` even with the page loaded | **Intra-component divergence** — in MMH and ModReport, Location gets `filter__control--is-disabled` until ≥1 Merchant is selected (BR-01). In the **Funding Queue** (`/funding`) Location is INDEPENDENT (not disabled, BR-02). Location tests in MMH/ModReport MUST select a Merchant first; do not copy the Funding assumption. (qa2 2026-06-18, #1319 — `[CONFIRMED]` via MCP DOM) |
+| 122 | Funding Queue returns only FUNDING leads when filtering by Funded/Refunded | The Status filter has **"Funding" PRE-SELECTED** when `/funding` loads (BR-03). Whoever uses `selectOptions('Status', ...)` directly adds to the default and the result is contaminated. `FundingPage.filterByStatuses()` calls `clearStatusFilter` first — use the method, not raw `selectOptions`. (qa2 2026-06-18, #1319 — `[CONFIRMED]` via MCP DOM) |
+| 123 | Overview TABLE-panel `#fromDate`/`#toDate` ignore `fill()` — Formik does not update | Inputs are `type="search"`. `fill()` sets the DOM but does NOT fire Formik's `onChange` → the submitted query uses the previous value. Fix: access `element.__reactProps.onChange` via `page.evaluate`, with `setTimeout(150ms)` between fromDate and toDate (re-render of fromDate recreates the toDate node). Additionally: `submitFilters()` detects the spinner `<tr>` as "row visible" in large datasets (79k rows) — use `page.waitForFunction` waiting for pagination `>1000` before checking button states. The guard tooltip is a Bootstrap portal (`div[role='tooltip'].tooltip.show`), not internal text of the span wrapper. (sandbox 2026-06-18, #1321) |
+| 124 | Origination "Set to Expired" confirm clicks nothing — modal opens but `changeLeadStatus` never fires (lead does not expire) | The action opens the **"Add a Comment"** modal inside `.modal.fade.show` (`role="dialog"`). The confirm button is **"Save"** (`button[type='submit']`) — NOT "CONFIRM"/"Yes" and WITHOUT class `.submit-button`. The comment field (`input[name='comment']`, placeholder "Type here...") is **OPTIONAL** (Save stays enabled when empty), but the typed text GOES to the activity log (`uown_los_activity_log.notes` = "ChangeLeadStatus requested from X to EXPIRED. Reason : {comment}"). The old selector (`CONFIRM`/`Yes`/`.submit-button`) matched 0 elements; the visibility wait had `.catch(()=>false)` → silent failure, the method returned without clicking. Fix: `setToExpiredConfirm` anchors on `button[type='submit']`+`Save`; the method fills the optional comment and removes the swallow. **Do NOT confuse** with the "Move Contract to Signed" modal (CT-02), which has a MANDATORY comment and a CONFIRM button. (qa2 lead 16728, 2026-06-18, #1315 — `[CONFIRMED]` via live DOM + XHR 200 + status UW_APPROVED→EXPIRED + `uown_lead_modifications.mod_type=LEAD_STATUS_CHANGE`. See [[selector-hardening]]) |
+| 125 | Modification Report (`/modificationReport`) filters and the table comes back with the whole set (filter ignored), OR the row of the just-created lead "does not appear" | Two implicit requirements of the filter panel: **(a)** the fields `input#agentName`, `input#from`, `input#to` are **React/Formik-controlled** — `page.fill()` is a **silent no-op** (no `TimeoutError`); `onChange` never fires and the search runs with an empty field. Set via native-setter (`forceReactInputValue`): prototype value setter + `input`/`change`/`blur`. Dates in `MM/DD/YYYY`. **(b)** the table is **rdt paginated at 10 rows/page** — `getRowByLeadPk` MUST walk the pages (`goToNextPage` until Next is disabled); a single-page `getAllRows().find(...)` silently loses the lead on page 2+. `filterByAgentName`/`filterByDateRange`/`getRowByLeadPk` already encapsulate both. (qa2 `jmendes.gow`, 2026-06-18, #1315 — `[CONFIRMED]` via live DOM, CT-03/CT-04 PASS. See [[selector-hardening]] "React-controlled date/text input" + [[page-object-pattern]] catalog `ModificationReportPage`) |
 
-> Catalogo completo (132 pitfalls, #1–#137) + observacoes cross-cutting: [references/pitfalls.md](references/pitfalls.md) — indice navegavel; conteudo fatiado em [references/pitfalls/](references/pitfalls/) (cada fatia cabe numa leitura `Read`).
+> Complete catalog (132 pitfalls, #1–#137) + cross-cutting observations: [references/pitfalls.md](references/pitfalls.md) — navigable index; content sliced into [references/pitfalls/](references/pitfalls/) (each slice fits in one `Read`).
 
 ---
 
 ## 6. Contribution Template
 
-Per CLAUDE.md rule #12, quando um agent descobre requisito implicito NAO documentado, e **obrigacao** adiciona-lo ao catalogo (via [references/pitfalls.md](references/pitfalls.md)) antes de fechar o pipeline.
+Per CLAUDE.md rule #12, when an agent discovers an undocumented implicit requirement, it is **mandatory** to add it to the catalog (via [references/pitfalls.md](references/pitfalls.md)) before closing the pipeline.
 
-### Passo-a-passo
+### Step-by-step
 
-1. Identificar sintoma exato (copy-paste da mensagem de erro)
-2. Adicionar a linha na **ultima fatia** em [references/pitfalls/](references/pitfalls/) usando o **proximo numero global** (maior atual + 1); se a fatia ja estiver > ~50 KB, criar a proxima `NN-pitfalls-LLL-HHH.md`
-3. Acrescentar a linha-indice correspondente em [references/pitfalls.md](references/pitfalls.md) (numero + sintoma + fatia)
-4. Se o fix exige mudanca na sequencia: anotar inline com `**[pitfall #N]**`
-5. Se exige helper novo: atualizar secao 3 Helpers acima
-6. Incluir referencia de descoberta (task/pipeline/data)
+1. Identify the exact symptom (copy-paste of the error message)
+2. Add the row to the **last slice** in [references/pitfalls/](references/pitfalls/) using the **next global number** (current max + 1); if the slice is already > ~50 KB, create the next one `NN-pitfalls-LLL-HHH.md`
+3. Add the corresponding index line in [references/pitfalls.md](references/pitfalls.md) (number + symptom + slice)
+4. If the fix requires a change to the sequence: annotate inline with `**[pitfall #N]**`
+5. If it requires a new helper: update the Helpers section 3 above
+6. Include a discovery reference (task/pipeline/data)
 
-### Nao documentar aqui
+### Do not document here
 
-- Bugs de aplicacao reais (vao para relatorio com tag `[CONFIRMADO]`)
-- Test bugs (corrigir o teste, nao documentar como pitfall)
-- Ambiente inacessivel transitoriamente (timeout, VPN) - e flaky, nao pitfall
+- Real application bugs (go to the report with the `[CONFIRMED]` tag)
+- Test bugs (fix the test, do not document as a pitfall)
+- Transiently inaccessible environment (timeout, VPN) - that's flaky, not a pitfall
 
 ---
 
-## 7. Referencias cruzadas
+## 7. Cross-references
 
-- Modalidades 13m / 13m+16m / 16m Second Look: [[ssn-test-modalities]]
+- 13m / 13m+16m / 16m Second Look modalities: [[ssn-test-modalities]]
 - Risk tiers + state-specific rules: `docs/business-rules/appendix-g-cenarios-risco.md`
 - Test bank constants: `src/config/constants.ts` - `TEST_BANK.DEFAULT_ROUTING` / `DEFAULT_ACCOUNT`
 - Test cards: `src/data/test-cards.ts` - use `MASTERCARD_APPROVED` (BIN 5500)
 - Payment arrangement patterns: `test-patterns-arrangements.md`
 - Test Data Hierarchy: `../../rules/testing.md`
-- Brand coverage (UOWN + Kornerstone): [[ssn-test-modalities]] secao 7
+- Brand coverage (UOWN + Kornerstone): [[ssn-test-modalities]] section 7

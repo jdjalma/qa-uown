@@ -1,230 +1,230 @@
 ---
 name: exploratory-heuristics
-description: Carregar em sessão de exploração / sanity check / "preciso achar bug que ninguém viu" — aplica SFDIPOT, HICCUPPS, FEW-HICCUPPS de Bach/Bolton, ancorado em pontos quentes do domínio UOWN (float repr, locale, timing, concurrent state, OTP/IMAP).
+description: Load in an exploration session / sanity check / "I need to find a bug nobody saw" — applies Bach/Bolton's SFDIPOT, HICCUPPS, FEW-HICCUPPS, anchored in UOWN domain hotspots (float repr, locale, timing, concurrent state, OTP/IMAP).
 disable-model-invocation: true
 ---
 
-# Exploratory Heuristics — onde os bugs se escondem
+# Exploratory Heuristics — where the bugs hide
 
-> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **HOW TO EXPLORE** — heurísticas, charters, hotspots de domínio. Para regras canônicas que definem "comportamento esperado" em cada hotspot (signing routing, multi-merchant state, OTP flow), rode `node scripts/docs-tooling.mjs resolve gowsign-routing` (ou `merchant-config`, `esign`) ou leia `docs/business-rules/03-contratos-esign.md` + `01-fundamentos.md`. **Não duplique fatos de routing/estado aqui** — eles driftam.
+> **Authority boundary** (`docs/_docs-conventions.md` §7): this skill covers **HOW TO EXPLORE** — heuristics, charters, domain hotspots. For canonical rules that define "expected behavior" in each hotspot (signing routing, multi-merchant state, OTP flow), run `node scripts/docs-tooling.mjs resolve gowsign-routing` (or `merchant-config`, `esign`) or read `docs/business-rules/03-contratos-esign.md` + `01-fundamentos.md`. **Do not duplicate routing/state facts here** — they drift.
 
-> Testes scripted cobrem o que você sabe. Exploração com heurística cobre o que você não sabe que não sabe. Bach & Bolton dão os mapas; o domínio UOWN dá os hotspots.
+> Scripted tests cover what you know. Exploration with heuristics covers what you don't know that you don't know. Bach & Bolton provide the maps; the UOWN domain provides the hotspots.
 
-## Quando aplicar
+## When to apply
 
-- Sessão exploratória explícita (charter: "encontrar problemas em X em N minutos").
-- Pós-deploy de hotfix, antes do report final.
-- Bug "estranho" reportado pelo customer e não reproduz no scripted.
-- Antes de fechar uma feature complexa — pergunta "onde mais pode quebrar?".
-- Skill de complemento ao `test-design-techniques` quando o desenhado não pega o sutil.
+- Explicit exploratory session (charter: "find problems in X in N minutes").
+- Post-deploy of a hotfix, before the final report.
+- "Strange" bug reported by the customer that does not reproduce in scripted tests.
+- Before closing a complex feature — ask "where else could it break?".
+- Complementary skill to `test-design-techniques` when the designed cases don't catch the subtle ones.
 
-## Princípios
+## Principles
 
-1. **Heurística ≠ checklist.** Heurísticas são lentes; aplicar 1–2 com profundidade > rodar todas superficial.
-2. **Exploração tem charter.** Sem foco e tempo definidos, vira navegação. "Em 45min, validar signing GoSign CA em multi-merchant" é charter.
-3. **Notas em tempo real.** Bug escondido aparece em note, não em memória.
-4. **Reproduzir antes de classificar** (regra inviolável #10). Observação isolada não é bug.
+1. **Heuristic ≠ checklist.** Heuristics are lenses; applying 1–2 in depth > running all of them superficially.
+2. **Exploration has a charter.** Without defined focus and time, it becomes aimless browsing. "In 45min, validate GoSign CA signing in multi-merchant" is a charter.
+3. **Real-time notes.** A hidden bug shows up in a note, not in memory.
+4. **Reproduce before classifying** (inviolable rule #10). An isolated observation is not a bug.
 
-## Heurística 1 — SFDIPOT (varredura de áreas de teste)
+## Heuristic 1 — SFDIPOT (sweep of test areas)
 
-Mapa de áreas para varrer um produto. Bach & Bolton.
+A map of areas to sweep a product. Bach & Bolton.
 
-| Dimensão | Pergunta | Hotspot UOWN |
+| Dimension | Question | UOWN Hotspot |
 |---|---|---|
-| **S — Structure** | Que partes existem? UI, API, DB, jobs, vendors? | Origination + Servicing + Website + AMS; svc + balancer + ms; scheduled tasks |
-| **F — Function** | O que o produto faz? Cada função funciona isolada? | submit, sign, pay, refund, OTP, KYC, fraud check |
-| **D — Data** | Que dados consome/produz? Variações de tipo? | Money (float!), dates, SSN, addresses, phones, emails (IMAP), unicode em nomes |
-| **I — Interfaces** | Quais interfaces externas/internas? | Vendor APIs (Kount, SEON, Plaid, GowSign, SignWell, Twilio, Tilled, Repay, EasyPay, MX), webhooks, scheduled tasks |
-| **P — Platform** | Em que ambiente roda? Browsers, OS, mobile, viewport? | Customer = mobile real; Servicing/Origination = desktop 1440+ (regra #15); iframes (GowSign), PDFs |
-| **O — Operations** | Quem usa, como, com que perms? | Customer (Website), Agent (Servicing/Origination), Admin (AMS), Ops (CLI/admin endpoints) |
-| **T — Time** | Quando ocorre? Em que velocidade? Concorrência? | Scheduled jobs, OTP TTL, OEP window 60d, NSF retry, IMAP polling delay, single-flight refs |
+| **S — Structure** | Which parts exist? UI, API, DB, jobs, vendors? | Origination + Servicing + Website + AMS; svc + balancer + ms; scheduled tasks |
+| **F — Function** | What does the product do? Does each function work in isolation? | submit, sign, pay, refund, OTP, KYC, fraud check |
+| **D — Data** | What data does it consume/produce? Type variations? | Money (float!), dates, SSN, addresses, phones, emails (IMAP), unicode in names |
+| **I — Interfaces** | Which external/internal interfaces? | Vendor APIs (Kount, SEON, Plaid, GowSign, SignWell, Twilio, Tilled, Repay, EasyPay, MX), webhooks, scheduled tasks |
+| **P — Platform** | What environment does it run in? Browsers, OS, mobile, viewport? | Customer = real mobile; Servicing/Origination = desktop 1440+ (rule #15); iframes (GowSign), PDFs |
+| **O — Operations** | Who uses it, how, with what perms? | Customer (Website), Agent (Servicing/Origination), Admin (AMS), Ops (CLI/admin endpoints) |
+| **T — Time** | When does it happen? At what speed? Concurrency? | Scheduled jobs, OTP TTL, OEP window 60d, NSF retry, IMAP polling delay, single-flight refs |
 
-Procedimento: varre 1–2 dimensões por sessão; em cada, lista 3–5 perguntas concretas; persegue cada pergunta com prova.
+Procedure: sweep 1–2 dimensions per session; for each, list 3–5 concrete questions; pursue each question with proof.
 
-## Heurística 2 — HICCUPPS (oráculos de consistência)
+## Heuristic 2 — HICCUPPS (consistency oracles)
 
-Como você sabe que algo é bug se não há AC explícito? Oráculos:
+How do you know something is a bug if there's no explicit AC? Oracles:
 
-| Oráculo | Significado | Aplicação UOWN |
+| Oracle | Meaning | UOWN Application |
 |---|---|---|
-| **H — History** | Antes funcionava assim. | Antes da release X, signing CA gerava 5 colunas no PDF. Agora 3. Bug. |
-| **I — Image** | Imagem da empresa / marca. | KS template deve mostrar branding Kornerstone, não UOWN. |
-| **C — Comparable products** | Como concorrentes fazem. | SignWell em CA vs GoSign em CA — esperamos paridade (`project_gosign_rollout`). |
-| **C — Claims** | O que o produto promete (docs, marketing, contrato). | "Customer recebe OTP em <60s" — promessa. |
-| **U — User expectations** | O que usuário razoável espera. | Botão "Pay" deve cobrar; não deve só salvar rascunho. |
-| **P — Product (self-consistency)** | O produto consistente consigo. | Total no schedule deve bater com cash price (tolerância float). |
-| **P — Purpose** | Cumpre o propósito. | Lease document precisa ser legalmente válido. |
-| **S — Statutes** | Lei / regulação. | NACHA, ECOA, state-specific lease laws. |
+| **H — History** | It used to work this way. | Before release X, CA signing generated 5 columns in the PDF. Now 3. Bug. |
+| **I — Image** | Company / brand image. | KS template must show Kornerstone branding, not UOWN. |
+| **C — Comparable products** | How competitors do it. | SignWell in CA vs GoSign in CA — we expect parity (`project_gosign_rollout`). |
+| **C — Claims** | What the product promises (docs, marketing, contract). | "Customer receives OTP in <60s" — a promise. |
+| **U — User expectations** | What a reasonable user expects. | A "Pay" button should charge; it shouldn't just save a draft. |
+| **P — Product (self-consistency)** | The product consistent with itself. | The schedule total must match the cash price (float tolerance). |
+| **P — Purpose** | It fulfills its purpose. | The lease document must be legally valid. |
+| **S — Statutes** | Law / regulation. | NACHA, ECOA, state-specific lease laws. |
 
-Procedimento: ao observar comportamento estranho, percorre o ladder — qual oráculo está sendo violado? Se mais de um, peso maior.
+Procedure: when you observe strange behavior, walk the ladder — which oracle is being violated? If more than one, weight it higher.
 
-## Heurística 3 — FEW-HICCUPPS
+## Heuristic 3 — FEW-HICCUPPS
 
-Versão estendida com:
-- **F — Familiar problems** — bug já visto em sistema similar. Caso UOWN: race condition em retry de payment vendor.
-- **E — Explainability** — comportamento que não consigo explicar é suspeito.
-- **W — World** — fatos do mundo (datas, geografia, moeda). Caso UOWN: validar que `state=CA` realmente puxa template CA, não fallback.
+Extended version with:
+- **F — Familiar problems** — a bug already seen in a similar system. UOWN case: race condition in payment vendor retry.
+- **E — Explainability** — behavior I can't explain is suspect.
+- **W — World** — facts of the world (dates, geography, currency). UOWN case: validate that `state=CA` really pulls the CA template, not a fallback.
 
-## Hotspots UOWN — onde focar exploração
+## UOWN Hotspots — where to focus exploration
 
-Lista curada de áreas onde bugs aparecem desproporcionalmente:
+Curated list of areas where bugs appear disproportionately:
 
 ### 1. Money & float repr
-- `feedback_float_repr_not_bug` — `18.46` vs `18.459999...` é arredondamento, não bug funcional. MAS visualização incorreta no PDF/UI é bug visual.
-- Compara com `toBeCloseTo(precision)` em assertion.
+- `feedback_float_repr_not_bug` — `18.46` vs `18.459999...` is rounding, not a functional bug. BUT incorrect display in the PDF/UI is a visual bug.
+- Compare with `toBeCloseTo(precision)` in the assertion.
 - Hotspot: schedule, processing fee, total, refund.
 
 ### 2. Locale / state
-- Tudo assumido EN-US. Strings vazias, fallback de template, formatação currency.
-- Hotspot: estados ativos em GoSign vs SignWell (`project_gosign_rollout`); KS vs UOWN branding.
+- Everything assumed EN-US. Empty strings, template fallback, currency formatting.
+- Hotspot: active states in GoSign vs SignWell (`project_gosign_rollout`); KS vs UOWN branding.
 
 ### 3. Timing / async
-- OTP TTL: link clicado tarde demais.
-- IMAP polling: email demora; teste falha por race.
+- OTP TTL: link clicked too late.
+- IMAP polling: email is delayed; test fails due to a race.
 - Scheduled task vs UI action.
-- Webhook vendor chegando antes do esperado.
+- Vendor webhook arriving earlier than expected.
 - Single-flight ref (`feedback_qa_flow_scope_dual_brand_lease_edit`).
 
 ### 4. Concurrent state
-- 2 invoices ativas, customer abre a antiga.
-- Lead em transição enquanto agent edita.
-- Múltiplos tabs do customer.
+- 2 active invoices, customer opens the old one.
+- Lead in transition while agent edits.
+- Multiple customer tabs.
 
 ### 5. OTP / Email IMAP
-- Sempre clicar no link real do email (`feedback_email_imap_click_link`); não usar URL da API.
-- Plus-addressing por runId (`reference_imap_fintechgroup777`).
-- Email cai em spam — fora do escopo, mas registrar.
+- Always click the real email link (`feedback_email_imap_click_link`); don't use the API URL.
+- Plus-addressing by runId (`reference_imap_fintechgroup777`).
+- Email lands in spam — out of scope, but record it.
 
 ### 6. Vendor failure modes
-- Kount/SEON: sem resposta → comportamento?
-- Plaid/MX: link expira mid-flow.
-- GowSign/SignWell: iframe quebra; PDF rendering falha.
-- Twilio: SMS não chega; OTP fallback?
+- Kount/SEON: no response → behavior?
+- Plaid/MX: link expires mid-flow.
+- GowSign/SignWell: iframe breaks; PDF rendering fails.
+- Twilio: SMS doesn't arrive; OTP fallback?
 
-### 7. Activity log (regra #13)
-- Toda ação relevante deve gerar row em `uown_los_lead_notes` ou equivalente.
-- "Não vi log" = "nada aconteceu" = bug de implementação.
+### 7. Activity log (rule #13)
+- Every relevant action must generate a row in `uown_los_lead_notes` or equivalent.
+- "I didn't see a log" = "nothing happened" = implementation bug.
 
-### 8. Merchant config drift (regra #12)
-- Checkboxes vs programas (13m/16m) — `merchant-config-contract.ts` é a verdade.
-- Drift entre envs.
+### 8. Merchant config drift (rule #12)
+- Checkboxes vs programs (13m/16m) — `merchant-config-contract.ts` is the truth.
+- Drift across envs.
 
 ### 9. Dual-brand parity
-- UOWN funciona; KS não testado → assume parity, viola realidade (`feedback_qa_flow_scope_dual_brand_lease_edit`).
+- UOWN works; KS not tested → assume parity, violates reality (`feedback_qa_flow_scope_dual_brand_lease_edit`).
 
 ### 10. PDF / iframe rendering
-- Daniel's Jewelers CA: coluna sumida no PDF — log dizia tudo certo. Caso clássico de "log não é UI".
-- Validar diff visual SignWell vs GoSign.
+- Daniel's Jewelers CA: column missing in the PDF — the log said everything was fine. Classic case of "log is not UI".
+- Validate the visual diff SignWell vs GoSign.
 
-## Procedimento
+## Procedure
 
-### Passo 1 — Charter
+### Step 1 — Charter
 
-Escreve em 1 frase:
-> "Em {tempo}, explorar {área} com foco em {risco}; bug-criteria: {oráculos}."
+Write in 1 sentence:
+> "In {time}, explore {area} focusing on {risk}; bug-criteria: {oracles}."
 
-Exemplo: "Em 45min, explorar signing GoSign Pennsylvania com foco em PDF rendering; bug-criteria = History (vs SignWell PA antigo), Product (placeholders resolvidos), Claims (template aprovado pelo legal)."
+Example: "In 45min, explore GoSign Pennsylvania signing focusing on PDF rendering; bug-criteria = History (vs old SignWell PA), Product (placeholders resolved), Claims (template approved by legal)."
 
-### Passo 2 — Aplicar heurística-guia
+### Step 2 — Apply a guiding heuristic
 
-Escolhe 1 heurística como lente principal (SFDIPOT pra varredura ampla, HICCUPPS pra checar comportamento específico).
+Choose 1 heuristic as the main lens (SFDIPOT for a broad sweep, HICCUPPS to check specific behavior).
 
-### Passo 3 — Note-taking durante exploração
+### Step 3 — Note-taking during exploration
 
-Formato sugerido:
+Suggested format:
 ```
-[hh:mm] área: {SFDIPOT label}
-ação: ...
-observação: ...
-oráculo violado: {HICCUPPS letter}
-classificação: [OBSERVAÇÃO] | [HIPÓTESE] | [CONFIRMADO]
-próximo passo: ...
+[hh:mm] area: {SFDIPOT label}
+action: ...
+observation: ...
+oracle violated: {HICCUPPS letter}
+classification: [OBSERVATION] | [HYPOTHESIS] | [CONFIRMED]
+next step: ...
 ```
 
-### Passo 4 — Reproduzir antes de classificar (regra #10)
+### Step 4 — Reproduce before classifying (rule #10)
 
-Toda `[OBSERVAÇÃO]` que parece bug:
-1. Repete em dados fresh.
-2. Checa task/issue existente.
-3. Descarta artefato de dado pré-existente.
-4. Só então promove para `[CONFIRMADO]`.
+Every `[OBSERVATION]` that looks like a bug:
+1. Repeat it in fresh data.
+2. Check for an existing task/issue.
+3. Rule out a pre-existing-data artifact.
+4. Only then promote it to `[CONFIRMED]`.
 
-### Passo 5 — Output da sessão
+### Step 5 — Session output
 
 ```markdown
 ## Exploratory Session — {charter}
 
 ### Charter
-{texto}
+{text}
 
-### Heurística aplicada
-SFDIPOT focando em {dimensões}
+### Heuristic applied
+SFDIPOT focusing on {dimensions}
 
 ### Notes
 [hh:mm] ... (timeline)
 
 ### Findings
-- [CONFIRMADO] {bug} — repro: passos | oráculo: H/I/C/C/U/P/P/S
-- [HIPÓTESE] {observação} — falta repro fresh
-- [OBSERVAÇÃO] {observação} — possivelmente artefato
+- [CONFIRMED] {bug} — repro: steps | oracle: H/I/C/C/U/P/P/S
+- [HYPOTHESIS] {observation} — fresh repro missing
+- [OBSERVATION] {observation} — possibly an artifact
 
-### Cobertura desta sessão
-Áreas exploradas: ...
-Áreas NÃO exploradas (próxima sessão): ...
+### Coverage of this session
+Areas explored: ...
+Areas NOT explored (next session): ...
 
-### Sugestão de scripted follow-up
-Casos que valem virar test.spec.ts: ...
+### Suggested scripted follow-up
+Cases worth turning into a test.spec.ts: ...
 ```
 
-## Heurísticas (meta-dicas)
+## Heuristics (meta-tips)
 
-- **"Procure onde a luz NÃO está."** Resista à tendência de explorar onde é fácil. Vai para vendor edge, locale-edge, error path.
-- **"Pergunte-se: o que assumi?"** Cada assunção é um teste candidato.
-- **"Mude 1 variável."** Mesma ação, customer em mobile vs desktop. Mesma ação, KS vs UOWN. Mesma ação, agent vs customer.
-- **"Quebre a ordem."** Click steps fora de ordem. Refresh no meio. Voltar página.
-- **"Persiga a inconsistência."** Se 2 telas mostram dados diferentes, qual está certo? Por quê?
-- **"Não confie no log até validar o que o cliente vê."** Caso Daniel's Jewelers — log dizia OK, PDF não.
+- **"Look where the light is NOT."** Resist the tendency to explore where it's easy. Go to the vendor edge, locale-edge, error path.
+- **"Ask yourself: what did I assume?"** Each assumption is a candidate test.
+- **"Change 1 variable."** Same action, customer on mobile vs desktop. Same action, KS vs UOWN. Same action, agent vs customer.
+- **"Break the order."** Click steps out of order. Refresh midway. Go back a page.
+- **"Pursue the inconsistency."** If 2 screens show different data, which is right? Why?
+- **"Don't trust the log until you validate what the customer sees."** Daniel's Jewelers case — the log said OK, the PDF didn't.
 
-## Output esperado
+## Expected output
 
-Documento de sessão (template acima). Tamanho proporcional ao tempo: 45min → 80–150 linhas. Bug claims sempre com `[CLASSIFICAÇÃO]` explícita.
+Session document (template above). Size proportional to time: 45min → 80–150 lines. Bug claims always with an explicit `[CLASSIFICATION]`.
 
 ## Anti-patterns
 
-- "Exploração livre" sem charter — viver de impressão; relatório pobre.
-- Reportar `[CONFIRMADO]` sem reprodução fresh — viola regra #10.
-- Aplicar SFDIPOT como checklist superficial em vez de profundamente em 1–2 dimensões.
-- Confiar em log/DB sem validar UI quando o oráculo é visual.
-- Esquecer activity log (regra #13) como oráculo independente.
-- Não anotar timeline — perde repro depois.
+- "Free exploration" without a charter — living on impressions; a poor report.
+- Reporting `[CONFIRMED]` without fresh reproduction — violates rule #10.
+- Applying SFDIPOT as a superficial checklist instead of going deep on 1–2 dimensions.
+- Trusting the log/DB without validating the UI when the oracle is visual.
+- Forgetting the activity log (rule #13) as an independent oracle.
+- Not recording the timeline — losing the repro later.
 
-## Exemplos curtos (domínio UOWN)
+## Short examples (UOWN domain)
 
-### Exemplo 1 — Charter: "Signing GoSign Pennsylvania, 30min"
+### Example 1 — Charter: "GoSign Pennsylvania signing, 30min"
 
-Heurística: HICCUPPS.
-- History: comparado com Signing PA via SignWell antigo. Resultado: GoSign PA não tem coluna "Total" no schedule final que SignWell tinha — `[CONFIRMADO]` (H + P).
-- Product: placeholders resolvidos? Sim.
-- Statutes: lease document menciona "Pennsylvania Consumer Lease Act"? `[OBSERVAÇÃO]` — precisa checar com legal, não testável agora.
+Heuristic: HICCUPPS.
+- History: compared to old PA signing via SignWell. Result: GoSign PA doesn't have the "Total" column in the final schedule that SignWell had — `[CONFIRMED]` (H + P).
+- Product: placeholders resolved? Yes.
+- Statutes: does the lease document mention the "Pennsylvania Consumer Lease Act"? `[OBSERVATION]` — needs checking with legal, not testable right now.
 
-### Exemplo 2 — Charter: "Refund flow no Servicing, 1h"
+### Example 2 — Charter: "Refund flow in Servicing, 1h"
 
-Heurística: SFDIPOT em D (Data) + T (Time).
-- D: refund amount em float — `19.999...` na UI? `[CONFIRMADO]` exibição feia (não bug funcional, mas UX).
-- D: refund > original payment — bloqueado? `[CONFIRMADO]` validação OK.
-- T: refund disparado, scheduled job vendor responde tarde — UI mostra o quê durante? `[HIPÓTESE]` "Pending" spinner pode ficar travado; precisa repro fresh.
-- T: 2 refunds em 1s — race? `[OBSERVAÇÃO]` 2º clique bloqueado pelo botão, mas API aceita 2 chamadas — possível bug se bypassed.
+Heuristic: SFDIPOT on D (Data) + T (Time).
+- D: refund amount in float — `19.999...` in the UI? `[CONFIRMED]` ugly display (not a functional bug, but UX).
+- D: refund > original payment — blocked? `[CONFIRMED]` validation OK.
+- T: refund triggered, vendor scheduled job responds late — what does the UI show in the meantime? `[HYPOTHESIS]` "Pending" spinner may get stuck; needs fresh repro.
+- T: 2 refunds in 1s — race? `[OBSERVATION]` 2nd click blocked by the button, but the API accepts 2 calls — possible bug if bypassed.
 
-### Exemplo 3 — Charter: "OTP customer no Website, 45min"
+### Example 3 — Charter: "Customer OTP on the Website, 45min"
 
-Heurística: FEW-HICCUPPS + hotspot OTP.
-- Email IMAP — link clicado depois de 5min: válido? `[OBSERVAÇÃO]` TTL não documentado.
-- 2 OTPs solicitados em 10s: ambos válidos? Apenas o último? `[HIPÓTESE]` precisa repro.
-- OTP em locale es-ES (assumindo customer espanhol) — texto do email cai em EN? `[CONFIRMADO]` Locale assumido EN; nenhuma versão localizada.
+Heuristic: FEW-HICCUPPS + OTP hotspot.
+- Email IMAP — link clicked after 5min: valid? `[OBSERVATION]` TTL not documented.
+- 2 OTPs requested in 10s: both valid? Only the last one? `[HYPOTHESIS]` needs repro.
+- OTP in locale es-ES (assuming a Spanish customer) — does the email text fall back to EN? `[CONFIRMED]` Locale assumed EN; no localized version.
 
-## Referências
+## References
 
-- Bach & Bolton — "Heuristic Test Strategy Model" (público)
+- Bach & Bolton — "Heuristic Test Strategy Model" (public)
 - `skill [[qa-domain-reflexes]]`
 - `skill [[bug-classification]]`
 - memory: `feedback_float_repr_not_bug`, `feedback_email_imap_click_link`, `project_gosign_rollout`, `feedback_qa_flow_scope_dual_brand_lease_edit`, `reference_imap_fintechgroup777`

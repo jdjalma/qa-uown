@@ -66,18 +66,18 @@ export function sleep(ms: number): Promise<void> {
 
 export interface PollUntilOptions {
   timeoutMs?: number;
-  /** Intervalo inicial; cresce por DB_POLL_BACKOFF até DB_POLL_MAX. */
+  /** Initial interval; grows by DB_POLL_BACKOFF up to DB_POLL_MAX. */
   intervalMs?: number;
   logPrefix?: string;
 }
 
 /**
- * Poll `check` com backoff exponencial até retornar valor não-nulo ou estourar
- * `timeoutMs`. Retorna `null` no timeout (callers decidem skip/fail). Erros do
- * `check` são logados e a poll continua (transientes de DB).
+ * Polls `check` with exponential backoff until it returns a non-null value or
+ * `timeoutMs` is exceeded. Returns `null` on timeout (callers decide skip/fail). Errors from
+ * `check` are logged and the poll continues (DB transients).
  *
- * Primitivo compartilhado — antes reimplementado em database/esign-db/settled-in-full.
- * NÃO cobre o caso "throw no timeout + intervalo fixo" (ver `sticky.helpers.ts`).
+ * Shared primitive — previously reimplemented in database/esign-db/settled-in-full.
+ * Does NOT cover the "throw on timeout + fixed interval" case (see `sticky.helpers.ts`).
  */
 export async function pollUntil<T>(
   check: () => Promise<T | null>,

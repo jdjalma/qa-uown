@@ -614,8 +614,8 @@
           "anchor": "oq-resolutions-all-confirmed-via-live-dom-inspection-qa2-2026-06-18"
         },
         {
-          "heading": "Filter Map por Página",
-          "anchor": "filter-map-por-página"
+          "heading": "Filter Map by Page",
+          "anchor": "filter-map-by-page"
         },
         {
           "heading": "MMH (/merchantModificationHistory)",
@@ -630,24 +630,24 @@
           "anchor": "funding-queue-funding"
         },
         {
-          "heading": "Status Filter — Opções Confirmadas (OQ-06)",
-          "anchor": "status-filter-opções-confirmadas-oq-06"
+          "heading": "Status Filter — Confirmed Options (OQ-06)",
+          "anchor": "status-filter-confirmed-options-oq-06"
         },
         {
-          "heading": "Componente Compartilhado — Estrutura DOM",
-          "anchor": "componente-compartilhado-estrutura-dom"
+          "heading": "Shared Component — DOM Structure",
+          "anchor": "shared-component-dom-structure"
         },
         {
-          "heading": "Classes CSS (consistentes nas 3 páginas)",
-          "anchor": "classes-css-consistentes-nas-3-páginas"
+          "heading": "CSS Classes (consistent across the 3 pages)",
+          "anchor": "css-classes-consistent-across-the-3-pages"
         },
         {
-          "heading": "Estrutura de cada opção",
-          "anchor": "estrutura-de-cada-opção"
+          "heading": "Structure of each option",
+          "anchor": "structure-of-each-option"
         },
         {
-          "heading": "\"Select All\" — comportamento divergente por filtro",
-          "anchor": "select-all-comportamento-divergente-por-filtro"
+          "heading": "\"Select All\" — behavior diverges per filter",
+          "anchor": "select-all-behavior-diverges-per-filter"
         },
         {
           "heading": "CSV Export (Funding Queue — OQ-05)",
@@ -658,8 +658,8 @@
           "anchor": "on-demand-report-oq-03"
         },
         {
-          "heading": "Diferenças entre páginas (para implementação)",
-          "anchor": "diferenças-entre-páginas-para-implementação"
+          "heading": "Differences between pages (for implementation)",
+          "anchor": "differences-between-pages-for-implementation"
         },
         {
           "heading": "Business Rules (domain rules)",
@@ -674,8 +674,8 @@
           "anchor": "connections-with-what-was-already-known"
         },
         {
-          "heading": "Hipóteses resolvidas — confirmadas via discovery 2026-06-18",
-          "anchor": "hipóteses-resolvidas-confirmadas-via-discovery-2026-06-18"
+          "heading": "Resolved hypotheses — confirmed via discovery 2026-06-18",
+          "anchor": "resolved-hypotheses-confirmed-via-discovery-2026-06-18"
         },
         {
           "heading": "Gaps / To Investigate",
@@ -801,68 +801,68 @@
       ],
       "sections": [
         {
-          "heading": "Pergunta",
-          "anchor": "pergunta"
+          "heading": "Question",
+          "anchor": "question"
         },
         {
-          "heading": "Achados (qa2, 2026-06-19) — `[CONFIRMADO]` por dados",
-          "anchor": "achados-qa2-2026-06-19-confirmado-por-dados"
+          "heading": "Findings (qa2, 2026-06-19) — `[CONFIRMED]` by data",
+          "anchor": "findings-qa2-2026-06-19-confirmed-by-data"
         },
         {
-          "heading": "1. Colunas existem em qa2",
-          "anchor": "1-colunas-existem-em-qa2"
+          "heading": "1. The columns exist in qa2",
+          "anchor": "1-the-columns-exist-in-qa2"
         },
         {
-          "heading": "2. `npm_segment` POPULA em qa2 — via GDS, 16m, **não-TireAgent**",
-          "anchor": "2-npm_segment-popula-em-qa2-via-gds-16m-não-tireagent"
+          "heading": "2. `npm_segment` POPULATES in qa2 — via GDS, 16m, **non-TireAgent**",
+          "anchor": "2-npm_segment-populates-in-qa2-via-gds-16m-non-tireagent"
         },
         {
-          "heading": "3. `tam_score` NUNCA popula em qa2 — `[CONFIRMADO]` 0/6046",
-          "anchor": "3-tam_score-nunca-popula-em-qa2-confirmado-06046"
+          "heading": "3. `tam_score` NEVER populates in qa2 — `[CONFIRMED]` 0/6046",
+          "anchor": "3-tam_score-never-populates-in-qa2-confirmed-06046"
         },
         {
-          "heading": "4. Engine distribution (qa2, todo `uown_los_uwdata`)",
-          "anchor": "4-engine-distribution-qa2-todo-uown_los_uwdata"
+          "heading": "4. Engine distribution (qa2, all of `uown_los_uwdata`)",
+          "anchor": "4-engine-distribution-qa2-all-of-uown_los_uwdata"
         },
         {
-          "heading": "Resolução das open questions do SPEC",
-          "anchor": "resolução-das-open-questions-do-spec"
+          "heading": "Resolution of the SPEC open questions",
+          "anchor": "resolution-of-the-spec-open-questions"
         },
         {
-          "heading": "Implicação para o SPEC 1313",
-          "anchor": "implicação-para-o-spec-1313"
+          "heading": "Implication for SPEC 1313",
+          "anchor": "implication-for-spec-1313"
         },
         {
-          "heading": "Experimento via API 2026-06-21 — `[CONFIRMADO por dados]` (qa2, túnel `127.0.0.1:5445`)",
-          "anchor": "experimento-via-api-2026-06-21-confirmado-por-dados-qa2-túnel-1270015445"
+          "heading": "Experiment via API 2026-06-21 — `[CONFIRMED by data]` (qa2, tunnel `127.0.0.1:5445`)",
+          "anchor": "experiment-via-api-2026-06-21-confirmed-by-data-qa2-tunnel-1270015445"
         },
         {
-          "heading": "(a) Merchant-config NÃO é o lever do cap 13m — `[CONFIRMADO por dados]`",
-          "anchor": "a-merchant-config-não-é-o-lever-do-cap-13m-confirmado-por-dados"
+          "heading": "(a) Merchant-config is NOT the lever for the 13m cap — `[CONFIRMED by data]`",
+          "anchor": "a-merchant-config-is-not-the-lever-for-the-13m-cap-confirmed-by-data"
         },
         {
-          "heading": "(b) SSN sufixo `916` é mock-only (BlackBox, qa1/sandbox) — `[CONFIRMADO por dados]`",
-          "anchor": "b-ssn-sufixo-916-é-mock-only-blackbox-qa1sandbox-confirmado-por-dados"
+          "heading": "(b) SSN suffix `916` is mock-only (BlackBox, qa1/sandbox) — `[CONFIRMED by data]`",
+          "anchor": "b-ssn-suffix-916-is-mock-only-blackbox-qa1sandbox-confirmed-by-data"
         },
         {
-          "heading": "(c) Lead 15945 — único TireAgent `eligible_terms=16` histórico, pré-migration — `[CONFIRMADO por dados]`",
-          "anchor": "c-lead-15945-único-tireagent-eligible_terms16-histórico-pré-migration-confirmado-por-dados"
+          "heading": "(c) Lead 15945 — the only historical TireAgent `eligible_terms=16`, pre-migration — `[CONFIRMED by data]`",
+          "anchor": "c-lead-15945-the-only-historical-tireagent-eligible_terms16-pre-migration-confirmed-by-data"
         },
         {
-          "heading": "(d) Second Look `0053` continua DENIED em qa2 — `[CONFIRMADO por dados]`",
-          "anchor": "d-second-look-0053-continua-denied-em-qa2-confirmado-por-dados"
+          "heading": "(d) Second Look `0053` is still DENIED in qa2 — `[CONFIRMED by data]`",
+          "anchor": "d-second-look-0053-is-still-denied-in-qa2-confirmed-by-data"
         },
         {
-          "heading": "(e) Tabela — tentado × `eligible_terms` resultante (TireAgent qa2, apps frescas 2026-06-21)",
-          "anchor": "e-tabela-tentado-×-eligible_terms-resultante-tireagent-qa2-apps-frescas-2026-06-21"
+          "heading": "(e) Table — attempted × resulting `eligible_terms` (TireAgent qa2, fresh apps 2026-06-21)",
+          "anchor": "e-table-attempted-×-resulting-eligible_terms-tireagent-qa2-fresh-apps-2026-06-21"
         },
         {
-          "heading": "Conclusão fechada",
-          "anchor": "conclusão-fechada"
+          "heading": "Closed conclusion",
+          "anchor": "closed-conclusion"
         },
         {
-          "heading": "Corrige/atualiza",
-          "anchor": "corrigeatualiza"
+          "heading": "Corrects/updates",
+          "anchor": "correctsupdates"
         }
       ]
     },
@@ -1013,6 +1013,599 @@
       ]
     },
     {
+      "file": "scheduled-payments.md",
+      "path": "docs/knowledge-base/scheduled-payments.md",
+      "title": "Scheduled Payments (Due Amounts)",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "stable",
+      "last_verified": "2026-06-25",
+      "covers": [],
+      "sources": [
+        {
+          "type": "env",
+          "value": "sandbox"
+        },
+        {
+          "type": "account",
+          "value": "17298 (Sanjay James, Tire Agent, 13-month ACTIVE lease)"
+        },
+        {
+          "type": "account",
+          "value": "100 (sandbox PAID_OUT account — Fully Paid rows)"
+        },
+        {
+          "type": "code",
+          "value": "servicing/components/account-summary/index.tsx"
+        },
+        {
+          "type": "code",
+          "value": "servicing/components/add-comment-modal/index.tsx"
+        },
+        {
+          "type": "code",
+          "value": "servicing/components/modals/prorated-amount/index.tsx"
+        },
+        {
+          "type": "code",
+          "value": "servicing/domain/stores/customer.tsx"
+        },
+        {
+          "type": "code",
+          "value": "servicing/layouts/auth/index.tsx"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Portal / URL",
+          "anchor": "portal-url"
+        },
+        {
+          "heading": "Page Structure",
+          "anchor": "page-structure"
+        },
+        {
+          "heading": "Account Summary Bar",
+          "anchor": "account-summary-bar"
+        },
+        {
+          "heading": "Account Summary Bar — Action Icons",
+          "anchor": "account-summary-bar-action-icons"
+        },
+        {
+          "heading": "5. Prorated Amount Modal (`#calculator`)",
+          "anchor": "5-prorated-amount-modal-calculator"
+        },
+        {
+          "heading": "6. Make Payment Modal (`#makePayment`)",
+          "anchor": "6-make-payment-modal-makepayment"
+        },
+        {
+          "heading": "7. Send Invite Modal (`#invitation`)",
+          "anchor": "7-send-invite-modal-invitation"
+        },
+        {
+          "heading": "Left Sidebar",
+          "anchor": "left-sidebar"
+        },
+        {
+          "heading": "Data Table — \"Due Amounts\"",
+          "anchor": "data-table-due-amounts"
+        },
+        {
+          "heading": "Row-Level Actions (Columns 10 & 11)",
+          "anchor": "row-level-actions-columns-10-11"
+        },
+        {
+          "heading": "Available Operations",
+          "anchor": "available-operations"
+        },
+        {
+          "heading": "1. Move Due Date (page-level button)",
+          "anchor": "1-move-due-date-page-level-button"
+        },
+        {
+          "heading": "2. Add Fee (page-level button)",
+          "anchor": "2-add-fee-page-level-button"
+        },
+        {
+          "heading": "3. Edit Scheduled Payment (pencil icon per row)",
+          "anchor": "3-edit-scheduled-payment-pencil-icon-per-row"
+        },
+        {
+          "heading": "4. Payment Reallocation (⇄ icon per row)",
+          "anchor": "4-payment-reallocation-icon-per-row"
+        },
+        {
+          "heading": "API Endpoints",
+          "anchor": "api-endpoints"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "DOM Selectors Catalog",
+          "anchor": "dom-selectors-catalog"
+        },
+        {
+          "heading": "Existing Page Object Coverage",
+          "anchor": "existing-page-object-coverage"
+        },
+        {
+          "heading": "Gaps / Remaining Unknowns",
+          "anchor": "gaps-remaining-unknowns"
+        }
+      ]
+    },
+    {
+      "file": "search-page.md",
+      "path": "docs/knowledge-base/search-page.md",
+      "title": "Search Page — Servicing Portal",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "stable",
+      "last_verified": "2026-06-25",
+      "covers": [
+        "csv-export"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "sandbox"
+        },
+        {
+          "type": "url",
+          "value": "https://svc-website-sandbox.uownleasing.com/search"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Available Operations",
+          "anchor": "available-operations"
+        },
+        {
+          "heading": "Estrutura da Página",
+          "anchor": "estrutura-da-página"
+        },
+        {
+          "heading": "1. Navigation Bar (topo)",
+          "anchor": "1-navigation-bar-topo"
+        },
+        {
+          "heading": "2. Barra de Ações (abaixo do título \"Search Result\")",
+          "anchor": "2-barra-de-ações-abaixo-do-título-search-result"
+        },
+        {
+          "heading": "3. Painel de Filtros (collapsível)",
+          "anchor": "3-painel-de-filtros-collapsível"
+        },
+        {
+          "heading": "4. Tabela de Resultados",
+          "anchor": "4-tabela-de-resultados"
+        },
+        {
+          "heading": "5. Paginação",
+          "anchor": "5-paginação"
+        },
+        {
+          "heading": "6. Estado Vazio",
+          "anchor": "6-estado-vazio"
+        },
+        {
+          "heading": "7. Quick Search (navbar — desktop)",
+          "anchor": "7-quick-search-navbar-desktop"
+        },
+        {
+          "heading": "8. Modal Email CSV",
+          "anchor": "8-modal-email-csv"
+        },
+        {
+          "heading": "Flow e Estados",
+          "anchor": "flow-e-estados"
+        },
+        {
+          "heading": "Behavior Mobile vs Desktop",
+          "anchor": "behavior-mobile-vs-desktop"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Connections with What Was Already Known",
+          "anchor": "connections-with-what-was-already-known"
+        },
+        {
+          "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "seon-idv-widget-user-behavior.md",
+      "path": "docs/knowledge-base/seon-idv-widget-user-behavior.md",
+      "title": "SEON IDV Widget — User Behavior & Coverage Gap",
+      "domain": "knowledge-base",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-23",
+      "covers": [
+        "fraud-vendors",
+        "esign",
+        "lead-status",
+        "account-status",
+        "activity-log"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "sandbox (live widget inspected via MCP Playwright, 2026-06-23)"
+        },
+        {
+          "type": "lead",
+          "value": "97955 (FifthAveFurnitureNY KS3015, isSeonIdCheckRequired=true) — widget rendered on /complete load"
+        },
+        {
+          "type": "url",
+          "value": "https://secure-sandbox.kornerstoneliving.com/{shortCode}/complete?planId=BW13"
+        },
+        {
+          "type": "db",
+          "value": "sandbox uown_los_lead.internal_status (SEON_ID_FAILED on leads 97950/97951/97943/97942/97940) vs lead_status (UW_APPROVED)"
+        },
+        {
+          "type": "svc",
+          "value": "IdVerificationService.java:254 · SeonIdVerificationStep.java:45-50 · UpdateLeadStatusService.java:41-67 · LeadService.java:358"
+        },
+        {
+          "type": "common",
+          "value": "LeadInfo.java:43-44,119-120,199-210 (lead_status vs internal_status columns)"
+        },
+        {
+          "type": "specs",
+          "value": "tests/api/seon-id-verification-bypass.spec.ts · tests/api/seon-negative-scenarios.spec.ts · tests/e2e/origination/seon-e2e-flow.spec.ts"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "TL;DR",
+          "anchor": "tldr"
+        },
+        {
+          "heading": "The real widget (live, sandbox 2026-06-23)",
+          "anchor": "the-real-widget-live-sandbox-2026-06-23"
+        },
+        {
+          "heading": "Trigger mechanism",
+          "anchor": "trigger-mechanism"
+        },
+        {
+          "heading": "Cross-origin interaction (key for automation)",
+          "anchor": "cross-origin-interaction-key-for-automation"
+        },
+        {
+          "heading": "SEON_ID_FAILED — corrected mechanics `[confirmed]`",
+          "anchor": "seon_id_failed-corrected-mechanics-confirmed"
+        },
+        {
+          "heading": "Coverage map",
+          "anchor": "coverage-map"
+        },
+        {
+          "heading": "Covered — backend gate + P0 widget behaviors (updated 2026-06-23)",
+          "anchor": "covered-backend-gate-p0-widget-behaviors-updated-2026-06-23"
+        },
+        {
+          "heading": "Uncovered — every real user behavior",
+          "anchor": "uncovered-every-real-user-behavior"
+        },
+        {
+          "heading": "Scenario matrix — user behavior (to implement)",
+          "anchor": "scenario-matrix-user-behavior-to-implement"
+        },
+        {
+          "heading": "Page-object gaps",
+          "anchor": "page-object-gaps"
+        },
+        {
+          "heading": "CT-06 — Complete via camera (manual procedure)",
+          "anchor": "ct-06-complete-via-camera-manual-procedure"
+        },
+        {
+          "heading": "Pipeline results — P0 suite (sandbox 2026-06-23)",
+          "anchor": "pipeline-results-p0-suite-sandbox-2026-06-23"
+        },
+        {
+          "heading": "Observability gaps (flag for dev/PO — not confirmed bugs)",
+          "anchor": "observability-gaps-flag-for-devpo-not-confirmed-bugs"
+        },
+        {
+          "heading": "Related",
+          "anchor": "related"
+        }
+      ]
+    },
+    {
+      "file": "servicing-documents-page.md",
+      "path": "docs/knowledge-base/servicing-documents-page.md",
+      "title": "Servicing Documents Page",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "stable",
+      "last_verified": "2026-06-25",
+      "covers": [],
+      "sources": [
+        {
+          "type": "env",
+          "value": "sandbox"
+        },
+        {
+          "type": "account",
+          "value": "17298"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "URL Pattern",
+          "anchor": "url-pattern"
+        },
+        {
+          "heading": "Layout da Página",
+          "anchor": "layout-da-página"
+        },
+        {
+          "heading": "Navbar (topo)",
+          "anchor": "navbar-topo"
+        },
+        {
+          "heading": "Sidebar (esquerda — 4 tabs de navegação)",
+          "anchor": "sidebar-esquerda-4-tabs-de-navegação"
+        },
+        {
+          "heading": "Account Summary Header",
+          "anchor": "account-summary-header"
+        },
+        {
+          "heading": "Seção Documents — Tabela",
+          "anchor": "seção-documents-tabela"
+        },
+        {
+          "heading": "Barra de controles",
+          "anchor": "barra-de-controles"
+        },
+        {
+          "heading": "Colunas da tabela",
+          "anchor": "colunas-da-tabela"
+        },
+        {
+          "heading": "Ícones de ação por linha",
+          "anchor": "ícones-de-ação-por-linha"
+        },
+        {
+          "heading": "Paginação",
+          "anchor": "paginação"
+        },
+        {
+          "heading": "Modais",
+          "anchor": "modais"
+        },
+        {
+          "heading": "1. Prorated Amount (`fa-calculator`)",
+          "anchor": "1-prorated-amount-fa-calculator"
+        },
+        {
+          "heading": "2. Make Payment (`fa-circle-dollar`)",
+          "anchor": "2-make-payment-fa-circle-dollar"
+        },
+        {
+          "heading": "3. Send Invite (`fa-envelope`)",
+          "anchor": "3-send-invite-fa-envelope"
+        },
+        {
+          "heading": "4. Edit Documents (`fa-pen`)",
+          "anchor": "4-edit-documents-fa-pen"
+        },
+        {
+          "heading": "5. Resend Document (`fa-arrow-rotate-right`)",
+          "anchor": "5-resend-document-fa-arrow-rotate-right"
+        },
+        {
+          "heading": "6. Attach/Upload Documents — ADD NEW (`fa-plus`)",
+          "anchor": "6-attachupload-documents-add-new-fa-plus"
+        },
+        {
+          "heading": "API Endpoints",
+          "anchor": "api-endpoints"
+        },
+        {
+          "heading": "Navegação Cross-Page",
+          "anchor": "navegação-cross-page"
+        },
+        {
+          "heading": "Observações e Possíveis Divergências",
+          "anchor": "observações-e-possíveis-divergências"
+        },
+        {
+          "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "servicing-search-quick-search.md",
+      "path": "docs/knowledge-base/servicing-search-quick-search.md",
+      "title": "Servicing — Search Page & Quick Search",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "volatile",
+      "last_verified": "2026-06-25",
+      "covers": [
+        "csv-export",
+        "rating-letters"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "sandbox"
+        },
+        {
+          "type": "url",
+          "value": "https://svc-website-sandbox.uownleasing.com/search"
+        },
+        {
+          "type": "code",
+          "value": "/home/jose/projects/uown/servicing/pages/search/index.tsx"
+        },
+        {
+          "type": "code",
+          "value": "/home/jose/projects/uown/servicing/utils/search-table-config/index.tsx"
+        },
+        {
+          "type": "code",
+          "value": "/home/jose/projects/uown/servicing/domain/stores/search.tsx"
+        },
+        {
+          "type": "code",
+          "value": "/home/jose/projects/uown/svc/src/main/java/com/uownleasing/svc/service/SearchService.java"
+        },
+        {
+          "type": "code",
+          "value": "/home/jose/projects/uown/svc/src/main/resources/sqls/getAccountsByCriteria.sql"
+        },
+        {
+          "type": "code",
+          "value": "/home/jose/projects/uown/svc/src/main/java/com/uownleasing/svc/service/CSVFileService.java"
+        },
+        {
+          "type": "code",
+          "value": "/home/jose/projects/uown/common/src/main/java/com/uownleasing/common/enumeration/RatingLetter.java"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Architecture Overview — Two-Tier Search",
+          "anchor": "architecture-overview-two-tier-search"
+        },
+        {
+          "heading": "Available Operations",
+          "anchor": "available-operations"
+        },
+        {
+          "heading": "1. Quick Search (Navbar)",
+          "anchor": "1-quick-search-navbar"
+        },
+        {
+          "heading": "Localização e visibilidade",
+          "anchor": "localização-e-visibilidade"
+        },
+        {
+          "heading": "Tipos de busca disponíveis",
+          "anchor": "tipos-de-busca-disponíveis"
+        },
+        {
+          "heading": "API do autocomplete",
+          "anchor": "api-do-autocomplete"
+        },
+        {
+          "heading": "Colunas exibidas no dropdown (todas as 5 sempre iguais, independente do tipo)",
+          "anchor": "colunas-exibidas-no-dropdown-todas-as-5-sempre-iguais-independente-do-tipo"
+        },
+        {
+          "heading": "Comportamento do autocomplete",
+          "anchor": "comportamento-do-autocomplete"
+        },
+        {
+          "heading": "2. Advanced Search — Filters Panel",
+          "anchor": "2-advanced-search-filters-panel"
+        },
+        {
+          "heading": "Toggle do painel",
+          "anchor": "toggle-do-painel"
+        },
+        {
+          "heading": "Campos do painel de filtros",
+          "anchor": "campos-do-painel-de-filtros"
+        },
+        {
+          "heading": "API da busca avançada",
+          "anchor": "api-da-busca-avançada"
+        },
+        {
+          "heading": "Comportamento dos filtros — lógica SQL detalhada",
+          "anchor": "comportamento-dos-filtros-lógica-sql-detalhada"
+        },
+        {
+          "heading": "3. Tabela de Resultados",
+          "anchor": "3-tabela-de-resultados"
+        },
+        {
+          "heading": "Colunas (todas ordenáveis via clique no header — ícone ▲/▼)",
+          "anchor": "colunas-todas-ordenáveis-via-clique-no-header-ícone-"
+        },
+        {
+          "heading": "Navegação por linha",
+          "anchor": "navegação-por-linha"
+        },
+        {
+          "heading": "Paginação",
+          "anchor": "paginação"
+        },
+        {
+          "heading": "4. Action Buttons (barra acima da tabela)",
+          "anchor": "4-action-buttons-barra-acima-da-tabela"
+        },
+        {
+          "heading": "Account Sale",
+          "anchor": "account-sale"
+        },
+        {
+          "heading": "Email CSV",
+          "anchor": "email-csv"
+        },
+        {
+          "heading": "Download CSV (link blob)",
+          "anchor": "download-csv-link-blob"
+        },
+        {
+          "heading": "5. Business Rules",
+          "anchor": "5-business-rules"
+        },
+        {
+          "heading": "6. Flow and States",
+          "anchor": "6-flow-and-states"
+        },
+        {
+          "heading": "7. Selectors (PO existente)",
+          "anchor": "7-selectors-po-existente"
+        },
+        {
+          "heading": "Connections with What Was Already Known",
+          "anchor": "connections-with-what-was-already-known"
+        },
+        {
+          "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
       "file": "sticky-payment-refund.md",
       "path": "docs/knowledge-base/sticky-payment-refund.md",
       "title": "Sticky Payment Refund",
@@ -1024,7 +1617,9 @@
         "sticky",
         "sticky",
         "allocation",
-        "sticky"
+        "sticky",
+        "cc-payments",
+        "payments"
       ],
       "sources": [
         {
@@ -1108,7 +1703,9 @@
         "sticky",
         "sweeps",
         "account-status",
-        "activity-log"
+        "activity-log",
+        "cc-payments",
+        "payments"
       ],
       "sources": [
         {

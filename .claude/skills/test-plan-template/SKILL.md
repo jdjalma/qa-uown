@@ -1,6 +1,6 @@
 ---
 name: test-plan-template
-description: Carregue ao produzir SPEC de teste. Template canônico do projeto: objetivo, escopo IN/OUT, prerequisites, data, steps numerados com expected results, edge cases, riscos.
+description: Load when producing a test SPEC. The project's canonical template: objective, IN/OUT scope, prerequisites, data, numbered steps with expected results, edge cases, risks.
 disable-model-invocation: true
 ---
 
@@ -74,8 +74,8 @@ disable-model-invocation: true
 | Task tests (GitLab) | `docs/taskTestingUown/{testName}/{testName}.spec.ts` |
 | Portal E2E tests | `tests/e2e/{portal}/{feature}.spec.ts` |
 | API-only tests | `tests/api/{feature}-api.spec.ts` |
-| Relatório de execução | `docs/taskTestingUown/{testName}/{testName}-report.md` |
-| Cenários de planejamento | `docs/taskTestingUown/{testName}/{testName}-scenarios.md` |
+| Execution report | `docs/taskTestingUown/{testName}/{testName}-report.md` |
+| Planning scenarios | `docs/taskTestingUown/{testName}/{testName}-scenarios.md` |
 
 ## Naming Convention (Task Tests)
 

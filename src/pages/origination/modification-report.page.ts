@@ -13,11 +13,11 @@ const EMPTY_STATE = 'text=There are no records to display';
  *
  * Endpoint: POST /uown/los/getModifiedLeads
  *
- * O filtro multi-select Merchant/Location (#1319), a paginação e o
- * getMerchantColumnValues são compartilhados via
- * {@link MerchantLocationReportControls} (campo `report`) — delegados abaixo.
- * Específicos desta página: filtros Agent/Date/ModType (#1315) e a leitura
- * estruturada de linhas (getAllRows / getRowByLeadPk).
+ * The multi-select Merchant/Location filter (#1319), pagination and
+ * getMerchantColumnValues are shared via
+ * {@link MerchantLocationReportControls} (field `report`) — delegated below.
+ * Specific to this page: Agent/Date/ModType filters (#1315) and the
+ * structured row reading (getAllRows / getRowByLeadPk).
  */
 export class ModificationReportPage extends OriginationBasePage {
   private readonly report = new MerchantLocationReportControls(this.page);
@@ -158,7 +158,7 @@ export class ModificationReportPage extends OriginationBasePage {
     return row ? (row['Agent Name'] ?? null) : null;
   }
 
-  // ── Delegação ao MerchantLocationReportControls (#1319) ──────────────
+  // ── Delegation to MerchantLocationReportControls (#1319) ──────────────
   expandFilters(): Promise<void> { return this.report.expandFilters(); }
   filterByMerchant(name: string): Promise<void> { return this.report.filterByMerchant(name); }
   filterByLocation(name: string): Promise<void> { return this.report.filterByLocation(name); }

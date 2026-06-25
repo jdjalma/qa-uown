@@ -263,7 +263,7 @@ These are processed by `EsignService.eSignDocumentStatus()` → `updateLeadStatu
 
 - Confirms: Priyanka's concern ("may be other status changes that log the wrong username") — the fix covers all human agent UI transitions (EXPIRED, SIGNED via all internal paths). The few remaining SYSTEM records are automated test calls without `username` header.
 - Confirms: Marcos's test instructions (INVOICE_CREATED path) — the fix works correctly for real human agent actions.
-- Confirms: `UW_APPROVED → EXPIRED` (lead 16711), `BLACKLIST_APPROVED → SIGNED` (lead 16656), `SIGNED → EXPIRED` (lead 16717) — all show real agent pós-fix. Validated manually 2026-06-18.
+- Confirms: `UW_APPROVED → EXPIRED` (lead 16711), `BLACKLIST_APPROVED → SIGNED` (lead 16656), `SIGNED → EXPIRED` (lead 16717) — all show real agent post-fix. Validated manually 2026-06-18.
 - New finding: `BLACKLIST_APPROVED` leads use a **2-step UI flow**: "Change to Signed" triggers GowSign signing flow first → "Move Contract to Signed" button appears → THAT calls `changeLeadStatus` with `username` header.
 - New finding: `CONTRACT_CREATED → SIGNED` (156 records) showing SYSTEM is **legitimate behavior** — EsignService polling, no human actor.
 - New finding: `@Async` in `UpdateLeadStatusService.updateLeadStatusAsync()` is only called from `PlaidWebhookService` (PLAID_ERROR path), not from any signing pipeline.

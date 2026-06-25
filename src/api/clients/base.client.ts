@@ -124,11 +124,11 @@ export class BaseClient {
   }
 
   // ── TMS (FIVE9 key) ─────────────────────────────────────────────
-  // TMS endpoints autenticam com uma chave FIVE9 separada (env.tmsApiKey) como
-  // Authorization, não com o api auth padrão. Clients TMS estendem BaseClient com
-  // { injectAuth: false, injectApiKey: false } e usam estes helpers.
+  // TMS endpoints authenticate with a separate FIVE9 key (env.tmsApiKey) as
+  // Authorization, not with the standard api auth. TMS clients extend BaseClient with
+  // { injectAuth: false, injectApiKey: false } and use these helpers.
 
-  /** Resolve headers TMS (Bearer key FIVE9 + Accept), mesclando overrides do caller. */
+  /** Resolves TMS headers (FIVE9 Bearer key + Accept), merging caller overrides. */
   protected tmsHeaders(extra: Record<string, string> = {}): Record<string, string> {
     return {
       ...this.headers,
@@ -138,7 +138,7 @@ export class BaseClient {
     };
   }
 
-  /** POST TMS cru — retorna o APIResponse para inspeção de 2xx e não-2xx (bodies texto). */
+  /** Raw TMS POST — returns the APIResponse for inspecting 2xx and non-2xx (text bodies). */
   protected async postRawTms(
     path: string,
     body: unknown,
@@ -153,7 +153,7 @@ export class BaseClient {
     });
   }
 
-  /** POST TMS tipado (parseia o envelope). */
+  /** Typed TMS POST (parses the envelope). */
   protected async postTms<T>(
     path: string,
     body: unknown,

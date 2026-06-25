@@ -1,5 +1,5 @@
 ---
-title: Fundamentos e Visão Geral
+title: Fundamentals and Overview
 domain: business-rules
 status: stable
 volatility: volatile
@@ -11,382 +11,381 @@ sources:
 covers: [business-model, merchant-types, programs, merchant-config, kornerstone, epo]
 ---
 
-# Fundamentos e Visao Geral
+# Fundamentals and Overview
 ## UOwn Leasing - SVC Platform
 
-Visao geral do negocio, conceitos financeiros fundamentais, programas de merchant e gestao de configuracoes.
+Business overview, fundamental financial concepts, merchant programs, and configuration management.
 
 ---
 
-## 1. Visao Geral do Negocio
+## 1. Business Overview
 
-### O Que e a UOwn Leasing
+### What UOwn Leasing Is
 
-A UOwn Leasing e uma empresa de **lease-to-own** (aluguel com opcao de compra). Ela se posiciona entre **lojistas (merchants)** e **consumidores (customers)**, permitindo que clientes adquiram produtos parcelados mesmo sem credito tradicional.
+UOwn Leasing is a **lease-to-own** company. It positions itself between **merchants** and **customers (customers)**, allowing customers to purchase products in installments even without traditional credit.
 
-### Como o Modelo de Negocio Funciona
+### How the Business Model Works
 
-1. **O lojista** se cadastra na plataforma e configura seus programas de financiamento (termos, taxas, prazos)
-2. **O cliente** vai ao lojista, escolhe produtos e aplica para um lease
-3. **A UOwn** avalia o risco do cliente (underwriting), aprova ou nega
-4. Se aprovado, o cliente **assina eletronicamente** o contrato de lease
-5. **A UOwn paga o lojista** (funding) - o lojista recebe o valor dos produtos
-6. **O cliente faz pagamentos periodicos** para a UOwn ate quitar o lease
-7. **Opcao de compra antecipada (EPO):** Se o cliente pagar o valor original do produto em ate 90 dias, ele quita o lease sem pagar o markup total
+1. **The merchant** registers on the platform and configures its financing programs (terms, rates, durations)
+2. **The customer** goes to the merchant, chooses products, and applies for a lease
+3. **UOwn** assesses the customer's risk (underwriting) and approves or denies
+4. If approved, the customer **electronically signs** the lease contract
+5. **UOwn pays the merchant** (funding) - the merchant receives the value of the products
+6. **The customer makes periodic payments** to UOwn until the lease is paid off
+7. **Early Purchase Option (EPO):** If the customer pays the original product value within 90 days, they pay off the lease without paying the full markup
 
-### Empresas Operadas
+### Operated Companies
 
-| Empresa | Descricao |
+| Company | Description |
 |---------|-----------|
-| **UOwn Leasing** | Empresa principal. Templates, emails, portal com branding UOwn |
-| **Kornerstone Living** | Subsidiaria. Templates proprios, portal em `kornerstoneliving.com`, regras EPO diferenciadas com formula baseada em moneyFactor |
+| **UOwn Leasing** | Main company. Templates, emails, portal with UOwn branding |
+| **Kornerstone Living** | Subsidiary. Its own templates, portal at `kornerstoneliving.com`, distinct EPO rules with a formula based on moneyFactor |
 
-### Tipos de Merchant
+### Merchant Types
 
-| Tipo | Descricao | Como o estado e determinado |
+| Type | Description | How state is determined |
 |------|-----------|---------------------------|
-| **ONLINE** | Lojista opera via internet. Codigos comecam com "OL" ou "ON" | Usa o estado do **cliente** para impostos e programas |
-| **INSTORE** | Lojista opera presencialmente | Usa o estado do **merchant** para impostos e programas |
+| **ONLINE** | Merchant operates over the internet. Codes begin with "OL" or "ON" | Uses the **customer's** state for taxes and programs |
+| **INSTORE** | Merchant operates in person | Uses the **merchant's** state for taxes and programs |
 
-### Fluxo Completo do Ciclo de Vida
+### Full Lifecycle Flow
 
 ```
-ORIGINACAO (LOS)
+ORIGINATION (LOS)
 ================
-1. Cliente aplica no site do lojista
-2. Pipeline de 17 steps valida a aplicacao
-3. Underwriting avalia risco de credito
-4. Se aprovado: cliente recebe limite e opcoes de pagamento
-5. Cliente completa dados, escolhe frequencia, confirma itens
-6. Contrato gerado e enviado para assinatura eletronica
-7. Cliente assina -> Lead status = SIGNED
-8. Funding: UOwn paga o lojista
-9. Lead importado para sistema de servicing
+1. Customer applies on the merchant's site
+2. 17-step pipeline validates the application
+3. Underwriting assesses credit risk
+4. If approved: customer receives a limit and payment options
+5. Customer completes their data, chooses frequency, confirms items
+6. Contract generated and sent for electronic signature
+7. Customer signs -> Lead status = SIGNED
+8. Funding: UOwn pays the merchant
+9. Lead imported into the servicing system
 
 SERVICING (SVC)
 ===============
-10. Conta ativa criada com cronograma de recebiveis
-11. Pagamentos coletados automaticamente (ACH ou CC)
-12. Se cliente paga EPO em 90 dias -> conta quitada com desconto
-13. Se nao -> pagamentos continuam ate fim do contrato
-14. Fim do contrato -> conta paga (PAID_OUT)
+10. Active account created with a receivables schedule
+11. Payments collected automatically (ACH or CC)
+12. If customer pays EPO within 90 days -> account paid off with a discount
+13. If not -> payments continue until the end of the contract
+14. End of contract -> account paid (PAID_OUT)
 ```
 
 ---
 
-## 2. Conceitos Financeiros Fundamentais
+## 2. Fundamental Financial Concepts
 
-### 2.1 Money Factor (Fator de Multiplicacao)
+### 2.1 Money Factor
 
-**O que e:** O money factor e o multiplicador que define quanto o cliente pagara **a mais** sobre o valor original do produto ao longo do lease. E o equivalente a uma taxa de juros no mundo do leasing.
+**What it is:** The money factor is the multiplier that defines how much **extra** the customer will pay over the original product value across the lease. It is the equivalent of an interest rate in the leasing world.
 
-**Como funciona:**
+**How it works:**
 ```
-Valor do Contrato = Custo Base x Money Factor x Meses do Termo
+Contract Value = Base Cost x Money Factor x Term Months
 ```
 
-**Exemplo pratico:**
-- Produto custa **$1.000**
-- Money Factor = **0.15** por mes
-- Termo = **12 meses**
-- Valor total do contrato = $1.000 x 0.15 x 12 = **$1.800**
-- O cliente paga $1.800 por um produto de $1.000 (markup de $800)
+**Practical example:**
+- Product costs **$1,000**
+- Money Factor = **0.15** per month
+- Term = **12 months**
+- Total contract value = $1,000 x 0.15 x 12 = **$1,800**
+- The customer pays $1,800 for a $1,000 product (markup of $800)
 
-**Onde e configurado:** No programa do merchant (`ProgramInfo.moneyFactor`). Cada programa pode ter um money factor diferente, permitindo diferentes niveis de preco para diferentes segmentos de risco ou categorias de produtos.
+**Where it is configured:** In the merchant's program (`ProgramInfo.moneyFactor`). Each program can have a different money factor, allowing different price levels for different risk segments or product categories.
 
-**Impacto no EPO:** O money factor tambem e usado inversamente para calcular quanto dos pagamentos do cliente foram para "principal" (custo do produto) vs "lease charge" (lucro da UOwn). Na formula Kornerstone: `valorPagoParaEPO = totalPagamentos / moneyFactor`.
+**Impact on EPO:** The money factor is also used inversely to calculate how much of the customer's payments went toward "principal" (product cost) vs "lease charge" (UOwn's profit). In the Kornerstone formula: `amountPaidForEPO = totalPayments / moneyFactor`.
 
-### 2.2 Security Deposit (Deposito de Seguranca)
+### 2.2 Security Deposit
 
-**O que e:** Um valor pequeno (ex: $40) cobrado do cliente **antes** de assinar o lease. NAO e um custo adicional -- e creditado contra o ultimo pagamento do cliente.
+**What it is:** A small amount (e.g. $40) charged to the customer **before** signing the lease. It is NOT an additional cost -- it is credited against the customer's last payment.
 
-**Para que serve:** Funciona como garantia de compromisso do cliente e cobertura inicial de risco para a UOwn.
+**What it is for:** It works as a guarantee of the customer's commitment and as initial risk coverage for UOwn.
 
-**De onde vem o valor:** O valor do security deposit e configurado **por estado** no campo `securityDeposit` da tabela `state_configurations`. Este e um campo **separado** do `processingFee` na mesma tabela. Pode ser consultado via `GET /getAllStateConfigurations` ou `POST /getStateConfigurationsByState/{state}` -- o campo aparece como `securityDeposit` dentro de `stateConfigurationsInfo`.
+**Where the value comes from:** The security deposit value is configured **per state** in the `securityDeposit` field of the `state_configurations` table. This is a **separate** field from `processingFee` in the same table. It can be queried via `GET /getAllStateConfigurations` or `POST /getStateConfigurationsByState/{state}` -- the field appears as `securityDeposit` inside `stateConfigurationsInfo`.
 
-**Quando e cobrado (logica em `CalculatorService.getSecurityDepositForLead`):**
+**When it is charged (logic in `CalculatorService.getSecurityDepositForLead`):**
 
-1. **Condicao 1 (holdDeposit):** Merchant tem `holdDeposit = true` E o estado tem `securityDeposit` configurado (nao nulo)
-2. **Condicao 2 (checkUwForVerification):** Merchant tem `checkUwForVerification = true` E o Underwriting sinalizou `chargeProcessingFee = true` no UWData E o estado tem `securityDeposit` configurado (nao nulo)
-3. **Exclusao:** Se o programa tiver `processingFeeOverride > 0` ou `amountChargedAtSigning > 0`, o security deposit NAO e cobrado (retorna $0)
+1. **Condition 1 (holdDeposit):** Merchant has `holdDeposit = true` AND the state has `securityDeposit` configured (not null)
+2. **Condition 2 (checkUwForVerification):** Merchant has `checkUwForVerification = true` AND Underwriting flagged `chargeProcessingFee = true` in UWData AND the state has `securityDeposit` configured (not null)
+3. **Exclusion:** If the program has `processingFeeOverride > 0` or `amountChargedAtSigning > 0`, the security deposit is NOT charged (returns $0)
 
-**Hierarquia de cobranca pre-assinatura (logica em `CalculatorService.getFeeToBeChargedForLead`):**
+**Pre-signing charge hierarchy (logic in `CalculatorService.getFeeToBeChargedForLead`):**
 
-O sistema determina UMA unica taxa para cobrar antes do e-sign, nesta ordem de prioridade:
-1. `amountChargedAtSigning` do programa (se > 0)
-2. `processingFee` do estado (se merchant tem chargeProcessingFee habilitado)
-3. `securityDeposit` do estado (fallback se os dois acima forem $0)
+The system determines ONE single fee to charge before e-sign, in this priority order:
+1. `amountChargedAtSigning` from the program (if > 0)
+2. `processingFee` from the state (if the merchant has chargeProcessingFee enabled)
+3. `securityDeposit` from the state (fallback if the two above are $0)
 
-**Impacto no contrato:** O deposito aparece no documento de lease ("You have agreed to give us a Security Deposit in the amount of...") e e aplicado como credito no ultimo pagamento (`lastPaymentNoTaxWithFees = lastPaymentNoTaxNoFees - securityDeposit`).
+**Impact on the contract:** The deposit appears in the lease document ("You have agreed to give us a Security Deposit in the amount of...") and is applied as a credit on the last payment (`lastPaymentNoTaxWithFees = lastPaymentNoTaxNoFees - securityDeposit`).
 
-### 2.3 Processing Fee (Taxa de Processamento)
+### 2.3 Processing Fee
 
-**O que e:** Taxa cobrada pela UOwn pelo processamento do lease.
+**What it is:** A fee charged by UOwn for processing the lease.
 
-**Como e determinada (ordem de prioridade):**
-1. Se merchant tem `chargeProcessingFee = false` -> $0
-2. Se programa tem `amountChargedAtSigning > 0` -> $0
-3. Se programa tem `processingFeeOverride > 0` -> usa esse valor
-4. Valor configurado no StateConfigurations para o estado
+**How it is determined (priority order):**
+1. If the merchant has `chargeProcessingFee = false` -> $0
+2. If the program has `amountChargedAtSigning > 0` -> $0
+3. If the program has `processingFeeOverride > 0` -> use that value
+4. Value configured in StateConfigurations for the state
 5. Fallback: $0
 
-**Impacto:** Gera um recebivel separado do tipo `PROCESSING_FEE` na conta.
+**Impact:** Generates a separate receivable of type `PROCESSING_FEE` on the account.
 
-### 2.4 Buyout Fee (Taxa de Compra Antecipada)
+### 2.4 Buyout Fee
 
-**O que e:** Taxa fixa cobrada do cliente se ele exercer a opcao de compra antecipada (EPO).
+**What it is:** A fixed fee charged to the customer if they exercise the early purchase option (EPO).
 
-**Onde e configurado:** No merchant (`MerchantInfo.buyoutFee`, default: $0).
+**Where it is configured:** On the merchant (`MerchantInfo.buyoutFee`, default: $0).
 
-**Impacto:** Somado ao valor do EPO. NAO incide imposto sobre o buyout fee (imposto calculado apenas sobre o custo do produto).
+**Impact:** Added to the EPO amount. NO tax applies to the buyout fee (tax is calculated only on the product cost).
 
 
-## 3. Programas de Merchant (Termos do Lease)
+## 3. Merchant Programs (Lease Terms)
 
-### O Que e um Programa
+### What a Program Is
 
-Um **Merchant Program** e o template financeiro que define os termos de um lease. Cada merchant pode ter multiplos programas ativos, e o sistema seleciona o programa adequado baseado no estado do cliente, valor do carrinho e categoria.
+A **Merchant Program** is the financial template that defines the terms of a lease. Each merchant can have multiple active programs, and the system selects the appropriate program based on the customer's state, cart value, and category.
 
-### Campos Principais do Programa
+### Main Program Fields
 
-| Campo | Descricao | Exemplo |
+| Field | Description | Example |
 |-------|-----------|---------|
-| `programName` | Nome legivel do programa | "Furniture 13 months" |
-| `programType` | SAME_AS_CASH ou QUICK_PAY | SAME_AS_CASH |
-| `termMonths` | Duracao do lease em meses | 13 |
-| `moneyFactor` | Multiplicador mensal de custo | 0.15 |
-| `epoDays` | Janela de compra antecipada (dias) | 90 |
-| `epoFeePercent` | Taxa % sobre EPO | 0.05 |
-| `dealerDiscount` | % retido do valor pago ao merchant | 5% |
-| `dealerRebate` | % devolvido ao merchant como incentivo | 2% |
-| `maxDollarAmount` | Valor maximo do lease | $5,000 |
-| `minCartAmount` / `maxCartAmount` | Faixa de valor do carrinho | $200 - $3,000 |
-| `processingFeeOverride` | Override da taxa de processamento | $49.99 |
-| `states` | Estados onde o programa e valido | "CA,TX,NY,FL" |
+| `programName` | Human-readable program name | "Furniture 13 months" |
+| `programType` | SAME_AS_CASH or QUICK_PAY | SAME_AS_CASH |
+| `termMonths` | Lease duration in months | 13 |
+| `moneyFactor` | Monthly cost multiplier | 0.15 |
+| `epoDays` | Early purchase window (days) | 90 |
+| `epoFeePercent` | % fee on EPO | 0.05 |
+| `dealerDiscount` | % retained from the amount paid to the merchant | 5% |
+| `dealerRebate` | % returned to the merchant as an incentive | 2% |
+| `maxDollarAmount` | Maximum lease value | $5,000 |
+| `minCartAmount` / `maxCartAmount` | Cart value range | $200 - $3,000 |
+| `processingFeeOverride` | Processing fee override | $49.99 |
+| `states` | States where the program is valid | "CA,TX,NY,FL" |
 
 ### SAME_AS_CASH vs QUICK_PAY
 
-| Aspecto | SAME_AS_CASH | QUICK_PAY |
+| Aspect | SAME_AS_CASH | QUICK_PAY |
 |---------|-------------|-----------|
-| **Conceito** | Se pagar tudo em 90 dias, paga o preco "a vista" | Paga um percentual fixo do preco original |
-| **EPO** | Sim, baseado no custo original | Sim, baseado em `quickPayPct` |
-| **Money Factor** | Usado para calcular contrato completo | Pode usar percentual alternativo |
-| **Uso tipico** | Programa padrao para maioria dos merchants | Programa promocional simplificado |
+| **Concept** | If you pay everything within 90 days, you pay the "cash" price | Pay a fixed percentage of the original price |
+| **EPO** | Yes, based on the original cost | Yes, based on `quickPayPct` |
+| **Money Factor** | Used to compute the full contract | Can use an alternative percentage |
+| **Typical use** | Default program for most merchants | Simplified promotional program |
 
-### Como o Programa e Selecionado
+### How the Program Is Selected
 
-1. Cliente aplica em um merchant
-2. Sistema identifica o estado (do cliente se ONLINE, do merchant se INSTORE)
-3. Filtra programas do merchant por: estado, tipo (`SAME_AS_CASH`), faixa de valor do carrinho, categoria
-4. Se existem multiplos programas validos, a selecao considera o resultado do underwriting (segment/risk)
+1. Customer applies at a merchant
+2. System identifies the state (the customer's if ONLINE, the merchant's if INSTORE)
+3. Filters the merchant's programs by: state, type (`SAME_AS_CASH`), cart value range, category
+4. If multiple valid programs exist, the selection takes the underwriting result into account (segment/risk)
 
-### Roteamento de Programa por Fluxo (Task #439)
+### Program Routing by Flow (Task #439)
 
-Apos o underwriting, o sistema avalia **routing inputs** para decidir o fluxo e programa:
+After underwriting, the system evaluates **routing inputs** to decide the flow and program:
 
-| Input | Descricao |
+| Input | Description |
 |-------|-----------|
-| Banking data | Presenca de routing number + account number |
-| BIN elegivel | Primeiros 6 digitos do cartao de credito atendem criterios de elegibilidade |
+| Banking data | Presence of routing number + account number |
+| Eligible BIN | The first 6 digits of the credit card meet eligibility criteria |
 
-**Fluxos:**
+**Flows:**
 
-| Condicao | Fluxo | Avaliacao de programa |
+| Condition | Flow | Program evaluation |
 |----------|-------|----------------------|
-| Banking data presente **E** BIN elegivel | Kornerstone | 16 meses primeiro → fallback 13 meses |
-| Banking data ausente **OU** BIN nao elegivel | UOWN | Apenas 13 meses |
+| Banking data present **AND** eligible BIN | Kornerstone | 16 months first → fallback 13 months |
+| Banking data absent **OR** BIN not eligible | UOWN | 13 months only |
 
-**Importante:** Programas sao **pre-definidos** no cadastro do merchant. O underwriting **seleciona** entre os disponiveis — nao constroi programas dinamicamente.
+**Important:** Programs are **pre-defined** in the merchant's setup. Underwriting **selects** among the available ones — it does not build programs dynamically.
 
-### Identificacao por planId (Task #439)
+### Identification by planId (Task #439)
 
-Cada combinacao de frequencia + termo e identificada por um `planId`:
+Each combination of frequency + term is identified by a `planId`:
 
-**Formato:** `{abreviacao_frequencia}{termo_meses}`
+**Format:** `{frequency_abbreviation}{term_months}`
 
-| Frequencia | Abreviacao | Exemplo |
+| Frequency | Abbreviation | Example |
 |------------|------------|---------|
 | WEEKLY | WK | WK13, WK16 |
 | BI_WEEKLY | BWK | BWK13, BWK16 |
 | SEMI_MONTHLY | SM | SM13, SM16 |
 | MONTHLY | MN | MN13, MN16 |
 
-O `planId` e usado em: `SchedSummaryInfo`, redirect URL, endpoint `missing-fields`, e `SubmitApplicationService`.
+The `planId` is used in: `SchedSummaryInfo`, redirect URL, the `missing-fields` endpoint, and `SubmitApplicationService`.
 
-### Valor Minimo do Lease (Minimum Lease Amount)
+### Minimum Lease Amount
 
-**O que e:** Valor minimo que um lease precisa ter para ser aceito pelo sistema. Protege contra leases de valor muito baixo que nao sao economicamente viaveis.
+**What it is:** The minimum value a lease needs to have to be accepted by the system. It protects against very low-value leases that are not economically viable.
 
-**Valor default:** `$250.00 USD` (campo `minimumLeaseAmount` em `MerchantInfo`, default `new BigDecimal("250")`).
+**Default value:** `$250.00 USD` (`minimumLeaseAmount` field in `MerchantInfo`, default `new BigDecimal("250")`).
 
-**Configuracao por merchant:** Cada merchant pode configurar um valor minimo diferente, acima ou igual ao default. O campo e editavel na configuracao do merchant.
+**Per-merchant configuration:** Each merchant can configure a different minimum value, above or equal to the default. The field is editable in the merchant's configuration.
 
-**Onde e validado:** No `LosRequestMessageConstraintValidator.validateMinimumLeaseValue()`, chamado em dois pontos:
+**Where it is validated:** In `LosRequestMessageConstraintValidator.validateMinimumLeaseValue()`, called at two points:
 
-| Endpoint | Quando valida |
+| Endpoint | When it validates |
 |----------|--------------|
-| `sendApplication` | Ao processar invoice dentro da aplicacao (`validateInvoiceDetails`) |
-| `sendInvoice` | Ao receber nova invoice para lead existente (`validateInvoiceInformation`) |
+| `sendApplication` | When processing an invoice within the application (`validateInvoiceDetails`) |
+| `sendInvoice` | When receiving a new invoice for an existing lead (`validateInvoiceInformation`) |
 
-**O que e comparado:** O sistema compara o `merchandiseSubtotal` (valor da mercadoria, sem impostos/taxas) contra o `minimumLeaseAmount` do merchant.
+**What is compared:** The system compares the `merchandiseSubtotal` (merchandise value, without taxes/fees) against the merchant's `minimumLeaseAmount`.
 
-**Regra de validacao:**
+**Validation rule:**
 ```
-SE merchandiseSubtotal < minimumLeaseAmount DO merchant:
-  REJEITA com erro: "The merchandise amount requested, {valor}, is less than the minimum lease amount, {minimo}."
+IF merchandiseSubtotal < merchant's minimumLeaseAmount:
+  REJECT with error: "The merchandise amount requested, {value}, is less than the minimum lease amount, {minimum}."
 ```
 
-**Controle de ativacao:** Configuravel via `verifyMinimumLeaseValue` -- se desativado, a validacao e ignorada.
+**Activation control:** Configurable via `verifyMinimumLeaseValue` -- if disabled, the validation is skipped.
 
-**Cenarios importantes:**
-- Valor $249.99 em merchant com minimo $250 → **rejeitado**
-- Valor $250.00 em merchant com minimo $250 → **aceito**
-- Invoice cancelada + nova invoice abaixo do minimo → **rejeitada** (cada invoice e validada independentemente)
-- Merchant com minimo customizado de $500 → valida contra $500, nao $250
+**Important scenarios:**
+- Value $249.99 in a merchant with a $250 minimum → **rejected**
+- Value $250.00 in a merchant with a $250 minimum → **accepted**
+- Cancelled invoice + new invoice below the minimum → **rejected** (each invoice is validated independently)
+- Merchant with a custom $500 minimum → validates against $500, not $250
 
 ---
 
-## 33. Gestao de Configuracoes e Ativacao de Funcionalidades
+## 33. Configuration Management and Feature Activation
 
-### O Que e
+### What It Is
 
-O sistema possui uma camada de configuracao dinamica construida sobre Spring Cloud Context e Hazelcast, permitindo alterar configuracoes em **tempo real sem reiniciar** o servidor.
+The system has a dynamic configuration layer built on Spring Cloud Context and Hazelcast, allowing configurations to be changed in **real time without restarting** the server.
 
-### Para Que Serve
+### What It Is For
 
-Permite que administradores ativem/desativem funcionalidades, ajustem thresholds, modifiquem comportamento de sweeps e controlem features sem necessidade de deploy ou restart da aplicacao.
+It lets administrators enable/disable features, adjust thresholds, modify sweep behavior, and control features without needing to deploy or restart the application.
 
-### Arquitetura de Configuracao
+### Configuration Architecture
 
-**Arquivo principal:** `ConfigurationManagement.java`
-- Recuperacao type-safe de configuracoes (String, Integer, Long, Double, Boolean)
-- Suporte a defaults duplos (producao vs. teste)
-- Armazenamento distribuido via Hazelcast IMap
-- Cache com `@RefreshScope` para hot-reload
+**Main file:** `ConfigurationManagement.java`
+- Type-safe retrieval of configurations (String, Integer, Long, Double, Boolean)
+- Support for dual defaults (production vs. test)
+- Distributed storage via Hazelcast IMap
+- Cache with `@RefreshScope` for hot-reload
 
-### Como Alterar Configuracoes em Tempo Real
+### How to Change Configurations in Real Time
 
-#### Via REST API (Recomendado)
+#### Via REST API (Recommended)
 
-| Endpoint | Metodo | Descricao |
+| Endpoint | Method | Description |
 |----------|--------|-----------|
-| `POST /ConfigurationManagement/createOrUpdateConfig` | POST | Cria ou atualiza configuracao. Body: `{"key": "chave", "value": "valor"}` |
-| `GET /ConfigurationManagement/forceReloadConfig` | GET | Forca reload de TODAS as configuracoes, limpa cache e reinjecta campos |
+| `POST /ConfigurationManagement/createOrUpdateConfig` | POST | Creates or updates a configuration. Body: `{"key": "key", "value": "value"}` |
+| `GET /ConfigurationManagement/forceReloadConfig` | GET | Forces a reload of ALL configurations, clears the cache, and re-injects fields |
 
-**Exemplo de uso:**
+**Example usage:**
 ```
 POST /ConfigurationManagement/createOrUpdateConfig
 Content-Type: application/json
 {"key": "sendCCPeek", "value": "true"}
 ```
 
-#### Via Banco de Dados
+#### Via Database
 
-Alterar diretamente na tabela de configuracoes e depois chamar `/forceReloadConfig`.
+Change directly in the configurations table and then call `/forceReloadConfig`.
 
-### Padrao de Nomes de Configuracoes
+### Configuration Naming Pattern
 
-A maioria segue o padrao:
+Most follow the pattern:
 ```
-com.uownleasing.svc.service.{NomeDoServico}.{chaveConfig}
+com.uownleasing.svc.service.{ServiceName}.{configKey}
 ```
 
-**Exemplos reais:**
+**Real examples:**
 - `com.uownleasing.svc.service.RewindPaymentsService.statuses.to.active.for.rewind`
 - `com.uownleasing.svc.service.MissingRequiredFieldsService.items.can.be.empty.for.merchant.*`
 - `com.uownleasing.svc.service.Five9Service.updateContactPreferences`
-- `sendCCPeek` (controla CC Peek)
-- `ccPeekOn` (liga/desliga CC Peek globalmente)
-- `no.business.in.state` (estados bloqueados)
-- `useTaxCloudApi` (escolha entre TaxCloud e TaxJar)
-- `cancel.protection.plan` (habilita cancelamento de plano de protecao)
-- `create.nsf.fee.receivable.on.rerun` (cria taxa NSF no rerun)
+- `sendCCPeek` (controls CC Peek)
+- `ccPeekOn` (globally toggles CC Peek on/off)
+- `no.business.in.state` (blocked states)
+- `useTaxCloudApi` (choice between TaxCloud and TaxJar)
+- `cancel.protection.plan` (enables protection plan cancellation)
+- `create.nsf.fee.receivable.on.rerun` (creates NSF fee on rerun)
 
-### Mapas Distribuidos Hazelcast
+### Hazelcast Distributed Maps
 
-O sistema mantem tres mapas em memoria distribuida para controle de concorrencia:
+The system keeps three distributed in-memory maps for concurrency control:
 
-| Mapa | Chave | Uso |
+| Map | Key | Use |
 |------|-------|-----|
-| **Application Request** | SSN -> UUID | Impede aplicacoes duplicadas simultaneas |
-| **Settlement Request** | leadPk -> UUID | Impede ofertas de settlement duplicadas |
-| **Authorization Request** | leadPk -> UUID | Impede autorizacoes de invoice duplicadas |
+| **Application Request** | SSN -> UUID | Prevents simultaneous duplicate applications |
+| **Settlement Request** | leadPk -> UUID | Prevents duplicate settlement offers |
+| **Authorization Request** | leadPk -> UUID | Prevents duplicate invoice authorizations |
 
-**Endpoints de gerenciamento de mapas (Admin):**
-- `GET /uown/clearApplicationRequestMap` - Limpa mapa de aplicacoes
-- `GET /uown/clearSettlementRequestMap` - Limpa mapa de settlements
-- `GET /uown/clearAuthorizationRequestMap` - Limpa mapa de autorizacoes
+**Map management endpoints (Admin):**
+- `GET /uown/clearApplicationRequestMap` - Clears the application map
+- `GET /uown/clearSettlementRequestMap` - Clears the settlements map
+- `GET /uown/clearAuthorizationRequestMap` - Clears the authorizations map
 
-### Gestao de Scheduled Tasks (Sweeps)
+### Scheduled Tasks (Sweeps) Management
 
-| Endpoint | Metodo | Descricao |
+| Endpoint | Method | Description |
 |----------|--------|-----------|
-| `POST /uown/svc/triggerScheduledTask/{taskName}` | POST | **Dispara** um sweep manualmente agora |
-| `POST /uown/svc/pauseScheduledTask/{taskName}` | POST | **Pausa** um sweep (nao executa mais ate resumir) |
-| `POST /uown/svc/resumeScheduledTask/{taskName}` | POST | **Resume** um sweep pausado |
-| `POST /uown/svc/rescheduleScheduledTask/{taskName}?cronTrigger={cron}` | POST | **Reagenda** com novo cron |
-| `POST /uown/svc/deleteScheduledTask/{taskName}` | POST | **Deleta** um sweep |
-| `GET /uown/svc/getAllScheduledTasks` | GET | Lista todos os sweeps com status |
-| `GET /uown/svc/getScheduledTaskByName/{name}` | GET | Detalhes de um sweep especifico |
-| `POST /uown/svc/updateScheduleTaskSqlByName/{name}` | POST | **Atualiza SQL** do sweep (multipart file) |
+| `POST /uown/svc/triggerScheduledTask/{taskName}` | POST | **Triggers** a sweep manually now |
+| `POST /uown/svc/pauseScheduledTask/{taskName}` | POST | **Pauses** a sweep (does not run again until resumed) |
+| `POST /uown/svc/resumeScheduledTask/{taskName}` | POST | **Resumes** a paused sweep |
+| `POST /uown/svc/rescheduleScheduledTask/{taskName}?cronTrigger={cron}` | POST | **Reschedules** with a new cron |
+| `POST /uown/svc/deleteScheduledTask/{taskName}` | POST | **Deletes** a sweep |
+| `GET /uown/svc/getAllScheduledTasks` | GET | Lists all sweeps with status |
+| `GET /uown/svc/getScheduledTaskByName/{name}` | GET | Details of a specific sweep |
+| `POST /uown/svc/updateScheduleTaskSqlByName/{name}` | POST | **Updates the SQL** of the sweep (multipart file) |
 
-### Via Banco de Dados (Tabela `uown_scheduled_task`)
+### Via Database (Table `uown_scheduled_task`)
 
-| Campo | Descricao |
+| Field | Description |
 |-------|-----------|
-| `scheduled_task_name` | Nome identificador do sweep |
-| `cron_trigger` | Expressao cron de agendamento |
-| `sql_to_pick_accounts` | SQL que seleciona contas para processar |
-| `is_active` | `true` = ativo, `false` = pausado |
-| `template_name` | Template DMS a executar |
-| `last_trigger_time` | Ultima execucao (auditoria) |
+| `scheduled_task_name` | Identifier name of the sweep |
+| `cron_trigger` | Cron scheduling expression |
+| `sql_to_pick_accounts` | SQL that selects accounts to process |
+| `is_active` | `true` = active, `false` = paused |
+| `template_name` | DMS template to run |
+| `last_trigger_time` | Last run (audit) |
 
-**Para pausar um sweep via banco:**
+**To pause a sweep via the database:**
 ```sql
-UPDATE uown_scheduled_task SET is_active = false WHERE scheduled_task_name = 'nomeSweep';
+UPDATE uown_scheduled_task SET is_active = false WHERE scheduled_task_name = 'sweepName';
 ```
 
-**Para alterar o SQL de um sweep:**
+**To change a sweep's SQL:**
 ```sql
-UPDATE uown_scheduled_task SET sql_to_pick_accounts = 'SELECT ...' WHERE scheduled_task_name = 'nomeSweep';
+UPDATE uown_scheduled_task SET sql_to_pick_accounts = 'SELECT ...' WHERE scheduled_task_name = 'sweepName';
 ```
 
-### Como Verificar se um Sweep Executou
+### How to Verify Whether a Sweep Ran
 
-**Tabela de logs:** `uown_sweep_logs`
+**Logs table:** `uown_sweep_logs`
 
 ```sql
 SELECT * FROM uown_sweep_logs
-WHERE sweep_name = 'nomeSweep'
+WHERE sweep_name = 'sweepName'
 ORDER BY created_date DESC
 LIMIT 10;
 ```
 
-Mostra: data de execucao, hostname do pod, quantidade de registros processados, erros.
+Shows: run date, pod hostname, number of records processed, errors.
 
 ---
 
-## Cobertura Geografica
+## Geographic Coverage
 
-### Estados e Territorios Suportados
+### Supported States and Territories
 
-A plataforma aceita aplicacoes de **57 localidades** — 50 estados americanos + 7 territorios:
+The platform accepts applications from **57 locations** — 50 US states + 7 territories:
 
-| Categoria | Localidades |
+| Category | Locations |
 |-----------|-------------|
-| **50 Estados** | AK, AL, AR, AZ, CA, CO, CT, DC, DE, FL, GA, HI, IA, ID, IL, IN, KS, KY, LA, MA, MD, ME, MI, MN, MO, MS, MT, NC, ND, NE, NH, NJ, NM, NV, NY, OH, OK, OR, PA, RI, SC, SD, TN, TX, UT, VA, VT, WA, WI, WV, WY |
-| **7 Territorios** | AS (Samoa Americana), GU (Guam), MP (Marianas do Norte), PR (Porto Rico), UM (Ilhas Menores dos EUA), VI (Ilhas Virgens) |
+| **50 States** | AK, AL, AR, AZ, CA, CO, CT, DC, DE, FL, GA, HI, IA, ID, IL, IN, KS, KY, LA, MA, MD, ME, MI, MN, MO, MS, MT, NC, ND, NE, NH, NJ, NM, NV, NY, OH, OK, OR, PA, RI, SC, SD, TN, TX, UT, VA, VT, WA, WI, WV, WY |
+| **7 Territories** | AS (American Samoa), GU (Guam), MP (Northern Mariana Islands), PR (Puerto Rico), UM (US Minor Outlying Islands), VI (Virgin Islands) |
 
-### Estados Bloqueados (No Business)
+### Blocked States (No Business)
 
-Configurados via `no.business.in.state` (defaults: NJ, VT, MN, ME). Ver secao de originacao para detalhes do Step 1 do pipeline.
+Configured via `no.business.in.state` (defaults: NJ, VT, MN, ME). See the origination section for details on Step 1 of the pipeline.
 
-### Contatos por Marca
+### Contacts by Brand
 
-| Marca | Email de Suporte | Horario de Atendimento |
+| Brand | Support Email | Support Hours |
 |-------|-----------------|------------------------|
-| **UOWN** | help@uownleasing.com | Seg-Sab 9h-22h ET; Dom 11h-21h ET |
-| **Kornerstone** | support@kornerstoneliving.com | Seg-Sab 8h-0h ET; Dom 11h-23h ET |
+| **UOWN** | help@uownleasing.com | Mon-Sat 9am-10pm ET; Sun 11am-9pm ET |
+| **Kornerstone** | support@kornerstoneliving.com | Mon-Sat 8am-12am ET; Sun 11am-11pm ET |
 
 ---
-

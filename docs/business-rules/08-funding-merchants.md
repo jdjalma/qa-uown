@@ -1,5 +1,5 @@
 ---
-title: Funding e Gestão de Merchants
+title: Funding and Merchant Management
 domain: business-rules
 status: stable
 volatility: volatile
@@ -13,372 +13,372 @@ covers: [funding, merchants, webhooks, ssn, los-svc-import, integration-api]
 derived_from: [underwriting-and-funding-test-data-paths]
 ---
 
-# Funding e Gestao de Merchants
+# Funding and Merchant Management
 ## UOwn Leasing - SVC Platform
 
-Fila de financiamento, importacao LOS-SVC, webhooks, gestao de merchants/leads, API de integracao e auditoria de funding.
+Funding queue, LOS-SVC import, webhooks, merchant/lead management, integration API, and funding audit.
 
 ---
 
-## 9. Fila de Financiamento (Funding)
+## 9. Funding Queue
 
-### O Que e Funding
+### What Funding Is
 
-Funding e o processo pelo qual **a UOwn paga o merchant** pelo produto que o cliente levou. E o momento em que a UOwn assume o risco financeiro.
+Funding is the process by which **UOwn pays the merchant** for the product the customer took. It is the moment when UOwn assumes the financial risk.
 
-### Como o Merchant e Pago
+### How the Merchant Is Paid
 
 ```
-Valor liquido ao merchant = Invoice Amount
-  - Dealer Discount (% retido)
-  - Platform Fee (% da UOwn, default 2%)
-  - CC Processing Fee (% de processamento)
-  + Dealer Rebate (% devolvido como incentivo)
+Net amount to merchant = Invoice Amount
+  - Dealer Discount (% withheld)
+  - Platform Fee (UOwn's %, default 2%)
+  - CC Processing Fee (processing %)
+  + Dealer Rebate (% returned as incentive)
 ```
 
-### Transicoes de Status
+### Status Transitions
 
 ```
 FUNDING ──────> FUNDED ──────> REQUEST_REFUND ──────> REFUNDED
     ^               |
     └───────────────┘
-    (Reversao: FUNDED -> FUNDING)
+    (Reversal: FUNDED -> FUNDING)
 ```
 
-| Transicao | O que acontece |
+| Transition | What happens |
 |-----------|---------------|
-| -> FUNDING | Lead importado para SVC, conta criada, `fundRequestDateTime` registrado |
-| FUNDING -> FUNDED | Merchant recebeu pagamento, transacao FUNDED criada, lead -> FUNDED |
-| FUNDED -> FUNDING | Reversao (erro), status revertido |
-| REQUEST_REFUND -> REFUNDED | Dinheiro clawback do merchant |
+| -> FUNDING | Lead imported into SVC, account created, `fundRequestDateTime` recorded |
+| FUNDING -> FUNDED | Merchant received payment, FUNDED transaction created, lead -> FUNDED |
+| FUNDED -> FUNDING | Reversal (error), status reverted |
+| REQUEST_REFUND -> REFUNDED | Money clawed back from the merchant |
 
-### Mudanca de Invoice Apos Funding
+### Invoice Change After Funding
 
-| Se lead em | Acao |
+| If lead is in | Action |
 |-----------|------|
-| FUNDING | Transacoes existentes canceladas, novas criadas |
-| FUNDED | Transacao REQUEST_REFUND criada |
+| FUNDING | Existing transactions cancelled, new ones created |
+| FUNDED | REQUEST_REFUND transaction created |
 
 ---
 
-## 10. Importacao LOS para SVC
+## 10. LOS to SVC Import
 
-### O Que Acontece
+### What Happens
 
-Quando um lead e financiado, seus dados sao importados do sistema de originacao (LOS) para o sistema de servicing (SVC), criando uma conta ativa.
+When a lead is funded, its data is imported from the origination system (LOS) into the servicing system (SVC), creating an active account.
 
-### Dados Importados
+### Imported Data
 
-Conta, clientes, enderecos, emails, telefones, emprego, contas bancarias (deduplicadas), transacoes CC (apenas APPROVED), recebiveis, plano de protecao.
+Account, customers, addresses, emails, phones, employment, bank accounts (deduplicated), CC transactions (APPROVED only), receivables, protection plan.
 
-### Regras Especiais
+### Special Rules
 
-| Regra | Detalhe |
+| Rule | Detail |
 |-------|---------|
-| Termo 16 meses | EPO desabilitado (`earlyPayoffDateExpiry = hoje`) |
-| Security deposit > 0 | Pagamento tipo `DEPOSIT` |
-| Email de boas-vindas | Enviado apos importacao |
-| Conta cancelada apos update | Trigger cancelamento com reembolso |
+| 16-month term | EPO disabled (`earlyPayoffDateExpiry = today`) |
+| Security deposit > 0 | Payment of type `DEPOSIT` |
+| Welcome email | Sent after import |
+| Account cancelled after update | Triggers cancellation with refund |
 
 ---
 
-## 28. Webhooks (Notificacoes para Merchants)
+## 28. Webhooks (Notifications to Merchants)
 
-### O Que e
+### What It Is
 
-Sistema de callbacks HTTP que envia notificacoes em tempo real para sistemas de merchants parceiros quando status de leads mudam.
+A system of HTTP callbacks that sends real-time notifications to partner merchant systems when lead statuses change.
 
-### Para Que Serve
+### What It's For
 
-Merchants precisam saber quando coisas acontecem: cliente assinou, deal financiado, aplicacao expirou. Em vez de merchants consultarem a UOwn constantemente, a UOwn envia updates proativamente.
+Merchants need to know when things happen: customer signed, deal funded, application expired. Instead of merchants polling UOwn constantly, UOwn pushes updates proactively.
 
-### Status que Disparam Webhook
+### Statuses That Trigger a Webhook
 
 Default: `CONTRACT_CREATED, EXPIRED, CANCELLED_DUP_SSN, FUNDING, FUNDED, SIGNED`
 
-### Como Funciona
+### How It Works
 
-1. Status do lead muda
-2. Sistema verifica se merchant tem `useWebhook = true`
-3. Se merchant requer autenticacao: obtem token OAuth primeiro
-4. Payload JSON construido a partir de query SQL configuravel (customizavel por merchant sem code change)
-5. POST enviado para URL do merchant com headers de autorizacao
+1. Lead status changes
+2. System checks whether the merchant has `useWebhook = true`
+3. If the merchant requires authentication: obtains an OAuth token first
+4. JSON payload built from a configurable SQL query (customizable per merchant with no code change)
+5. POST sent to the merchant's URL with authorization headers
 
-### Impacto no Merchant
+### Impact on the Merchant
 
-Quando webhook de FUNDED dispara, o merchant sabe que pode liberar a mercadoria ao cliente. Quando EXPIRED dispara, merchant para de segurar inventario.
+When a FUNDED webhook fires, the merchant knows it can release the merchandise to the customer. When EXPIRED fires, the merchant stops holding inventory.
 
 ---
 
-## 48. Gestao de Merchants (Lojistas)
+## 48. Merchant Management
 
-### Criacao
+### Creation
 
-| Campo | Requerido | Descricao |
+| Field | Required | Description |
 |-------|-----------|-----------|
-| clientType | Sim | Tipo de integracao |
-| refMerchantCode | Sim | Codigo de referencia |
-| username, apiKey, merchantUrl | Default do clientType | Credenciais |
+| clientType | Yes | Integration type |
+| refMerchantCode | Yes | Reference code |
+| username, apiKey, merchantUrl | Default from clientType | Credentials |
 
-### Ativacao/Desativacao
+### Activation/Deactivation
 
-| Acao | Como Ativar | Impacto |
+| Action | How to Trigger | Impact |
 |------|-------------|---------|
-| Desativacao | Admin Panel -> Merchant -> Desativar | Lock de usuarios via AMS. Novas aplicacoes continuam mas podem ser auto-denied |
-| Ativacao | Admin Panel -> Merchant -> Ativar | Unlock de usuarios |
-| Remover de usuarios | Admin Panel (so se inativo) | Remove merchant de todos os perfis |
-| Auto-Deny | Setar `autoDenyApplication = TRUE` no merchant | Nega todas as aplicacoes automaticamente |
+| Deactivation | Admin Panel -> Merchant -> Deactivate | Locks users via AMS. New applications continue but may be auto-denied |
+| Activation | Admin Panel -> Merchant -> Activate | Unlocks users |
+| Remove from users | Admin Panel (only if inactive) | Removes merchant from all profiles |
+| Auto-Deny | Set `autoDenyApplication = TRUE` on the merchant | Automatically denies all applications |
 
 ### Clone
 
-Cria copia do merchant: `pk = 0`, `clonedFrom = originalPk`, codigo += `_clone`. Programas copiados.
+Creates a copy of the merchant: `pk = 0`, `clonedFrom = originalPk`, code += `_clone`. Programs copied.
 
-### Como Disparar
+### How to Trigger
 
-- **Criar:** `POST /uown/createMerchant`
-- **Atualizar:** `POST /uown/updateMerchant`
-- **Clonar:** `POST /uown/cloneMerchant/{merchantPk}`
-- **Desativar:** `POST /uown/deactivateMerchant/{merchantPk}`
+- **Create:** `POST /uown/createMerchant`
+- **Update:** `POST /uown/updateMerchant`
+- **Clone:** `POST /uown/cloneMerchant/{merchantPk}`
+- **Deactivate:** `POST /uown/deactivateMerchant/{merchantPk}`
 
 ---
 
-## 49. Gestao de Leads
+## 49. Lead Management
 
-### Transicoes Permitidas via ChangeLeadStatus
+### Allowed Transitions via ChangeLeadStatus
 
-Somente para: `UW_APPROVED`, `EXPIRED`, `SIGNED`
+Only for: `UW_APPROVED`, `EXPIRED`, `SIGNED`
 
-### Regras Especiais
+### Special Rules
 
-| Transicao | Regra |
+| Transition | Rule |
 |-----------|-------|
-| EXPIRED -> UW_APPROVED | Requer nova expiration date |
-| UW_DENIED -> UW_APPROVED | Altera valor de aprovacao |
-| -> SIGNED (com conta existente) | Cancela conta se configurado, reembolsa se configurado |
-| Status nao elegivel -> UW_APPROVED | Re-executa steps de UW restantes com reset de servicos de fraude |
+| EXPIRED -> UW_APPROVED | Requires a new expiration date |
+| UW_DENIED -> UW_APPROVED | Changes the approval amount |
+| -> SIGNED (with existing account) | Cancels account if configured, refunds if configured |
+| Non-eligible status -> UW_APPROVED | Re-runs remaining UW steps with a reset of fraud services |
 
-### Como Disparar
+### How to Trigger
 
-- **Mudar status:** `POST /uown/los/changeLeadStatus`
-- **Blacklistar lead:** `POST /uown/los/blacklistLead/{leadPk}`
-- **Re-aprovar:** Via Admin Panel ou endpoint de change status
+- **Change status:** `POST /uown/los/changeLeadStatus`
+- **Blacklist lead:** `POST /uown/los/blacklistLead/{leadPk}`
+- **Re-approve:** Via Admin Panel or the change-status endpoint
 
 ---
 
-## 51. API de Integracao para Merchants (Full API)
+## 51. Merchant Integration API (Full API)
 
-### O Que e
+### What It Is
 
-A UOwn Leasing API permite integracao completa com a plataforma de financiamento UOwn, habilitando merchants a automatizar submissao de aplicacoes, processamento de invoices, gerenciamento de contratos e rastreamento de status -- tudo via API sem necessidade de interacao manual com o Merchant Portal.
+The UOwn Leasing API enables full integration with the UOwn financing platform, allowing merchants to automate application submission, invoice processing, contract management, and status tracking -- all via API without the need for manual interaction with the Merchant Portal.
 
-### Para Que Serve
+### What It's For
 
-Merchants que possuem sistemas proprios (e-commerce, POS, ERP) podem integrar diretamente com a UOwn para oferecer financiamento aos seus clientes sem sair da plataforma do merchant.
+Merchants that have their own systems (e-commerce, POS, ERP) can integrate directly with UOwn to offer financing to their customers without leaving the merchant's platform.
 
-### Autenticacao
+### Authentication
 
-Toda requisicao deve incluir credenciais de autenticacao no body:
+Every request must include authentication credentials in the body:
 
-| Campo | Descricao | Obrigatorio |
+| Field | Description | Required |
 |-------|-----------|-------------|
-| `userName` | Username atribuido ao merchant | Sim |
-| `setupPassword` | Senha de autenticacao | Sim |
-| `merchantNumber` | Identificador unico do merchant (ex: `OL90202-0001`) | Sim |
+| `userName` | Username assigned to the merchant | Yes |
+| `setupPassword` | Authentication password | Yes |
+| `merchantNumber` | Unique merchant identifier (e.g., `OL90202-0001`) | Yes |
 
-**Como obter credenciais:**
-1. Contatar a equipe UOwn
-2. Fornecer dados do merchant e caso de uso
-3. Receber `userName`, `setupPassword` e `merchantNumber`
+**How to obtain credentials:**
+1. Contact the UOwn team
+2. Provide merchant details and use case
+3. Receive `userName`, `setupPassword`, and `merchantNumber`
 
-**Requisitos de rede:** IPs de egresso devem ser whitelistados. Fornecer a UOwn: nome do merchant, ambiente (Sandbox/Producao), tipo de acesso, e IPs estaticos. Recomendado usar NAT Gateway para IPs consistentes.
+**Network requirements:** Egress IPs must be whitelisted. Provide UOwn with: merchant name, environment (Sandbox/Production), access type, and static IPs. Using a NAT Gateway for consistent IPs is recommended.
 
-### Fluxos de Integracao
+### Integration Flows
 
-#### Fluxo 1: Aplicacao Completa (Com Invoice/Carrinho)
-
-```
-1. Merchant envia sendApplication COM itens do carrinho
-2. UOwn processa aplicacao + underwriting
-3. Se aprovado: retorna link para finalizacao do lease
-4. Cliente completa dados de pagamento e assina contrato via link
-5. Merchant chama settleApplication para iniciar funding
-```
-
-**Quando usar:** Quando o cliente ja escolheu os itens antes de aplicar. Mais rapido para finalizacao.
-
-#### Fluxo 2: Pre-Aprovacao (Sem Invoice)
+#### Flow 1: Full Application (With Invoice/Cart)
 
 ```
-1. Merchant envia sendApplication SEM itens (pre-aprovacao)
-2. UOwn retorna valor aprovado (creditLimit)
-3. Cliente escolhe itens com base no credito aprovado
-4. Merchant envia sendInvoice com os itens selecionados
-5. UOwn retorna link para finalizacao do lease
-6. Cliente completa dados de pagamento e assina contrato
-7. Merchant chama settleApplication para iniciar funding
+1. Merchant sends sendApplication WITH cart items
+2. UOwn processes application + underwriting
+3. If approved: returns a link to finalize the lease
+4. Customer completes payment data and signs the contract via the link
+5. Merchant calls settleApplication to initiate funding
 ```
 
-**Quando usar:** Quando o merchant quer dar ao cliente um limite de credito antes da compra. Mais flexibilidade.
+**When to use:** When the customer has already chosen the items before applying. Faster to finalize.
 
-### Finalizacao do Lease (Assinatura)
+#### Flow 2: Pre-Approval (No Invoice)
 
-Apos aprovacao, o cliente deve completar:
-1. Inserir dados de pagamento (CC ou ACH)
-2. Revisar termos do lease
-3. Decidir sobre plano de protecao (opt-in/opt-out)
-4. Assinar contrato digital
+```
+1. Merchant sends sendApplication WITHOUT items (pre-approval)
+2. UOwn returns the approved amount (creditLimit)
+3. Customer chooses items based on the approved credit
+4. Merchant sends sendInvoice with the selected items
+5. UOwn returns a link to finalize the lease
+6. Customer completes payment data and signs the contract
+7. Merchant calls settleApplication to initiate funding
+```
 
-**Duas formas de finalizacao:**
+**When to use:** When the merchant wants to give the customer a credit limit before the purchase. More flexibility.
 
-| Metodo | Descricao |
+### Lease Finalization (Signing)
+
+After approval, the customer must complete:
+1. Enter payment data (CC or ACH)
+2. Review the lease terms
+3. Decide on the protection plan (opt-in/opt-out)
+4. Sign the digital contract
+
+**Two ways to finalize:**
+
+| Method | Description |
 |--------|-----------|
-| **Portal UOwn** | Cliente acessa link retornado pela API (`redirectUrl`) e completa no site da UOwn |
-| **Pagina Embarcada (Iframe)** | Merchant embarca as paginas de finalizacao dentro da propria plataforma via iframe |
+| **UOwn Portal** | Customer accesses the link returned by the API (`redirectUrl`) and completes it on the UOwn site |
+| **Embedded Page (Iframe)** | Merchant embeds the finalization pages inside its own platform via iframe |
 
-### Notificacoes de Finalizacao
+### Finalization Notifications
 
-Apos o cliente assinar ou recusar o contrato, a UOwn notifica o merchant de 3 formas:
+After the customer signs or declines the contract, UOwn notifies the merchant in 3 ways:
 
 #### 1. URL Redirect
 
-O cliente e redirecionado para o `returnUrl` fornecido pelo merchant com parametros:
-- `event=completed` (assinou) ou `event=cancelled` (recusou)
-- `ata={UUID}` (identificador unico da aplicacao)
+The customer is redirected to the `returnUrl` provided by the merchant with parameters:
+- `event=completed` (signed) or `event=cancelled` (declined)
+- `ata={UUID}` (unique application identifier)
 
-**Exemplo:** `{returnUrl}?event=completed&ata=892828a0-f766-4183-add7-781cbbc1ac83`
+**Example:** `{returnUrl}?event=completed&ata=892828a0-f766-4183-add7-781cbbc1ac83`
 
-#### 2. PostMessage do Iframe
+#### 2. Iframe PostMessage
 
-Se a assinatura ocorre em iframe embarcado, a UOwn envia `postMessage` ao completar. O merchant escuta o evento e atualiza seu sistema.
+If signing occurs in an embedded iframe, UOwn sends a `postMessage` on completion. The merchant listens for the event and updates its system.
 
 #### 3. Webhook
 
-A UOwn envia POST para URL de webhook configurada com status atualizado do lease. Mensagem e URL configuraveis por merchant.
+UOwn sends a POST to the configured webhook URL with the lease's updated status. Message and URL are configurable per merchant.
 
 ---
 
-### Endpoints da API
+### API Endpoints
 
 #### 51.1 POST /uown/los/sendApplication
 
-**O que faz:** Submete aplicacao de cliente para avaliacao de credito. Pode incluir ou nao os itens do carrinho.
+**What it does:** Submits a customer application for credit evaluation. May or may not include cart items.
 
-**Campos obrigatorios do request:**
+**Required request fields:**
 
-| Campo | JSON Tag | Obrigatorio | Formato/Notas |
+| Field | JSON Tag | Required | Format/Notes |
 |-------|----------|-------------|---------------|
-| Username | `userName` | Sim | |
-| Senha | `setupPassword` | Sim | |
-| Merchant Number | `merchantNumber` | Sim | |
-| Nome | `mainFirstName` | Sim | |
-| Sobrenome | `mainLastName` | Sim | |
-| Data Nascimento | `mainDOB` | Sim | MMDDYYYY |
-| SSN | `mainSSN` | Sim | Apenas digitos, sem hifens |
-| Endereco | `mainAddress1` | Sim | |
-| Cidade | `mainCity` | Sim | |
-| CEP | `mainPostalCode` | Sim | Apenas digitos |
-| Celular | `mainCellPhone` | Sim | Apenas digitos, 10 digitos |
-| Empregador | `mainEmployerName` | Sim | |
-| Renda (mensal ou anual) | `mainMonthlyIncome` ou `mainAnnualIncome` | Sim | Um dos dois obrigatorio |
-| Email | `emailAddress` | Sim | |
-| IP | `ipaddress` | Sim | |
-| SEON Fingerprint | `seonFingerprintText` | Sim | Protecao contra fraude |
+| Username | `userName` | Yes | |
+| Password | `setupPassword` | Yes | |
+| Merchant Number | `merchantNumber` | Yes | |
+| First name | `mainFirstName` | Yes | |
+| Last name | `mainLastName` | Yes | |
+| Date of birth | `mainDOB` | Yes | MMDDYYYY |
+| SSN | `mainSSN` | Yes | Digits only, no hyphens |
+| Address | `mainAddress1` | Yes | |
+| City | `mainCity` | Yes | |
+| ZIP code | `mainPostalCode` | Yes | Digits only |
+| Cell phone | `mainCellPhone` | Yes | Digits only, 10 digits |
+| Employer | `mainEmployerName` | Yes | |
+| Income (monthly or annual) | `mainMonthlyIncome` or `mainAnnualIncome` | Yes | One of the two required |
+| Email | `emailAddress` | Yes | |
+| IP | `ipaddress` | Yes | |
+| SEON Fingerprint | `seonFingerprintText` | Yes | Fraud protection |
 
-**Campos opcionais importantes:**
+**Important optional fields:**
 
-| Campo | JSON Tag | Notas |
+| Field | JSON Tag | Notes |
 |-------|----------|-------|
-| URL de retorno | `returnUrl` | Redirect apos assinatura |
-| ID externo | `externalReferenceId` | Identificador do merchant por aplicacao |
-| UUID | `uuid` | Identificador unico gerado pelo merchant |
-| Codigo do cliente | `customerCode` | ID do cliente no sistema do merchant |
-| Frequencia desejada | `desiredPaymentFrequency` | WEEKLY, BI_WEEKLY, SEMI_MONTHLY, MONTHLY |
-| Proxima data pagamento | `mainNextPayDate` | MMDDYYYY (configuravel por merchant) |
-| Frequencia salarial | `mainPayFrequency` | WEEKLY, BI_WEEKLY, SEMI_MONTHLY, MONTHLY |
-| Ultimo pagamento | `mainLastPayDate` | MMDDYYYY |
-| Idioma | `languagePreference` | E = English, S = Spanish |
-| Indicador individual/joint | `individualJointIndicator` | I = Individual, J = Joint |
+| Return URL | `returnUrl` | Redirect after signing |
+| External ID | `externalReferenceId` | Merchant identifier per application |
+| UUID | `uuid` | Unique identifier generated by the merchant |
+| Customer code | `customerCode` | Customer ID in the merchant's system |
+| Desired frequency | `desiredPaymentFrequency` | WEEKLY, BI_WEEKLY, SEMI_MONTHLY, MONTHLY |
+| Next pay date | `mainNextPayDate` | MMDDYYYY (configurable per merchant) |
+| Pay frequency | `mainPayFrequency` | WEEKLY, BI_WEEKLY, SEMI_MONTHLY, MONTHLY |
+| Last pay date | `mainLastPayDate` | MMDDYYYY |
+| Language | `languagePreference` | E = English, S = Spanish |
+| Individual/joint indicator | `individualJointIndicator` | I = Individual, J = Joint |
 | Locale | `localeString` | Default: en_US |
-| Deposito | `depositAmount` | Decimal, ate 10 digitos |
-| Total do pedido | `orderTotal` | Decimal (obrigatorio se com carrinho) |
-| Subtotal merchandise | `merchandiseSubtotal` | Soma antes de imposto |
+| Deposit | `depositAmount` | Decimal, up to 10 digits |
+| Order total | `orderTotal` | Decimal (required if cart included) |
+| Merchandise subtotal | `merchandiseSubtotal` | Sum before tax |
 | Sales Tax | `salesTax` | Decimal |
-| Desconto | `discountAmount` | Ate 10 digitos |
-| Frete | `deliveryCharge` | Decimal |
-| Instalacao | `installationCharge` | Decimal |
-| Taxas diversas | `miscellaneousFees` | Decimal |
-| Valor solicitado | `requestedLoanAmount` | Decimal |
-| Falencia passada | `mainPastBankruptcy` | boolean |
-| Falencia atual/futura | `mainCurrentOrFutureBankruptcy` | boolean |
-| Envio = endereco cliente | `shipToSameAsConsumer` | boolean |
+| Discount | `discountAmount` | Up to 10 digits |
+| Shipping | `deliveryCharge` | Decimal |
+| Installation | `installationCharge` | Decimal |
+| Miscellaneous fees | `miscellaneousFees` | Decimal |
+| Requested amount | `requestedLoanAmount` | Decimal |
+| Past bankruptcy | `mainPastBankruptcy` | boolean |
+| Current/future bankruptcy | `mainCurrentOrFutureBankruptcy` | boolean |
+| Ship to same as customer | `shipToSameAsConsumer` | boolean |
 
-**Campos opcionais de endereco e residencia:**
+**Optional address and residence fields:**
 
-| Campo | JSON Tag | Notas |
+| Field | JSON Tag | Notes |
 |-------|----------|-------|
-| Estado | `mainStateOrProvince` | Sigla do estado |
-| Complemento | `mainAddress2` | |
-| Morando desde | `mainAtAddressFrom` | Formato MMYY |
-| Telefone residencial | `mainHomePhone` | Apenas digitos |
-| Status habitacional | `mainHousingStatus` | O=Owner, R=Renter, PR=Parents/Relatives, OT=Other |
-| Pagamento mensal moradia | `mainMonthlyHousingPayment` | Decimal |
-| Saldo da hipoteca | `mainMortgageBalance` | Inteiro |
-| Valor do imovel | `mainHomeValue` | Inteiro |
-| Endereco anterior 1 | `mainPrevAddress1` | |
-| Endereco anterior 2 | `mainPrevAddress2` | |
-| Cidade anterior | `mainPrevCity` | |
-| Estado anterior | `mainPrevStateOrProvince` | |
-| CEP anterior | `mainPrevPostalCode` | Apenas digitos |
-| Morando endereco anterior desde | `mainAtPrevAddressFrom` | Formato MMYY |
+| State | `mainStateOrProvince` | State abbreviation |
+| Address line 2 | `mainAddress2` | |
+| Living there since | `mainAtAddressFrom` | MMYY format |
+| Home phone | `mainHomePhone` | Digits only |
+| Housing status | `mainHousingStatus` | O=Owner, R=Renter, PR=Parents/Relatives, OT=Other |
+| Monthly housing payment | `mainMonthlyHousingPayment` | Decimal |
+| Mortgage balance | `mainMortgageBalance` | Integer |
+| Home value | `mainHomeValue` | Integer |
+| Previous address 1 | `mainPrevAddress1` | |
+| Previous address 2 | `mainPrevAddress2` | |
+| Previous city | `mainPrevCity` | |
+| Previous state | `mainPrevStateOrProvince` | |
+| Previous ZIP code | `mainPrevPostalCode` | Digits only |
+| Living at previous address since | `mainAtPrevAddressFrom` | MMYY format |
 
-**Campos opcionais bancarios:**
+**Optional banking fields:**
 
-| Campo | JSON Tag | Notas |
+| Field | JSON Tag | Notes |
 |-------|----------|-------|
-| Conta corrente | `mainCheckingAccount` | Y ou N |
-| Conta poupanca | `mainSavingsAccount` | Y ou N |
-| Duracao da conta | `mainBankAccountDuration` | Enum |
-| Numero da conta | `mainBankAccountNumber` | Apenas digitos |
-| Routing number | `mainBankRoutingNumber` | Apenas digitos |
-| Data abertura da conta | `mainBankAccountOpenedDate` | MMDDYYYY |
-| Tipo de conta | `mainBankAccountType` | CHECKING ou SAVINGS |
+| Checking account | `mainCheckingAccount` | Y or N |
+| Savings account | `mainSavingsAccount` | Y or N |
+| Account duration | `mainBankAccountDuration` | Enum |
+| Account number | `mainBankAccountNumber` | Digits only |
+| Routing number | `mainBankRoutingNumber` | Digits only |
+| Account opened date | `mainBankAccountOpenedDate` | MMDDYYYY |
+| Account type | `mainBankAccountType` | CHECKING or SAVINGS |
 
-**Campos opcionais de emprego:**
+**Optional employment fields:**
 
-| Campo | JSON Tag | Notas |
+| Field | JSON Tag | Notes |
 |-------|----------|-------|
-| Status emprego | `mainEmplStatus` | D=Disabled, E=Employed, etc. |
-| Empregado desde | `mainAtEmployerFrom` | Formato MMYY |
-| Ocupacao | `mainOccupation` | |
-| Telefone empregador | `mainEmployerPhone` | Apenas digitos |
-| Renda liquida mensal | `mainMonthlyNetIncome` | Inteiro |
-| Estado civil | `mainMaritalStatus` | M=Married, U=Unmarried |
-| Nome solteira da mae | `mainMotherMaidenName` | |
+| Employment status | `mainEmplStatus` | D=Disabled, E=Employed, etc. |
+| Employed since | `mainAtEmployerFrom` | MMYY format |
+| Occupation | `mainOccupation` | |
+| Employer phone | `mainEmployerPhone` | Digits only |
+| Monthly net income | `mainMonthlyNetIncome` | Integer |
+| Marital status | `mainMaritalStatus` | M=Married, U=Unmarried |
+| Mother's maiden name | `mainMotherMaidenName` | |
 
-**Campos de itens do carrinho (se incluidos):**
+**Cart item fields (if included):**
 
-| Campo | JSON Tag | Obrigatorio | Notas |
+| Field | JSON Tag | Required | Notes |
 |-------|----------|-------------|-------|
-| Numero da linha | `lineItemLineNumber` | Sim | |
-| Numero do produto | `lineItemProductNumber` | Sim | SKU |
-| Descricao | `lineItemProductDescription` | Sim | |
-| Categoria | `lineItemProductCategory` | Sim | |
-| Tipo | `lineItemType` | Sim | D = Debito/Venda, C = Credito/Devolucao |
-| Quantidade | `lineItemQuantityOrdered` | Sim | |
-| Preco unitario | `lineItemUnitPrice` | Sim | Ate 10 digitos, 2 decimais |
-| Preco total | `lineItemExtendedPrice` | Sim | Preco x quantidade |
-| Numero serial | `lineItemSerialNumber` | Nao | Numero de serie do produto |
-| Preco base | `lineItemBasePrice` | Nao | Decimal |
-| Imposto do item | `lineItemTaxAmount` | Nao | Decimal |
+| Line number | `lineItemLineNumber` | Yes | |
+| Product number | `lineItemProductNumber` | Yes | SKU |
+| Description | `lineItemProductDescription` | Yes | |
+| Category | `lineItemProductCategory` | Yes | |
+| Type | `lineItemType` | Yes | D = Debit/Sale, C = Credit/Return |
+| Quantity | `lineItemQuantityOrdered` | Yes | |
+| Unit price | `lineItemUnitPrice` | Yes | Up to 10 digits, 2 decimals |
+| Total price | `lineItemExtendedPrice` | Yes | Price x quantity |
+| Serial number | `lineItemSerialNumber` | No | Product serial number |
+| Base price | `lineItemBasePrice` | No | Decimal |
+| Item tax | `lineItemTaxAmount` | No | Decimal |
 
-**SEON Fingerprint (Protecao contra Fraude):**
-A UOwn usa a plataforma SEON para protecao contra fraude via device fingerprinting. Merchants devem implementar o SEON SDK em seus sites/apps:
-- **Websites:** Incluir SEON JavaScript Agent, chamar `seon.config()` e `seon.getBase64Session()`
-- **iOS:** Integrar via CocoaPods
-- **Android:** Integrar via Gradle
-O valor gerado deve ser passado como `seonFingerprintText`.
+**SEON Fingerprint (Fraud Protection):**
+UOwn uses the SEON platform for fraud protection via device fingerprinting. Merchants must implement the SEON SDK on their sites/apps:
+- **Websites:** Include the SEON JavaScript Agent, call `seon.config()` and `seon.getBase64Session()`
+- **iOS:** Integrate via CocoaPods
+- **Android:** Integrate via Gradle
+The generated value must be passed as `seonFingerprintText`.
 
-**Exemplo de request (com carrinho):**
+**Request example (with cart):**
 
 ```json
 {
@@ -420,7 +420,7 @@ O valor gerado deve ser passado como `seonFingerprintText`.
 }
 ```
 
-**Exemplo de resposta (aprovado):**
+**Response example (approved):**
 
 ```json
 {
@@ -458,7 +458,7 @@ O valor gerado deve ser passado como `seonFingerprintText`.
 }
 ```
 
-**Exemplo de resposta (negada - SSN termina em 9):**
+**Response example (declined - SSN ending in 9):**
 
 ```json
 {
@@ -473,7 +473,7 @@ O valor gerado deve ser passado como `seonFingerprintText`.
 }
 ```
 
-**Exemplo de resposta (erro de validacao - 400):**
+**Response example (validation error - 400):**
 
 ```json
 {
@@ -485,59 +485,59 @@ O valor gerado deve ser passado como `seonFingerprintText`.
 }
 ```
 
-**Campos importantes da resposta:**
+**Important response fields:**
 
-| Campo | Descricao |
+| Field | Description |
 |-------|-----------|
-| `accountNumber` | UUID da aplicacao (usar em chamadas futuras) |
-| `appApprovalStatus` | APPROVED ou DECLINED |
-| `creditLimit` | Valor maximo aprovado |
-| `transactionStatus` | E0 = nao aprovado para transacao, E1 = aprovado, E3 = erro validacao, E4 = negado |
-| `paymentDetailsList` | Opcoes de pagamento com `redirectUrl` para finalizacao |
-| `redirectUrl` | Link para o cliente completar a assinatura |
-| `totalContractAmountWithTax` | Valor total do contrato com imposto |
-| `totalContractAmountNoTax` | Valor total do contrato sem imposto |
-| `regularPaymentWithTax` | Valor da parcela regular |
-| `numberOfPayments` | Total de parcelas |
-| `firstPaymentWithFeesAndTax` | Primeiro pagamento incluindo taxas e impostos |
-| `firstPaymentWithFeesNoTax` | Primeiro pagamento incluindo taxas sem impostos |
-| `firstPaymentDate` | Data do primeiro pagamento |
-| `paymentDueToday` | Valor a pagar hoje (security deposit) |
-| `purchaseNowTotal` | Total para compra imediata |
-| `faults` | true = erro, false = sucesso |
-| `fieldInError1` | Campo com erro (em caso de falha) |
-| `sorErrorDescription` | Descricao detalhada do erro |
+| `accountNumber` | Application UUID (use in future calls) |
+| `appApprovalStatus` | APPROVED or DECLINED |
+| `creditLimit` | Maximum approved amount |
+| `transactionStatus` | E0 = not approved for transaction, E1 = approved, E3 = validation error, E4 = declined |
+| `paymentDetailsList` | Payment options with `redirectUrl` for finalization |
+| `redirectUrl` | Link for the customer to complete signing |
+| `totalContractAmountWithTax` | Total contract amount with tax |
+| `totalContractAmountNoTax` | Total contract amount without tax |
+| `regularPaymentWithTax` | Regular installment amount |
+| `numberOfPayments` | Total installments |
+| `firstPaymentWithFeesAndTax` | First payment including fees and tax |
+| `firstPaymentWithFeesNoTax` | First payment including fees without tax |
+| `firstPaymentDate` | First payment date |
+| `paymentDueToday` | Amount to pay today (security deposit) |
+| `purchaseNowTotal` | Total for immediate purchase |
+| `faults` | true = error, false = success |
+| `fieldInError1` | Field with error (in case of failure) |
+| `sorErrorDescription` | Detailed error description |
 
 ---
 
 #### 51.2 POST /uown/los/sendInvoice
 
-**O que faz:** Envia invoice separadamente quando nao incluida no sendApplication. Tambem usado para cancelar, devolver ou modificar invoices.
+**What it does:** Sends an invoice separately when it was not included in sendApplication. Also used to cancel, return, or modify invoices.
 
-**Operacoes suportadas via `orderType`:**
+**Operations supported via `orderType`:**
 
-| orderType | Operacao | Descricao |
+| orderType | Operation | Description |
 |-----------|----------|-----------|
-| `1` | **Submeter Invoice** | Envia itens para completar lease |
-| `5` | **Cancelar Invoice** | Remove invoice mas mantem aprovacao ativa |
-| `1` (com itens tipo C) | **Devolver Itens** | Devolucao parcial ou total |
-| `1` (itens modificados) | **Modificar Invoice** | Atualiza itens/valores existentes |
+| `1` | **Submit Invoice** | Sends items to complete the lease |
+| `5` | **Cancel Invoice** | Removes the invoice but keeps the approval active |
+| `1` (with type C items) | **Return Items** | Partial or total return |
+| `1` (modified items) | **Modify Invoice** | Updates existing items/values |
 
-**Campos do request:**
+**Request fields:**
 
-| Campo | JSON Tag | Obrigatorio | Descricao |
+| Field | JSON Tag | Required | Description |
 |-------|----------|-------------|-----------|
-| Username | `userName` | Sim | |
-| Senha | `setupPassword` | Sim | |
-| Merchant Number | `merchantNumber` | Sim | |
-| Account Number | `accountNumber` | Sim | UUID retornado do sendApplication |
-| Order Type | `orderType` | Sim | 1 = venda, 5 = cancelamento |
-| Invoice Number | `invoiceNumber` | Recomendado | Numero de referencia do merchant |
-| Order Total | `orderTotal` | Sim | Total do pedido |
-| Frequencia | `selectedPaymentFrequency` | Opcional | WEEKLY, BI_WEEKLY, etc. |
-| Line Items | `lineItem` | Sim (para vendas) | Array de itens |
+| Username | `userName` | Yes | |
+| Password | `setupPassword` | Yes | |
+| Merchant Number | `merchantNumber` | Yes | |
+| Account Number | `accountNumber` | Yes | UUID returned from sendApplication |
+| Order Type | `orderType` | Yes | 1 = sale, 5 = cancellation |
+| Invoice Number | `invoiceNumber` | Recommended | Merchant reference number |
+| Order Total | `orderTotal` | Yes | Order total |
+| Frequency | `selectedPaymentFrequency` | Optional | WEEKLY, BI_WEEKLY, etc. |
+| Line Items | `lineItem` | Yes (for sales) | Array of items |
 
-**Exemplo - Submeter Invoice:**
+**Example - Submit Invoice:**
 
 ```json
 {
@@ -564,7 +564,7 @@ O valor gerado deve ser passado como `seonFingerprintText`.
 }
 ```
 
-**Exemplo - Cancelar Invoice:**
+**Example - Cancel Invoice:**
 
 ```json
 {
@@ -577,9 +577,9 @@ O valor gerado deve ser passado como `seonFingerprintText`.
 }
 ```
 
-**Exemplo - Devolver Itens (Parcial):**
+**Example - Return Items (Partial):**
 
-Para devolucao parcial, incluir itens devolvidos com `lineItemType: "C"` e itens mantidos com `lineItemType: "D"`:
+For a partial return, include returned items with `lineItemType: "C"` and kept items with `lineItemType: "D"`:
 
 ```json
 {
@@ -615,13 +615,13 @@ Para devolucao parcial, incluir itens devolvidos com `lineItemType: "C"` e itens
 }
 ```
 
-**Para devolucao total:** Deixar lista de itens vazia e `orderTotal = 0.00`.
+**For a total return:** Leave the item list empty and `orderTotal = 0.00`.
 
-**Exemplo - Modificar Invoice:**
+**Example - Modify Invoice:**
 
-Enviar `orderType: "1"` com `invoiceNumber` existente, `orderTotal` atualizado e lista de itens atualizada. Nao incluir itens cancelados/devolvidos. Garantir que totais calculados correspondam a lista de itens.
+Send `orderType: "1"` with the existing `invoiceNumber`, an updated `orderTotal`, and an updated item list. Do not include cancelled/returned items. Ensure the calculated totals match the item list.
 
-**Resposta de sucesso - submeter invoice (`transactionStatus: "A1"`):**
+**Success response - submit invoice (`transactionStatus: "A1"`):**
 
 ```json
 {
@@ -662,7 +662,7 @@ Enviar `orderType: "1"` com `invoiceNumber` existente, `orderTotal` atualizado e
 }
 ```
 
-**Resposta de sucesso - modificar invoice:**
+**Success response - modify invoice:**
 
 ```json
 {
@@ -701,7 +701,7 @@ Enviar `orderType: "1"` com `invoiceNumber` existente, `orderTotal` atualizado e
 }
 ```
 
-**Resposta de sucesso - devolver item:**
+**Success response - return item:**
 
 ```json
 {
@@ -740,7 +740,7 @@ Enviar `orderType: "1"` com `invoiceNumber` existente, `orderTotal` atualizado e
 }
 ```
 
-**Resposta de erro (conta nao encontrada - 400):**
+**Error response (account not found - 400):**
 
 ```json
 {
@@ -756,7 +756,7 @@ Enviar `orderType: "1"` com `invoiceNumber` existente, `orderTotal` atualizado e
 
 #### 51.3 POST /uown/los/getApplicationStatus
 
-**O que faz:** Consulta status atual de uma aplicacao de lease. Permite rastrear progresso, confirmar transicoes de estado, e verificar dados do lease.
+**What it does:** Queries the current status of a lease application. Allows tracking progress, confirming state transitions, and verifying lead data.
 
 **Request:**
 
@@ -770,42 +770,42 @@ Enviar `orderType: "1"` com `invoiceNumber` existente, `orderTotal` atualizado e
 }
 ```
 
-**Campos importantes da resposta:**
+**Important response fields:**
 
-| Campo | JSON Tag | Descricao |
+| Field | JSON Tag | Description |
 |-------|----------|-----------|
-| Aplicacao encontrada | `applicationFound` | true/false |
-| Status atual | `currentStatus` | UW_APPROVED, UW_DENIED, DENIED, CONTRACT_CREATED, SIGNED, FUNDING, FUNDED, etc. |
-| Descricao do status | `statusDescription` | Detalhes adicionais |
-| Lease assinado | `hasSignedLease` | true/false |
-| Pode continuar | `canContinue` | Se a aplicacao pode prosseguir ao proximo step |
-| Valor aprovado | `approvedAmount` | Limite de credito aprovado |
-| Open to Buy | `openToBuy` | Credito remanescente disponivel |
-| Saldo da conta | `accountBalance` | Saldo atual do lease |
-| Ultimo pagamento | `lastPayment` / `lastPaymentDate` | Valor e data |
-| Proximo vencimento | `paymentDueDate` | Data do proximo pagamento |
-| Valor a ser financiado | `amountToBeFunded` | Total que sera pago ao merchant |
-| Data request funding | `fundRequestDateTime` | Quando funding foi solicitado |
-| Data funded | `fundedDateTime` | Quando merchant recebeu pagamento |
-| Desconto merchant | `merchantDiscountPercent` / `merchantDiscountAmount` | % ou valor de desconto |
-| Rebate merchant | `merchantRebatePercent` / `merchantRebateAmount` | % ou valor de rebate |
-| ID externo | `externalReferenceId` | Identificador do merchant |
-| Itens | `lineItem` | Lista de itens do lease |
+| Application found | `applicationFound` | true/false |
+| Current status | `currentStatus` | UW_APPROVED, UW_DENIED, DENIED, CONTRACT_CREATED, SIGNED, FUNDING, FUNDED, etc. |
+| Status description | `statusDescription` | Additional details |
+| Lease signed | `hasSignedLease` | true/false |
+| Can continue | `canContinue` | Whether the application can proceed to the next step |
+| Approved amount | `approvedAmount` | Approved credit limit |
+| Open to Buy | `openToBuy` | Remaining available credit |
+| Account balance | `accountBalance` | Current lease balance |
+| Last payment | `lastPayment` / `lastPaymentDate` | Amount and date |
+| Next due date | `paymentDueDate` | Next payment date |
+| Amount to be funded | `amountToBeFunded` | Total that will be paid to the merchant |
+| Fund request date | `fundRequestDateTime` | When funding was requested |
+| Funded date | `fundedDateTime` | When the merchant received payment |
+| Merchant discount | `merchantDiscountPercent` / `merchantDiscountAmount` | Discount % or amount |
+| Merchant rebate | `merchantRebatePercent` / `merchantRebateAmount` | Rebate % or amount |
+| External ID | `externalReferenceId` | Merchant identifier |
+| Items | `lineItem` | List of lease items |
 
-**Valores possiveis de `currentStatus`:**
+**Possible values of `currentStatus`:**
 
-| Status | Descricao |
+| Status | Description |
 |--------|-----------|
-| `UW_APPROVED` | Aprovado pelo underwriting |
-| `UW_DENIED` | Negado pelo underwriting |
-| `DENIED` | Negado |
-| `CONTRACT_CREATED` | Contrato criado |
-| `SIGNED` | Contrato assinado |
-| `FUNDING` | Em processo de financiamento |
-| `FUNDED` | Financiado com sucesso |
-| `CANCELLED_DUP_SSN` | Cancelado por SSN duplicado |
+| `UW_APPROVED` | Approved by underwriting |
+| `UW_DENIED` | Denied by underwriting |
+| `DENIED` | Denied |
+| `CONTRACT_CREATED` | Contract created |
+| `SIGNED` | Contract signed |
+| `FUNDING` | In the funding process |
+| `FUNDED` | Successfully funded |
+| `CANCELLED_DUP_SSN` | Cancelled due to duplicate SSN |
 
-**Exemplo de resposta (UW_APPROVED):**
+**Response example (UW_APPROVED):**
 
 ```json
 {
@@ -834,7 +834,7 @@ Enviar `orderType: "1"` com `invoiceNumber` existente, `orderTotal` atualizado e
 }
 ```
 
-**Exemplo de resposta (FUNDING - apos assinatura e settlement):**
+**Response example (FUNDING - after signing and settlement):**
 
 ```json
 {
@@ -864,11 +864,11 @@ Enviar `orderType: "1"` com `invoiceNumber` existente, `orderTotal` atualizado e
 
 #### 51.4 POST /uown/los/settleApplication
 
-**O que faz:** Finaliza uma aplicacao de lease apos o cliente assinar o contrato e os produtos terem sido entregues. Dispara o processo de **funding** (pagamento ao merchant).
+**What it does:** Finalizes a lease application after the customer has signed the contract and the products have been delivered. Triggers the **funding** process (payment to the merchant).
 
-**Quando usar:** Somente apos:
-1. Cliente ter assinado o lease digitalmente
-2. Merchant ter entregue a mercadoria
+**When to use:** Only after:
+1. The customer has signed the lease digitally
+2. The merchant has delivered the merchandise
 
 **Request:**
 
@@ -881,18 +881,18 @@ Enviar `orderType: "1"` com `invoiceNumber` existente, `orderTotal` atualizado e
 }
 ```
 
-**Campos da resposta:**
+**Response fields:**
 
-| Campo | JSON Tag | Descricao |
+| Field | JSON Tag | Description |
 |-------|----------|-----------|
-| Transaction Status | `transactionStatus` | A0 = nao settled, A1 = settled |
-| Amount | `amount` | Valor envolvido na transacao |
-| Transaction Message | `transactionMessage` | Mensagem descritiva (em caso de A0) |
-| Payment Details | `paymentDetailsList` | Detalhes dos pagamentos |
-| Account Number | `accountNumber` | Mesmo do request |
-| Authorization Number | `authorizationNumber` | Se sucesso (A1) |
+| Transaction Status | `transactionStatus` | A0 = not settled, A1 = settled |
+| Amount | `amount` | Amount involved in the transaction |
+| Transaction Message | `transactionMessage` | Descriptive message (in case of A0) |
+| Payment Details | `paymentDetailsList` | Payment details |
+| Account Number | `accountNumber` | Same as the request |
+| Authorization Number | `authorizationNumber` | If successful (A1) |
 
-**Exemplo de resposta (nao elegivel - A0):**
+**Response example (not eligible - A0):**
 
 ```json
 {
@@ -906,7 +906,7 @@ Enviar `orderType: "1"` com `invoiceNumber` existente, `orderTotal` atualizado e
 }
 ```
 
-**Exemplo de resposta (settled com sucesso - A1):**
+**Response example (settled successfully - A1):**
 
 ```json
 {
@@ -923,14 +923,14 @@ Enviar `orderType: "1"` com `invoiceNumber` existente, `orderTotal` atualizado e
 
 #### 51.5 POST /uown/los/addLease
 
-**O que faz:** Cria um **lease adicional** usando o credito remanescente de um lease previamente financiado do mesmo cliente.
+**What it does:** Creates an **additional lease** using the remaining credit from a previously funded lease of the same customer.
 
-**Pre-condicoes:**
-1. Lease original deve estar **FUNDED**
-2. Cliente deve ter feito o **primeiro pagamento** em dia
-3. Deve existir **credito remanescente** disponivel (`openToBuy > 0`)
+**Pre-conditions:**
+1. The original lease must be **FUNDED**
+2. The customer must have made the **first payment** on time
+3. There must be **remaining credit** available (`openToBuy > 0`)
 
-**Request:** Estrutura identica ao sendInvoice, mas usando endpoint diferente.
+**Request:** Identical structure to sendInvoice, but using a different endpoint.
 
 ```json
 {
@@ -958,7 +958,7 @@ Enviar `orderType: "1"` com `invoiceNumber` existente, `orderTotal` atualizado e
 }
 ```
 
-**Resposta de erro (lease nao finalizado):**
+**Error response (lease not finalized):**
 
 ```json
 {
@@ -969,7 +969,7 @@ Enviar `orderType: "1"` com `invoiceNumber` existente, `orderTotal` atualizado e
 }
 ```
 
-**Resposta de sucesso (add lease aprovado):**
+**Success response (add lease approved):**
 
 ```json
 {
@@ -1014,9 +1014,9 @@ Enviar `orderType: "1"` com `invoiceNumber` existente, `orderTotal` atualizado e
 
 #### 51.6 POST /uown/los/merchant/changeMerchant
 
-**O que faz:** Altera o merchant associado a uma aplicacao. Usado quando uma aplicacao precisa ser transferida para outro merchant.
+**What it does:** Changes the merchant associated with an application. Used when an application needs to be transferred to another merchant.
 
-**NOTA:** Este endpoint usa campos de autenticacao diferentes dos demais (`username`/`password` em vez de `userName`/`setupPassword`).
+**NOTE:** This endpoint uses different authentication fields from the others (`username`/`password` instead of `userName`/`setupPassword`).
 
 **Request:**
 
@@ -1029,97 +1029,97 @@ Enviar `orderType: "1"` com `invoiceNumber` existente, `orderTotal` atualizado e
 }
 ```
 
-| Campo | JSON Tag | Obrigatorio | Descricao |
+| Field | JSON Tag | Required | Description |
 |-------|----------|-------------|-----------|
-| Username | `username` | Sim | Diferente dos demais endpoints (lowercase) |
-| Password | `password` | Sim | Diferente dos demais endpoints |
-| Codigo Merchant | `refMerchantCode` | Sim | Codigo do novo merchant |
-| Account Number | `accountNumber` | Sim | UUID da aplicacao |
+| Username | `username` | Yes | Different from the other endpoints (lowercase) |
+| Password | `password` | Yes | Different from the other endpoints |
+| Merchant Code | `refMerchantCode` | Yes | Code of the new merchant |
+| Account Number | `accountNumber` | Yes | Application UUID |
 
 ---
 
-### Requisito de IP Whitelisting
+### IP Whitelisting Requirement
 
-Os IPs de saida (egress) do sistema do merchant devem ser registrados e liberados pela UOwn antes de poder acessar a API. Para provedores de nuvem, recomenda-se usar **NAT Gateway** para garantir IPs consistentes de saida.
+The merchant system's egress IPs must be registered and allowed by UOwn before they can access the API. For cloud providers, using a **NAT Gateway** is recommended to ensure consistent egress IPs.
 
 ---
 
-### Regras do Sandbox e QA1 para Testes
+### Sandbox and QA1 Rules for Testing
 
-> **Importante:** As regras de SSN abaixo se aplicam apenas a **sandbox e qa1**, onde a engine de underwriting e mockada. Em **qa2**, a engine BlackBox/ABB e real e ignora o sufixo do SSN — o resultado depende da avaliacao live do lead.
+> **Important:** The SSN rules below apply only to **sandbox and qa1**, where the underwriting engine is mocked. In **qa2**, the BlackBox/ABB engine is real and ignores the SSN suffix — the result depends on the live evaluation of the lead.
 
-| Regra | Ambientes | Descricao |
+| Rule | Environments | Description |
 |-------|-----------|-----------|
-| **SSN terminando em 9** | sandbox, qa1 | Aplicacao sera **negada** (simula falha via mock UW) |
-| **SSN terminando em 0-8** | sandbox, qa1 | Aplicacao sera **aprovada** (simula sucesso via mock UW) |
-| **SSN qualquer sufixo** | qa2 | Resultado determinado pela engine real (nao ha trigger confiavel para negacao sem autorizacao de DevOps/PO) |
-| **Valor minimo do lease** | todos os envs | **$250** - aplicacoes abaixo deste valor nao serao aprovadas |
+| **SSN ending in 9** | sandbox, qa1 | Application will be **denied** (simulates failure via the UW mock) |
+| **SSN ending in 0-8** | sandbox, qa1 | Application will be **approved** (simulates success via the UW mock) |
+| **SSN any suffix** | qa2 | Result determined by the real engine (there is no reliable trigger for denial without DevOps/PO authorization) |
+| **Minimum lease amount** | all envs | **$250** - applications below this amount will not be approved |
 
-### Resumo de Endpoints
+### Endpoint Summary
 
-| Endpoint | Metodo | Descricao |
+| Endpoint | Method | Description |
 |----------|--------|-----------|
-| `/uown/los/sendApplication` | POST | Submete aplicacao (com ou sem carrinho) |
-| `/uown/los/sendInvoice` | POST | Envia/cancela/devolve/modifica invoice |
-| `/uown/los/getApplicationStatus` | POST | Consulta status da aplicacao |
-| `/uown/los/settleApplication` | POST | Finaliza lease e dispara funding |
-| `/uown/los/addLease` | POST | Cria lease adicional com credito remanescente |
-| `/uown/los/merchant/changeMerchant` | POST | Transfere aplicacao para outro merchant |
+| `/uown/los/sendApplication` | POST | Submits an application (with or without a cart) |
+| `/uown/los/sendInvoice` | POST | Sends/cancels/returns/modifies an invoice |
+| `/uown/los/getApplicationStatus` | POST | Queries the application status |
+| `/uown/los/settleApplication` | POST | Finalizes the lease and triggers funding |
+| `/uown/los/addLease` | POST | Creates an additional lease with remaining credit |
+| `/uown/los/merchant/changeMerchant` | POST | Transfers the application to another merchant |
 
-### Codigos de Status da Resposta
+### Response Status Codes
 
-| Codigo | Campo | Significado |
+| Code | Field | Meaning |
 |--------|-------|-------------|
-| `E0` | `transactionStatus` | Aplicacao recebida, nao aprovada para transacao |
-| `E1` | `transactionStatus` | Aplicacao aprovada para transacao |
-| `E3` | `transactionStatus` | Erro de validacao (campo invalido no request) |
-| `E4` | `transactionStatus` | Aplicacao negada (declined) |
-| `A0` | `transactionStatus` | Settlement nao realizado / invoice nao processada |
-| `A1` | `transactionStatus` | Settlement realizado / invoice processada com sucesso |
-| `I0` | `transactionStatus` | Status informativo (consulta) |
-| `APPROVED` | `appApprovalStatus` / `authApprovalStatus` | Aprovado |
-| `DECLINED` | `appApprovalStatus` / `authApprovalStatus` | Negado |
+| `E0` | `transactionStatus` | Application received, not approved for transaction |
+| `E1` | `transactionStatus` | Application approved for transaction |
+| `E3` | `transactionStatus` | Validation error (invalid field in the request) |
+| `E4` | `transactionStatus` | Application declined |
+| `A0` | `transactionStatus` | Settlement not performed / invoice not processed |
+| `A1` | `transactionStatus` | Settlement performed / invoice processed successfully |
+| `I0` | `transactionStatus` | Informational status (query) |
+| `APPROVED` | `appApprovalStatus` / `authApprovalStatus` | Approved |
+| `DECLINED` | `appApprovalStatus` / `authApprovalStatus` | Declined |
 
 
-## 67. Auditoria de Modificacoes de Funding
+## 67. Funding Modification Audit
 
-### O Que e
+### What It Is
 
-Registra e rastreia todas as modificacoes de status no processo de funding, mantendo trilha de auditoria completa.
+Records and tracks all status modifications in the funding process, maintaining a complete audit trail.
 
-### Para Que Serve
+### What It's For
 
-Compliance e troubleshooting. Permite reconstruir o historico completo de mudancas de status de funding para qualquer lead.
+Compliance and troubleshooting. Allows reconstructing the complete history of funding status changes for any lead.
 
-### Dados Registrados
+### Recorded Data
 
-| Campo | Descricao |
+| Field | Description |
 |-------|-----------|
-| `leadPk` | Identificador do lead |
-| `oldFundingQueueStatus` | Status anterior (FUNDING, FUNDED, etc.) |
-| `newFundingQueueStatus` | Novo status |
-| `oldLeadStatus` | Status anterior do lead |
-| `newLeadStatus` | Novo status do lead |
-| `username` | Usuario que fez a alteracao |
-| `timestamp` | Data/hora da modificacao |
+| `leadPk` | Lead identifier |
+| `oldFundingQueueStatus` | Previous status (FUNDING, FUNDED, etc.) |
+| `newFundingQueueStatus` | New status |
+| `oldLeadStatus` | Previous lead status |
+| `newLeadStatus` | New lead status |
+| `username` | User who made the change |
+| `timestamp` | Date/time of the modification |
 
-### Transicoes Validas de Funding
+### Valid Funding Transitions
 
-| Transicao | Descricao |
+| Transition | Description |
 |-----------|-----------|
-| `FUNDING -> FUNDED` | Merchant recebeu pagamento (fluxo normal) |
-| `FUNDED -> FUNDING` | Reversao (erro ou correcao) |
-| `REQUEST_REFUND -> REFUNDED` | Reembolso completado |
-| Outra | Transicao invalida/default |
+| `FUNDING -> FUNDED` | Merchant received payment (normal flow) |
+| `FUNDED -> FUNDING` | Reversal (error or correction) |
+| `REQUEST_REFUND -> REFUNDED` | Refund completed |
+| Other | Invalid/default transition |
 
-### Como Consultar
+### How to Query
 
 ```
 POST /uown/svc/getFundingModifications
 Body: FundingModificationsRequest { leadPk, oldStatus, newStatus, username, startDate, endDate }
 ```
 
-Suporta paginacao e filtros opcionais (todos os campos sao nullable).
+Supports pagination and optional filters (all fields are nullable).
 
 ---
 

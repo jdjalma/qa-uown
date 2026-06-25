@@ -1,58 +1,58 @@
 ---
 name: activity-log-validation
-description: Carregue ao planejar, implementar ou validar teste que dispara business action (signing, payment, refund, recovery, status transition, vendor callback). Toda ação relevante exige log em uown_los_lead_notes ou tabela equivalente — sem log = nada aconteceu.
+description: Load when planning, implementing, or validating a test that triggers a business action (signing, payment, refund, recovery, status transition, vendor callback). Every relevant action requires a log in uown_los_lead_notes or an equivalent table — no log = nothing happened.
 disable-model-invocation: true
 ---
 
-# Activity Log Validation — Regra Inviolável #13
+# Activity Log Validation — Inviolable Rule #13
 
-> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **HOW TO VALIDATE** — regras de log obrigatório, tabelas, assertion patterns. O **schema canônico de tabelas e queries SQL** NÃO mora aqui — é fonte única em `docs/business-rules/appendix-c-tabelas-banco.md` + `appendix-f-sql-reference.md`. Para resolver um tópico, rode `node scripts/docs-tooling.mjs resolve activity-log`. **Não duplique schema de tabela aqui** — ele drifta.
+> **Authority boundary** (`docs/_docs-conventions.md` §7): this skill covers **HOW TO VALIDATE** — mandatory log rules, tables, assertion patterns. The **canonical schema of tables and SQL queries** does NOT live here — the single source is `docs/business-rules/appendix-c-tabelas-banco.md` + `appendix-f-sql-reference.md`. To resolve a topic, run `node scripts/docs-tooling.mjs resolve activity-log`. **Do not duplicate table schema here** — it drifts.
 
-## O princípio
+## The principle
 
 > "If there is no activity log, that means nothing is happening."
-> — Priyanka Namburu, daily UOWN 2026-04-28
+> — Priyanka Namburu, UOWN daily 2026-04-28
 
-Toda ação relevante de negócio **DEVE** ter activity log / note correspondente na DB. Ausência de log é **falha de implementação**, não comportamento aceitável.
+Every relevant business action **MUST** have a corresponding activity log / note in the DB. Absence of a log is an **implementation failure**, not acceptable behavior.
 
-## Quando aplicar
+## When to apply
 
-Sempre que o teste exercita:
+Whenever the test exercises:
 
-- **Signing**: envio de contrato, signature event, completion, void
+- **Signing**: contract dispatch, signature event, completion, void
 - **Payment**: attempt, success, failure, refund, EPO
-- **Recovery / Arrangement**: nova arrangement, modify, default
+- **Recovery / Arrangement**: new arrangement, modify, default
 - **Status transition**: pre-qualified → qualified → leased → signed → active → closed
 - **Vendor callback**: Kount, SEON, DV360, GowSign, SignWell
 - **Lead modification**: edit invoice, add document, change merchant
 - **Communication**: email dispatch, SMS, OTP
 
-## Procedimento
+## Procedure
 
-### 1. Antes de cada step de teste
+### 1. Before each test step
 
-Identifique a ação de negócio que o step dispara. Ex: "step 5 — agent confirma signing completion via portal".
+Identify the business action that the step triggers. E.g.: "step 5 — agent confirms signing completion via the portal".
 
-### 2. Determine a tabela de log
+### 2. Determine the log table
 
-Default: `uown_los_lead_notes`. Variantes por domínio:
-- Signing events: `uown_los_lead_notes` + possível `uown_signing_event` (verificar via Grep)
+Default: `uown_los_lead_notes`. Variants by domain:
+- Signing events: `uown_los_lead_notes` + possibly `uown_signing_event` (check via Grep)
 - Payment: `uown_los_lead_notes` + `uown_payment_attempt`
-- Vendor callbacks: `uown_los_lead_notes` + tabela específica do vendor
+- Vendor callbacks: `uown_los_lead_notes` + the vendor-specific table
 - **Move Due Date:** `uown_sv_activity_log` (NOT `uown_los_lead_notes` — account-centric action)
 
-Consulte `docs/taskTestingUown/database-schema.md` ou Grep o nome do evento esperado.
+Consult `docs/taskTestingUown/database-schema.md` or Grep for the name of the expected event.
 
-### 3. Schema REAL de `uown_los_lead_notes` (confirmado 2026-05-20 via probe qa1)
+### 3. REAL schema of `uown_los_lead_notes` (confirmed 2026-05-20 via qa1 probe)
 
-**Colunas existentes**: `pk` (bigint), `agent` (varchar — frequentemente NULL), `row_created_timestamp`, `row_updated_timestamp`, `tenant_id`, `web_user_id`, `lead_pk`, `notes` (text).
+**Existing columns**: `pk` (bigint), `agent` (varchar — frequently NULL), `row_created_timestamp`, `row_updated_timestamp`, `tenant_id`, `web_user_id`, `lead_pk`, `notes` (text).
 
-⚠️ **NÃO EXISTEM** as colunas `note_type`, `body`, `content`, `author`, `created_by`, `created_at`. A tipagem é **prefixo dentro do texto**: `[ServiceName][methodName] mensagem`. Exemplos reais:
+⚠️ The columns `note_type`, `body`, `content`, `author`, `created_by`, `created_at` **DO NOT EXIST**. The typing is a **prefix inside the text**: `[ServiceName][methodName] message`. Real examples:
 - `[ESIGNSERVICE][parseCCPeekConsent] CC Peek Consent set to true`
 - `[ContractService][isLeaseOrLeaseModSigned] Lead starting status CONTRACT_CREATED`
 - `[LeadFundingService][updateFundingStatus] Update Lead Status to FUNDING`
 
-### 4. Adicione assertion DB com schema correto
+### 4. Add a DB assertion with the correct schema
 
 ```ts
 import { db } from "@helpers/database.helpers.js";
@@ -73,42 +73,42 @@ expect(log).toBeDefined;
 expect(log.notes).toMatch(/\[ContractService\].*SIGNED/i);
 ```
 
-### 5. Valide conteúdo, não só presença
+### 5. Validate content, not just presence
 
-Log existir mas vazio é tão ruim quanto não existir. Cheque no `notes`:
-- **Prefixo do serviço** (`[ESIGNSERVICE]`, `[ContractService]`, `[LeadFundingService]`, `[UOwnClient]`, `[LosRequestMessageConstraintValidator]`, etc.)
-- **Verbo** no método (parse, validate, update, send, sign, void)
-- **Identificador** (status novo/antigo, IDs, response codes)
-- **Channel** quando aplicável (EMAIL, SMS, IN_PORTAL — extraído do texto)
+A log that exists but is empty is as bad as one that does not exist. Check in `notes`:
+- **Service prefix** (`[ESIGNSERVICE]`, `[ContractService]`, `[LeadFundingService]`, `[UOwnClient]`, `[LosRequestMessageConstraintValidator]`, etc.)
+- **Verb** in the method (parse, validate, update, send, sign, void)
+- **Identifier** (new/old status, IDs, response codes)
+- **Channel** when applicable (EMAIL, SMS, IN_PORTAL — extracted from the text)
 
-## Output esperado em SPEC / report
+## Expected output in SPEC / report
 
-Cada step com ação de negócio na SPEC **deve** ter linha "Activity log expected" e cada report deve cobrir presença + conteúdo:
+Each step with a business action in the SPEC **must** have an "Activity log expected" line, and each report must cover presence + content:
 
 ```markdown
-### Step 5 — Agent confirma signing
-- Action: clicar "Confirm Signature" no portal Servicing
+### Step 5 — Agent confirms signing
+- Action: click "Confirm Signature" in the Servicing portal
 - API expected: POST /uown/svc/signing/{leadId}/confirm
-- UI expected: badge muda para "Signed"
-- **Activity log expected**: row em uown_los_lead_notes com `notes ILIKE '%[ContractService]%SIGNED%'`, lead_pk=:leadPk, row_created_timestamp >= trigger
+- UI expected: badge changes to "Signed"
+- **Activity log expected**: row in uown_los_lead_notes with `notes ILIKE '%[ContractService]%SIGNED%'`, lead_pk=:leadPk, row_created_timestamp >= trigger
 ```
 
-## Move Due Date — log canônico em `uown_sv_activity_log` (2026-05-22)
+## Move Due Date — canonical log in `uown_sv_activity_log` (2026-05-22)
 
-Ação Move Due Date é **account-centric** — log vai em `uown_sv_activity_log`, NÃO em `uown_los_lead_notes`.
+The Move Due Date action is **account-centric** — the log goes in `uown_sv_activity_log`, NOT in `uown_los_lead_notes`.
 
-| Campo | Valor esperado |
+| Field | Expected value |
 |-------|----------------|
 | `log_type` | `'DUE_DATE_MOVES'` |
-| `account_pk` | accountPk preenchido |
+| `account_pk` | accountPk populated |
 | `lead_pk` | **NULL** |
 | `creation_source` | `'USER_ACTION'` |
-| `created_by` | usuário UI logado |
-| `notes` | match `/^Due Date changed from dueDate \d{4}-\d{2}-\d{2} by \d+ days$/` |
+| `created_by` | logged-in UI user |
+| `notes` | matches `/^Due Date changed from dueDate \d{4}-\d{2}-\d{2} by \d+ days$/` |
 
-**Pitfall de timing:** backend lança `ResponseStatusException(BAD_REQUEST)` ANTES do `createOrUpdate` quando validação falha (ex: offset > cap WEEKLY). Log nunca chega a ser escrito — assertar ausência do log quando status = 400 é parte do CT negativo, não é gap de observabilidade.
+**Timing pitfall:** the backend throws `ResponseStatusException(BAD_REQUEST)` BEFORE the `createOrUpdate` when validation fails (e.g., offset > WEEKLY cap). The log is never written — asserting the absence of the log when status = 400 is part of the negative CT, not an observability gap.
 
-**Pitfall cosmético — `"from dueDate"` no notes:** o `String.format` do backend vaza o nome da variável Java `dueDate` no user-facing log (ex: `"Due Date changed from dueDate 2026-05-30 by 3 days"`). Não é bug desta task. Assertar com a string exata conforme formato real, não "from date".
+**Cosmetic pitfall — `"from dueDate"` in notes:** the backend's `String.format` leaks the Java variable name `dueDate` into the user-facing log (e.g., `"Due Date changed from dueDate 2026-05-30 by 3 days"`). This is not a bug of this task. Assert with the exact string as per the real format, not "from date".
 
 **Assertion template:**
 
@@ -126,30 +126,30 @@ const log = await db.waitForRecord<{ notes: string; created_by: string }>({
 expect(log.notes).toMatch(/Due Date changed from dueDate \d{4}-\d{2}-\d{2} by \d+ days/);
 ```
 
-## Mapeamento canônico lead_pk vs account_pk
+## Canonical lead_pk vs account_pk mapping
 
-| Ação | Tabela de log | Chave | Exemplo de conteúdo |
+| Action | Log table | Key | Content example |
 |------|--------------|-------|---------------------|
 | Settle Application | `uown_los_lead_notes` | `lead_pk` | `[UOwnClient][settleApplication]` + `[LeadFundingService][updateFundingStatus]` |
 | Move Due Date | `uown_sv_activity_log` | `account_pk` | `log_type='DUE_DATE_MOVES'`, notes match `/Due Date changed from dueDate .../` |
 | Payment attempt | `uown_los_lead_notes` | `lead_pk` | `[PaymentService]...` |
 | Signing event | `uown_los_lead_notes` | `lead_pk` | `[ContractService][isLeaseOrLeaseModSigned]...` |
 
-**Regra mnemônica:** ação sobre lead (pré-funding) → `uown_los_lead_notes (lead_pk)`; ação pós-funding sobre account → `uown_sv_activity_log (account_pk)`.
+**Mnemonic rule:** an action on a lead (pre-funding) → `uown_los_lead_notes (lead_pk)`; a post-funding action on an account → `uown_sv_activity_log (account_pk)`.
 Source: live qa1 lead_pk=11748 / account_pk=4774 (2026-05-24).
 
-## Settle Application — log canônico em `uown_los_lead_notes` (2026-05-24)
+## Settle Application — canonical log in `uown_los_lead_notes` (2026-05-24)
 
-Ação Settle Application produz notas em `uown_los_lead_notes` com `lead_pk`:
+The Settle Application action produces notes in `uown_los_lead_notes` with `lead_pk`:
 
-| Padrão esperado em `notes` | Ordem |
+| Expected pattern in `notes` | Order |
 |---------------------------|-------|
-| `[UOwnClient][settleApplication]` (chamada ao client de Settle) | 1 |
-| `[LeadFundingService][updateFundingStatus]` (transição de status) | 2 |
+| `[UOwnClient][settleApplication]` (call to the Settle client) | 1 |
+| `[LeadFundingService][updateFundingStatus]` (status transition) | 2 |
 
-**Toast UI exato:** `"Successfully settled this lease"` (capturado ao vivo em qa1 lead 11748, 2026-05-24). Usar esta string exata em assertions de toast — não `"Settled successfully"` nem `"Lease settled"`.
+**Exact UI toast:** `"Successfully settled this lease"` (captured live in qa1 lead 11748, 2026-05-24). Use this exact string in toast assertions — not `"Settled successfully"` nor `"Lease settled"`.
 
-**Diagnostic pattern — `termnull` smell:** se as notas de Settle contêm a string `"termnull"`, o lead foi afetado pelo bug NPD=null (pré-fix). Query de diagnóstico: `SELECT COUNT(*) FROM uown_los_lead_notes WHERE notes ILIKE '%termnull%'` — zero rows confirma fix aplicado. Ver [[application-lifecycle]] pitfall #62.
+**Diagnostic pattern — `termnull` smell:** if the Settle notes contain the string `"termnull"`, the lead was affected by the NPD=null bug (pre-fix). Diagnostic query: `SELECT COUNT(*) FROM uown_los_lead_notes WHERE notes ILIKE '%termnull%'` — zero rows confirms the fix is applied. See [[application-lifecycle]] pitfall #62.
 
 **Assertion template:**
 
@@ -160,60 +160,60 @@ const settleNote = await db.waitForRecord<{ notes: string }>({
  AND notes ILIKE '%[UOwnClient][settleApplication]%'
  ORDER BY pk DESC LIMIT 1`,
  params: [leadPk],
- timeoutMs: 120_000, // 120s configurado; se retornar 0 rows, suspeitar TZ drift antes de aumentar — ver pitfall #66 (causa raiz) / #65 (SUPERSEDED)
+ timeoutMs: 120_000, // 120s configured; if it returns 0 rows, suspect TZ drift before increasing — see pitfall #66 (root cause) / #65 (SUPERSEDED)
 });
 expect(settleNote).toBeDefined;
-expect(settleNote.notes).not.toContain('termnull'); // confirma NPD não nulo
+expect(settleNote.notes).not.toContain('termnull'); // confirms NPD is not null
 ```
 
-## Sticky cancel/refund — log SYSTEM_GENERATED em `uown_sv_activity_log` (R1.53.0)
+## Sticky cancel/refund — SYSTEM_GENERATED log in `uown_sv_activity_log` (R1.53.0)
 
-Diferente dos logs human/UI (`DUE_DATE_MOVES`, `created_by`=usuário), as ações Sticky do R1.53.0 gravam logs **gerados pelo sistema**. Ao assertir, NÃO espere `created_by` humano nem `lead_pk`:
+Unlike the human/UI logs (`DUE_DATE_MOVES`, `created_by`=user), the R1.53.0 Sticky actions write **system-generated** logs. When asserting, do NOT expect a human `created_by` nor a `lead_pk`:
 
-| Campo | Valor (sticky cancel/refund) |
+| Field | Value (sticky cancel/refund) |
 |-------|------------------------------|
 | `log_type` | `INTERNAL` |
 | `created_by` | `SYSTEM` |
 | `creation_source` | `SYSTEM_GENERATED` |
-| `lead_pk` | `null` (log é account-level) |
-| `notes` (ex.) | `"Sticky recovery marked CANCELED locally — Sticky rejected cancel: <erro>"`; refund grava `"Sticky refund submitted…"` (sync) + `"Sticky refund confirmed via webhook…"` |
+| `lead_pk` | `null` (the log is account-level) |
+| `notes` (e.g.) | `"Sticky recovery marked CANCELED locally — Sticky rejected cancel: <error>"`; refund writes `"Sticky refund submitted…"` (sync) + `"Sticky refund confirmed via webhook…"` |
 
-Fonte: KB `559-sticky-recover-cancel-sweep.md` (pk10961637) + `sticky-payment-refund.md`. Regra de produto: [[payment-flows]] · `05-pagamentos.md §53b`.
+Source: KB `559-sticky-recover-cancel-sweep.md` (pk10961637) + `sticky-payment-refund.md`. Product rule: [[payment-flows]] · `05-pagamentos.md §53b`.
 
-## Gaps conhecidos (ações que NÃO geram log atualmente)
+## Known gaps (actions that do NOT currently generate a log)
 
-Catálogo de actions que confirmadamente **não** produzem nota — abrir ticket de observabilidade se o teste depender:
+Catalog of actions that confirmedly do **not** produce a note — open an observability ticket if the test depends on it:
 
-| Action | Tabela primária de evidência | Lead notes? | Confirmado em |
+| Action | Primary evidence table | Lead notes? | Confirmed on |
 |---|---|---|---|
-| `POST /uown/sendWelcomeEmail/{pk}` | `uown_email_queue` (template_name='Welcome', status=SENT) | **NÃO** (0/45 em 60d) | 2026-05-20 — qa1 — |
-| `settledInFullAccountEmailSweep` | `uown_email_queue` (template_name=`SettledInFullEmail`, PK monotônico) | indeterminado | 2026-06-02 — dev3 |
-| `RecurringPaymentReminderSweep` | `uown_email_queue` (template_name=`RecurringPaymentReminder`) | indeterminado | 2026-06-02 — dev3 |
-| `FirstPaymentReminderSweep` | `uown_email_queue` (template_name=`FirstPaymentReminder`) | indeterminado | 2026-06-02 — dev3 |
+| `POST /uown/sendWelcomeEmail/{pk}` | `uown_email_queue` (template_name='Welcome', status=SENT) | **NO** (0/45 in 60d) | 2026-05-20 — qa1 — |
+| `settledInFullAccountEmailSweep` | `uown_email_queue` (template_name=`SettledInFullEmail`, monotonic PK) | undetermined | 2026-06-02 — dev3 |
+| `RecurringPaymentReminderSweep` | `uown_email_queue` (template_name=`RecurringPaymentReminder`) | undetermined | 2026-06-02 — dev3 |
+| `FirstPaymentReminderSweep` | `uown_email_queue` (template_name=`FirstPaymentReminder`) | undetermined | 2026-06-02 — dev3 |
 
-### Tabelas de audit para email sweeps (dev3 2026-06-02)
+### Audit tables for email sweeps (dev3 2026-06-02)
 
-- `uown_email_queue` — **evidência primária** (`pk, account_pk, lead_pk, template_name, status, sent_time, row_created_timestamp`). PK monotônico; assertir row nova de hoje.
-- `uown_correspondence_logs` — `pk, account_pk, lead_pk, correspondence_type ('EMAIL'), template_name, error, row_created_timestamp`. ⚠️ `error` carrega texto informativo MESMO em sucesso — **NÃO** assertir `error IS NULL`.
-- `uown_sweep_logs` — `pk, sweep_name, number_of_records_processed, row_created_timestamp`. ⚠️ `number_of_records_processed` é escrito APÓS o processamento; leitura `< 5s` após trigger retorna `0`. NÃO usar como evidência de sucesso. Ver [[payment-flows]] seção "Email Sweep validation" + [[application-lifecycle]] pitfalls #87-#90.
+- `uown_email_queue` — **primary evidence** (`pk, account_pk, lead_pk, template_name, status, sent_time, row_created_timestamp`). Monotonic PK; assert a new row from today.
+- `uown_correspondence_logs` — `pk, account_pk, lead_pk, correspondence_type ('EMAIL'), template_name, error, row_created_timestamp`. ⚠️ `error` carries informational text EVEN on success — do **NOT** assert `error IS NULL`.
+- `uown_sweep_logs` — `pk, sweep_name, number_of_records_processed, row_created_timestamp`. ⚠️ `number_of_records_processed` is written AFTER processing; a read `< 5s` after the trigger returns `0`. Do NOT use it as evidence of success. See [[payment-flows]] section "Email Sweep validation" + [[application-lifecycle]] pitfalls #87-#90.
 
 ## Pitfalls
 
-1. **Timing** — log pode ser assíncrono (callback, queue). Use `waitForRecord` com backoff, não query única.
-2. **Idempotência** — reenvio de email gera novo log? Confirme: AC4 do "example.md" exige novo log no reenvio.
-3. **Audit field vs display field** — `uown_los_lead_notes` mantém technical id; UI mostra friendly name. Validar **ambos** quando aplicável.
-4. **Vendor callback latency** — Kount/SEON podem demorar minutos em sandbox. Não bater timeout curto demais.
+1. **Timing** — the log may be asynchronous (callback, queue). Use `waitForRecord` with backoff, not a single query.
+2. **Idempotency** — does resending an email generate a new log? Confirm: AC4 of "example.md" requires a new log on resend.
+3. **Audit field vs display field** — `uown_los_lead_notes` keeps the technical id; the UI shows a friendly name. Validate **both** when applicable.
+4. **Vendor callback latency** — Kount/SEON can take minutes in sandbox. Do not set too short a timeout.
 
 ## Anti-patterns
 
-- ❌ Marcar teste verde quando UI mostra sucesso mas log não foi gravado — bug silencioso
-- ❌ Pollar só por status na UI; UI pode estar cached
-- ❌ Ignorar log faltante "porque não muda o resultado funcional" — viola regra inviolável #13
-- ❌ Hardcode `note_type` string sem verificar valor real em produção/staging
+- ❌ Marking a test green when the UI shows success but the log was not written — a silent bug
+- ❌ Polling only by UI status; the UI may be cached
+- ❌ Ignoring a missing log "because it does not change the functional result" — violates inviolable rule #13
+- ❌ Hardcoding a `note_type` string without checking the real value in production/staging
 
 ## Cross-links
 
-- Regra inviolável #13 em `CLAUDE.md`
-- Skill [[qa-domain-reflexes]] — checklist completo de validações por ação
-- Skill [[application-lifecycle]] — logs esperados em cada step do lifecycle
-- Skill [[db-polling-pattern]] — como pollar log com backoff
+- Inviolable rule #13 in `CLAUDE.md`
+- Skill [[qa-domain-reflexes]] — complete checklist of validations per action
+- Skill [[application-lifecycle]] — logs expected at each step of the lifecycle
+- Skill [[db-polling-pattern]] — how to poll a log with backoff

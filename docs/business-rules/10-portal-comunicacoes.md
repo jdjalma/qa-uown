@@ -1,5 +1,5 @@
 ---
-title: Portal, Comunicacoes e Atendimento
+title: Portal, Communications and Support
 domain: business-rules
 status: stable
 volatility: stable
@@ -11,262 +11,262 @@ sources:
 covers: [tms, portal-cliente, correspondencia, email, sms, consentimento, contato]
 ---
 
-# Portal, Comunicacoes e Atendimento
+# Portal, Communications and Support
 ## UOwn Leasing - SVC Platform
 
-TMS (agentes telefonicos), portal do cliente, correspondencia (email/SMS), gestao de consentimento, preferencias de contato e convite para portal.
+TMS (phone agents), customer portal, correspondence (email/SMS), consent management, contact preferences and portal invitation.
 
 ---
 
-## 26. TMS (Sistema para Agentes Telefonicos)
+## 26. TMS (Telephony Management System)
 
-### O Que e
+### What It Is
 
-TMS (Telephony Management System) e a API dedicada para agentes de call center e bots de cobranca (como Skit.ai). Fornece endpoints otimizados para operacoes durante chamadas telefônicas.
+TMS (Telephony Management System) is the dedicated API for call center agents and collection bots (such as Skit.ai). It provides endpoints optimized for operations during phone calls.
 
-### Para Que Serve
+### What It Is For
 
-Da aos agentes tudo que precisam durante uma ligacao: ver resumo da conta, processar pagamentos, calcular quitacao, mover datas de vencimento, e registrar notas -- tudo sem sair da interface do telefone.
+It gives agents everything they need during a call: viewing the account summary, processing payments, calculating payoff, moving due dates, and logging notes -- all without leaving the phone interface.
 
-### O Que um Agente Pode Fazer via TMS
+### What an Agent Can Do via TMS
 
-| Endpoint | Funcao | Descricao |
+| Endpoint | Function | Description |
 |----------|--------|-----------|
-| `getAccountSummary` | Ver resumo | Nome, status, proximo vencimento, saldo, dias em atraso, EPO, merchant |
-| `getPayoffAmount` | Calcular quitacao | Valor para quitar a conta (EPO) |
-| `makeCreditCardPayment` | Cobrar CC | Processar pagamento de cartao |
-| `makeCreditCardPayments` | Arranjo CC | Multiplas transacoes (payment arrangement) |
-| `makeAchPayment` | Cobrar ACH | Iniciar debito bancario |
-| `moveDueDatesByDays` | Mover vencimentos | Adiar parcelas por N dias |
-| `getBankAccounts` | Ver bancos | Contas bancarias em arquivo |
-| `getCreditCards` | Ver cartoes | Cartoes tokenizados em arquivo |
-| `addLogNote` | Registrar nota | Nota da ligacao (Skit.ai usa tipo `SKIT_CALL_LOG`) |
+| `getAccountSummary` | View summary | Name, status, next due date, balance, days past due, EPO, merchant |
+| `getPayoffAmount` | Calculate payoff | Amount to pay off the account (EPO) |
+| `makeCreditCardPayment` | Charge CC | Process a card payment |
+| `makeCreditCardPayments` | CC arrangement | Multiple transactions (payment arrangement) |
+| `makeAchPayment` | Charge ACH | Initiate a bank debit |
+| `moveDueDatesByDays` | Move due dates | Defer installments by N days |
+| `getBankAccounts` | View banks | Bank accounts on file |
+| `getCreditCards` | View cards | Tokenized cards on file |
+| `addLogNote` | Log note | Call note (Skit.ai uses type `SKIT_CALL_LOG`) |
 
-### Como o Cliente e Impactado
+### How the Customer Is Affected
 
-O cliente nunca ve o TMS diretamente. Ele interage com o agente ou bot por telefone, e o TMS e o backend que torna tudo possivel em tempo real.
+The customer never sees TMS directly. They interact with the agent or bot over the phone, and TMS is the backend that makes everything possible in real time.
 
 ---
 
-## 27. Portal do Cliente
+## 27. Customer Portal
 
-### O Que e
+### What It Is
 
-Interface web de autoatendimento onde clientes gerenciam suas contas de lease.
+A self-service web interface where customers manage their lease accounts.
 
-### Para Que Serve
+### What It Is For
 
-Reduz volume do call center permitindo autoatendimento 24/7.
+It reduces call center volume by enabling 24/7 self-service.
 
-### Autenticacao
+### Authentication
 
-| Metodo | Descricao |
+| Method | Description |
 |--------|-----------|
-| Dados pessoais | Nome, sobrenome, ultimos 4 do SSN, data de nascimento |
-| Verificacao por codigo | Envia codigo de 6 digitos por SMS ou email. Expira em 5 minutos |
+| Personal data | First name, last name, last 4 of SSN, date of birth |
+| Code verification | Sends a 6-digit code by SMS or email. Expires in 5 minutes |
 
-### O Que o Cliente Pode Fazer
+### What the Customer Can Do
 
-| Funcao | Descricao |
+| Function | Description |
 |--------|-----------|
-| **Ver pagamentos** | Historico completo de pagamentos da conta |
-| **Fazer pagamentos** | Criar ou modificar pagamentos |
-| **Suporte** | Enviar ticket de suporte (integrado com Zendesk) |
-| **Plano de protecao** | Ver elegibilidade e inscrever-se (se elegivel) |
-| **Correspondencia** | Rastreamento de emails/SMS enviados |
+| **View payments** | Full payment history for the account |
+| **Make payments** | Create or modify payments |
+| **Support** | Submit a support ticket (integrated with Zendesk) |
+| **Protection plan** | View eligibility and enroll (if eligible) |
+| **Correspondence** | Tracking of emails/SMS sent |
 
-### Branding por Empresa
+### Branding by Company
 
-| Empresa | Portal |
+| Company | Portal |
 |---------|--------|
-| UOwn | URL padrao UOwn |
+| UOwn | Default UOwn URL |
 | Kornerstone | `portal.kornerstoneliving.com` (prod) / `website-{env}.kornerstoneliving.com` |
 
-### Ticket de Suporte (Contact Routing via Zendesk)
+### Support Ticket (Contact Routing via Zendesk)
 
-O portal do cliente permite envio de tickets de suporte com roteamento automatico por categoria. Implementado em `SupportTicketService`.
+The customer portal allows submitting support tickets with automatic routing by category. Implemented in `SupportTicketService`.
 
-**Categorias disponiveis (configuraveis via `ConfigurationManagement`):**
+**Available categories (configurable via `ConfigurationManagement`):**
 
-| Categoria | Label exibido | Email destino |
+| Category | Displayed label | Destination email |
 |-----------|--------------|---------------|
 | `billing` | Billing / Payment Inquiry | `accountmanagement@uownleasing.com` |
 | `payment_arrangement` | Payment Arrangement Request | `accountmanagement@uownleasing.com` |
 | `merchant` | Merchandise / Merchant Concern | `merchantsupport@uownleasing.com` |
 | `other` | Other | `accountmanagement@uownleasing.com` |
 
-**Formato do assunto do email:**
+**Email subject format:**
 ```
-[EMPRESA] - Support Ticket - [Account Number] - [Customer Name]
+[COMPANY] - Support Ticket - [Account Number] - [Customer Name]
 ```
 
-**Campos obrigatorios do formulario:** Nome, email, telefone, categoria, descricao.
+**Required form fields:** Name, email, phone, category, description.
 
-**Fluxo de processamento:**
-1. Cliente seleciona categoria e preenche formulario no portal
-2. Sistema determina empresa (UOwn ou Kornerstone) pela conta
-3. Template HTML renderizado com Thymeleaf
-4. Email enviado para o endereco mapeado pela categoria
-5. Zendesk recebe o email e roteia para fila/departamento correto
-6. Activity log criado na conta com tipo `CORRESPONDENCE`
+**Processing flow:**
+1. Customer selects a category and fills out the form in the portal
+2. System determines the company (UOwn or Kornerstone) from the account
+3. HTML template rendered with Thymeleaf
+4. Email sent to the address mapped by the category
+5. Zendesk receives the email and routes it to the correct queue/department
+6. Activity log created on the account with type `CORRESPONDENCE`
 
-**Configuracao:** As categorias sao configuraveis via chave `com.uownleasing.svc.service.SupportTicketService.email.categories` no formato pipe-delimited: `valor|label|email,valor|label|email`.
+**Configuration:** Categories are configurable via the key `com.uownleasing.svc.service.SupportTicketService.email.categories` in pipe-delimited format: `value|label|email,value|label|email`.
 
 ---
 
-## 29. Correspondencia (Email/SMS)
+## 29. Correspondence (Email/SMS)
 
-### Templates por Empresa
+### Templates by Company
 
-| Empresa | Prefixo | From Email (prod) |
+| Company | Prefix | From Email (prod) |
 |---------|---------|-------------------|
-| UOwn | (nenhum) | `CustomerService@uownleasing.com` |
+| UOwn | (none) | `CustomerService@uownleasing.com` |
 | Kornerstone | `KORNERSTONE_` | `CS@kornerstoneliving.com` |
 
-### Tipos de Correspondencia Observados
+### Observed Correspondence Types
 
-| Tipo | Quando |
+| Type | When |
 |------|--------|
-| Welcome Email | Apos importacao para SVC |
-| Approval Email/SMS | Apos aprovacao de UW |
-| Decline Email | Apos negacao de UW |
-| First Payment Reminder | Antes do primeiro pagamento |
-| Past Due Reminder | Conta em atraso |
-| Delinquency Offer (30/60/90/150 dias) | Faixas de inadimplencia |
-| Paid in Full | Conta quitada |
-| Settled in Full | Conta liquidada por acordo |
-| Bank Verification Declined | Verificacao bancaria negada |
-| Finalize Purchase | Apos verificacao, link para finalizar |
-| Portal Invitation | Convite para portal do cliente |
+| Welcome Email | After import into SVC |
+| Approval Email/SMS | After UW approval |
+| Decline Email | After UW denial |
+| First Payment Reminder | Before the first payment |
+| Past Due Reminder | Account past due |
+| Delinquency Offer (30/60/90/150 days) | Delinquency tiers |
+| Paid in Full | Account paid off |
+| Settled in Full | Account settled by agreement |
+| Bank Verification Declined | Bank verification denied |
+| Finalize Purchase | After verification, link to finalize |
+| Portal Invitation | Customer portal invitation |
 
-### Envio
+### Sending
 
-| Modo | Descricao |
+| Mode | Description |
 |------|-----------|
-| Imediato | Enviado na hora |
-| Enfileirado | Adicionado a fila de envio |
-| Async | Delay configuravel antes do envio (default 3s) |
-| SMS | Via Twilio, se telefone valido |
+| Immediate | Sent right away |
+| Queued | Added to the send queue |
+| Async | Configurable delay before sending (default 3s) |
+| SMS | Via Twilio, if the phone number is valid |
 
 ---
 
-## 61. Gestao de Consentimento (Consent Management)
+## 61. Consent Management
 
-### O Que e
+### What It Is
 
-Gerencia preferencias de consentimento do cliente, especificamente o consentimento para CC Peek (captura parcial de cartao).
+Manages the customer's consent preferences, specifically consent for CC Peek (partial card capture).
 
-### Para Que Serve
+### What It Is For
 
-O consentimento de CC Peek controla se a UOwn pode capturar um valor parcial do cartao quando o saldo nao e suficiente para o valor total. O cliente pode permitir ou negar essa pratica.
+CC Peek consent controls whether UOwn may capture a partial amount from the card when the balance is not sufficient for the full amount. The customer may allow or deny this practice.
 
-### Como Funciona
+### How It Works
 
-- **Comparacao null-safe** usando `Objects.equals()` para verificar mudanca
-- **Activity log** criado apenas se o valor realmente mudar (idempotente)
-- **Mensagem de log:** `"CC Peek Consent changed from [anterior] to [novo]"`
-- **Tipo de log:** `DATA_CHANGE`
-- **Username** do operador registrado via `ThreadAttributes`
+- **Null-safe comparison** using `Objects.equals()` to detect a change
+- **Activity log** created only if the value actually changes (idempotent)
+- **Log message:** `"CC Peek Consent changed from [previous] to [new]"`
+- **Log type:** `DATA_CHANGE`
+- **Username** of the operator recorded via `ThreadAttributes`
 
-### Como Alterar
+### How to Change
 
-Via interface administrativa ou `ServicingInformationService`. Toda mudanca e registrada em activity log.
+Via the administrative interface or `ServicingInformationService`. Every change is recorded in an activity log.
 
 ---
 
-## 72. Preferencias de Contato (Do Not Call / Do Not Email / Do Not Text)
+## 72. Contact Preferences (Do Not Call / Do Not Email / Do Not Text)
 
-### O Que e
+### What It Is
 
-Sistema de gerenciamento de preferencias de contato do cliente que controla quais canais de comunicacao podem ser utilizados (telefone, email, SMS). Respeita regulamentacoes de opt-out e exige justificativa para alteracoes.
+A system for managing the customer's contact preferences that controls which communication channels may be used (phone, email, SMS). It honors opt-out regulations and requires a justification for changes.
 
-### Para Que Serve
+### What It Is For
 
-Garante conformidade regulatoria (TCPA, CAN-SPAM) e respeita a vontade do cliente de nao ser contatado por canais especificos. Integra com Five9 (call center) para atualizacao automatica via IVR.
+It ensures regulatory compliance (TCPA, CAN-SPAM) and respects the customer's wish not to be contacted through specific channels. It integrates with Five9 (call center) for automatic updates via IVR.
 
-### Campos de Preferencia
+### Preference Fields
 
-| Campo | Disponivel em | Editavel em | Descricao |
+| Field | Available in | Editable in | Description |
 |-------|--------------|-------------|-----------|
-| **Do Not Email** | Servicing + Origination | Servicing | Bloqueia envio de emails |
-| **Do Not Call** | Servicing + Origination | Servicing | Bloqueia ligacoes telefonicas |
-| **Do Not Text** | Servicing + Origination | Servicing | Bloqueia envio de SMS |
-| **Do Not Contact** | **Servicing apenas** | Servicing | Master switch - bloqueia TODOS os canais |
+| **Do Not Email** | Servicing + Origination | Servicing | Blocks sending emails |
+| **Do Not Call** | Servicing + Origination | Servicing | Blocks phone calls |
+| **Do Not Text** | Servicing + Origination | Servicing | Blocks sending SMS |
+| **Do Not Contact** | **Servicing only** | Servicing | Master switch - blocks ALL channels |
 
-### Regras de Comportamento
+### Behavior Rules
 
-**Modo de edicao:**
-- Campos sao **desabilitados visualmente** fora do modo de edicao
-- Agente precisa clicar no botao de edicao da secao para habilitar alteracoes
-- Clicar em Cancelar **reverte todas as mudancas** sem salvar nada (visual ou banco)
+**Edit mode:**
+- Fields are **visually disabled** outside of edit mode
+- The agent must click the section's edit button to enable changes
+- Clicking Cancel **reverts all changes** without saving anything (visual or database)
 
-**Motivo obrigatorio:**
-- Campo de razao/motivo e **obrigatorio** antes de salvar qualquer alteracao
-- Se motivo vazio ao salvar → erro: "Reason is required"
-- Cada alteracao gera registro no activity log com o motivo
+**Required reason:**
+- A reason/justification field is **required** before saving any change
+- If the reason is empty when saving → error: "Reason is required"
+- Each change generates a record in the activity log with the reason
 
-**Do Not Contact (regra master):**
-- Quando marcado → automaticamente marca Do Not Email, Do Not Call e Do Not Text
-- Todos os checkboxes individuais ficam **desabilitados** enquanto Do Not Contact estiver ativo
-- Nao e possivel desmarcar canais individualmente enquanto Do Not Contact estiver ativo
-- Persistente entre navegacoes de pagina
+**Do Not Contact (master rule):**
+- When checked → it automatically checks Do Not Email, Do Not Call and Do Not Text
+- All individual checkboxes become **disabled** while Do Not Contact is active
+- It is not possible to uncheck channels individually while Do Not Contact is active
+- Persistent across page navigation
 
 **Origination vs Servicing:**
-- Origination: Do Not Contact **nao e visivel** (apenas Do Not Call, Email, Text)
-- Origination: campos sao exibidos mas com edicao limitada
-- Servicing: todos os 4 campos disponiveis e editaveis
+- Origination: Do Not Contact **is not visible** (only Do Not Call, Email, Text)
+- Origination: fields are displayed but with limited editing
+- Servicing: all 4 fields available and editable
 
-### Integracao com Five9 (IVR)
+### Integration with Five9 (IVR)
 
-O Five9 pode atualizar a preferencia `doNotText` automaticamente via API (`Five9Service.updateContactPreferences`):
+Five9 can update the `doNotText` preference automatically via API (`Five9Service.updateContactPreferences`):
 
-1. Recebe `phoneNumber` e `doNotText` (ambos obrigatorios)
-2. Valida formato de telefone US (10 digitos, remove prefixo "1" de 11 digitos)
-3. Busca todos os registros de telefone com esse numero
-4. Atualiza `doNotText` em todos os registros encontrados
-5. Cria activity log em cada conta associada
+1. Receives `phoneNumber` and `doNotText` (both required)
+2. Validates US phone format (10 digits, removes the "1" prefix from 11 digits)
+3. Looks up all phone records with that number
+4. Updates `doNotText` on all records found
+5. Creates an activity log on each associated account
 
-### Impacto no Sistema
+### System Impact
 
-As preferencias de contato afetam diretamente:
-- **Sweeps de email/SMS:** Contas com `doNotEmail`/`doNotText` sao excluidas
-- **Convite para portal:** Respeita `doNotEmail` e `doNotText` (Secao 66)
-- **Correspondencia automatica:** Welcome, lembretes, ofertas de delinquency
-- **Five9/Skit.ai:** Listas de discagem excluem `doNotCall`
+Contact preferences directly affect:
+- **Email/SMS sweeps:** Accounts with `doNotEmail`/`doNotText` are excluded
+- **Portal invitation:** Honors `doNotEmail` and `doNotText` (Section 66)
+- **Automatic correspondence:** Welcome, reminders, delinquency offers
+- **Five9/Skit.ai:** Dialing lists exclude `doNotCall`
 
 ---
 
-## 66. Convite para Portal do Cliente
+## 66. Customer Portal Invitation
 
-### O Que e
+### What It Is
 
-Servico que envia convites por email e SMS para que clientes acessem o portal de autoatendimento.
+A service that sends invitations by email and SMS for customers to access the self-service portal.
 
-### Para Que Serve
+### What It Is For
 
-Aumenta a adocao do portal, reduzindo o volume de ligacoes ao call center.
+It increases portal adoption, reducing the volume of calls to the call center.
 
-### Logica de Envio
+### Sending Logic
 
-| Canal | Config de Habilitacao | Template | Condicao de Envio |
+| Channel | Enablement Config | Template | Send Condition |
 |-------|----------------------|----------|-------------------|
-| **Email** | `send.customer.portal.link.email` (default: true) | `CustomerPortalReminderEmail` | Email existe E `doNotEmail = false` |
-| **SMS** | `send.customer.portal.link.sms` (default: true) | `CustomerPortalReminderSms` | Telefone existe E `doNotText = false` |
+| **Email** | `send.customer.portal.link.email` (default: true) | `CustomerPortalReminderEmail` | Email exists AND `doNotEmail = false` |
+| **SMS** | `send.customer.portal.link.sms` (default: true) | `CustomerPortalReminderSms` | Phone exists AND `doNotText = false` |
 
-### Respeito ao Opt-Out
+### Opt-Out Compliance
 
-O sistema respeita duas camadas de opt-out:
-1. **Configuracao global:** Admin pode desabilitar envio por canal
-2. **Preferencia do cliente:** `doNotEmail` e `doNotText` no registro do cliente
+The system honors two layers of opt-out:
+1. **Global configuration:** Admin can disable sending per channel
+2. **Customer preference:** `doNotEmail` and `doNotText` on the customer record
 
-### Mensagens de Resposta
+### Response Messages
 
-| Cenario | Mensagem |
+| Scenario | Message |
 |---------|----------|
-| Ambos enviados | "Customer portal reminder email and SMS sent successfully." |
-| Apenas email | "Email sent successfully. SMS not sent due to [opt-out/disabled]." |
-| Apenas SMS | "SMS sent successfully. Email not sent due to [opt-out/disabled]." |
-| Nenhum enviado | "Email not sent due to [reason], SMS not sent due to [reason]." |
+| Both sent | "Customer portal reminder email and SMS sent successfully." |
+| Email only | "Email sent successfully. SMS not sent due to [opt-out/disabled]." |
+| SMS only | "SMS sent successfully. Email not sent due to [opt-out/disabled]." |
+| None sent | "Email not sent due to [reason], SMS not sent due to [reason]." |
 
 ---
 

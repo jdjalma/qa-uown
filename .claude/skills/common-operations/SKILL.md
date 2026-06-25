@@ -1,49 +1,49 @@
 ---
 name: common-operations
-description: Carregue ao precisar de operação recorrente: criar lead via UI ou API, autenticar em portal, capturar OTP, ler email IMAP, query DB com polling. Cookbook do projeto.
+description: Load when you need a recurring operation: create a lead via UI or API, authenticate in a portal, capture an OTP, read IMAP email, query the DB with polling. The project cookbook.
 disable-model-invocation: true
 ---
 
 # Common Operations — Cookbook
 
-> **Para agents:** Leia este arquivo ANTES de implementar qualquer teste que envolva pagamentos,
-> criacao de leads ou navegacao de estado.
+> **For agents:** Read this file BEFORE implementing any test that involves payments,
+> lead creation, or state navigation.
 > Full code recipes: [references/cookbook.md](references/cookbook.md)
 
-> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **WHAT OPERATIONS EXIST** — recipes, canonical imports, operation sequences. Para **nomes e assinaturas atuais de helpers** (que mudam a cada release), consulte [[helpers-catalog]] ou leia `src/helpers/` diretamente antes de implementar — esta skill pode estar desatualizada em relação ao código. **Não confie em assinatura de helper aqui como fonte canônica** — confirme no arquivo.
+> **Authority boundary** (`docs/_docs-conventions.md` §7): this skill covers **WHAT OPERATIONS EXIST** — recipes, canonical imports, operation sequences. For the **current names and signatures of helpers** (which change every release), consult [[helpers-catalog]] or read `src/helpers/` directly before implementing — this skill may be out of date relative to the code. **Do not rely on a helper signature here as the canonical source** — confirm it in the file.
 
 ---
 
 ## Canonical Imports
 
-> **REGRA DE IMPORT (DRY):** todo helper de RUNTIME entra via o barrel `@helpers/index.js` —
-> NUNCA o caminho do módulo individual (`@helpers/api-setup.helpers.js`, `@helpers/date.helpers.js`, …).
-> O barrel re-exporta tudo de `src/helpers/`; importar direto fragmenta o ponto de reuso e
-> esconde helpers que já existem. Única exceção: `import type` pode apontar o módulo específico
-> quando for um tipo que o barrel não re-exporta. Mesmo princípio vale para `@data/index.js`.
+> **IMPORT RULE (DRY):** every RUNTIME helper comes in via the barrel `@helpers/index.js` —
+> NEVER the individual module path (`@helpers/api-setup.helpers.js`, `@helpers/date.helpers.js`, …).
+> The barrel re-exports everything from `src/helpers/`; importing directly fragments the reuse point and
+> hides helpers that already exist. Only exception: `import type` may point to the specific module
+> when it is a type the barrel does not re-export. The same principle applies to `@data/index.js`.
 
 ```typescript
-// Fixture (SEMPRE usar — nao @playwright/test nem @support/base-test)
+// Fixture (ALWAYS use — not @playwright/test nor @support/base-test)
 import { test, expect } from '@fixtures/test-context.fixture.js';
 
-// Tags (SEMPRE usar buildTags/splitTags — nao strings hardcoded)
+// Tags (ALWAYS use buildTags/splitTags — not hardcoded strings)
 import { TestTag, buildTags, splitTags } from '@ptypes/enums.js';
 
-// TODOS os helpers de runtime via barrel — setup de lead, datas, test-data, etc.
-// calculateDateISO retorna YYYY-MM-DD (Java LocalDate); calculateDate retorna MM/DD/YYYY (UI)
+// ALL runtime helpers via the barrel — lead setup, dates, test-data, etc.
+// calculateDateISO returns YYYY-MM-DD (Java LocalDate); calculateDate returns MM/DD/YYYY (UI)
 import {
   createPreQualifiedApplication, driveLeadToFunding, setupApplicationViaApi,
   calculateDateISO, calculateDate,
   buildTestData,
 } from '@helpers/index.js';
 
-// Payment arrangement bodies (vivem em @api/bodies — não são helpers)
+// Payment arrangement bodies (they live in @api/bodies — they are not helpers)
 import { buildCcArrangementBody, buildAchArrangementBody } from '@api/bodies/payment-arrangement.body.js';
 
-// Test cards (via @data barrel)
+// Test cards (via the @data barrel)
 import { VALID_TEST_CARDS } from '@data/index.js';
 
-// Shared state between steps (declare antes de test.step)
+// Shared state between steps (declare before test.step)
 import type { TestContext } from '@support/base-test.js';
 ```
 
@@ -95,29 +95,29 @@ for (const data of testData) {
 
 ---
 
-## Activity-log assertions (oracle — regra #13)
+## Activity-log assertions (oracle — rule #13)
 
-> **PARE de escrever `SELECT ... FROM uown_los_lead_notes` / `uown_los_activity_log ...` inline.** Toda asserção de log (regra #13 — "no log = nothing is happening") passa pelo **oracle** em `src/helpers/activity-log.helpers.ts`, exportado pelo barrel `@helpers/index.js`. Era SELECT duplicado em 10+ specs; agora é uma superfície única e descobrível. Os helpers **RETORNAM a row (ou null) — não chamam `expect()`**; a asserção mora no teste.
+> **STOP writing `SELECT ... FROM uown_los_lead_notes` / `uown_los_activity_log ...` inline.** Every log assertion (rule #13 — "no log = nothing is happening") goes through the **oracle** in `src/helpers/activity-log.helpers.ts`, exported by the barrel `@helpers/index.js`. It used to be a SELECT duplicated across 10+ specs; now it is a single, discoverable surface. The helpers **RETURN the row (or null) — they do not call `expect()`**; the assertion lives in the test.
 
-Escolha a tabela pela origem do evento — o oracle cobre as duas a partir do mesmo import:
-- `uown_los_lead_notes` (timeline free-text): `findLeadNoteContaining` · `countLeadNotesContaining` · `waitForLeadNoteSubstring` (alias `waitForLeadNote`) · `getLeadNotesByLeadPk`.
-- `uown_los_activity_log` (LOS structured — Buddy/Protection Plan, correspondence, data-change vivem AQUI, não em lead_notes): `findActivityLogContaining` · `countActivityLogContaining` · `waitForActivityLogSubstring`.
+Choose the table by the event's origin — the oracle covers both from the same import:
+- `uown_los_lead_notes` (free-text timeline): `findLeadNoteContaining` · `countLeadNotesContaining` · `waitForLeadNoteSubstring` (alias `waitForLeadNote`) · `getLeadNotesByLeadPk`.
+- `uown_los_activity_log` (structured LOS — Buddy/Protection Plan, correspondence, data-change live HERE, not in lead_notes): `findActivityLogContaining` · `countActivityLogContaining` · `waitForActivityLogSubstring`.
 
 ```typescript
 import { waitForActivityLogSubstring } from '@helpers/index.js';
 
-// Evento LOS é escrito ASYNC após a ação → use o waiter (poll), não single-shot.
-// Retorna a row; throw com mensagem descritiva no timeout. Asserção fica no teste.
+// The LOS event is written ASYNC after the action → use the waiter (poll), not single-shot.
+// Returns the row; throws with a descriptive message on timeout. The assertion stays in the test.
 const log = await waitForActivityLogSubstring(db, fundedAccount.leadPk, 'Protection Plan');
 expect(log.logType).toBe('DATA_CHANGE');
 expect(log.notes).toContain('enrolled');
 ```
 
-**Notas:**
-- `findActivityLogContaining(db, keyPk, substring, keyColumn?)` filtra por `lead_pk` (default) ou `account_pk` — passe `'account_pk'` para logs do lado servicing.
-- `countActivityLogContaining` / `countLeadNotesContaining` para **idempotência** (re-rodar a ação NÃO deve duplicar o log).
-- Soft-deleted (`deleted = true`) é excluído de toda leitura — log escondido não é consequência observável.
-- SELECT-only. Escrever SELECT cru de activity-log num spec quando o oracle já cobre = retrabalho e drift de schema; o oracle existe para matar esse anti-pattern.
+**Notes:**
+- `findActivityLogContaining(db, keyPk, substring, keyColumn?)` filters by `lead_pk` (default) or `account_pk` — pass `'account_pk'` for servicing-side logs.
+- `countActivityLogContaining` / `countLeadNotesContaining` for **idempotency** (re-running the action must NOT duplicate the log).
+- Soft-deleted (`deleted = true`) is excluded from every read — a hidden log is not an observable consequence.
+- SELECT-only. Writing a raw activity-log SELECT in a spec when the oracle already covers it = rework and schema drift; the oracle exists to kill that anti-pattern.
 
 ---
 

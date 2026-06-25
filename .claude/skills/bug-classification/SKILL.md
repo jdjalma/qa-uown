@@ -1,128 +1,128 @@
 ---
 name: bug-classification
-description: Carregue antes de reportar achado como bug. Exige fresh reproduction em dados criados via automação antes de elevar [OBSERVAÇÃO]/[HIPÓTESE] para [CONFIRMADO]. Observação em dado pré-existente NÃO é bug — pode ser artefato.
+description: Load before reporting a finding as a bug. Requires fresh reproduction in data created via automation before elevating [OBSERVATION]/[HYPOTHESIS] to [CONFIRMED]. An observation in pre-existing data is NOT a bug — it may be an artifact.
 disable-model-invocation: true
 ---
 
 # Bug Classification Rules — UOWN Leasing
 
-> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **HOW TO CLASSIFY** — regras de evidência, fresh repro, taxonomia. Para enums e estados canônicos (`arrangement=SUCCESS`, `BLOCKED_ACCOUNT`, status codes), rode `node scripts/docs-tooling.mjs resolve enums` (ou `payments`, `account-status`) ou leia `docs/business-rules/appendix-d-constantes-enums.md`. **Não reescreva regras de estado aqui** — elas driftam.
+> **Authority boundary** (`docs/_docs-conventions.md` §7): this skill covers **HOW TO CLASSIFY** — evidence rules, fresh repro, taxonomy. For canonical enums and states (`arrangement=SUCCESS`, `BLOCKED_ACCOUNT`, status codes), run `node scripts/docs-tooling.mjs resolve enums` (or `payments`, `account-status`) or read `docs/business-rules/appendix-d-constantes-enums.md`. **Do not rewrite state rules here** — they drift.
 
-> **Propósito:** prevenir classificação prematura de "Bug de Aplicação" por agents e flows diretos. Uma observação isolada num dado pré-existente é HIPÓTESE, não bug. Bug só depois de reprodução + checagem de task existente.
+> **Purpose:** prevent premature classification of "Application Bug" by agents and direct flows. An isolated observation in pre-existing data is a HYPOTHESIS, not a bug. A bug only after reproduction + checking for an existing task.
 >
-> **Aplicável a:** `qa-validator`, `qa-debugger`, `/qa-flow`, `/new-*` commands, e análises diretas do Claude. **Não é opcional.**
+> **Applicable to:** `qa-validator`, `qa-debugger`, `/qa-flow`, `/new-*` commands, and Claude's direct analyses. **It is not optional.**
 >
-> **Por que este arquivo existe:** um falso bug custa tempo do time de dev, polui relatórios e desgasta a relação entre QA e engenharia. No pipeline #491 (2026-04-21), uma "inconsistência crítica" (BUG-APP-A: arrangement=SUCCESS + parcelas=BLOCKED_ACCOUNT em account 11263) virou 4 horas de investigação + recomendação de fix ao dev antes de reproduzir em conta fresh — onde o comportamento foi CORRETO. Era artefato de fixture antiga, já coberta por uma task no backlog.
+> **Why this file exists:** a false bug costs the dev team's time, pollutes reports, and wears down the relationship between QA and engineering. In pipeline #491 (2026-04-21), a "critical inconsistency" (BUG-APP-A: arrangement=SUCCESS + installments=BLOCKED_ACCOUNT in account 11263) turned into 4 hours of investigation + a fix recommendation to the dev before reproducing in a fresh account — where the behavior was CORRECT. It was an artifact of an old fixture, already covered by a task in the backlog.
 
 ---
 
-## Regra 1 — Não classifique como bug sem reprodução em dados fresh
+## Rule 1 — Don't classify as a bug without reproduction in fresh data
 
-Uma ocorrência isolada num registro pré-existente é **observação**, não bug.
+An isolated occurrence in a pre-existing record is an **observation**, not a bug.
 
-- Para virar "Bug de Aplicação" exige reprodução em **conta/lead/dado criado do zero pela própria execução do teste** (preferencialmente) ou em dados fresh do dia corrente.
-- Se não reproduziu em fresh data → classificar como `INVESTIGAR` ou `OBSERVAÇÃO A CONFIRMAR`, nunca "bug".
-- Se o caso foi observado em registro pré-existente (fixture antiga, seed data, conta manual do QA), a suspeita vale mas exige:
- 1. Tentativa de reprodução em conta criada pelo próprio teste, OU
- 2. Confirmação no código-fonte de inconsistência determinística (não apenas correlação circunstancial).
-
----
-
-## Regra 2 — Distinguir artefato de teste vs. defeito de produção
-
-**Indicadores de artefato (não é defeito de produção):**
-
-- `agent='SYSTEM'` em todo o histórico do registro
-- PK em faixa conhecida de fixtures (criadas por smoke collection, seed scripts)
-- Activity log dominado por `SYSTEM` com revisões humanas esparsas
-- Lead criado via Postman collection / automation helper
-- Uso de test bank (`routing=123456780`, `account=160781900000`, etc.)
-- Nome do cliente no padrão `TestFN<hash>`, `TestLN<hash>`
-- Datas do registro > 24 horas antes da execução atual (dado herdado)
-
-**Protocolo:** Se 2 ou mais indicadores presentes → **assumir artefato** até prova em contrário. Reproduzir em dados fresh antes de classificar como bug.
+- To become an "Application Bug" it requires reproduction in an **account/lead/data created from scratch by the test execution itself** (preferably) or in fresh data from the current day.
+- If it didn't reproduce in fresh data → classify as `INVESTIGATE` or `OBSERVATION TO CONFIRM`, never "bug".
+- If the case was observed in a pre-existing record (old fixture, seed data, manual QA account), the suspicion holds but requires:
+ 1. An attempt at reproduction in an account created by the test itself, OR
+ 2. Confirmation in the source code of a deterministic inconsistency (not just circumstantial correlation).
 
 ---
 
-## Regra 3 — Checar task/issue existente ANTES de reportar
+## Rule 2 — Distinguish test artifact vs. production defect
 
-Antes de escrever seção `## Bugs de Aplicação Encontrados` ou recomendar fix:
+**Artifact indicators (not a production defect):**
 
-1. **Perguntar ao usuário:** "Existe task/issue aberta validando este comportamento?"
-2. **Buscar no GitLab** (usar skill [[fetch-gitlab-task]] se aplicável): filtrar por labels `workflow::ready-for-qa`, `type::bug`, `validation`, `flaky`; buscar por palavra-chave do módulo envolvido.
-3. Se houver task/issue existente → NÃO criar novo report; apenas referenciar no texto (`> Observação: comportamento já rastreado em #NNN`).
+- `agent='SYSTEM'` throughout the record's history
+- PK in a known fixtures range (created by smoke collection, seed scripts)
+- Activity log dominated by `SYSTEM` with sparse human revisions
+- Lead created via Postman collection / automation helper
+- Use of a test bank (`routing=123456780`, `account=160781900000`, etc.)
+- Customer name in the pattern `TestFN<hash>`, `TestLN<hash>`
+- Record dates > 24 hours before the current execution (inherited data)
 
----
-
-## Regra 4 — NÃO recomendar fix de código em evidência única
-
-Sugestões de código (`entityManager.clear`, JPA hints, refactors de service) são aceitas SOMENTE quando:
-
-- Bug reproduzido ≥ 2 vezes de forma independente, OU
-- Análise estática do código prova inconsistência determinística (não apenas plausibilidade de race condition), OU
-- Usuário solicita explicitamente "me dê sugestão de fix".
-
-Caso contrário → apenas descrever sintoma + evidência + handoff: "cabe investigação do time de dev".
+**Protocol:** If 2 or more indicators are present → **assume artifact** until proven otherwise. Reproduce in fresh data before classifying as a bug.
 
 ---
 
-## Regra 5 — Linguagem conservadora em relatórios
+## Rule 3 — Check for an existing task/issue BEFORE reporting
 
-Preferir descrição sobre afirmação; hipótese sobre certeza.
+Before writing a `## Application Bugs Found` section or recommending a fix:
 
-| ❌ Não aceito | ✅ Preferido |
+1. **Ask the user:** "Is there an open task/issue validating this behavior?"
+2. **Search in GitLab** (use skill [[fetch-gitlab-task]] if applicable): filter by labels `workflow::ready-for-qa`, `type::bug`, `validation`, `flaky`; search by a keyword from the module involved.
+3. If an existing task/issue exists → do NOT create a new report; just reference it in the text (`> Observation: behavior already tracked in #NNN`).
+
+---
+
+## Rule 4 — Do NOT recommend a code fix on single evidence
+
+Code suggestions (`entityManager.clear`, JPA hints, service refactors) are accepted ONLY when:
+
+- The bug was reproduced ≥ 2 times independently, OR
+- Static analysis of the code proves a deterministic inconsistency (not just race-condition plausibility), OR
+- The user explicitly requests "give me a fix suggestion".
+
+Otherwise → just describe the symptom + evidence + handoff: "this warrants investigation by the dev team".
+
+---
+
+## Rule 5 — Conservative language in reports
+
+Prefer description over assertion; hypothesis over certainty.
+
+| ❌ Not accepted | ✅ Preferred |
 |---------------|--------------|
-| "BUG-01 (Critical): dispatcher não popula `data_map`" | "Observação: dispatcher registra `correspondence_logs.error="..."`. Cabe investigação — pode ser deployment gap, dado inconsistente em qa2, ou defeito real" |
-| "Confirmado: arrangement termina SUCCESS com parcelas BLOCKED" | "Observado 1x em account 11263. Reprodução em conta fresh (11391) mostra comportamento correto (FAILED). Possível race condition intermitente OU artefato de fixture antiga — investigar antes de classificar" |
-| "Causa raiz: cache JPA stale" | "Hipótese técnica: potencial stale read entre múltiplos `@TransactionalEventListener(AFTER_COMMIT)` concorrentes. Requer reprodução controlada para confirmar" |
+| "BUG-01 (Critical): dispatcher does not populate `data_map`" | "Observation: dispatcher records `correspondence_logs.error="..."`. This warrants investigation — it could be a deployment gap, inconsistent data in qa2, or a real defect" |
+| "Confirmed: arrangement ends SUCCESS with BLOCKED installments" | "Observed 1x in account 11263. Reproduction in a fresh account (11391) shows correct behavior (FAILED). Possible intermittent race condition OR old-fixture artifact — investigate before classifying" |
+| "Root cause: stale JPA cache" | "Technical hypothesis: potential stale read between multiple concurrent `@TransactionalEventListener(AFTER_COMMIT)`. Requires controlled reproduction to confirm" |
 
 ---
 
-## Checklist obrigatório antes de escrever `## Bugs de Aplicação Encontrados`
+## Mandatory checklist before writing `## Application Bugs Found`
 
-- [ ] Reproduzi o comportamento em dado fresh criado pelo próprio teste?
-- [ ] Verifiquei se existe task/issue aberta para o caso (pergunta ao user + busca GitLab)?
-- [ ] Descartei os indicadores de artefato de fixture antiga?
-- [ ] Tenho ≥ 2 ocorrências independentes OU prova estática de inconsistência determinística?
-- [ ] Classificação reflete o nível real de confiança (observação ≠ bug)?
+- [ ] Did I reproduce the behavior in fresh data created by the test itself?
+- [ ] Did I check whether there is an open task/issue for the case (ask the user + GitLab search)?
+- [ ] Did I rule out the old-fixture artifact indicators?
+- [ ] Do I have ≥ 2 independent occurrences OR static proof of a deterministic inconsistency?
+- [ ] Does the classification reflect the real level of confidence (observation ≠ bug)?
 
-**Se qualquer resposta for NÃO → rebaixar para `> Observação: ...` no cenário relevante e NÃO incluir na seção de bugs.**
-
----
-
-## Exemplos (lições do projeto)
-
-### ✅ Caso correto — BUG-01 do pipeline #491
-
-- Comportamento: `correspondence_logs.error = "No data associated with correspondence request"` bloqueando enfileiramento.
-- **Reprodução em fresh:** testado com account 11386 (UOWN fresh) + 11403 (Kornerstone fresh) — MESMO erro nas duas.
-- **Task existente:** perguntado ao user — não havia task conhecida.
-- **Código:** `CorrespondenceService.createCorrespondence` visivelmente depende de `CommonDataPojo` populado pela query SQL do template; query retornando 0 rows é inconsistência determinística observável.
-- **Veredicto:** Bug legítimo — reproduzível, sem task prévia, causa estática identificada.
-
-### ❌ Caso incorreto — BUG-APP-A do pipeline #491
-
-- Comportamento: `arrangement=SUCCESS` + parcelas `BLOCKED_ACCOUNT` em account 11263.
-- **Reprodução em fresh:** NÃO fui testar antes de classificar como "Critical". Quando fui (account 11391), comportamento foi CORRETO (arrangement=FAILED).
-- **Task existente:** NÃO perguntei ao user. Depois revelado que havia task de validação no backlog.
-- **Código:** Hipótese de "cache JPA stale" baseada em especulação sobre timing — não prova determinística.
-- **Veredicto:** Classificação prematura. Era artefato + bug já rastreado. Recomendação de fix desnecessária.
+**If any answer is NO → downgrade to `> Observation: ...` in the relevant scenario and do NOT include it in the bugs section.**
 
 ---
 
-## Como agents devem sinalizar
+## Examples (project lessons)
 
-Ao escrever relatórios, usar tags de confiança explícitas:
+### ✅ Correct case — BUG-01 of pipeline #491
+
+- Behavior: `correspondence_logs.error = "No data associated with correspondence request"` blocking enqueuing.
+- **Reproduction in fresh:** tested with account 11386 (fresh UOWN) + 11403 (fresh Kornerstone) — SAME error in both.
+- **Existing task:** asked the user — there was no known task.
+- **Code:** `CorrespondenceService.createCorrespondence` visibly depends on `CommonDataPojo` populated by the template's SQL query; a query returning 0 rows is an observable deterministic inconsistency.
+- **Verdict:** Legitimate bug — reproducible, no prior task, static cause identified.
+
+### ❌ Incorrect case — BUG-APP-A of pipeline #491
+
+- Behavior: `arrangement=SUCCESS` + installments `BLOCKED_ACCOUNT` in account 11263.
+- **Reproduction in fresh:** I did NOT test before classifying it as "Critical". When I did (account 11391), the behavior was CORRECT (arrangement=FAILED).
+- **Existing task:** I did NOT ask the user. Later it was revealed there was a validation task in the backlog.
+- **Code:** Hypothesis of "stale JPA cache" based on speculation about timing — not deterministic proof.
+- **Verdict:** Premature classification. It was an artifact + a bug already tracked. The fix recommendation was unnecessary.
+
+---
+
+## How agents should signal
+
+When writing reports, use explicit confidence tags:
 
 ```markdown
-### [CONFIRMADO] BUG-01 — Título
-[quando passou o checklist completo]
+### [CONFIRMED] BUG-01 — Title
+[when it passed the full checklist]
 
-### [OBSERVAÇÃO] Comportamento X
-[quando faltou reproduzir em fresh OU usuário confirma task aberta — NÃO vai em seção de bugs]
+### [OBSERVATION] Behavior X
+[when fresh reproduction was missing OR the user confirms an open task — does NOT go in the bugs section]
 
-### [HIPÓTESE] Possível race condition em Y
-[quando evidência é plausível mas única — NÃO vai em seção de bugs]
+### [HYPOTHESIS] Possible race condition in Y
+[when the evidence is plausible but single — does NOT go in the bugs section]
 ```
 
-Apenas `[CONFIRMADO]` entra em `## Bugs de Aplicação Encontrados`. `[OBSERVAÇÃO]` e `[HIPÓTESE]` vão como footnotes nos cenários.
+Only `[CONFIRMED]` goes into `## Application Bugs Found`. `[OBSERVATION]` and `[HYPOTHESIS]` go as footnotes in the scenarios.

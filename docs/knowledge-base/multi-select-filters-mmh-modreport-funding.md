@@ -24,160 +24,160 @@ Task #1319 extends the multi-select Merchant/Location filter component (shipped 
 
 | OQ | Question | Answer |
 |---|---|---|
-| OQ-01 | Multi-select deployado em qa2? | **✅ Sim — todas as 3 páginas** têm `filter__value-container--is-multi` no DOM |
-| OQ-02 | Mesmo componente compartilhado? | **✅ Sim** — mesmo CSS class prefix `filter__`, `index-module_customOptionStyles__CSG9m`, `filter__menu-portal` nas 3 páginas |
-| OQ-03 | On-demand report button na Funding Queue? | **❌ Não existe** — nenhum botão de "generate report" no UI. Apenas Email CSV + Download CSV |
-| OQ-05 | Funding usa FilteredCsvDownload? | **✅ Sim** — Email CSV + Download CSV, mesmo pai `div.d-flex`, classes `csvButton__18V59` |
-| OQ-06 | Status usa FundingQueueStatus independentes? | **✅ Sim** — 4 opções separadas: Funding, Funded, Request Refund, Refunded |
+| OQ-01 | Multi-select deployed in qa2? | **✅ Yes — all 3 pages** have `filter__value-container--is-multi` in the DOM |
+| OQ-02 | Same shared component? | **✅ Yes** — same CSS class prefix `filter__`, `index-module_customOptionStyles__CSG9m`, `filter__menu-portal` across the 3 pages |
+| OQ-03 | On-demand report button on the Funding Queue? | **❌ Does not exist** — no "generate report" button in the UI. Only Email CSV + Download CSV |
+| OQ-05 | Does Funding use FilteredCsvDownload? | **✅ Yes** — Email CSV + Download CSV, same parent `div.d-flex`, classes `csvButton__18V59` |
+| OQ-06 | Does Status use independent FundingQueueStatus? | **✅ Yes** — 4 separate options: Funding, Funded, Request Refund, Refunded |
 
-## Filter Map por Página
+## Filter Map by Page
 
 ### MMH (/merchantModificationHistory)
 
-| Filtro | Tipo | isMulti | Notas |
+| Filter | Type | isMulti | Notes |
 |---|---|---|---|
 | Log Type | combobox | ❌ | Single-select |
 | Start Date / End Date | searchbox | — | Date inputs |
 | Merchant Ref Code | searchbox | — | Text input |
-| Merchant | combobox | ✅ | Multi-select, checkboxes, 1405 opções |
-| Location | combobox | ✅ | Multi-select, **disabled até Merchant ser selecionado** |
+| Merchant | combobox | ✅ | Multi-select, checkboxes, 1405 options |
+| Location | combobox | ✅ | Multi-select, **disabled until a Merchant is selected** |
 | User Name | searchbox | — | Text input |
 
 ### Modification Report (/modificationReport)
 
-| Filtro | Tipo | isMulti | Notas |
+| Filter | Type | isMulti | Notes |
 |---|---|---|---|
 | Merchant | combobox | ✅ | Multi-select, checkboxes |
-| Location | combobox | ✅ | Multi-select, **disabled até Merchant ser selecionado** |
-| Modification Type | combobox | ❌ | Single-select — não é parte do #1319 |
+| Location | combobox | ✅ | Multi-select, **disabled until a Merchant is selected** |
+| Modification Type | combobox | ❌ | Single-select — not part of #1319 |
 | Agent Name | searchbox | — | Text input |
 | Start Date / End Date | searchbox | — | Date inputs |
 
 ### Funding Queue (/funding)
 
-| Filtro | Tipo | isMulti | Notas |
+| Filter | Type | isMulti | Notes |
 |---|---|---|---|
 | Search by Status Date | combobox | ✅ | Multi-select (date range type) |
-| Status* | combobox | ✅ | Multi-select, **Funding pré-selecionado por default** |
+| Status* | combobox | ✅ | Multi-select, **Funding pre-selected by default** |
 | Invoice Type | combobox | ❌ | Single-select |
 | Client Type | combobox | ✅ | Multi-select |
 | Funding On Hold | combobox | ❌ | Single-select |
-| Merchant | combobox | ✅ | Multi-select, checkboxes, 1405 opções |
-| Location | combobox | ✅ | Multi-select, **NÃO disabled** (independente do Merchant, diferente de MMH/ModReport) |
+| Merchant | combobox | ✅ | Multi-select, checkboxes, 1405 options |
+| Location | combobox | ✅ | Multi-select, **NOT disabled** (independent of the Merchant, different from MMH/ModReport) |
 | 2 Day Funding Exception | combobox | ❌ | Single-select |
 | 5 Day Funding Exception | combobox | ❌ | Single-select |
 
-## Status Filter — Opções Confirmadas (OQ-06)
+## Status Filter — Confirmed Options (OQ-06)
 
 ```
-Status* (multi-select, Funding pré-selecionado por default):
+Status* (multi-select, Funding pre-selected by default):
   ☑ Select All
-  ☑ Funding      ← pré-selecionado ao carregar a página
+  ☑ Funding      ← pre-selected when the page loads
   ☐ Funded
   ☐ Request Refund
   ☐ Refunded
 ```
 
-Cada opção é **independentemente selecionável via checkbox** — Request Refund e Refunded são distintos apesar de ambos mapearem para `LeadStatus.OTHER`. `[confirmed]`
+Each option is **independently selectable via checkbox** — Request Refund and Refunded are distinct even though both map to `LeadStatus.OTHER`. `[confirmed]`
 
-## Componente Compartilhado — Estrutura DOM
+## Shared Component — DOM Structure
 
-### Classes CSS (consistentes nas 3 páginas)
+### CSS Classes (consistent across the 3 pages)
 
 ```
 filter__control
-filter__value-container filter__value-container--is-multi   ← presença de --is-multi = multi-select
+filter__value-container filter__value-container--is-multi   ← presence of --is-multi = multi-select
 filter__menu-portal
 filter__menu-list filter__menu-list--is-multi
-index-module_customOptionStyles__CSG9m                      ← container de cada opção (checkbox)
+index-module_customOptionStyles__CSG9m                      ← container of each option (checkbox)
 ```
 
-### Estrutura de cada opção
+### Structure of each option
 
 ```html
 <div class="index-module_customOptionStyles__CSG9m">
   <div class="d-flex align-items-center">
     <input type="checkbox">
-    <span class="ml-2">Nome do Merchant</span>
+    <span class="ml-2">Merchant Name</span>
   </div>
 </div>
 ```
 
-### "Select All" — comportamento divergente por filtro
+### "Select All" — behavior diverges per filter
 
-| Filtro | Tem "Select All"? |
+| Filter | Has "Select All"? |
 |---|---|
-| Status (Funding Queue) | ✅ Sim |
-| Merchant (MMH, ModReport, Funding) | ❌ Não |
-| Location | Não verificado (dependente/vazio na inspeção) |
+| Status (Funding Queue) | ✅ Yes |
+| Merchant (MMH, ModReport, Funding) | ❌ No |
+| Location | Not verified (dependent/empty during inspection) |
 
-> **Pitfall:** não assumir Select All universal — Status tem, Merchant não tem. Verificar por filtro no DOM-first antes de implementar `selectAll()` helper.
+> **Pitfall:** do not assume Select All is universal — Status has it, Merchant does not. Verify per filter DOM-first before implementing a `selectAll()` helper.
 
 ## CSV Export (Funding Queue — OQ-05)
 
-Componente `FilteredCsvDownloadControls` confirmado. Dois botões no mesmo `div.d-flex`:
+`FilteredCsvDownloadControls` component confirmed. Two buttons in the same `div.d-flex`:
 
-| Botão | Classe CSS | Ordem no DOM |
+| Button | CSS Class | DOM Order |
 |---|---|---|
-| Email CSV | `ml-2 index-module_csvButton__18V59 index-module_csvButton__disabledButton__UNKH3` | **1º** (primeiro filho) |
-| Download CSV | `index-module_csvButton__18V59 index-module_csvButton__disabledButton__UNKH3 ml-2` | **2º** |
+| Email CSV | `ml-2 index-module_csvButton__18V59 index-module_csvButton__disabledButton__UNKH3` | **1st** (first child) |
+| Download CSV | `index-module_csvButton__18V59 index-module_csvButton__disabledButton__UNKH3 ml-2` | **2nd** |
 
-> **Pitfall #118 confirmado:** Email CSV vem **antes** de Download CSV no DOM. Usar `:has-text('Download CSV')` para desambiguar — nunca `.csvButton` sozinho.
+> **Pitfall #118 confirmed:** Email CSV comes **before** Download CSV in the DOM. Use `:has-text('Download CSV')` to disambiguate — never `.csvButton` on its own.
 
-Ambos os botões aparecem desabilitados visualmente (`csvButton__disabledButton__UNKH3`) antes de aplicar filtros.
+Both buttons appear visually disabled (`csvButton__disabledButton__UNKH3`) before filters are applied.
 
 ## On-Demand Report (OQ-03)
 
-**Não existe botão de on-demand report na UI da Funding Queue.** Os únicos controles de exportação são Email CSV e Download CSV. O cenário S3.7 do SPEC deve ser **removido ou re-scoped** para os sweeps via API (`triggerScheduledTask`).
+**There is no on-demand report button in the Funding Queue UI.** The only export controls are Email CSV and Download CSV. The SPEC's S3.7 scenario must be **removed or re-scoped** to the sweeps via API (`triggerScheduledTask`).
 
-> Impacto no SPEC: S3.7 ("on-demand report") não tem affordance visual. Cobrir sweeps via S3.8 apenas (dailyFundingReportSweep, dailyFundedReportSweep, dailyRefundReportSweep, dailyRefundedReportSweep).
+> Impact on the SPEC: S3.7 ("on-demand report") has no visual affordance. Cover the sweeps via S3.8 only (dailyFundingReportSweep, dailyFundedReportSweep, dailyRefundReportSweep, dailyRefundedReportSweep).
 
-## Diferenças entre páginas (para implementação)
+## Differences between pages (for implementation)
 
-| Comportamento | MMH | ModReport | Funding |
+| Behavior | MMH | ModReport | Funding |
 |---|---|---|---|
-| Location desabilitada até selecionar Merchant | ✅ | ✅ | ❌ (Location independente) |
-| Select All no Merchant | ❌ | ❌ | ❌ |
-| Select All no Status | — | — | ✅ |
-| CSV export | Download CSV apenas | Não verificado | Email CSV + Download CSV |
-| Outros filtros não-multi-select | Log Type, Dates, Ref Code, User Name | Modification Type, Agent Name, Dates | Invoice Type, Funding On Hold, 2/5 Day Exception |
+| Location disabled until a Merchant is selected | ✅ | ✅ | ❌ (Location independent) |
+| Select All on Merchant | ❌ | ❌ | ❌ |
+| Select All on Status | — | — | ✅ |
+| CSV export | Download CSV only | Not verified | Email CSV + Download CSV |
+| Other non-multi-select filters | Log Type, Dates, Ref Code, User Name | Modification Type, Agent Name, Dates | Invoice Type, Funding On Hold, 2/5 Day Exception |
 
 ## Business Rules (domain rules)
 
-- BR-01: MMH e ModReport: Location é dependente do Merchant — fica disabled até ao menos 1 merchant ser selecionado. `[confirmed]`
-- BR-02: Funding Queue: Location é independente — não requer seleção de Merchant. `[confirmed]`
-- BR-03: Status filter padrão: "Funding" pré-selecionado ao carregar a Funding Queue. `[confirmed]`
-- BR-04: Status filter tem 4 valores distintos: Funding, Funded, Request Refund, Refunded — cada um com checkbox próprio, independentemente selecionável. `[confirmed]`
-- BR-05: Merchant filter (todas as páginas): 1405 opções disponíveis em qa2, sem "Select All". `[confirmed]`
-- BR-06: Componente multi-select usa `index-module_customOptionStyles__CSG9m` com `<input type="checkbox">` dentro de cada opção. `[confirmed]`
+- BR-01: MMH and ModReport: Location depends on the Merchant — it stays disabled until at least 1 merchant is selected. `[confirmed]`
+- BR-02: Funding Queue: Location is independent — it does not require selecting a Merchant. `[confirmed]`
+- BR-03: Default Status filter: "Funding" pre-selected when the Funding Queue loads. `[confirmed]`
+- BR-04: The Status filter has 4 distinct values: Funding, Funded, Request Refund, Refunded — each with its own checkbox, independently selectable. `[confirmed]`
+- BR-05: Merchant filter (all pages): 1405 options available in qa2, no "Select All". `[confirmed]`
+- BR-06: The multi-select component uses `index-module_customOptionStyles__CSG9m` with an `<input type="checkbox">` inside each option. `[confirmed]`
 
 ## Logic and Exceptions
 
-- Location disabled logic (MMH/ModReport): ao abrir sem merchant selecionado, o control recebe `filter__control--is-disabled`. Após selecionar merchant, re-habilita. Cenários que testam Location devem selecionar Merchant primeiro.
-- Status "Funding" pré-selecionado: ao testar multi-select com múltiplos statuses, limpar a seleção default antes de aplicar o conjunto do teste.
-- CSV buttons disabled visually by default: `csvButton__disabledButton__UNKH3` presente antes de filtros aplicados — não é erro; é estado inicial esperado.
+- Location disabled logic (MMH/ModReport): when opened with no merchant selected, the control gets `filter__control--is-disabled`. After selecting a merchant, it re-enables. Scenarios that test Location must select a Merchant first.
+- Status "Funding" pre-selected: when testing multi-select with multiple statuses, clear the default selection before applying the test set.
+- CSV buttons disabled visually by default: `csvButton__disabledButton__UNKH3` present before filters are applied — this is not an error; it is the expected initial state.
 
 ## Connections with What Was Already Known
 
-- Confirma: `MerchantLocationFilterPO` (existente) pode ser reutilizado — o componente é o mesmo nas 3 páginas novas.
-- Confirma: pitfall #118 (Email CSV antes de Download CSV no DOM).
-- **Novo:** Status filter tem Select All; Merchant não tem — divergência intra-componente.
-- **Novo:** Funding Location não é dependente de Merchant (comportamento diferente de MMH/ModReport).
-- **Novo:** Não existe botão de on-demand report — S3.7 do SPEC deve ser removido.
-- **Novo:** Funding Queue tem mais filtros do que o SPEC antecipou: Client Type (multi-select), Invoice Type, Funding On Hold, 2/5 Day Funding Exception.
+- Confirms: `MerchantLocationFilterPO` (existing) can be reused — the component is the same across the 3 new pages.
+- Confirms: pitfall #118 (Email CSV before Download CSV in the DOM).
+- **New:** the Status filter has Select All; Merchant does not — intra-component divergence.
+- **New:** Funding Location does not depend on the Merchant (different behavior from MMH/ModReport).
+- **New:** there is no on-demand report button — the SPEC's S3.7 must be removed.
+- **New:** the Funding Queue has more filters than the SPEC anticipated: Client Type (multi-select), Invoice Type, Funding On Hold, 2/5 Day Funding Exception.
 
-## Hipóteses resolvidas — confirmadas via discovery 2026-06-18
+## Resolved hypotheses — confirmed via discovery 2026-06-18
 
-| Item | Status | Evidência |
+| Item | Status | Evidence |
 |------|--------|-----------|
-| Endpoint Funding Queue Search | **[CONFIRMADO]** `POST /uown/los/getLeadsForFundingQueue` | `browser_network_requests` na Funding Queue (qa2) ao carregar a página + clicar Search — request capturada: `POST https://origination-qa2.uownleasing.com/uown/los/getLeadsForFundingQueue [200]`. Regex em `MerchantLocationFilterPO.applySearch` já tem `getLeadsForFundingQueue` — correto. Nota: path completo inclui `/los/` (`/uown/los/getLeadsForFundingQueue`); a regex é substring match, cobre corretamente. |
-| Sweep `dailyRefundReportSweep` | **[CONFIRMADO]** | `SELECT scheduled_task_name FROM uown_scheduled_task WHERE scheduled_task_name ILIKE '%refund%'` em dev3 (porta 5445) retornou `dailyRefundReportSweep` — nome exato correto. |
-| Sweep `dailyRefundedReportSweep` | **[CONFIRMADO]** | Mesma query acima retornou `dailyRefundedReportSweep` — nome exato correto. |
+| Funding Queue Search endpoint | **[CONFIRMED]** `POST /uown/los/getLeadsForFundingQueue` | `browser_network_requests` on the Funding Queue (qa2) when loading the page + clicking Search — request captured: `POST https://origination-qa2.uownleasing.com/uown/los/getLeadsForFundingQueue [200]`. The regex in `MerchantLocationFilterPO.applySearch` already has `getLeadsForFundingQueue` — correct. Note: the full path includes `/los/` (`/uown/los/getLeadsForFundingQueue`); the regex is a substring match, so it covers it correctly. |
+| Sweep `dailyRefundReportSweep` | **[CONFIRMED]** | `SELECT scheduled_task_name FROM uown_scheduled_task WHERE scheduled_task_name ILIKE '%refund%'` on dev3 (port 5445) returned `dailyRefundReportSweep` — exact name correct. |
+| Sweep `dailyRefundedReportSweep` | **[CONFIRMED]** | The same query above returned `dailyRefundedReportSweep` — exact name correct. |
 
 ## Gaps / To Investigate
 
-- **G1:** Location filter com Merchant selecionado — quais opções aparecem e se tem Select All? (Apenas verificado no estado disabled.)
-- **G2:** Comportamento de paginação com filtros aplicados — não testado nesta sessão.
-- **G3:** Payload da requisição Search — array vs scalar (S-PAYLOAD do SPEC) — não capturado via network; reservado para qa-implementer com `browser_network_requests`.
-- **G4:** CSV download com filtros multi-select aplicados — conteúdo e sign de REFUNDED/REQUEST_REFUND não verificados aqui (requer leads nos estados correspondentes).
-- **G5:** "Send to FUNDED" dropdown — sub-opções não inspecionadas (não é escopo desta task de filtros).
+- **G1:** Location filter with a Merchant selected — which options appear and whether it has Select All? (Only verified in the disabled state.)
+- **G2:** Pagination behavior with filters applied — not tested in this session.
+- **G3:** Search request payload — array vs scalar (the SPEC's S-PAYLOAD) — not captured via network; reserved for the qa-implementer with `browser_network_requests`.
+- **G4:** CSV download with multi-select filters applied — content and sign of REFUNDED/REQUEST_REFUND not verified here (requires leads in the corresponding states).
+- **G5:** "Send to FUNDED" dropdown — sub-options not inspected (not in scope for this filters task).

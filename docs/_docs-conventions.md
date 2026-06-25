@@ -1,170 +1,170 @@
-# Convenções de Documentação — UOWN Leasing QA
+# Documentation Conventions — UOWN Leasing QA
 
-> **Fonte única** do schema de frontmatter, do protocolo de promoção e do protocolo de carga para `docs/business-rules/` e `docs/knowledge-base/`. Consumido por agentes (`qa-planner`, `qa-doc-keeper`), skills (`discovery`, `test-scenarios`, `volatile-knowledge-registry`) e pelo tooling (`scripts/docs-tooling.mjs`).
+> **Single source** of the frontmatter schema, the promotion protocol, and the loading protocol for `docs/business-rules/` and `docs/knowledge-base/`. Consumed by agents (`qa-planner`, `qa-doc-keeper`), skills (`discovery`, `test-scenarios`, `volatile-knowledge-registry`), and the tooling (`scripts/docs-tooling.mjs`).
 >
-> Mudou o schema aqui? Atualize `scripts/docs-tooling.mjs` (validação) e re-rode `node scripts/docs-tooling.mjs index`.
+> Changed the schema here? Update `scripts/docs-tooling.mjs` (validation) and re-run `node scripts/docs-tooling.mjs index`.
 
 ---
 
-## 1. As duas pastas — modelo mental
+## 1. The two folders — mental model
 
 | | `docs/business-rules/` | `docs/knowledge-base/` |
 |---|---|---|
-| **O que é** | Base consolidada e estável do produto | Investigações pontuais por feature (snapshots datados) |
-| **Granularidade** | Domínio completo (capítulos `NN-*.md` + `appendix-*`) | 1 arquivo por feature/entidade (`<topic>.md`, kebab-case) |
-| **Quem escreve** | Curadoria via `qa-doc-keeper` (promoção a partir do KB) | Skill `/discovery` automaticamente |
-| **Volatilidade típica** | `stable` | `snapshot` (capturado num ponto no tempo) |
-| **Confiabilidade** | Fonte de verdade que se cita | Caderno de campo — exige cross-check (Regra #16) |
+| **What it is** | Consolidated, stable product base | Point-in-time investigations per feature (dated snapshots) |
+| **Granularity** | Full domain (chapters `NN-*.md` + `appendix-*`) | 1 file per feature/entity (`<topic>.md`, kebab-case) |
+| **Who writes it** | Curation via `qa-doc-keeper` (promotion from the KB) | The `/discovery` skill automatically |
+| **Typical volatility** | `stable` | `snapshot` (captured at a point in time) |
+| **Reliability** | Source of truth that you cite | Field notebook — requires cross-check (Rule #16) |
 
-Fluxo: `/discovery` investiga (UI→API→DB) → escreve em `knowledge-base/` → quando o achado vira verdade estável → **promovido** para `business-rules/` pelo `qa-doc-keeper` (ver §4).
+Flow: `/discovery` investigates (UI→API→DB) → writes to `knowledge-base/` → when the finding becomes stable truth → **promoted** to `business-rules/` by `qa-doc-keeper` (see §4).
 
 ---
 
-## 2. Schema de frontmatter (YAML)
+## 2. Frontmatter schema (YAML)
 
-Todo arquivo `.md` nas duas pastas — **exceto** `_index.md` (gerado) e este arquivo — começa com um bloco frontmatter. Ele vai **acima** de qualquer conteúdo existente (título, Charter block etc. permanecem intactos logo abaixo).
+Every `.md` file in both folders — **except** `_index.md` (generated) and this file — starts with a frontmatter block. It goes **above** any existing content (title, Charter block, etc. remain intact just below).
 
 ```yaml
 ---
-title: Funding e Gestão de Merchants        # humano, curto
+title: Funding and Merchant Management       # human, short
 domain: business-rules                       # business-rules | knowledge-base
 status: stable                               # stable | snapshot | hypothesis
-volatility: volatile                         # stable | volatile  → dirige o staleness budget
-last_verified: 2026-06-18                     # YYYY-MM-DD — data da última verificação contra fonte primária
-sources:                                      # fontes primárias que embasam as claims do doc
+volatility: volatile                         # stable | volatile  → drives the staleness budget
+last_verified: 2026-06-18                     # YYYY-MM-DD — date of the last check against the primary source
+sources:                                      # primary sources that back the doc's claims
   - code: src/data/merchant-config-contract.ts
   - code: src/config/constants.ts#generateTestSSN
   - db: uown_scheduled_task
   - env: qa2
   - lead: 16651
-covers: [funding, merchants, webhooks]        # tópicos — alimenta o _index.md e busca de relevância
-# --- só em business-rules/ (proveniência da promoção): ---
+covers: [funding, merchants, webhooks]        # topics — feeds the _index.md and relevance search
+# --- only in business-rules/ (promotion provenance): ---
 derived_from: [underwriting-and-funding-test-data-paths]
-# --- só em knowledge-base/ (para onde graduou, se já promovido): ---
+# --- only in knowledge-base/ (where it graduated to, if already promoted): ---
 promoted_to: [appendix-c-tabelas-banco, appendix-f-sql-reference]
 ---
 ```
 
-### Campos
+### Fields
 
-| Campo | Obrigatório | Valores | Significado |
+| Field | Required | Values | Meaning |
 |-------|-------------|---------|-------------|
-| `title` | sim | string | Nome humano curto |
-| `domain` | sim | `business-rules` \| `knowledge-base` | Pasta de origem (sanity check) |
-| `status` | sim | `stable` \| `snapshot` \| `hypothesis` | Confiança epistêmica. `snapshot` = válido no momento da captura; `hypothesis` = não confirmado em fresh data |
-| `volatility` | sim | `stable` \| `volatile` | `volatile` se cai numa categoria do `volatile-knowledge-registry` (merchant config, sweep SQL, rating letters, env provisioning, vendor health, activity log schema, portal naming, selectors recém-refatorados) |
-| `last_verified` | sim | `YYYY-MM-DD` | Última vez que o conteúdo foi conferido contra fonte primária |
-| `sources` | sim (≥1) | lista de `{tipo: valor}` | Ver §3 |
-| `covers` | sim | lista de slugs | Tópicos cobertos — para índice/relevância |
-| `derived_from` | não (só BR) | lista de slugs de KB | Quais arquivos de KB foram promovidos para cá |
-| `promoted_to` | não (só KB) | lista de slugs de BR | Para onde este KB graduou (vazio = ainda não promovido) |
+| `title` | yes | string | Short human name |
+| `domain` | yes | `business-rules` \| `knowledge-base` | Source folder (sanity check) |
+| `status` | yes | `stable` \| `snapshot` \| `hypothesis` | Epistemic confidence. `snapshot` = valid at capture time; `hypothesis` = not confirmed in fresh data |
+| `volatility` | yes | `stable` \| `volatile` | `volatile` if it falls into a `volatile-knowledge-registry` category (merchant config, sweep SQL, rating letters, env provisioning, vendor health, activity log schema, portal naming, recently refactored selectors) |
+| `last_verified` | yes | `YYYY-MM-DD` | Last time the content was checked against the primary source |
+| `sources` | yes (≥1) | list of `{type: value}` | See §3 |
+| `covers` | yes | list of slugs | Topics covered — for index/relevance |
+| `derived_from` | no (BR only) | list of KB slugs | Which KB files were promoted here |
+| `promoted_to` | no (KB only) | list of BR slugs | Where this KB graduated to (empty = not yet promoted) |
 
 ---
 
-## 3. `sources` — semântica de proveniência (o que o drift-check valida)
+## 3. `sources` — provenance semantics (what the drift-check validates)
 
-Cada entrada é um par `tipo: valor`. Tipos:
+Each entry is a `type: value` pair. Types:
 
-| Tipo | Exemplo | Auto-verificável? | O que o `check` faz |
+| Type | Example | Auto-verifiable? | What `check` does |
 |------|---------|-------------------|---------------------|
-| `code` | `src/data/state-merchant-matrix.ts` | **sim** | Arquivo deve existir |
-| `code` (com token) | `src/config/constants.ts#generateTestSSN` | **sim** | Arquivo existe **e** o token (`#...`) aparece nele |
-| `db` | `uown_scheduled_task` | parcial | Registra a tabela citada (re-query exige credenciais — só no `check --db`) |
-| `env` | `qa2` | não | Contexto. Conta para o staleness budget |
-| `lead` / `account` | `16651` | não | Evidência rastreável (reprodução manual) |
-| `gitlab` / `flyway` | `20260609155406` | não | Referência externa |
+| `code` | `src/data/state-merchant-matrix.ts` | **yes** | The file must exist |
+| `code` (with token) | `src/config/constants.ts#generateTestSSN` | **yes** | The file exists **and** the token (`#...`) appears in it |
+| `db` | `uown_scheduled_task` | partial | Records the cited table (re-querying requires credentials — only in `check --db`) |
+| `env` | `qa2` | no | Context. Counts toward the staleness budget |
+| `lead` / `account` | `16651` | no | Traceable evidence (manual reproduction) |
+| `gitlab` / `flyway` | `20260609155406` | no | External reference |
 
-**Regra de ouro:** toda claim técnica que **espelha código** (matriz de estado, constantes, enums, SQL de sweep) DEVE ter uma `source: code` com token — é o que permite pegar drift automaticamente. Foi exatamente o gap que deixou `state-merchant-matrix.ts` (NY/OH) divergir do KB sem ninguém notar.
+**Golden rule:** every technical claim that **mirrors code** (state matrix, constants, enums, sweep SQL) MUST have a `source: code` with a token — that is what lets you catch drift automatically. This was exactly the gap that let `state-merchant-matrix.ts` (NY/OH) diverge from the KB without anyone noticing.
 
 ### Staleness budget
 
-`check` emite WARN quando `last_verified` está mais velho que:
+`check` emits a WARN when `last_verified` is older than:
 
-- `volatility: volatile` → **30 dias**
-- `volatility: stable` → **180 dias**
+- `volatility: volatile` → **30 days**
+- `volatility: stable` → **180 days**
 
-`status: snapshot` é informativo (não expira sozinho), mas se também for `volatile`, o budget de 30 dias se aplica.
-
----
-
-## 4. Protocolo de promoção (`knowledge-base` → `business-rules`)
-
-Owner: **`qa-doc-keeper`** (roda por último em todo pipeline).
-
-### Gatilho (todos os critérios)
-
-Um achado de KB está pronto para promoção quando:
-1. **`status: stable`** — confirmado em **fresh data** (não observação isolada em registro pré-existente);
-2. Reproduzido em **≥2 ambientes** OU confirmado contra **código/DDL** (não só UI);
-3. Não é mais `snapshot` de uma feature em rollout (a feature está deployada de forma estável).
-
-### Mecânica
-
-1. Migrar/sintetizar o conteúdo para o subordinado de `business-rules/` correto (não copiar o caderno inteiro — destilar a regra).
-2. No arquivo de `business-rules/`: adicionar o slug do KB em `derived_from:`.
-3. No arquivo de `knowledge-base/`: adicionar o slug do BR em `promoted_to:`.
-4. Atualizar `last_verified` do BR para a data da promoção.
-
-Link bidirecional = rastreabilidade: dá pra ir do fato consolidado até a investigação que o originou e vice-versa.
-
-> Exemplo real (2026-06-18): a feature **Merchant Settings Snapshot** vivia só em `underwriting-and-funding-test-data-paths.md`. Foi destilada para `appendix-c-tabelas-banco.md` (tabelas) e `appendix-f-sql-reference.md` (queries). `derived_from` / `promoted_to` registram o vínculo.
+`status: snapshot` is informational (does not expire on its own), but if it is also `volatile`, the 30-day budget applies.
 
 ---
 
-## 5. Protocolo de carga (consumidores)
+## 4. Promotion protocol (`knowledge-base` → `business-rules`)
 
-Todo agente/skill que precisa de conhecimento de produto carrega **nesta ordem**:
+Owner: **`qa-doc-keeper`** (runs last in every pipeline).
 
-1. **`node scripts/docs-tooling.mjs resolve <tópico>`** — obrigatório (protocolo mandatório em CLAUDE.md §Signal → docs canônicos): resolve o tópico no arquivo canônico + seção (deep-link) + frescor + KB relacionado, sem ler nada especulativamente. Fallback: ler o `_index.md` da pasta.
-2. **`docs/business-rules/`** primeiro (base consolidada) — abra a seção que o `resolve` apontou, não o capítulo inteiro.
-3. **`docs/knowledge-base/`** depois (investigações específicas, mais frescas — cross-check obrigatório).
+### Trigger (all criteria)
 
-Regras:
-- **Nunca** responder de memória sobre categoria `volatile` — cross-check contra a `source` primária (Regra #16 + `volatile-knowledge-registry`).
-- Achou divergência doc-vs-código? É um finding: corrija a `source` e atualize `last_verified` (ou abra task se for bug de produto).
-- `business-rules/` ganha de `knowledge-base/` em caso de conflito **só se** o `last_verified` do BR for mais recente; senão, o KB (mais fresco) vence e deve disparar promoção.
+A KB finding is ready for promotion when:
+1. **`status: stable`** — confirmed in **fresh data** (not an isolated observation in a pre-existing record);
+2. Reproduced in **≥2 environments** OR confirmed against **code/DDL** (not just UI);
+3. It is no longer a `snapshot` of a feature in rollout (the feature is stably deployed).
+
+### Mechanics
+
+1. Migrate/synthesize the content into the correct `business-rules/` subordinate (do not copy the whole notebook — distill the rule).
+2. In the `business-rules/` file: add the KB slug to `derived_from:`.
+3. In the `knowledge-base/` file: add the BR slug to `promoted_to:`.
+4. Update the BR's `last_verified` to the promotion date.
+
+Bidirectional link = traceability: you can go from the consolidated fact back to the investigation that originated it, and vice versa.
+
+> Real example (2026-06-18): the **Merchant Settings Snapshot** feature lived only in `underwriting-and-funding-test-data-paths.md`. It was distilled into `appendix-c-tabelas-banco.md` (tables) and `appendix-f-sql-reference.md` (queries). `derived_from` / `promoted_to` record the link.
+
+---
+
+## 5. Loading protocol (consumers)
+
+Every agent/skill that needs product knowledge loads **in this order**:
+
+1. **`node scripts/docs-tooling.mjs resolve <topic>`** — mandatory (mandatory protocol in CLAUDE.md §Signal → canonical docs): resolves the topic into the canonical file + section (deep-link) + freshness + related KB, without reading anything speculatively. Fallback: read the folder's `_index.md`.
+2. **`docs/business-rules/`** first (consolidated base) — open the section that `resolve` pointed to, not the whole chapter.
+3. **`docs/knowledge-base/`** next (specific investigations, fresher — cross-check mandatory).
+
+Rules:
+- **Never** answer from memory about a `volatile` category — cross-check against the primary `source` (Rule #16 + `volatile-knowledge-registry`).
+- Found a doc-vs-code divergence? That's a finding: fix the `source` and update `last_verified` (or open a task if it is a product bug).
+- `business-rules/` wins over `knowledge-base/` in a conflict **only if** the BR's `last_verified` is more recent; otherwise, the KB (fresher) wins and should trigger a promotion.
 
 ---
 
 ## 6. Tooling
 
 ```bash
-node scripts/docs-tooling.mjs check          # valida frontmatter + code anchors + staleness + vocabulário
-node scripts/docs-tooling.mjs index          # (re)gera _index.md + _index.json por pasta
-                                             # + atualiza bloco gerado no volatile-knowledge-registry
-node scripts/docs-tooling.mjs resolve <tema> # resolve um tópico → arquivo canônico + seção + frescor
+node scripts/docs-tooling.mjs check          # validates frontmatter + code anchors + staleness + vocabulary
+node scripts/docs-tooling.mjs index          # (re)generates _index.md + _index.json per folder
+                                             # + updates the generated block in volatile-knowledge-registry
+node scripts/docs-tooling.mjs resolve <theme> # resolves a topic → canonical file + section + freshness
 ```
 
-Atalhos npm: `npm run docs:check` · `npm run docs:index` · `npm run docs:resolve <tema>`.
+npm shortcuts: `npm run docs:check` · `npm run docs:index` · `npm run docs:resolve <theme>`.
 
-`check` sai com código ≠ 0 se houver **code-anchor quebrado** ou **arquivo sem frontmatter** — pronto para CI/pre-commit. Staleness e tópico não-canônico são **WARN** (não falham o build).
+`check` exits with a code ≠ 0 if there is a **broken code-anchor** or a **file without frontmatter** — ready for CI/pre-commit. Staleness and non-canonical topics are **WARN** (they don't fail the build).
 
-### Vocabulário controlado (`docs/_topics.json`)
+### Controlled vocabulary (`docs/_topics.json`)
 
-`covers:` aceita apenas tópicos **canônicos** (chaves de `_topics.json`) ou **aliases** declarados lá. Slug fora do vocabulário → WARN no `check`. **Para adicionar um termo, registre-o como alias do canônico existente** em `_topics.json` — não crie slug novo solto (foi assim que `gowsign` / `gowsign-routing` / `esign-provider` driftaram). PT-BR é absorvido por alias (ex.: `reembolso` → `refund`).
+`covers:` accepts only **canonical** topics (keys in `_topics.json`) or **aliases** declared there. A slug outside the vocabulary → WARN in `check`. **To add a term, register it as an alias of the existing canonical** in `_topics.json` — don't create a loose new slug (that's how `gowsign` / `gowsign-routing` / `esign-provider` drifted). PT-BR is absorbed via aliases (e.g., `reembolso` → `refund`).
 
-### `resolve` — o resolvedor de consumo
+### `resolve` — the consumption resolver
 
-`resolve <tema>` é como agentes/skills **localizam a fonte** em vez de `Glob`+ler-tudo:
-1. Normaliza o tema (alias → canônico).
-2. Retorna o(s) arquivo(s) **canônico(s) de business-rules** com deep-link de seção (`arquivo.md#anchor`), `last_verified` e flag **STALE** se volatile fora do budget.
-3. Lista o **KB relacionado** (mais fresco, exige cross-check).
-4. Emite o lembrete de fonte primária para categoria `volatile`.
+`resolve <theme>` is how agents/skills **locate the source** instead of `Glob`+read-everything:
+1. Normalizes the theme (alias → canonical).
+2. Returns the **canonical business-rules file(s)** with a section deep-link (`file.md#anchor`), `last_verified`, and a **STALE** flag if volatile and out of budget.
+3. Lists the **related KB** (fresher, requires cross-check).
+4. Emits the primary-source reminder for the `volatile` category.
 
-Lê os `_index.json` gerados — rode `index` antes. Consumidores devem preferir `resolve` à navegação manual (ver §5).
+It reads the generated `_index.json` files — run `index` first. Consumers should prefer `resolve` over manual navigation (see §5).
 
 ---
 
-## 7. Fronteira de autoridade — skill ↔ business-rules ↔ knowledge-base
+## 7. Authority boundary — skill ↔ business-rules ↔ knowledge-base
 
-Três camadas falam dos mesmos temas (ex.: GowSign vive em `gowsign-knowledge` skill + `03-contratos-esign.md` + 3 KBs). Para o consumidor não escolher fonte no olho nem repetir conteúdo, cada camada tem **um papel exclusivo**:
+Three layers talk about the same themes (e.g., GowSign lives in the `gowsign-knowledge` skill + `03-contratos-esign.md` + 3 KBs). So that the consumer does not pick a source by eye nor repeat content, each layer has **one exclusive role**:
 
-| Camada | Responde | NÃO contém |
+| Layer | Answers | Does NOT contain |
 |--------|----------|------------|
-| **Skill** (`.claude/skills/`) | **Como testar** — procedimentos, patterns, catálogo de suites, regressão obrigatória, helpers | Comportamento canônico do produto (routing, regras, matriz de estado) |
-| **business-rules** | **O que o produto faz** — comportamento canônico, regras, enums, fórmulas | Como dirigir o teste; observações pontuais de uma run |
-| **knowledge-base** | **O que observamos recentemente** — investigação datada, fresca, `volatile` | Regra estabelecida (isso é promoção → business-rules, §4) |
+| **Skill** (`.claude/skills/`) | **How to test** — procedures, patterns, suite catalog, mandatory regression, helpers | Canonical product behavior (routing, rules, state matrix) |
+| **business-rules** | **What the product does** — canonical behavior, rules, enums, formulas | How to drive the test; point-in-time observations from a run |
+| **knowledge-base** | **What we observed recently** — dated, fresh, `volatile` investigation | Established rule (that's a promotion → business-rules, §4) |
 
-**Regra de não-repetição:** uma camada **aponta** para a fonte canônica em vez de reescrevê-la. Um skill que precisa de um fato de comportamento (qual estado roteia para qual provider) linka `business-rules` / diz "rode `resolve <tópico>`" — não mantém uma segunda cópia que vai driftar. Fato de comportamento duplicado em skill = mesma classe de bug que o master monolítico (§1).
+**Non-repetition rule:** a layer **points** to the canonical source instead of rewriting it. A skill that needs a behavior fact (which state routes to which provider) links `business-rules` / says "run `resolve <topic>`" — it does not keep a second copy that will drift. A behavior fact duplicated in a skill = the same class of bug as the monolithic master (§1).
 
-Ao consumir: pergunta de **comportamento** → `resolve` → business-rules; "**como dirijo o teste**" → skill; "**tem gotcha recente**" → knowledge-base.
+When consuming: a **behavior** question → `resolve` → business-rules; "**how do I drive the test**" → skill; "**is there a recent gotcha**" → knowledge-base.

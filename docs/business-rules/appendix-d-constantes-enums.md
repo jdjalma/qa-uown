@@ -1,5 +1,5 @@
 ---
-title: "Apendice D: Constantes de Negocio e Enumeracoes"
+title: "Appendix D: Business Constants and Enumerations"
 domain: business-rules
 status: stable
 volatility: volatile
@@ -13,248 +13,248 @@ sources:
 covers: [enums, constantes, status, funding-queue, lead-status, approval-status, magwitch, rightfoot, customer-journey]
 ---
 
-# Apendice D: Constantes de Negocio e Enumeracoes
+# Appendix D: Business Constants and Enumerations
 ## UOwn Leasing - SVC Platform
 
-Todos os enums, constantes e valores de referencia do sistema.
+All of the system's enums, constants, and reference values.
 
 ---
 
-## Apendice D: Constantes de Negocio e Enumeracoes
+## Appendix D: Business Constants and Enumerations
 
-### D.1 Status de Aprovacao de Aplicacao (AppApprovalStatus)
+### D.1 Application Approval Status (AppApprovalStatus)
 
-| Valor | Codigo | Descricao |
+| Value | Code | Description |
 |-------|--------|-----------|
-| `APPROVED` | E0 | Aplicacao aprovada |
-| `DELAYED` | E1 | Aprovacao atrasada/pendente de revisao |
-| `EDIT_ERROR` | E2 | Erro nos dados da aplicacao requerendo correcao |
-| `SYSTEM_ERROR` | E3 | Erro de sistema durante processamento |
-| `DECLINED` | E4 | Aplicacao negada |
+| `APPROVED` | E0 | Application approved |
+| `DELAYED` | E1 | Approval delayed/pending review |
+| `EDIT_ERROR` | E2 | Error in the application data requiring correction |
+| `SYSTEM_ERROR` | E3 | System error during processing |
+| `DECLINED` | E4 | Application declined |
 
-> **Atencao — E0/E1 em campos distintos:** No campo `AppApprovalStatus`, `E0` = APROVADO e `E1` = aprovacao atrasada. No campo `transactionStatus` (mesmo response JSON), `E0` = "recebida, nao aprovada para transacao" e `E1` = "aprovada para transacao". Sao campos distintos com semanticas opostas para o mesmo codigo — nunca usar `E0` como sinonimo de "aprovado" ao inspecionar `transactionStatus`.
+> **Attention — E0/E1 in distinct fields:** In the `AppApprovalStatus` field, `E0` = APPROVED and `E1` = delayed approval. In the `transactionStatus` field (same JSON response), `E0` = "received, not approved for transaction" and `E1` = "approved for transaction". They are distinct fields with opposite semantics for the same code — never use `E0` as a synonym for "approved" when inspecting `transactionStatus`.
 
-**Mapeamento de UnderwritingStatus:**
+**UnderwritingStatus mapping:**
 - APPROVED -> AppApprovalStatus.APPROVED
 - DENIED -> AppApprovalStatus.DECLINED
 - REVIEW -> AppApprovalStatus.DELAYED
 - OTHER -> AppApprovalStatus.SYSTEM_ERROR
 
-### D.2 Status de Autorizacao (AuthApprovalStatus)
+### D.2 Authorization Status (AuthApprovalStatus)
 
-| Valor | Codigo | Descricao |
+| Value | Code | Description |
 |-------|--------|-----------|
-| `APPROVED` | A1 | Autorizacao aprovada |
-| `PRE_QUALIFIED` | A2 | Pre-qualificacao concedida |
-| `DECLINED` | A0 | Autorizacao negada |
+| `APPROVED` | A1 | Authorization approved |
+| `PRE_QUALIFIED` | A2 | Pre-qualification granted |
+| `DECLINED` | A0 | Authorization declined |
 
-### D.3 Status de Pagamento do Cliente (CustomerPaymentStatus)
+### D.3 Customer Payment Status (CustomerPaymentStatus)
 
-| Valor | Descricao |
+| Value | Description |
 |-------|-----------|
-| `PAID` | Pagamento recebido e processado |
-| `REVERSED` | Pagamento revertido/chargeback |
-| `CANCELLED` | Pagamento cancelado antes do processamento |
-| `RETURNED` | Pagamento devolvido (ex: cheque NSF) |
-| `ERROR` | Erro no processamento |
-| `DENIED` | Pagamento negado/recusado |
-| `PENDING` | Aguardando processamento |
-| `PENDING_REFUND` | Reembolso pendente |
-| `REFUNDED` | Pagamento reembolsado |
-| `SENT_TO_BANK` | Enviado ao sistema bancario |
-| `UNKNOWN` | Status indeterminado |
+| `PAID` | Payment received and processed |
+| `REVERSED` | Payment reversed/chargeback |
+| `CANCELLED` | Payment cancelled before processing |
+| `RETURNED` | Payment returned (e.g., NSF check) |
+| `ERROR` | Error in processing |
+| `DENIED` | Payment denied/declined |
+| `PENDING` | Awaiting processing |
+| `PENDING_REFUND` | Refund pending |
+| `REFUNDED` | Payment refunded |
+| `SENT_TO_BANK` | Sent to the banking system |
+| `UNKNOWN` | Indeterminate status |
 
-### D.4 Status da Fila de Funding (FundingQueueStatus)
+### D.4 Funding Queue Status (FundingQueueStatus)
 
-| Valor | Descricao | Lead Status Correspondente |
+| Value | Description | Corresponding Lead Status |
 |-------|-----------|---------------------------|
-| `FUNDING` | Em processo de funding | LeadStatus.FUNDING |
-| `FUNDED` | Financiado com sucesso | LeadStatus.FUNDED |
-| `REQUEST_REFUND` | Reembolso solicitado | LeadStatus.OTHER |
-| `REFUNDED` | Reembolsado | LeadStatus.OTHER |
+| `FUNDING` | In funding process | LeadStatus.FUNDING |
+| `FUNDED` | Funded successfully | LeadStatus.FUNDED |
+| `REQUEST_REFUND` | Refund requested | LeadStatus.OTHER |
+| `REFUNDED` | Refunded | LeadStatus.OTHER |
 
-### D.5 Status de Transacao de Funding (FundingTransactionStatus)
+### D.5 Funding Transaction Status (FundingTransactionStatus)
 
-| Valor | Descricao |
+| Value | Description |
 |-------|-----------|
-| `ACTIVE` | Transacao ativa |
-| `INACTIVE` | Transacao inativa |
-| `CANCELLED` | Transacao cancelada |
+| `ACTIVE` | Active transaction |
+| `INACTIVE` | Inactive transaction |
+| `CANCELLED` | Cancelled transaction |
 
-### D.6 Tipos de Programa do Merchant (MerchantProgramType)
+### D.6 Merchant Program Types (MerchantProgramType)
 
-| Valor | Descricao |
+| Value | Description |
 |-------|-----------|
-| `SAME_AS_CASH` | Financiamento "mesmo que dinheiro" -- se pago em 90 dias, paga preco a vista |
-| `QUICK_PAY` | Plano de pagamento acelerado com percentual fixo |
+| `SAME_AS_CASH` | "Same as cash" financing -- if paid within 90 days, pays the cash price |
+| `QUICK_PAY` | Accelerated payment plan with a fixed percentage |
 
-### D.7 Tipo de Merchant (MerchantType)
+### D.7 Merchant Type (MerchantType)
 
-| Valor | Descricao | Regra de Determinacao |
+| Value | Description | Determination Rule |
 |-------|-----------|----------------------|
-| `ONLINE` | E-commerce/internet | Codigos iniciando com "OL" ou "ON", ou "OW90218" |
-| `INSTORE` | Loja fisica | Todos os demais codigos |
+| `ONLINE` | E-commerce/internet | Codes starting with "OL" or "ON", or "OW90218" |
+| `INSTORE` | Physical store | All other codes |
 
-**Impacto:** Determina se o estado usado para impostos/programas e do **cliente** (ONLINE) ou do **merchant** (INSTORE).
+**Impact:** Determines whether the state used for taxes/programs is the **customer's** (ONLINE) or the **merchant's** (INSTORE).
 
-### D.8 Tipo de Ordem (OrderType)
+### D.8 Order Type (OrderType)
 
-| Valor | Codigo | Descricao |
+| Value | Code | Description |
 |-------|--------|-----------|
-| `SALE` | 1 | Venda padrao |
-| `RETURN` | 2 | Devolucao |
-| `EXCHANGE` | 3 | Troca |
-| `ADJUSTMENTS` | 4 | Ajuste |
-| `CANCEL` | 5 | Cancelamento |
+| `SALE` | 1 | Standard sale |
+| `RETURN` | 2 | Return |
+| `EXCHANGE` | 3 | Exchange |
+| `ADJUSTMENTS` | 4 | Adjustment |
+| `CANCEL` | 5 | Cancellation |
 
-### D.9 Tipo de Item de Linha (LineItemType)
+### D.9 Line Item Type (LineItemType)
 
-| Valor | Codigo | Descricao |
+| Value | Code | Description |
 |-------|--------|-----------|
-| `DEBIT_SALE` | D | Item de venda/debito |
-| `CREDIT_RETURN` | C | Item de devolucao/credito |
+| `DEBIT_SALE` | D | Sale/debit item |
+| `CREDIT_RETURN` | C | Return/credit item |
 
-### D.10 Status de Verificacao Bancaria (BvStatus)
+### D.10 Bank Verification Status (BvStatus)
 
-| Valor | Descricao |
+| Value | Description |
 |-------|-----------|
-| `PENDING` | Verificacao aguardando processamento |
-| `COMPLETE` | Verificacao concluida |
-| `ERROR` | Erro durante verificacao |
-| `INVALID` | Informacoes bancarias invalidas |
-| `PENDING_LENDING_ATTRIBUTES` | Aguardando atributos adicionais |
+| `PENDING` | Verification awaiting processing |
+| `COMPLETE` | Verification completed |
+| `ERROR` | Error during verification |
+| `INVALID` | Invalid bank information |
+| `PENDING_LENDING_ATTRIBUTES` | Awaiting additional attributes |
 
-### D.11 Status do NeuroID (NeuroIdStatus)
+### D.11 NeuroID Status (NeuroIdStatus)
 
-| Valor | Descricao |
+| Value | Description |
 |-------|-----------|
-| `SUCCESS` | Verificacao comportamental concluida |
-| `PROFILE_NOT_FOUND` | Perfil nao encontrado (JS desabilitado) |
-| `ERROR` | Erro na verificacao |
-| `NOT_ENOUGH_INTERACTION_DATA` | **(R1.53.0)** Dados comportamentais insuficientes — tratado como **pass-through nao-bloqueante** (`success=true`); fraude segue por outros sinais. Toggle de simulacao: `...NeuroIdVerificationService.simulate.not.enough.interaction.data` (default false) |
+| `SUCCESS` | Behavioral verification completed |
+| `PROFILE_NOT_FOUND` | Profile not found (JS disabled) |
+| `ERROR` | Error in verification |
+| `NOT_ENOUGH_INTERACTION_DATA` | **(R1.53.0)** Insufficient behavioral data — treated as **non-blocking pass-through** (`success=true`); fraud continues via other signals. Simulation toggle: `...NeuroIdVerificationService.simulate.not.enough.interaction.data` (default false) |
 
-> **[ATENCAO — drift]** O guard "prevent repeated NeuroID calls" (`preventRepeatedNeuroIdCallsSigningRetry`) **NAO esta merge na R1.53.0** (branch `R1.53.0_neuro_id`, revertido). Detalhe em [02-originacao-pipeline.md §5.5](02-originacao-pipeline.md).
+> **[ATTENTION — drift]** The "prevent repeated NeuroID calls" guard (`preventRepeatedNeuroIdCallsSigningRetry`) is **NOT merged in R1.53.0** (branch `R1.53.0_neuro_id`, reverted). Detail in [02-originacao-pipeline.md §5.5](02-originacao-pipeline.md).
 
-### D.12 Status de Settlement (SettlementTransactionStatus)
+### D.12 Settlement Status (SettlementTransactionStatus)
 
-| Valor | Codigo | Descricao |
+| Value | Code | Description |
 |-------|--------|-----------|
-| `REJECTED` | A0 | Transacao de settlement rejeitada |
-| `ACCEPTED` | A1 | Transacao de settlement aceita |
+| `REJECTED` | A0 | Settlement transaction rejected |
+| `ACCEPTED` | A1 | Settlement transaction accepted |
 
-### D.13 Tipos de Contato (ContactType)
+### D.13 Contact Types (ContactType)
 
-| Valor | Descricao |
+| Value | Description |
 |-------|-----------|
-| `MOBILE_PHONE` | Telefone movel |
-| `SMS` | Mensagem de texto |
-| `EMAIL` | Email eletronico |
-| `CELL_PHONE` | Celular (alternativo) |
-| `HOME_PHONE` | Telefone residencial |
-| `WORK_PHONE` | Telefone comercial |
+| `MOBILE_PHONE` | Mobile phone |
+| `SMS` | Text message |
+| `EMAIL` | Email |
+| `CELL_PHONE` | Cell phone (alternative) |
+| `HOME_PHONE` | Home phone |
+| `WORK_PHONE` | Work phone |
 
-### D.14 Categorias de Produto (Category)
+### D.14 Product Categories (Category)
 
-| Valor | Descricao |
+| Value | Description |
 |-------|-----------|
-| `FURNITURE` | Moveis |
-| `TIRE` | Pneus |
-| `RETAIL` | Varejo geral |
-| `OTHER` | Outros |
+| `FURNITURE` | Furniture |
+| `TIRE` | Tires |
+| `RETAIL` | General retail |
+| `OTHER` | Other |
 
-### D.15 Tipo de Modificacao (ModType)
+### D.15 Modification Type (ModType)
 
-| Valor | Descricao |
+| Value | Description |
 |-------|-----------|
-| `LEAD_STATUS_CHANGE` | Mudanca de status do lead |
-| `LEASE_MOD` | Modificacao do lease |
-| `APPROVAL_AMOUNT_CHANGE` | Alteracao do valor de aprovacao |
+| `LEAD_STATUS_CHANGE` | Lead status change |
+| `LEASE_MOD` | Lease modification |
+| `APPROVAL_AMOUNT_CHANGE` | Change of the approval amount |
 
-### D.16 Tipo de Rebate do Dealer (DealerRebateType)
+### D.16 Dealer Rebate Type (DealerRebateType)
 
-| Valor | Descricao |
+| Value | Description |
 |-------|-----------|
-| `DAILY` | Rebate diario |
-| `MONTHLY` | Rebate mensal |
-| `QUARTERLY` | Rebate trimestral |
-| `YEARLY` | Rebate anual |
+| `DAILY` | Daily rebate |
+| `MONTHLY` | Monthly rebate |
+| `QUARTERLY` | Quarterly rebate |
+| `YEARLY` | Yearly rebate |
 
-### D.17 Tipo de Taxa de Plataforma (PlatformFeeType)
+### D.17 Platform Fee Type (PlatformFeeType)
 
-| Valor | Descricao |
+| Value | Description |
 |-------|-----------|
-| `MONTHLY` | Cobranca mensal |
-| `DAILY` | Cobranca diaria |
-| `QUARTERLY` | Cobranca trimestral |
-| `YEARLY` | Cobranca anual |
+| `MONTHLY` | Monthly charge |
+| `DAILY` | Daily charge |
+| `QUARTERLY` | Quarterly charge |
+| `YEARLY` | Yearly charge |
 
-### D.18 Abreviacoes de Frequencia de Pagamento (PaymentFrequency) — Task #439
+### D.18 Payment Frequency Abbreviations (PaymentFrequency) — Task #439
 
-| Frequencia | Valor enum | Abreviacao |
+| Frequency | Enum value | Abbreviation |
 |------------|-----------|------------|
-| Semanal | `WEEKLY` | `WK` |
-| Quinzenal | `BI_WEEKLY` | `BWK` |
-| Bimensal | `SEMI_MONTHLY` | `SM` |
-| Mensal | `MONTHLY` | `MN` |
+| Weekly | `WEEKLY` | `WK` |
+| Bi-weekly | `BI_WEEKLY` | `BWK` |
+| Semi-monthly | `SEMI_MONTHLY` | `SM` |
+| Monthly | `MONTHLY` | `MN` |
 
-### D.19 Formato do planId — Task #439
+### D.19 planId Format — Task #439
 
-O `planId` identifica unicamente uma combinacao de frequencia de pagamento e termo do programa.
+The `planId` uniquely identifies a combination of payment frequency and program term.
 
-**Formato:** `{abreviacao_frequencia}{termo_meses}`
+**Format:** `{frequency_abbreviation}{term_months}`
 
-**Exemplos:**
+**Examples:**
 
-| planId | Significado |
+| planId | Meaning |
 |--------|-------------|
-| `WK13` | Semanal, 13 meses |
-| `BWK13` | Quinzenal, 13 meses |
-| `SM16` | Bimensal, 16 meses |
-| `MN16` | Mensal, 16 meses |
+| `WK13` | Weekly, 13 months |
+| `BWK13` | Bi-weekly, 13 months |
+| `SM16` | Semi-monthly, 16 months |
+| `MN16` | Monthly, 16 months |
 
-**Uso:**
-- Incluido no `SchedSummaryInfo` retornado pela calculadora
-- Aceito como parametro no endpoint `missing-fields` (alternativa a `selectedPaymentFrequency`)
-- Usado pelo `SubmitApplicationService` para localizar o `PaymentOption` correto
-- Presente na redirect URL do contrato
+**Usage:**
+- Included in the `SchedSummaryInfo` returned by the calculator
+- Accepted as a parameter in the `missing-fields` endpoint (alternative to `selectedPaymentFrequency`)
+- Used by `SubmitApplicationService` to locate the correct `PaymentOption`
+- Present in the contract redirect URL
 
-### D.20 Tipo de Arranjo de Pagamento (ArrangementType) -- Task #446
+### D.20 Payment Arrangement Type (ArrangementType) -- Task #446
 
-| Valor | Descricao |
+| Value | Description |
 |-------|-----------|
-| `NORMAL` | Acordo de pagamento padrao (promise to pay). Conta permanece ACTIVE apos conclusao |
-| `SETTLEMENT` | Acordo de quitacao negociada. Conta transiciona para SETTLED_IN_FULL apos conclusao |
+| `NORMAL` | Standard payment arrangement (promise to pay). Account remains ACTIVE after completion |
+| `SETTLEMENT` | Negotiated settlement arrangement. Account transitions to SETTLED_IN_FULL after completion |
 
-### D.21 Status do Arranjo de Pagamento (PaymentArrangementStatus) -- Task #446
+### D.21 Payment Arrangement Status (PaymentArrangementStatus) -- Task #446
 
-| Valor | Descricao |
+| Value | Description |
 |-------|-----------|
-| `NOT_STARTED` | Arranjo criado, nenhuma transacao processada |
-| `IN_PROGRESS` | Transacoes em andamento, restam pendentes |
-| `SUCCESS` | Todas as transacoes concluidas com sucesso |
-| `FAILED` | Pelo menos uma transacao falhou. Arranjo desativado, rating resetado |
+| `NOT_STARTED` | Arrangement created, no transaction processed |
+| `IN_PROGRESS` | Transactions in progress, some pending remain |
+| `SUCCESS` | All transactions completed successfully |
+| `FAILED` | At least one transaction failed. Arrangement deactivated, rating reset |
 
-### D.22 Origem de Importacao (ImportSource)
+### D.22 Import Source (ImportSource)
 
-| Valor | Descricao |
+| Value | Description |
 |-------|-----------|
 | `LOS` | Loan Origination System |
-| `UOWN_V1` | Sistema legado UOwn v1 |
-| `KORNERSTONE` | Sistema Kornerstone |
+| `UOWN_V1` | Legacy UOwn v1 system |
+| `KORNERSTONE` | Kornerstone system |
 
-### D.23 Tipo de Integracao (IntegrationType)
+### D.23 Integration Type (IntegrationType)
 
-| Valor | Descricao |
+| Value | Description |
 |-------|-----------|
-| `API` | Integracao via API (server-to-server) |
-| `PORTAL` | Integracao via portal web (manual) |
-| `HYBRID` | Combinacao API + portal |
+| `API` | Integration via API (server-to-server) |
+| `PORTAL` | Integration via web portal (manual) |
+| `HYBRID` | API + portal combination |
 
-### D.24 ZIP Codes em Fronteiras Estaduais
+### D.24 ZIP Codes on State Borders
 
-O sistema mantem mapeamento especial para CEPs que cruzam fronteiras estaduais:
+The system maintains a special mapping for ZIP codes that cross state borders:
 
-| ZIP Code | Estados |
+| ZIP Code | States |
 |----------|---------|
 | 02861 | MA / RI |
 | 42223 | KY / TN |
@@ -270,218 +270,218 @@ O sistema mantem mapeamento especial para CEPs que cruzam fronteiras estaduais:
 | 89439 | CA / NV |
 | 97635 | CA / OR |
 
-### D.25 Categorias de Antiguidade de Conta Bancaria (BankAccountAges)
+### D.25 Bank Account Age Categories (BankAccountAges)
 
-Usado no portal Servicing para classificar o tempo de existencia da conta bancaria do cliente. Utilizado em avaliacao de risco ao cadastrar dados bancarios.
+Used in the Servicing portal to classify how long the customer's bank account has existed. Used in risk assessment when registering bank data.
 
-| Valor | Descricao |
+| Value | Description |
 |-------|-----------|
-| `LESS_THAN_6_MONTHS` | Menos de 6 meses |
-| `_6_TO_12_MONTHS` | De 6 a 12 meses |
-| `_1_TO_2_YEARS` | De 1 a 2 anos |
-| `_2_YEARS_OR_MORE` | 2 anos ou mais |
-| `UNKNOWN` | Nao informado / desconhecido |
+| `LESS_THAN_6_MONTHS` | Less than 6 months |
+| `_6_TO_12_MONTHS` | 6 to 12 months |
+| `_1_TO_2_YEARS` | 1 to 2 years |
+| `_2_YEARS_OR_MORE` | 2 years or more |
+| `UNKNOWN` | Not provided / unknown |
 
-### D.26 Grupos de Documento (DocumentGroup)
+### D.26 Document Groups (DocumentGroup)
 
-Classifica os tipos de documentos que podem ser anexados a um lead ou conta no portal Servicing.
+Classifies the types of documents that can be attached to a lead or account in the Servicing portal.
 
-| Valor | Descricao |
+| Value | Description |
 |-------|-----------|
-| `DRIVERSLICENSE` | Carteira de habilitacao / documento de identidade com foto |
-| `PAYSTUB` | Contracheque / comprovante de renda |
-| `BANKSTATEMENT` | Extrato bancario |
-| `SIGNEDPOD` | POD assinado (Proof of Delivery — comprovante de entrega) |
-| `CORRESPONDENCE` | Correspondencia generica (carta bancaria, comprovante de residencia, etc.) |
-| `LEASE` | Contrato de lease assinado |
+| `DRIVERSLICENSE` | Driver's license / photo ID document |
+| `PAYSTUB` | Pay stub / proof of income |
+| `BANKSTATEMENT` | Bank statement |
+| `SIGNEDPOD` | Signed POD (Proof of Delivery) |
+| `CORRESPONDENCE` | Generic correspondence (bank letter, proof of residence, etc.) |
+| `LEASE` | Signed lease contract |
 
-**Regras de acesso:**
-- Upload requer permissao `upload_file_for_account`
-- Edicao de metadados requer permissao `edit_document`
-- Exclusao requer permissao `delete_file`
-- Reenvio de documento armazenado requer permissao `resend_stored_doc`
-- Visibilidade ao cliente controlada por flag `isVisibleToBorrower`
+**Access rules:**
+- Upload requires the `upload_file_for_account` permission
+- Metadata editing requires the `edit_document` permission
+- Deletion requires the `delete_file` permission
+- Resending a stored document requires the `resend_stored_doc` permission
+- Customer visibility controlled by the `isVisibleToBorrower` flag
 
-### D.27 Tipos de Cliente Integrados (ClientType)
+### D.27 Integrated Client Types (ClientType)
 
-O sistema suporta 35 tipos de clientes/merchants, cada um com campanhas e configuracoes proprias (fonte: `svc ClientType.java`):
+The system supports 35 client/merchant types, each with its own campaigns and configurations (source: `svc ClientType.java`):
 
-| ClientType | Nome | Segmento |
+| ClientType | Name | Segment |
 |------------|------|----------|
-| `RWS` | Retailer Web Services | Varejo geral |
-| `PAY_TOMORROW` | Pay Tomorrow | Plataforma financeira |
-| `PAY_TOMORROW_FRASER` | Frasier Auto | Automotivo |
-| `TIRE_AGENT` | Tire Agent | Pneus |
-| `TERRACE_FINANCE` | Terrace Finance | Financeira |
-| `STORIS` | Storis | Moveis (POS) |
-| `V1_UOWN` | UOwn v1 (legado) | Legado |
-| `WE_GET_FINANCING` | We Get Financing | Financeira |
-| `FIRST_APP` | First App | Plataforma |
-| `DANIELS_JEWELERS` | Daniel's Jewelers | Joalheria |
-| `SASLOW_JEWELERS` | Saslow's Jewelers | Joalheria |
-| `EPC_VIP` | EPC VIP | Varejo |
-| `FORM_PIPER` | Form Piper | Plataforma |
-| `FLEXX_BUY` | Flexx Buy | Financeira |
-| `RTB_SHOPPER` | RTB Shopper | Varejo |
-| `TIRE_BROS` | Tire Bros | Pneus |
-| `JEWELRY` | UOwn Jewellers | Joalheria |
-| `VERACITY` | Veracity | Varejo |
-| `BRIDGE` | Bridge | Financeira |
-| `EVERLY` | Everly | Varejo |
-| `LEND_PRO` | Lend Pro | Financeira |
-| `SWEET_PAY` | Sweet Pay | Financeira |
-| `WATSCO` | Watsco | HVAC/Refrigeracao |
-| `360_FINANCE` | 360 Finance | Financeira |
-| `MY_EYE_MED` | My Eye Med | Saude/Otica |
-| `CHOICE_PAY` | Choice Pay | Financeira |
-| `PAY_POSSIBLE` | Pay Possible | Financeira |
-| `SYNCHRONY` | Synchrony | Financeira |
-| `BUY_ON_TRUST` | Buy on Trust | Confianca |
-| `SKEPS` | Skeps | Plataforma |
+| `RWS` | Retailer Web Services | General retail |
+| `PAY_TOMORROW` | Pay Tomorrow | Financial platform |
+| `PAY_TOMORROW_FRASER` | Frasier Auto | Automotive |
+| `TIRE_AGENT` | Tire Agent | Tires |
+| `TERRACE_FINANCE` | Terrace Finance | Financial |
+| `STORIS` | Storis | Furniture (POS) |
+| `V1_UOWN` | UOwn v1 (legacy) | Legacy |
+| `WE_GET_FINANCING` | We Get Financing | Financial |
+| `FIRST_APP` | First App | Platform |
+| `DANIELS_JEWELERS` | Daniel's Jewelers | Jewelry |
+| `SASLOW_JEWELERS` | Saslow's Jewelers | Jewelry |
+| `EPC_VIP` | EPC VIP | Retail |
+| `FORM_PIPER` | Form Piper | Platform |
+| `FLEXX_BUY` | Flexx Buy | Financial |
+| `RTB_SHOPPER` | RTB Shopper | Retail |
+| `TIRE_BROS` | Tire Bros | Tires |
+| `JEWELRY` | UOwn Jewellers | Jewelry |
+| `VERACITY` | Veracity | Retail |
+| `BRIDGE` | Bridge | Financial |
+| `EVERLY` | Everly | Retail |
+| `LEND_PRO` | Lend Pro | Financial |
+| `SWEET_PAY` | Sweet Pay | Financial |
+| `WATSCO` | Watsco | HVAC/Refrigeration |
+| `360_FINANCE` | 360 Finance | Financial |
+| `MY_EYE_MED` | My Eye Med | Health/Optical |
+| `CHOICE_PAY` | Choice Pay | Financial |
+| `PAY_POSSIBLE` | Pay Possible | Financial |
+| `SYNCHRONY` | Synchrony | Financial |
+| `BUY_ON_TRUST` | Buy on Trust | Trust |
+| `SKEPS` | Skeps | Platform |
 | `CONECTA_MOBILE` | Conecta Mobile | Telecom |
 | `KORNERSTONE` | Kornerstone | Senior Living |
-| `BIG_HORN_GOLF` | Big Horn Golf | Esporte/Lazer |
-| `MAGWITCH` | Magwitch | A confirmar (novo em R1.53.0) |
-| `OTHER` | Outros | Catch-all |
+| `BIG_HORN_GOLF` | Big Horn Golf | Sport/Leisure |
+| `MAGWITCH` | Magwitch | To be confirmed (new in R1.53.0) |
+| `OTHER` | Other | Catch-all |
 
-> **`MAGWITCH` (R1.53.0, svc#566)** — adicionado em `ClientType.java` imediatamente antes de `OTHER`. Comportamento 100% genérico: usa `PayTomorrowClient` (sem subclasse própria), campanha peak/off-peak **142** (faixa "Core Furniture", sem distinção peak/off-peak), classificação de risco `DEFAULT`, **roda underwriting normalmente** (sem skip-UW), sem roteamento especial de programa (13m/16m), sem cap de aprovação ou provider de assinatura próprios. Difere dos demais brands genéricos (EPC_VIP, FORM_PIPER, FLEXX_BUY, etc.) apenas pelos campos de identidade: `username=magwitch`, `apiKey=U0wn_Magwitch_K7pN4x`, `clientUrl=https://magwitch.com/`. Segmento de negócio ainda não definido no código — confirmar com produto.
+> **`MAGWITCH` (R1.53.0, svc#566)** — added in `ClientType.java` immediately before `OTHER`. 100% generic behavior: uses `PayTomorrowClient` (no own subclass), peak/off-peak campaign **142** ("Core Furniture" band, no peak/off-peak distinction), risk classification `DEFAULT`, **runs underwriting normally** (no skip-UW), no special program routing (13m/16m), no approval cap or own signing provider. Differs from the other generic brands (EPC_VIP, FORM_PIPER, FLEXX_BUY, etc.) only by the identity fields: `username=magwitch`, `apiKey=U0wn_Magwitch_K7pN4x`, `clientUrl=https://magwitch.com/`. Business segment not yet defined in the code — confirm with product.
 
 ---
 
-### D.28 Status de Item de Invoice (ItemStatus)
+### D.28 Invoice Item Status (ItemStatus)
 
-Status de cada item de linha dentro de uma invoice.
+Status of each line item within an invoice.
 
-| Valor | Descricao |
+| Value | Description |
 |-------|-----------|
-| `PENDING` | Item adicionado ao carrinho, aguardando entrega |
-| `DELIVERED` | Item entregue ao cliente |
-| `PAID` | Item pago (conta quitada) |
-| `CANCELLED` | Item cancelado (devolvido ou cancelado pelo merchant) |
+| `PENDING` | Item added to the cart, awaiting delivery |
+| `DELIVERED` | Item delivered to the customer |
+| `PAID` | Item paid (account settled) |
+| `CANCELLED` | Item cancelled (returned or cancelled by the merchant) |
 
-**Regra de settlement:** Para `settleApplication`, todos os itens devem estar com status `DELIVERED`. Itens `CANCELLED` ou `PAID` bloqueiam o processo.
+**Settlement rule:** For `settleApplication`, all items must be in `DELIVERED` status. `CANCELLED` or `PAID` items block the process.
 
-### D.29 Tipo de Invoice (InvoiceType)
+### D.29 Invoice Type (InvoiceType)
 
-Classifica se a invoice e de um produto financiado ou comprado a vista.
+Classifies whether the invoice is for a financed product or one purchased in cash.
 
-| Valor | Descricao |
+| Value | Description |
 |-------|-----------|
-| `LEASE` | Produto financiado via lease-to-own |
-| `PURCHASED` | Produto comprado a vista (sem financiamento) |
+| `LEASE` | Product financed via lease-to-own |
+| `PURCHASED` | Product purchased in cash (no financing) |
 
-Usado como filtro na fila de funding e em relatorios.
+Used as a filter in the funding queue and in reports.
 
-### D.30 Tipo de Conta Bancaria do Merchant (BankTypeEnum)
+### D.30 Merchant Bank Account Type (BankTypeEnum)
 
-Tipo de conta bancaria usada para receber funding.
+Type of bank account used to receive funding.
 
-| Valor | Descricao |
+| Value | Description |
 |-------|-----------|
-| `COMMERCIAL` | Conta bancaria comercial (business checking/savings) |
-| `INVESTMENT` | Conta de investimento |
+| `COMMERCIAL` | Commercial bank account (business checking/savings) |
+| `INVESTMENT` | Investment account |
 
-### D.31 Categorias de Produto do Merchant (MerchantCategory)
+### D.31 Merchant Product Categories (MerchantCategory)
 
-Tipos de produto que um merchant pode oferecer via lease.
+Product types a merchant can offer via lease.
 
-| Valor | Descricao |
+| Value | Description |
 |-------|-----------|
-| `FURNITURE` | Moveis |
-| `TIRES` | Pneus |
-| `SHED` | Galpoes / garagens pre-fabricadas |
-| `LIVINGROOM` | Sala de estar |
-| `BEDROOM` | Quarto |
-| `DININGROOM` | Sala de jantar |
-| `APPLIANCES` | Eletrodomesticos |
-| `ELECTRONICS` | Eletronicos |
-| `TIRE_PARTS` | Pecas e acessorios de pneus |
-| `AUTOMOTIVES` | Automotivos |
-| `AUTOMOTIVE_ACCESSORIES` | Acessorios automotivos |
-| `OTHER` | Outros |
+| `FURNITURE` | Furniture |
+| `TIRES` | Tires |
+| `SHED` | Prefabricated sheds / garages |
+| `LIVINGROOM` | Living room |
+| `BEDROOM` | Bedroom |
+| `DININGROOM` | Dining room |
+| `APPLIANCES` | Appliances |
+| `ELECTRONICS` | Electronics |
+| `TIRE_PARTS` | Tire parts and accessories |
+| `AUTOMOTIVES` | Automotive |
+| `AUTOMOTIVE_ACCESSORIES` | Automotive accessories |
+| `OTHER` | Other |
 
-### D.32 Tipo de Cartao de Credito (CcOptions)
+### D.32 Credit Card Type (CcOptions)
 
-Bandeiras de cartao de credito aceitas no sistema.
+Credit card brands accepted in the system.
 
-| Valor | Descricao |
+| Value | Description |
 |-------|-----------|
 | `AmericanExpress` | American Express |
 | `MasterCard` | MasterCard |
 | `Visa` | Visa |
 | `Discover` | Discover |
-| `Other` | Outras bandeiras |
+| `Other` | Other brands |
 
-### D.33 Categoria de Emprestimo (LendingCategoryType)
+### D.33 Lending Category (LendingCategoryType)
 
-Classifica a categoria de risco do cliente para decisoes de programa e pricing.
+Classifies the customer's risk category for program and pricing decisions.
 
-| Valor | Descricao |
+| Value | Description |
 |-------|-----------|
-| `LTO` | Lease-To-Own (categoria padrao da plataforma) |
-| `PRIME` | Cliente prime (baixo risco) |
-| `NEAR_PRIME` | Cliente near-prime (risco moderado) |
+| `LTO` | Lease-To-Own (the platform's default category) |
+| `PRIME` | Prime customer (low risk) |
+| `NEAR_PRIME` | Near-prime customer (moderate risk) |
 
-### D.34 Tipo de Taxa Cobravel (FeeType) — Visao Completa
+### D.34 Chargeable Fee Type (FeeType) — Full View
 
-Tipos de taxa que podem ser adicionados manualmente por agentes no portal Servicing.
+Fee types that can be added manually by agents in the Servicing portal.
 
-| Valor | Descricao | Como Adicionar |
+| Value | Description | How to Add |
 |-------|-----------|----------------|
-| `PROTECTION_PLAN_FEE` | Taxa do plano de protecao Buddy Insurance | Automatico (via plano) |
-| `NSF_FEE` | Taxa de fundos insuficientes | Automatico (evento NSF) |
-| `REINSTATEMENT_FEE` | Taxa de reativacao | Manual (via Add Fee no Servicing) |
-| `MANUAL_FEE` | Taxa manual generica | Manual (via Add Fee no Servicing) |
-| `MISC_FEE` | Taxa diversa / miscelanea | Manual (via Add Fee no Servicing) |
+| `PROTECTION_PLAN_FEE` | Buddy Insurance protection plan fee | Automatic (via plan) |
+| `NSF_FEE` | Non-sufficient funds fee | Automatic (NSF event) |
+| `REINSTATEMENT_FEE` | Reinstatement fee | Manual (via Add Fee in Servicing) |
+| `MANUAL_FEE` | Generic manual fee | Manual (via Add Fee in Servicing) |
+| `MISC_FEE` | Miscellaneous fee | Manual (via Add Fee in Servicing) |
 
-**Validacoes ao adicionar taxa manual:**
-- Data de vencimento >= hoje (nao pode ser no passado)
-- Valor > $0
-- Comentario obrigatorio (max 500 caracteres)
-- `baseAmount = totalAmount = feeAmount` (sem calculo de imposto adicional)
+**Validations when adding a manual fee:**
+- Due date >= today (cannot be in the past)
+- Amount > $0
+- Comment required (max 500 characters)
+- `baseAmount = totalAmount = feeAmount` (no additional tax calculation)
 
 ---
 
-### D.35 Tipo de Processo ACH (ACHProcessType)
+### D.35 ACH Process Type (ACHProcessType)
 
-Enum em `common` (`enumeration/ACHProcessType.java`). Indica a origem/natureza de cada linha `uown_sv_achpayment`.
+Enum in `common` (`enumeration/ACHProcessType.java`). Indicates the origin/nature of each `uown_sv_achpayment` row.
 
-| Valor | Significado |
+| Value | Meaning |
 |-------|-------------|
-| `SCHEDULED` | Debito agendado regular do cronograma |
-| `RERUN` | Retentativa de ACH retornado/revertido (sweep semanal) |
-| `RERUN_NSF` | Retentativa especifica de NSF |
-| `REQUEST` | ACH solicitado pontualmente (inclui arranjos SETTLEMENT) |
-| `REFUND` | Estorno/reembolso ACH |
-| `DAILY_RERUN_DELINQUENT` | **(R1.53.0, svc#540)** ACH criado pelo fluxo RightFoot apos confirmacao de saldo bancario suficiente -- ver secao 48 de [09-integracoes-externas.md](09-integracoes-externas.md) |
+| `SCHEDULED` | Regular scheduled debit from the schedule |
+| `RERUN` | Retry of a returned/reversed ACH (weekly sweep) |
+| `RERUN_NSF` | NSF-specific retry |
+| `REQUEST` | ACH requested ad hoc (includes SETTLEMENT arrangements) |
+| `REFUND` | ACH reversal/refund |
+| `DAILY_RERUN_DELINQUENT` | **(R1.53.0, svc#540)** ACH created by the RightFoot flow after confirming sufficient bank balance -- see section 48 of [09-integracoes-externas.md](09-integracoes-externas.md) |
 
-> **[OBSERVACAO]** O valor `DAILY_RERUN_DELINQUENT` vive na branch `R1.53.0` de `common` (commit `bfad466`); o checkout `master` local nao o contem.
+> **[OBSERVATION]** The value `DAILY_RERUN_DELINQUENT` lives in the `R1.53.0` branch of `common` (commit `bfad466`); the local `master` checkout does not contain it.
 
-### D.36 Status do Balance Check RightFoot (R1.53.0)
+### D.36 RightFoot Balance Check Status (R1.53.0)
 
-Coluna `uown_right_foot_balance_check.status`. Unico valor confirmado em codigo svc e o que o gate do ACH consome:
+Column `uown_right_foot_balance_check.status`. The only value confirmed in svc code is the one the ACH gate consumes:
 
-| Valor | Significado |
+| Value | Meaning |
 |-------|-------------|
-| `SUCCESS` | Saldo confirmado pelo RightFoot; habilita a criacao do ACH se `exposure + amount + $100 <= balance` |
+| `SUCCESS` | Balance confirmed by RightFoot; enables ACH creation if `exposure + amount + $100 <= balance` |
 
-> **[HIPOTESE]** Demais valores (PENDING/FAILED/etc.) e o parser do webhook vivem na lib `com.uownleasing:rightfoot` (nao disponivel em disco). Nao assumir valores alem de `SUCCESS` sem inspecao live.
+> **[HYPOTHESIS]** Other values (PENDING/FAILED/etc.) and the webhook parser live in the `com.uownleasing:rightfoot` lib (not available on disk). Do not assume values beyond `SUCCESS` without live inspection.
 
-### D.37 Status da Jornada do Cliente (JourneyStatus) — R1.53.0
+### D.37 Customer Journey Status (JourneyStatus) — R1.53.0
 
-Enum `svc analytics/enumeration/JourneyStatus.java` (telemetria do funil de originacao, origination#1308). Coluna `uown_customer_journey.status`.
+Enum `svc analytics/enumeration/JourneyStatus.java` (origination funnel telemetry, origination#1308). Column `uown_customer_journey.status`.
 
-| Valor | Significado |
+| Value | Meaning |
 |-------|-------------|
-| `IN_PROGRESS` | Jornada aberta (estado inicial) |
-| `COMPLETED` | Cliente concluiu e foi redirecionado ao merchant (set apenas no evento `REDIRECT_COMPLETED`, idempotente) |
-| `ABANDONED` | **Declarado mas nunca atribuido por codigo svc** -- nenhum sweep/job o seta em R1.53.0 (drop-off teria de ser derivado de `last_activity_at`). **[OBSERVACAO]** |
+| `IN_PROGRESS` | Journey open (initial state) |
+| `COMPLETED` | Customer completed and was redirected to the merchant (set only on the `REDIRECT_COMPLETED` event, idempotent) |
+| `ABANDONED` | **Declared but never assigned by svc code** -- no sweep/job sets it in R1.53.0 (drop-off would have to be derived from `last_activity_at`). **[OBSERVATION]** |
 
-### D.38 Tipos de Evento de Customer Journey (event_type) — R1.53.0
+### D.38 Customer Journey Event Types (event_type) — R1.53.0
 
-`uown_customer_event.event_type` e **VARCHAR livre** na svc -- o vocabulario (~50 valores) vive no frontend `origination` (`lib/analytics/events.ts`, mapa `EV`). A svc interpreta apenas dois server-side: `PAGE_REFRESHED` (incrementa contadores de refresh) e `REDIRECT_COMPLETED` (marca a jornada como `COMPLETED`).
+`uown_customer_event.event_type` is a **free VARCHAR** in svc -- the vocabulary (~50 values) lives in the `origination` frontend (`lib/analytics/events.ts`, `EV` map). The svc interprets only two server-side: `PAGE_REFRESHED` (increments refresh counters) and `REDIRECT_COMPLETED` (marks the journey as `COMPLETED`).
 
-Grupos de eventos (frontend): page-views (`*_PAGE_VIEWED`), protection-plan (`PROTECTION_PLAN_OPTED_IN/OUT/SUBMITTED/SUBMIT_ERROR`), acoes do cliente (`ID_SCAN_*`, `SUBMIT_CLICKED`, `RETRY_CLICKED`), submit (`SUBMIT_RESPONSE_RECEIVED/ERROR`), friccao (`ERROR_DISPLAYED`, `PAGE_REFRESHED`, `RAGE_CLICK`, `LONG_RUNNING_API`), iframe (`IFRAME_LOAD_STARTED/COMPLETED/FAILED`), esign (`ESIGN_OPENED/COMPLETED/CLOSED/DECLINED/ERROR/OPEN_FAILED`), integracao merchant (`POSTMESSAGE_SENT/RECEIVED`, `REDIRECT_STARTED`, `REDIRECT_COMPLETED`).
+Event groups (frontend): page-views (`*_PAGE_VIEWED`), protection-plan (`PROTECTION_PLAN_OPTED_IN/OUT/SUBMITTED/SUBMIT_ERROR`), customer actions (`ID_SCAN_*`, `SUBMIT_CLICKED`, `RETRY_CLICKED`), submit (`SUBMIT_RESPONSE_RECEIVED/ERROR`), friction (`ERROR_DISPLAYED`, `PAGE_REFRESHED`, `RAGE_CLICK`, `LONG_RUNNING_API`), iframe (`IFRAME_LOAD_STARTED/COMPLETED/FAILED`), esign (`ESIGN_OPENED/COMPLETED/CLOSED/DECLINED/ERROR/OPEN_FAILED`), merchant integration (`POSTMESSAGE_SENT/RECEIVED`, `REDIRECT_STARTED`, `REDIRECT_COMPLETED`).
 
 ---
 

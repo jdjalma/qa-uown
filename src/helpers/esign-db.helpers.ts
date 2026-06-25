@@ -187,9 +187,9 @@ interface PollOptions {
 }
 
 /**
- * Poll-until-non-null com backoff. Delega ao `pollUntil` compartilhado
- * (common.helpers). Retorna null no timeout — callers que precisam de throw
- * embrulham com mensagem própria (ver `waitForEsignDocumentStatus`).
+ * Poll-until-non-null with backoff. Delegates to the shared `pollUntil`
+ * (common.helpers). Returns null on timeout — callers that need to throw
+ * wrap it with their own message (see `waitForEsignDocumentStatus`).
  */
 async function pollUntilEsign<T>(
   check: () => Promise<T | null>,

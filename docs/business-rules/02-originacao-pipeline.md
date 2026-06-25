@@ -1,5 +1,5 @@
 ---
-title: Originação e Pipeline de Aplicação
+title: Origination and Application Pipeline
 domain: business-rules
 status: stable
 volatility: volatile
@@ -14,35 +14,35 @@ sources:
 covers: [pipeline, underwriting, fraud-vendors, neuroid, kount, state-check, geolocation, customer-journey, segment-limits]
 ---
 
-# Originacao e Pipeline de Aplicacao
+# Origination and Application Pipeline
 ## UOwn Leasing - SVC Platform
 
-Pipeline de 17 steps, verificacao de fraude, underwriting, validacao pre-assinatura, valores aprovados, continuacao/finalizacao, verificacao de endereco e geolocalizacao.
+17-step pipeline, fraud verification, underwriting, pre-signing validation, approved amounts, continuation/finalization, address verification, and geolocation.
 
 ---
 
-## 4. Pipeline de Aplicacao (17 Steps)
+## 4. Application Pipeline (17 Steps)
 
-### Visao Geral
+### Overview
 
-Quando um cliente submete uma aplicacao, ela passa por um **pipeline sequencial de 17 steps**. Se qualquer step retornar `DECLINED`, o pipeline **para imediatamente** -- steps seguintes nao executam.
+When a customer submits an application, it goes through a **sequential pipeline of 17 steps**. If any step returns `DECLINED`, the pipeline **stops immediately** -- subsequent steps do not run.
 
-### Controle de Concorrencia
+### Concurrency Control
 
-O sistema mantem um `ConcurrentHashMap` indexado por SSN. Se ja existe uma aplicacao em andamento para o mesmo SSN, retorna erro `"Application already in progress"`. O SSN e removido do mapa em um bloco `finally`.
+The system keeps a `ConcurrentHashMap` indexed by SSN. If an application is already in progress for the same SSN, it returns the error `"Application already in progress"`. The SSN is removed from the map in a `finally` block.
 
-### Ordem Configuravel por Client Type
+### Order Configurable by Client Type
 
-A ordem dos steps e configuravel por tipo de merchant via:
+The order of the steps is configurable per merchant type via:
 ```
 application.steps.{ClientType} = "stateCheck, merchantAutoDenyCheck, ..."
 ```
 
-Isso permite que merchants especificos pulem ou reordenem steps conforme necessidade do negocio.
+This allows specific merchants to skip or reorder steps according to business needs.
 
-### Toggles Individuais por Step
+### Individual Toggles per Step
 
-Cada step pode ser habilitado/desabilitado individualmente via configuracao:
+Each step can be enabled/disabled individually via configuration:
 
 | Config | Step | Default |
 |--------|------|---------|
@@ -54,615 +54,615 @@ Cada step pode ser habilitado/desabilitado individualmente via configuracao:
 | `check.previous.leads.for.delinquency` | Eligible for Reapproval | true |
 | `check.neuroid.on.send.application` | NeuroID Check | true |
 
-### Step 1: State Check (Verificacao de Estado)
+### Step 1: State Check
 
-**O que e:** Verifica se a UOwn opera no estado do cliente e se existem programas de lease disponiveis naquele estado.
+**What it is:** Checks whether UOwn operates in the customer's state and whether lease programs are available in that state.
 
-**Para que serve:** Compliance regulatorio -- alguns estados proibem ou restringem operacoes de lease-to-own.
+**What it's for:** Regulatory compliance -- some states prohibit or restrict lease-to-own operations.
 
-**Como funciona para o usuario interno:** Configuravel via `no.business.in.state` (default: NJ, VT, MN, ME). Admins podem adicionar/remover estados bloqueados sem deploy.
+**How it works for the internal user:** Configurable via `no.business.in.state` (default: NJ, VT, MN, ME). Admins can add/remove blocked states without a deploy.
 
-**Como afeta o cliente:** Cliente recebe mensagem "We do not offer leasing in {estado}".
+**How it affects the customer:** The customer receives the message "We do not offer leasing in {state}".
 
-**Resultado se negado:** Status `DENIED`, interno `NO_BUSINESS_IN_STATE` ou `NO_PROGRAM_IN_STATE`. Sem email de negacao.
+**Result if denied:** Status `DENIED`, internal `NO_BUSINESS_IN_STATE` or `NO_PROGRAM_IN_STATE`. No denial email.
 
 ### Step 2: Merchant Auto Deny
 
-**O que e:** Verifica se o merchant foi sinalizado para negar automaticamente todas as aplicacoes.
+**What it is:** Checks whether the merchant has been flagged to automatically deny all applications.
 
-**Para que serve:** Usado quando um merchant e suspenso, desativado ou investigado por fraude. Permite bloquear novas aplicacoes sem desativar o merchant completamente.
+**What it's for:** Used when a merchant is suspended, deactivated, or under fraud investigation. It allows blocking new applications without fully deactivating the merchant.
 
-**Como funciona para o usuario interno:** Admin ativa a flag `autoDenyApplication = TRUE` no cadastro do merchant.
+**How it works for the internal user:** An admin enables the flag `autoDenyApplication = TRUE` in the merchant record.
 
-**Como afeta o cliente:** Cliente recebe negacao generica "Denied". Sem email de negacao.
+**How it affects the customer:** The customer receives a generic "Denied". No denial email.
 
-**Resultado:** Status `DENIED`, interno `MERCHANT_AUTO_DENIED`.
+**Result:** Status `DENIED`, internal `MERCHANT_AUTO_DENIED`.
 
-### Step 3: Source Check (Verificacao de Fonte de Trafego)
+### Step 3: Source Check (Traffic Source Verification)
 
-**O que e:** Negacao **probabilistica** baseada na fonte/canal de trafego do cliente. Certas categorias de trafego tem taxas de negacao configuradas.
+**What it is:** **Probabilistic** denial based on the customer's traffic source/channel. Certain traffic categories have configured denial rates.
 
-**Para que serve:** Controle de qualidade de trafego. Se uma campanha de marketing especifica gera muita fraude, a taxa de negacao pode ser aumentada sem desligar a campanha inteira.
+**What it's for:** Traffic quality control. If a specific marketing campaign generates a lot of fraud, the denial rate can be increased without shutting down the entire campaign.
 
-**Como funciona:** Gera um numero aleatorio e compara com a taxa de negacao da categoria. Ex: categoria "111706798993" tem 80% de negacao -- 8 em cada 10 aplicacoes dessa fonte sao negadas.
+**How it works:** Generates a random number and compares it against the category's denial rate. E.g., category "111706798993" has an 80% denial rate -- 8 out of every 10 applications from that source are denied.
 
-**Aplicavel apenas a:** Merchants do tipo `BUY_ON_TRUST` (configuravel).
+**Applies only to:** Merchants of type `BUY_ON_TRUST` (configurable).
 
-**Resultado se negado:** Status `DENIED`, interno `SOURCE_INELIGIBLE`. Sem email de negacao.
+**Result if denied:** Status `DENIED`, internal `SOURCE_INELIGIBLE`. No denial email.
 
-### Step 4: Blacklist Check (Verificacao de Lista Negra)
+### Step 4: Blacklist Check
 
-**O que e:** Verifica se os dados pessoais do cliente correspondem a qualquer entrada na lista negra de fraude.
+**What it is:** Checks whether the customer's personal data matches any entry in the fraud blacklist.
 
-**Para que serve:** Prevencao de fraude. Clientes previamente identificados como fraudadores sao impedidos de aplicar novamente.
+**What it's for:** Fraud prevention. Customers previously identified as fraudsters are prevented from applying again.
 
-**Campos verificados:** Nome, sobrenome, email, celular, SSN, CEP, numero de conta bancaria, routing number, endereco.
+**Fields checked:** First name, last name, email, mobile phone, SSN, ZIP code, bank account number, routing number, address.
 
-**Como funciona para o usuario interno:** Agentes podem adicionar/remover entradas na blacklist via Admin Panel. Tambem podem blacklistar um lead inteiro (todos os dados de uma vez).
+**How it works for the internal user:** Agents can add/remove blacklist entries via the Admin Panel. They can also blacklist an entire lead (all data at once).
 
-**Como afeta o cliente:** Cliente recebe "Fraud check failed". **Sem email de negacao** (para nao alertar fraudadores).
+**How it affects the customer:** The customer receives "Fraud check failed". **No denial email** (so as not to alert fraudsters).
 
-**Resultado:** Status `DENIED`, interno `BLACKLIST_DENIED`.
+**Result:** Status `DENIED`, internal `BLACKLIST_DENIED`.
 
-### Step 5: Data Mismatch Check (Verificacao de Divergencia de Dados)
+### Step 5: Data Mismatch Check
 
-**O que e:** Compara dados da aplicacao atual com dados de aplicacoes anteriores do mesmo cliente. Detecta mudancas suspeitas de nome, endereco, etc.
+**What it is:** Compares the current application's data with data from the same customer's previous applications. Detects suspicious changes of name, address, etc.
 
-**Para que serve:** Fraude por impersonacao -- alguem usando o SSN de outra pessoa pode mudar nome/endereco para receber a mercadoria.
+**What it's for:** Impersonation fraud -- someone using another person's SSN may change name/address to receive the merchandise.
 
-**Ativado por:** Codigos de merchant especificos ou flag por `clientName`.
+**Triggered by:** Specific merchant codes or a flag by `clientName`.
 
-**Resultado se divergencia:** Status `DENIED`, **email de negacao enviado**.
+**Result if mismatch:** Status `DENIED`, **denial email sent**.
 
-### Step 6: Previous Leads (Busca de Leads Anteriores)
+### Step 6: Previous Leads (Previous Lead Lookup)
 
-**O que e:** Busca e cancela leads anteriores do mesmo cliente, calculando quanto da aprovacao ja foi consumida.
+**What it is:** Looks up and cancels the same customer's previous leads, calculating how much of the approval has already been consumed.
 
-**Para que serve:** Garante que um cliente nao tenha multiplos leads ativos e calcula credito remanescente.
+**What it's for:** Ensures a customer does not have multiple active leads and calculates the remaining credit.
 
-**IMPORTANTE:** Este step **NUNCA nega**. E puramente de coleta de dados.
+**IMPORTANT:** This step **NEVER denies**. It is purely data collection.
 
-**Efeitos:** Leads anteriores sao cancelados. `consumedApprovalAmount` e calculado para uso em steps posteriores.
+**Effects:** Previous leads are cancelled. `consumedApprovalAmount` is calculated for use in later steps.
 
-### Step 7: Previous UW Denied (UW Anterior Negado)
+### Step 7: Previous UW Denied
 
-**O que e:** Verifica se o cliente ja foi negado pelo underwriting anteriormente.
+**What it is:** Checks whether the customer has been previously denied by underwriting.
 
-**Para que serve:** Evita reprocessamento desnecessario -- se o cliente foi negado recentemente, nao faz sentido rodar UW novamente (a menos que haja override).
+**What it's for:** Avoids unnecessary reprocessing -- if the customer was denied recently, there's no point in running UW again (unless there's an override).
 
-**Resultado se negado:** Status `UW_DENIED`, **email de negacao enviado**.
+**Result if denied:** Status `UW_DENIED`, **denial email sent**.
 
-### Step 8: Future FPD Check (Lease Assinado com Pagamento Futuro)
+### Step 8: Future FPD Check (Signed Lease with Future Payment)
 
-**O que e:** Impede nova aplicacao se o cliente tem um lease assinado cuja primeira data de pagamento (FPD) ainda esta no futuro.
+**What it is:** Prevents a new application if the customer has a signed lease whose first payment date (FPD) is still in the future.
 
-**Para que serve:** Previne que o cliente obtenha multiplos leases simultaneamente antes que o primeiro comece a gerar pagamentos.
+**What it's for:** Prevents the customer from obtaining multiple leases simultaneously before the first one starts generating payments.
 
-**Condicoes de negacao (TODAS devem ser verdadeiras):**
-- Lead anterior com status `SIGNED`
-- `accountPk` e null (ainda nao virou conta)
-- `firstPaymentDueDate` e posterior a hoje
+**Denial conditions (ALL must be true):**
+- Previous lead with status `SIGNED`
+- `accountPk` is null (not yet converted to an account)
+- `firstPaymentDueDate` is later than today
 
-**Resultado:** Status `DENIED`, interno `SIGNED_FPD_IN_FUTURE`. Sem email.
+**Result:** Status `DENIED`, internal `SIGNED_FPD_IN_FUTURE`. No email.
 
-### Step 9: Duplicate Check (Verificacao de Duplicidade)
+### Step 9: Duplicate Check
 
-**O que e:** Verifica se o cliente tem multiplas aplicacoes usando o mesmo email, telefone ou dados bancarios.
+**What it is:** Checks whether the customer has multiple applications using the same email, phone, or banking data.
 
-**Para que serve:** Previne abuso -- um mesmo individuo tentando obter multiplos leases usando variantes de contato.
+**What it's for:** Prevents abuse -- the same individual trying to obtain multiple leases using contact variants.
 
-| Verificacao | Limite Default | O que acontece |
+| Check | Default Limit | What happens |
 |-------------|---------------|----------------|
-| Emails duplicados | 3 usos | `EMAIL_COUNT_FAILED` |
-| Telefones duplicados | 3 usos | `PHONE_COUNT_FAILED` |
-| Contas duplicadas por email | Via servico | `{status}_DUP_EMAIL` |
-| Contas duplicadas por telefone | Via servico | `{status}_DUP_PHONE` |
-| Contas duplicadas por banco | Via servico | `{status}_DUP_BANK_INFO` |
+| Duplicate emails | 3 uses | `EMAIL_COUNT_FAILED` |
+| Duplicate phones | 3 uses | `PHONE_COUNT_FAILED` |
+| Duplicate accounts by email | Via service | `{status}_DUP_EMAIL` |
+| Duplicate accounts by phone | Via service | `{status}_DUP_PHONE` |
+| Duplicate accounts by bank | Via service | `{status}_DUP_BANK_INFO` |
 
-### Step 10: Eligible for Reapproval (Elegibilidade para Re-aprovacao)
+### Step 10: Eligible for Reapproval
 
-**O que e:** Verifica se um cliente que ja tem contas existentes esta inadimplente nelas.
+**What it is:** Checks whether a customer who already has existing accounts is delinquent on them.
 
-**Para que serve:** Impede que clientes inadimplentes obtenham novos leases.
+**What it's for:** Prevents delinquent customers from obtaining new leases.
 
-**Como funciona:** Se o cliente tem contas existentes, verifica se alguma esta em atraso. Se sim, nega com "Ineligible for re-approval".
+**How it works:** If the customer has existing accounts, it checks whether any is past due. If so, it denies with "Ineligible for re-approval".
 
-### Step 11: NeuroID Check (Biometria Comportamental)
+### Step 11: NeuroID Check (Behavioral Biometrics)
 
-**O que e:** Analisa **como** o cliente preencheu o formulario (velocidade de digitacao, movimentos de mouse, padroes de copiar/colar, hesitacoes). Descrito em detalhes na secao 5.
+**What it is:** Analyzes **how** the customer filled out the form (typing speed, mouse movements, copy/paste patterns, hesitations). Described in detail in section 5.
 
-### Step 12: Underwriting (Analise de Credito)
+### Step 12: Underwriting (Credit Analysis)
 
-Descrito em detalhes na secao 6.
+Described in detail in section 6.
 
 ### Step 13: Invoice Placeholder
 
-**O que e:** Para merchants especificos (ex: `SYNCHRONY`), cria uma invoice usando o valor de aprovacao como total do pedido.
+**What it is:** For specific merchants (e.g., `SYNCHRONY`), creates an invoice using the approval amount as the order total.
 
-**Para que serve:** Alguns merchants nao enviam invoice antecipadamente. O sistema cria um placeholder para que o calculo possa prosseguir.
+**What it's for:** Some merchants do not send an invoice in advance. The system creates a placeholder so that the calculation can proceed.
 
-### Step 14: Calculate Max Approval (Calculo de Valor Maximo)
+### Step 14: Calculate Max Approval
 
-**O que e:** Calcula o valor maximo de aprovacao considerando credito ja consumido em leads anteriores.
+**What it is:** Calculates the maximum approval amount, accounting for credit already consumed in previous leads.
 
-**Resultado se <= 0:** Negado com "No credit remaining", interno `NO_REMAINING_AMOUNT`.
+**Result if <= 0:** Denied with "No credit remaining", internal `NO_REMAINING_AMOUNT`.
 
-### Step 15: Compare Cost Check (Comparacao Custo vs Aprovacao)
+### Step 15: Compare Cost Check (Cost vs Approval Comparison)
 
-**O que e:** Compara o custo do carrinho com o valor de aprovacao.
+**What it is:** Compares the cart cost against the approval amount.
 
-| Cenario | Resultado |
+| Scenario | Result |
 |---------|-----------|
-| Custo <= aprovacao | Passa |
-| Custo > aprovacao, elegivel para item split | Passa com flag para split |
-| Client type isento (PAY_TOMORROW, TIRE_AGENT, PAY_POSSIBLE) | Passa sem checagem |
-| Custo > aprovacao, sem split | Negado, mas cliente recebe notificacao de aprovacao |
+| Cost <= approval | Passes |
+| Cost > approval, eligible for item split | Passes with a flag for split |
+| Exempt client type (PAY_TOMORROW, TIRE_AGENT, PAY_POSSIBLE) | Passes without check |
+| Cost > approval, no split | Denied, but the customer receives an approval notification |
 
-### Step 16: Item Split (Divisao de Carrinho)
+### Step 16: Item Split (Cart Split)
 
-Descrito em detalhes na secao 31.
+Described in detail in section 31.
 
-### Step 17: Calculator (Calculadora de Pagamentos)
+### Step 17: Calculator (Payment Calculator)
 
-Descrito em detalhes na secao 7.
+Described in detail in section 7.
 
 ---
 
-## 5. Sistema de Verificacao de Fraude e Identidade
+## 5. Fraud and Identity Verification System
 
-### Visao Geral da Estrategia de Defesa
+### Overview of the Defense Strategy
 
-A UOwn utiliza uma estrategia de **defesa em camadas** com multiplos servicos terceirizados, cada um verificando um angulo diferente. Nenhum servico decide sozinho -- a combinacao de resultados forma a decisao final.
+UOwn uses a **layered defense** strategy with multiple third-party services, each verifying a different angle. No single service decides on its own -- the combination of results forms the final decision.
 
-### 5.1 Sentilink (Deteccao de Identidade Sintetica)
+### 5.1 Sentilink (Synthetic Identity Detection)
 
-**O que e:** Servico especializado em detectar **identidades sinteticas** (identidades fabricadas misturando dados reais e falsos de diferentes pessoas) e **roubo de identidade** (uso dos dados de outra pessoa real).
+**What it is:** A service specialized in detecting **synthetic identities** (fabricated identities mixing real and fake data from different people) and **identity theft** (use of another real person's data).
 
-**Para que serve:** Fraude de identidade sintetica e o tipo de fraude financeira que mais cresce. Identidades sinteticas podem passar em verificacoes de credito tradicionais porque constroem historico real ao longo do tempo. O Sentilink detecta o que bureaus de credito nao conseguem.
+**What it's for:** Synthetic identity fraud is the fastest-growing type of financial fraud. Synthetic identities can pass traditional credit checks because they build real history over time. Sentilink detects what credit bureaus cannot.
 
-**Quando roda:** Primeiro step do engine de UW -- se a identidade e falsa, nao faz sentido rodar os demais checks.
+**When it runs:** First step of the UW engine -- if the identity is fake, there's no point in running the remaining checks.
 
-**Dados enviados:** Nome, sobrenome, data de nascimento, SSN, email, telefone, endereco completo.
+**Data sent:** First name, last name, date of birth, SSN, email, phone, full address.
 
-**Tres scores analisados:**
-- **Synthetic Score** -- probabilidade da identidade ser fabricada
-- **Identity Theft Score** -- probabilidade de impersonacao
-- **Abuse Score** -- probabilidade de fraude de primeira pessoa (aplica com dados proprios mas intencao de default)
+**Three scores analyzed:**
+- **Synthetic Score** -- probability that the identity is fabricated
+- **Identity Theft Score** -- probability of impersonation
+- **Abuse Score** -- probability of first-party fraud (applying with one's own data but intent to default)
 
-**Configuracao:** Thresholds sao **por merchant** -- diferentes merchants toleram diferentes niveis de risco. Resultados anteriores podem ser reutilizados dentro de uma janela configuravel de dias.
+**Configuration:** Thresholds are **per merchant** -- different merchants tolerate different levels of risk. Previous results can be reused within a configurable window of days.
 
-**Possiveis resultados:** APPROVE, DECLINE (score acima do threshold), SSN_TYPO (SSN parece manipulado), ERROR.
+**Possible results:** APPROVE, DECLINE (score above the threshold), SSN_TYPO (SSN appears manipulated), ERROR.
 
-### 5.2 Neustar (Verificacao de Dados de Contato)
+### 5.2 Neustar (Contact Data Verification)
 
-**O que e:** Plataforma de inteligencia de dados que cruza telefone, email, endereco e nome do cliente contra bases massivas de telecom e dados de consumidores.
+**What it is:** A data intelligence platform that cross-references the customer's phone, email, address, and name against massive telecom and consumer data bases.
 
-**Para que serve:** Fraudadores nao conseguem montar um conjunto perfeitamente consistente de dados de contato. O telefone pode ser pre-pago, o endereco nao corresponde aos registros da operadora, ou o email foi criado dias antes. O Neustar detecta essas inconsistencias.
+**What it's for:** Fraudsters cannot assemble a perfectly consistent set of contact data. The phone may be prepaid, the address may not match the carrier's records, or the email may have been created days earlier. Neustar detects these inconsistencies.
 
-**Quando roda:** Segundo step do engine de UW.
+**When it runs:** Second step of the UW engine.
 
-**Verificacoes realizadas (cada uma pode negar independentemente):**
-- Telefone nao corresponde ao nome
-- Endereco nao corresponde ao telefone
-- Email nao corresponde ao telefone
-- Email nao corresponde ao nome
-- Telefone e pre-pago/burner
-- Tempo de servico do telefone muito curto
-- Uso do telefone muito baixo (2 meses)
-- Mudanca de nome recente suspeita
-- Email invalido ou muito novo
-- Endereco invalido (USPS), vago, ou de prisao
-- Falha na validacao DPV (Delivery Point Validation)
+**Checks performed (each one can deny independently):**
+- Phone does not match the name
+- Address does not match the phone
+- Email does not match the phone
+- Email does not match the name
+- Phone is prepaid/burner
+- Phone tenure too short
+- Phone usage too low (2 months)
+- Suspicious recent name change
+- Invalid or very new email
+- Invalid address (USPS), vacant, or a prison address
+- DPV (Delivery Point Validation) validation failure
 
-**Configuracao:** Cada verificacao pode ser habilitada/desabilitada por merchant. Thresholds por merchant.
+**Configuration:** Each check can be enabled/disabled per merchant. Thresholds per merchant.
 
-### 5.3 LexisNexis (Risco de Identidade e Registros Publicos)
+### 5.3 LexisNexis (Identity Risk and Public Records)
 
-**O que e:** Servico de score de risco baseado em registros publicos, registros judiciais, registros de propriedade e dados de credito.
+**What it is:** A risk-scoring service based on public records, court records, property records, and credit data.
 
-**Para que serve:** Adiciona uma camada que nem Sentilink nem Neustar cobrem: analise profunda de registros publicos. Detecta se um SSN foi emitido recentemente (possivelmente a um menor), se o candidato tem historico de fraude em registros judiciais, ou se multiplas aplicacoes vem de enderecos ligados a fraude conhecida.
+**What it's for:** Adds a layer that neither Sentilink nor Neustar covers: deep public-records analysis. Detects whether an SSN was issued recently (possibly to a minor), whether the applicant has a fraud history in court records, or whether multiple applications come from addresses linked to known fraud.
 
-**Quando roda:** Terceiro step do engine de UW.
+**When it runs:** Third step of the UW engine.
 
-**Possiveis resultados:** PASS (score abaixo do threshold), FAIL -> `LEXISNEXIS_DENIED`, ERROR.
+**Possible results:** PASS (score below the threshold), FAIL -> `LEXISNEXIS_DENIED`, ERROR.
 
-### 5.4 SEON (Motor de Fraude Digital)
+### 5.4 SEON (Digital Fraud Engine)
 
-**O que e:** Motor de fraude que analisa a **pegada digital** do candidato -- email, telefone, IP e device fingerprint.
+**What it is:** A fraud engine that analyzes the applicant's **digital footprint** -- email, phone, IP, and device fingerprint.
 
-**Para que serve:** Captura a "camada digital" da fraude. Um fraudador pode ter montado uma identidade convincente no papel, mas seu comportamento digital o trai: usando VPN de outro pais, email temporario criado no mesmo dia, telefone VoIP, ou nenhuma presenca em redes sociais.
+**What it's for:** Captures the "digital layer" of fraud. A fraudster may have assembled a convincing identity on paper, but their digital behavior betrays them: using a VPN from another country, a temporary email created the same day, a VoIP phone, or no social-media presence.
 
-**Quando roda:** Quarto e ultimo step do engine de UW -- atua como rede de seguranca final.
+**When it runs:** Fourth and final step of the UW engine -- it acts as the final safety net.
 
-**O que analisa:**
-- **Email:** Vinculado a redes sociais? Idade? Provedor descartavel? Score de fraude?
-- **Telefone:** Real? Vinculado a redes sociais? Numero VoIP?
-- **IP:** VPN, proxy ou Tor? Geolocalizacao? IP de data center?
-- **Device fingerprint:** Comportamento do dispositivo/navegador
+**What it analyzes:**
+- **Email:** Linked to social networks? Age? Disposable provider? Fraud score?
+- **Phone:** Real? Linked to social networks? VoIP number?
+- **IP:** VPN, proxy, or Tor? Geolocation? Data-center IP?
+- **Device fingerprint:** Device/browser behavior
 
-**Quatro scores independentes:** Email, IP, telefone e score geral de fraude, cada um com threshold **por merchant**.
+**Four independent scores:** Email, IP, phone, and an overall fraud score, each with a threshold **per merchant**.
 
-### 5.5 NeuroID (Biometria Comportamental)
+### 5.5 NeuroID (Behavioral Biometrics)
 
-**O que e:** Analisa **como** o candidato preenche o formulario de aplicacao, nao **o que** ele digita.
+**What it is:** Analyzes **how** the applicant fills out the application form, not **what** they type.
 
-**Para que serve:** Inovacao em deteccao de fraude. Um fraudador pode ter a identidade roubada perfeita com documentos correspondentes, mas nao consegue replicar os padroes comportamentais da pessoa real. Alguem digitando seu proprio nome e SSN de memoria se comporta fundamentalmente diferente de alguem lendo de uma tela ou colando de um banco de dados.
+**What it's for:** An innovation in fraud detection. A fraudster may have the perfect stolen identity with matching documents, but cannot replicate the behavioral patterns of the real person. Someone typing their own name and SSN from memory behaves fundamentally differently from someone reading it off a screen or pasting it from a database.
 
-**O que monitora:**
-- Velocidade e ritmo de digitacao
-- Padroes de movimento de mouse
-- Padroes de hesitacao (pausa antes de digitar SSN, como se estivesse lendo de algum lugar)
-- Comportamento de copiar/colar
-- Padroes de interacao com o dispositivo
+**What it monitors:**
+- Typing speed and rhythm
+- Mouse movement patterns
+- Hesitation patterns (pausing before typing the SSN, as if reading it from somewhere)
+- Copy/paste behavior
+- Device interaction patterns
 
-**Quando roda:** O SDK JavaScript coleta dados durante o preenchimento do formulario. A verificacao e consultada durante a submissao.
+**When it runs:** The JavaScript SDK collects data during form completion. The check is queried during submission.
 
-**Possiveis resultados:** APPROVE, DECLINE, PROFILE_NOT_FOUND (JS desabilitado), ERROR, **`NOT_ENOUGH_INTERACTION_DATA`** (novo em R1.53.0).
+**Possible results:** APPROVE, DECLINE, PROFILE_NOT_FOUND (JS disabled), ERROR, **`NOT_ENOUGH_INTERACTION_DATA`** (new in R1.53.0).
 
-**R1.53.0 — `NOT_ENOUGH_INTERACTION_DATA` (NeuroID sem dados suficientes):**
-- Tratado como **pass-through nao-bloqueante**: `success=true`, as regras de fraude continuam rodando; o cliente so e bloqueado se outros sinais de fraude dispararem. Junto com `PROFILE_NOT_FOUND`, pode acionar o caminho de config "approve on profile not found".
-- **Toggle de simulacao** (para testes): config `com.uownleasing.svc.service.NeuroIdVerificationService.simulate.not.enough.interaction.data` (default `false`) — quando `true`, svc sobrescreve o status real para `NOT_ENOUGH_INTERACTION_DATA` com `success=true`.
-- **[ATENCAO — drift]** O guard "prevent repeated NeuroID calls" (skip-on-prior-approval / returning-to-sign, `preventRepeatedNeuroIdCallsSigningRetry`) **NAO esta merge na R1.53.0** — vive no branch nao-mergeado `R1.53.0_neuro_id` (com revert). Os steps atuais `NeuroIdCheckStep`/`NeuroIdVerificationStep` **nao** tem guard de chamada repetida. Confirmar contra o env deployado antes de escrever testes que assumam skip.
-- **Fontes:** `service/application/submitApp/NeuroIdVerificationService.java:58,130,147-156`, `enumeration/NeuroIdStatus.java`.
+**R1.53.0 — `NOT_ENOUGH_INTERACTION_DATA` (NeuroID without enough data):**
+- Treated as a **non-blocking pass-through**: `success=true`, the fraud rules keep running; the customer is only blocked if other fraud signals fire. Together with `PROFILE_NOT_FOUND`, it can trigger the config path "approve on profile not found".
+- **Simulation toggle** (for testing): config `com.uownleasing.svc.service.NeuroIdVerificationService.simulate.not.enough.interaction.data` (default `false`) — when `true`, svc overrides the real status to `NOT_ENOUGH_INTERACTION_DATA` with `success=true`.
+- **[ATTENTION — drift]** The "prevent repeated NeuroID calls" guard (skip-on-prior-approval / returning-to-sign, `preventRepeatedNeuroIdCallsSigningRetry`) **is NOT merged in R1.53.0** — it lives in the unmerged `R1.53.0_neuro_id` branch (with a revert). The current `NeuroIdCheckStep`/`NeuroIdVerificationStep` steps do **not** have a repeated-call guard. Confirm against the deployed env before writing tests that assume a skip.
+- **Sources:** `service/application/submitApp/NeuroIdVerificationService.java:58,130,147-156`, `enumeration/NeuroIdStatus.java`.
 
-### 5.6 Intellicheck (Autenticacao de Documento de Identidade)
+### 5.6 Intellicheck (Identity Document Authentication)
 
-**O que e:** Servico de autenticacao de documentos de identidade que le o **codigo de barras** na parte traseira de carteiras de motorista e IDs.
+**What it is:** An identity-document authentication service that reads the **barcode** on the back of driver's licenses and IDs.
 
-**Para que serve:** Fraudadores podem criar IDs visualmente convincentes, mas acertar a codificacao do codigo de barras no padrao exato do estado emissor e extremamente dificil. O Intellicheck detecta documentos forjados, alterados e falsificados.
+**What it's for:** Fraudsters can create visually convincing IDs, but getting the barcode encoding right in the exact pattern of the issuing state is extremely difficult. Intellicheck detects forged, altered, and counterfeit documents.
 
-**Como o cliente usa:** Durante a submissao da aplicacao, o cliente fotografa a frente e o verso de sua carteira de motorista. As imagens sao enviadas ao Intellicheck.
+**How the customer uses it:** During application submission, the customer photographs the front and back of their driver's license. The images are sent to Intellicheck.
 
-**O que verifica:**
-- Dados do codigo de barras sao consistentes com a frente do documento
-- Formato do documento corresponde ao padrao do estado emissor
-- Documento nao esta expirado
-- Sem sinais de adulteracao
+**What it verifies:**
+- Barcode data is consistent with the front of the document
+- Document format matches the issuing state's standard
+- Document is not expired
+- No signs of tampering
 
-**Verificacao adicional:** Apos o Intellicheck, o sistema faz **fuzzy name matching** entre o nome no documento e o nome na aplicacao, e opcionalmente verifica data de nascimento.
+**Additional verification:** After Intellicheck, the system performs **fuzzy name matching** between the name on the document and the name on the application, and optionally verifies date of birth.
 
-### 5.7 SEON ID (Verificacao de ID via SEON)
+### 5.7 SEON ID (ID Verification via SEON)
 
-**O que e:** Alternativa ao Intellicheck. O cliente fotografa seu ID e o SEON extrai dados e verifica correspondencia.
+**What it is:** An alternative to Intellicheck. The customer photographs their ID, and SEON extracts data and verifies the match.
 
-**Verificacoes:** Nome corresponde? Estado corresponde? CEP corresponde? Data de nascimento corresponde?
+**Checks:** Does the name match? Does the state match? Does the ZIP code match? Does the date of birth match?
 
-**Configuracao:** Merchant escolhe entre Intellicheck ou SEON ID via flags `isIntellicheckRequired` e `isSeonIdCheckRequired`.
+**Configuration:** The merchant chooses between Intellicheck or SEON ID via the flags `isIntellicheckRequired` and `isSeonIdCheckRequired`.
 
-### 5.8 Kount (Fraude de Cartao de Credito)
+### 5.8 Kount (Credit Card Fraud)
 
-**O que e:** Servico de deteccao de fraude para transacoes de cartao de credito. Avalia o risco **antes** de cobrar o cartao.
+**What it is:** A fraud-detection service for credit card transactions. It assesses risk **before** charging the card.
 
-**Para que serve:** Mesmo apos aprovar a aplicacao, a UOwn precisa garantir que o cartao usado para pagamento nao e roubado. O Kount previne chargebacks e fraude de pagamento.
+**What it's for:** Even after approving the application, UOwn needs to ensure the card used for payment is not stolen. Kount prevents chargebacks and payment fraud.
 
-**Quando roda:** No momento do **pagamento** (nao durante a aplicacao). Tanto para novos leads quanto para contas existentes.
+**When it runs:** At the moment of **payment** (not during the application). For both new leads and existing accounts.
 
-**O que analisa:**
-- BIN do cartao (primeiros 6 digitos) e ultimos 4
-- Sessao do dispositivo (fingerprint via SDK JavaScript)
-- IP do pagador
-- Nome, endereco, email e data de nascimento do titular
-- Valor e detalhes da transacao
+**What it analyzes:**
+- Card BIN (first 6 digits) and last 4
+- Device session (fingerprint via the JavaScript SDK)
+- Payer IP
+- Cardholder's name, address, email, and date of birth
+- Transaction amount and details
 
-**Possiveis resultados:** APPROVE (risco baixo), DECLINE (risco alto), ERROR.
+**Possible results:** APPROVE (low risk), DECLINE (high risk), ERROR.
 
-**Cache inteligente:** Verifica se ja existe decisao recente para a mesma pessoa + cartao. Se sim, reutiliza sem nova chamada de API.
+**Smart cache:** Checks whether there is already a recent decision for the same person + card. If so, it reuses it without a new API call.
 
-### 5.9 Plaid (Verificacao Bancaria e de Renda)
+### 5.9 Plaid (Banking and Income Verification)
 
-**O que e:** Servico que se conecta diretamente a **conta bancaria** do cliente (com permissao dele) para verificar propriedade, renda, e saude financeira.
+**What it is:** A service that connects directly to the customer's **bank account** (with their permission) to verify ownership, income, and financial health.
 
-**Para que serve:** Verificacoes de credito tradicionais perdem muitos clientes com credito limitado (thin-file). O Plaid fornece dados alternativos baseados em transacoes bancarias reais para determinar capacidade de pagamento.
+**What it's for:** Traditional credit checks miss many customers with limited credit (thin-file). Plaid provides alternative data based on real bank transactions to determine ability to pay.
 
-**Quando roda:** **Condicionalmente** -- apenas quando:
-1. Merchant habilitou Plaid (`isPlaidVerificationRequired`)
-2. Underwriting colocou o lead em "lambda segment" dentro de uma faixa configurada
-3. Status do lead e `UW_REVIEW` (underwriting incerto)
+**When it runs:** **Conditionally** -- only when:
+1. The merchant has enabled Plaid (`isPlaidVerificationRequired`)
+2. Underwriting placed the lead in a "lambda segment" within a configured range
+3. The lead status is `UW_REVIEW` (uncertain underwriting)
 
-Ou seja, Plaid e um **mecanismo de segunda chance** para candidatos na zona cinzenta.
+In other words, Plaid is a **second-chance mechanism** for applicants in the gray zone.
 
-**Como o cliente usa:**
-1. Recebe link para conectar seu banco via widget do Plaid
-2. Autentica com suas credenciais bancarias
-3. Plaid analisa 180 dias de historico bancario
+**How the customer uses it:**
+1. Receives a link to connect their bank via the Plaid widget
+2. Authenticates with their banking credentials
+3. Plaid analyzes 180 days of banking history
 
-**Possiveis resultados:** PLAID_SUCCESS (aprovado via banco), PLAID_FAILED (negado), PLAID_ABANDONED (cliente desistiu), PLAID_ERROR.
+**Possible results:** PLAID_SUCCESS (approved via bank), PLAID_FAILED (denied), PLAID_ABANDONED (customer gave up), PLAID_ERROR.
 
-### Ordem de Execucao Completa
+### Full Execution Order
 
 ```
-PREENCHIMENTO DO FORMULARIO
-  -> NeuroID coleta biometria comportamental silenciosamente
+FORM COMPLETION
+  -> NeuroID silently collects behavioral biometrics
 
-UPLOAD DE ID
-  -> Intellicheck OU SEON ID autentica documento
+ID UPLOAD
+  -> Intellicheck OR SEON ID authenticates the document
 
-SUBMISSAO (Engine de UW)
-  1. Sentilink -> Identidade sintetica/roubada?
-  2. Neustar   -> Dados de contato consistentes?
-  3. LexisNexis -> Red flags em registros publicos?
-  4. SEON Fraud -> Pegada digital indica fraude?
+SUBMISSION (UW Engine)
+  1. Sentilink -> Synthetic/stolen identity?
+  2. Neustar   -> Contact data consistent?
+  3. LexisNexis -> Red flags in public records?
+  4. SEON Fraud -> Does the digital footprint indicate fraud?
 
-DECISAO DE CREDITO
-  -> Se engine passa: roda BlackBox (modelo de credito)
-  -> Se BlackBox incerto: Plaid como segunda chance
+CREDIT DECISION
+  -> If the engine passes: runs BlackBox (credit model)
+  -> If BlackBox is uncertain: Plaid as a second chance
 
-PAGAMENTO
-  -> Kount pre-autoriza transacao de cartao
+PAYMENT
+  -> Kount pre-authorizes the card transaction
 ```
 
 
-## 6. Underwriting (Analise de Credito)
+## 6. Underwriting (Credit Analysis)
 
-### O Que e Underwriting
+### What Underwriting Is
 
-Apos os checks de fraude passarem, o sistema avalia a **capacidade de credito** do cliente. Tres engines de decisao estao disponiveis:
+After the fraud checks pass, the system evaluates the customer's **creditworthiness**. Three decision engines are available:
 
-| Engine | Descricao | Prioridade |
+| Engine | Description | Priority |
 |--------|-----------|------------|
-| **GDS** | Motor de decisao externo | 1 (se habilitado) |
-| **Taktile** | Motor de decisao alternativo | 2 (se habilitado) |
-| **ABB** | Motor de decisao padrao (BlackBox) | Default |
+| **GDS** | External decision engine | 1 (if enabled) |
+| **Taktile** | Alternative decision engine | 2 (if enabled) |
+| **ABB** | Default decision engine (BlackBox) | Default |
 
-### Decisao de Rodar vs Reusar UW
+### Decision to Run vs Reuse UW
 
-| Condicao | Acao |
+| Condition | Action |
 |----------|------|
-| Lead status: NEW, EXPIRED, PENDING_UW, UW_DENIED, UW_ERROR | Roda UW novo |
-| Dados de UW nao existem | Roda UW novo |
-| Aprovacao expirada | Roda UW novo |
-| Caso contrario | Reusa UW anterior |
+| Lead status: NEW, EXPIRED, PENDING_UW, UW_DENIED, UW_ERROR | Run a new UW |
+| UW data does not exist | Run a new UW |
+| Approval expired | Run a new UW |
+| Otherwise | Reuse the previous UW |
 
-### Skip UW (Bypass para Merchants Especificos)
+### Skip UW (Bypass for Specific Merchants)
 
-Alguns merchants podem pular o UW inteiramente. Condicoes (TODAS devem ser verdadeiras):
-- `clientType` na lista de skip-UW
-- Threshold check nao requerido OU lead atende threshold
-- Score check nao requerido OU lead tem score
+Some merchants can skip UW entirely. Conditions (ALL must be true):
+- `clientType` in the skip-UW list
+- Threshold check not required OR the lead meets the threshold
+- Score check not required OR the lead has a score
 
-Resultado do skip: `decision = "ACCEPT"`, `creditLimit = loanAmount`.
+Skip result: `decision = "ACCEPT"`, `creditLimit = loanAmount`.
 
-### Expiracao da Aprovacao
+### Approval Expiration
 
-`approvalExpirationDate = hoje + merchant.numDaysApprovalExp dias`
+`approvalExpirationDate = today + merchant.numDaysApprovalExp days`
 
 ### Flag isEligibleForExtraInfo — Migration V20260313160247
 
-Campo adicionado ao `Uwdata` (tabela `uown_los_uwdata`) pela migracao Flyway V20260313160247. Indica se o lead e elegivel para coletar informacoes adicionais apos a decisao de UW (ex: dados extras requeridos por certos merchants ou programas antes de prosseguir para o contrato).
+A field added to `Uwdata` (table `uown_los_uwdata`) by Flyway migration V20260313160247. It indicates whether the lead is eligible to collect additional information after the UW decision (e.g., extra data required by certain merchants or programs before proceeding to the contract).
 
-| Campo | Tipo | Descricao |
+| Field | Type | Description |
 |-------|------|-----------|
-| `is_eligible_for_extra_info` | BOOLEAN | `true` quando o fluxo requer etapa adicional de coleta de dados pos-UW |
+| `is_eligible_for_extra_info` | BOOLEAN | `true` when the flow requires an additional post-UW data collection step |
 
-**Impacto:** Verificado pelo frontend (origination) e pela logica de `canContinueApplication` para determinar se ha um passo extra antes da geracao do contrato.
+**Impact:** Checked by the frontend (origination) and by the `canContinueApplication` logic to determine whether there is an extra step before contract generation.
 
-### Campo internal_decision — Migration V20260212152410
+### Field internal_decision — Migration V20260212152410
 
-Campo adicionado a tabela `uown_los_uw_info` para separar a **decisao interna** do motor de UW do **status publico** do lead.
+A field added to the `uown_los_uw_info` table to separate the **internal decision** of the UW engine from the lead's **public status**.
 
-| Campo | Descricao |
+| Field | Description |
 |-------|-----------|
-| `uw_status` (existente) | Status publico do lead apos UW (ex: `UW_APPROVED`, `UW_DENIED`) |
-| `internal_decision` (novo) | Decisao bruta retornada pelo motor de UW antes de qualquer ajuste de negocio |
+| `uw_status` (existing) | The lead's public status after UW (e.g., `UW_APPROVED`, `UW_DENIED`) |
+| `internal_decision` (new) | The raw decision returned by the UW engine before any business adjustment |
 
-**Por que separar:** A decisao interna pode diferir do status publico quando regras de negocio (ex: override de aprovacao, skip UW) modificam o resultado apos o motor decidir. Preservar `internal_decision` garante rastreabilidade e auditoria.
+**Why separate them:** The internal decision may differ from the public status when business rules (e.g., approval override, skip UW) modify the result after the engine decides. Preserving `internal_decision` ensures traceability and auditability.
 
-### Selecao de Programa e Roteamento (13 vs 16 Meses) — Task #439
+### Program Selection and Routing (13 vs 16 Months) — Task #439
 
-Apos a decisao de credito, o underwriting avalia **routing inputs** para determinar qual fluxo e programa usar:
+After the credit decision, underwriting evaluates **routing inputs** to determine which flow and program to use:
 
 **Routing Inputs:**
-1. Presenca de dados bancarios (routing number + account number)
-2. Elegibilidade do BIN do cartao de credito (primeiros 6 digitos)
+1. Presence of banking data (routing number + account number)
+2. Eligibility of the credit card BIN (first 6 digits)
 
-**Cenarios de Roteamento:**
+**Routing Scenarios:**
 
-| Cenario | Condicao | Fluxo | Programa |
+| Scenario | Condition | Flow | Program |
 |---------|----------|-------|----------|
-| 1 | Banking data presente **E** BIN elegivel | **Kornerstone** | Avalia 16 meses primeiro, fallback para 13 meses |
-| 2 | Banking data ausente **OU** BIN nao elegivel | **UOWN** | Apenas 13 meses |
+| 1 | Banking data present **AND** BIN eligible | **Kornerstone** | Evaluates 16 months first, falls back to 13 months |
+| 2 | Banking data absent **OR** BIN not eligible | **UOWN** | 13 months only |
 
-**Regras importantes:**
-- Programas sao **pre-definidos** — o underwriting **seleciona**, nao constroi
-- No cenario Kornerstone, se o programa de 16 meses nao atende os criterios (valor, estado, etc.), cai para 13 meses automaticamente
-- A selecao de programa usa `planId` (novo formato) para identificar unicamente a combinacao frequencia + termo
-- O `planId` e composto por: abreviacao da frequencia + termo em meses (ex: `WK13`, `BWK16`, `SM13`, `MN16`)
+**Important rules:**
+- Programs are **pre-defined** — underwriting **selects**, it does not build them
+- In the Kornerstone scenario, if the 16-month program does not meet the criteria (amount, state, etc.), it automatically falls back to 13 months
+- Program selection uses `planId` (new format) to uniquely identify the frequency + term combination
+- The `planId` is composed of: frequency abbreviation + term in months (e.g., `WK13`, `BWK16`, `SM13`, `MN16`)
 
-**Formato do planId:**
+**planId Format:**
 
-| Frequencia | Abreviacao | Exemplo 13m | Exemplo 16m |
+| Frequency | Abbreviation | Example 13m | Example 16m |
 |------------|------------|-------------|-------------|
 | WEEKLY | WK | WK13 | WK16 |
 | BI_WEEKLY | BWK | BWK13 | BWK16 |
 | SEMI_MONTHLY | SM | SM13 | SM16 |
 | MONTHLY | MN | MN13 | MN16 |
 
-**Impacto no backend:**
-- `planId` adicionado ao `SchedSummaryInfo`
-- `setMerchantProgramForLead` removido do `UnderwritingService` (programas pre-selecionados)
-- `buildScheduleForFrequency` agora gera `planId` = frequencia + termo
-- `SubmitApplicationService` usa `planId` para localizar o `PaymentOption` correto
-- Redirect URL atualizado para incluir `planId`
+**Backend impact:**
+- `planId` added to `SchedSummaryInfo`
+- `setMerchantProgramForLead` removed from `UnderwritingService` (programs pre-selected)
+- `buildScheduleForFrequency` now generates `planId` = frequency + term
+- `SubmitApplicationService` uses `planId` to locate the correct `PaymentOption`
+- Redirect URL updated to include `planId`
 
-**Impacto no frontend (Task #1242 — Term Month Column):**
-- Coluna "Term Month" adicionada as tabelas Overview e Leads no Origination portal
-- Fonte de dados: `uown_los_sched_summary.term_in_months` via LEFT JOIN com `uown_los_lead`
-- Valor exibe o termo **selecionado** pelo cliente (13 ou 16), nao todos os termos elegiveis
-- Leads sem `submitApplication` completado nao tem registro em `sched_summary` — coluna exibe vazio
-- O registro `sched_summary` e criado durante `submitApplication` quando o `planId` e fornecido
-- Prerequisito: `getMissingFields(shortCode, planId)` deve ser chamado antes de `submitApplication` para configurar `merchantProgramPk` no lead
-- `SubmitApplicationResponseBody` inclui campo `termInMonths` (ex: 13 ou 16) confirmando o termo selecionado
+**Frontend impact (Task #1242 — Term Month Column):**
+- "Term Month" column added to the Overview and Leads tables in the Origination portal
+- Data source: `uown_los_sched_summary.term_in_months` via LEFT JOIN with `uown_los_lead`
+- The value displays the term **selected** by the customer (13 or 16), not all eligible terms
+- Leads without a completed `submitApplication` have no record in `sched_summary` — the column displays empty
+- The `sched_summary` record is created during `submitApplication` when the `planId` is provided
+- Prerequisite: `getMissingFields(shortCode, planId)` must be called before `submitApplication` to set `merchantProgramPk` on the lead
+- `SubmitApplicationResponseBody` includes the `termInMonths` field (e.g., 13 or 16) confirming the selected term
 
-**Limitacao de backend — configuracao ausente para 16 meses com frequencias nao-mensais:**
-- `getNumberOfPayments(16, WEEKLY)` / `getNumberOfPayments(16, BI_WEEKLY)` / `getNumberOfPayments(16, SEMI_MONTHLY)` lancam `SvcException` porque nao existem configuracoes `number.of.payments.16.WEEKLY`, `number.of.payments.16.BI_WEEKLY` e `number.of.payments.16.SEMI_MONTHLY` no backend
-- `getNumberOfPayments(16, MONTHLY)` usa fallback `return numberOfMonths = 16` (sem lookup de configuracao) e **funciona corretamente**
-- **Impacto em testes:** Para criar um lead com `term_in_months=16` em ambientes com essa limitacao (ex: qa1), chamar `sendInvoice` com `selectedPaymentFrequency='MONTHLY'` — isso gera `planId=MN16` sem disparar a excecao
-- **Pre-requisitos adicionais para qa1 (merchants nao-Kornerstone):** alem do `selectedPaymentFrequency='MONTHLY'`, e necessario DB-patch antes do `sendInvoice`: `eligible_terms='16'` na tabela `uown_los_uwdata` e `merchant_program_pk=207` na tabela `uown_los_lead`
-- Essa limitacao **nao existe em producao** onde o merchant Kornerstone tem todos os programas configurados nativamente
+**Backend limitation — missing configuration for 16 months with non-monthly frequencies:**
+- `getNumberOfPayments(16, WEEKLY)` / `getNumberOfPayments(16, BI_WEEKLY)` / `getNumberOfPayments(16, SEMI_MONTHLY)` throw `SvcException` because the configurations `number.of.payments.16.WEEKLY`, `number.of.payments.16.BI_WEEKLY`, and `number.of.payments.16.SEMI_MONTHLY` do not exist in the backend
+- `getNumberOfPayments(16, MONTHLY)` uses the fallback `return numberOfMonths = 16` (no configuration lookup) and **works correctly**
+- **Impact on tests:** To create a lead with `term_in_months=16` in environments with this limitation (e.g., qa1), call `sendInvoice` with `selectedPaymentFrequency='MONTHLY'` — this generates `planId=MN16` without triggering the exception
+- **Additional prerequisites for qa1 (non-Kornerstone merchants):** in addition to `selectedPaymentFrequency='MONTHLY'`, a DB patch is required before `sendInvoice`: `eligible_terms='16'` in the `uown_los_uwdata` table and `merchant_program_pk=207` in the `uown_los_lead` table
+- This limitation **does not exist in production**, where the Kornerstone merchant has all programs configured natively
 
-### Campanhas Peak/Off-Peak
+### Peak/Off-Peak Campaigns
 
-Em producao, entre `peakStartHour` e `peakEndHour` usa `peakCampaignId`, senao usa `offPeakCampaignId`. Em ambientes de teste, sempre usa peak.
+In production, between `peakStartHour` and `peakEndHour` it uses `peakCampaignId`, otherwise it uses `offPeakCampaignId`. In test environments, it always uses peak.
 
 ---
 
-## 39. Validacao Pre-Assinatura (Missing Required Fields)
+## 39. Pre-Signing Validation (Missing Required Fields)
 
-### O Que e
+### What It Is
 
-Servico **gatekeeper** que valida se todos os dados obrigatorios estao preenchidos antes de permitir que o cliente assine o contrato.
+A **gatekeeper** service that validates whether all required data is filled in before allowing the customer to sign the contract.
 
-### Para Que Serve
+### What It's For
 
-Impede que contratos sejam assinados com dados incompletos, o que causaria problemas no funding e servicing.
+Prevents contracts from being signed with incomplete data, which would cause problems in funding and servicing.
 
-### Campos Validados
+### Validated Fields
 
-| Campo | Condicao | Config |
+| Field | Condition | Config |
 |-------|----------|--------|
-| Itens/Carrinho | Nao pode ser vazio (exceto merchants configurados) | `items.can.be.empty.for.merchant.*` |
-| Valor da Invoice | Deve ser > $0 | Direto |
-| Verificacao de ID | Requerido por merchant (Intellicheck/SEON) | Flag do merchant |
-| Dados ACH | Routing + Account number se ACH habilitado | Flag do merchant |
-| Verificacao Bancaria | Opcional mas configuravel por merchant | Flag do merchant |
-| Dados CC | Requerido se pagamento CC habilitado | Flag do merchant |
-| Data Primeiro Pagamento | Requerido por merchant | `isFpdRequired` |
-| Emprego | Proximo pagamento + frequencia (se ACH) | Validacao |
-| Frequencia de Pagamento | Selecao obrigatoria | `desiredPaymentFrequency` |
-| NeuroID Check | Verificacao de fraude opcional | `useNeuroIdCheck` |
-| Oferta de Seguro | Dependente do estado | `offer.insurance.in.states` |
-| Item Split Payment | Divisao lease vs. compra imediata | `isItemSplit` |
+| Items/Cart | Cannot be empty (except for configured merchants) | `items.can.be.empty.for.merchant.*` |
+| Invoice Amount | Must be > $0 | Direct |
+| ID Verification | Required by merchant (Intellicheck/SEON) | Merchant flag |
+| ACH Data | Routing + account number if ACH enabled | Merchant flag |
+| Bank Verification | Optional but configurable per merchant | Merchant flag |
+| CC Data | Required if CC payment is enabled | Merchant flag |
+| First Payment Date | Required by merchant | `isFpdRequired` |
+| Employment | Next pay date + frequency (if ACH) | Validation |
+| Payment Frequency | Selection required | `desiredPaymentFrequency` |
+| NeuroID Check | Optional fraud check | `useNeuroIdCheck` |
+| Insurance Offer | State-dependent | `offer.insurance.in.states` |
+| Item Split Payment | Lease vs. immediate purchase split | `isItemSplit` |
 
-### Como e Acionado
+### How It's Triggered
 
-Chamado automaticamente durante o fluxo de assinatura:
-- **Endpoint legado:** `GET /missing-fields/{shortCode}` (usa `selectedPaymentFrequency`)
-- **Endpoint com planId (Task #439):** `GET /missing-fields/{shortCode}?planId={planId}` (aceita `planId` no lugar de `selectedPaymentFrequency`)
+Called automatically during the signing flow:
+- **Legacy endpoint:** `GET /missing-fields/{shortCode}` (uses `selectedPaymentFrequency`)
+- **Endpoint with planId (Task #439):** `GET /missing-fields/{shortCode}?planId={planId}` (accepts `planId` in place of `selectedPaymentFrequency`)
 
-**Compatibilidade:** Ambos `selectedPaymentFrequency` e `planId` funcionam. O `planId` contem tanto a frequencia quanto o termo (ex: `WK13`), enquanto `selectedPaymentFrequency` contem apenas a frequencia (ex: `WEEKLY`).
+**Compatibility:** Both `selectedPaymentFrequency` and `planId` work. The `planId` contains both the frequency and the term (e.g., `WK13`), whereas `selectedPaymentFrequency` contains only the frequency (e.g., `WEEKLY`).
 
-### O Que Retorna
+### What It Returns
 
-`RequiredFields` contendo: lista de campos faltantes, taxas calculadas, security deposit, data do primeiro pagamento, elegibilidade para seguro.
+`RequiredFields` containing: list of missing fields, calculated fees, security deposit, first payment date, insurance eligibility.
 
 ---
 
-## 40. Valores Aprovados por Segmento de Risco
+## 40. Approved Amounts by Risk Segment
 
-### O Que e
+### What It Is
 
-Sistema de **limites maximos de aprovacao** baseados no segmento de risco do cliente.
+A system of **maximum approval limits** based on the customer's risk segment.
 
-### Para Que Serve
+### What It's For
 
-Controla exposicao a risco. Clientes de alto risco recebem limites menores; clientes de baixo risco recebem limites maiores.
+Controls risk exposure. High-risk customers receive lower limits; low-risk customers receive higher limits.
 
-### Como Funciona
+### How It Works
 
-Dados carregados de arquivo CSV (`combined_approval_amounts.csv`, 60 linhas) para a tabela `approved_amount_by_segment`. A linha e selecionada por `(lambdaSegment, riskType)` via `ApprovedAmountBySegmentRepo.findByLambdaSegmentAndRiskType`:
+Data loaded from a CSV file (`combined_approval_amounts.csv`, 60 rows) into the `approved_amount_by_segment` table. The row is selected by `(lambdaSegment, riskType)` via `ApprovedAmountBySegmentRepo.findByLambdaSegmentAndRiskType`:
 
-| Campo | Descricao |
+| Field | Description |
 |-------|-----------|
-| `lambdaSegment` | Segmento de risco **1-20** (coluna "Model Segment" do CSV; vem do GDS) |
-| `riskType` | Apenas **`DEFAULT`**, **`HIGH_RISK`**, **`TIRE_AGENT`** (entidade `ApprovedAmountBySegment.java`; derivado do `peakCampaignId` por `LeadRiskService.determineRiskType` — ver [appendix-e](appendix-e-campanhas-uw.md)) |
-| `maxApprovedAmountCR` | Valor maximo aprovado |
+| `lambdaSegment` | Risk segment **1-20** (the "Model Segment" column of the CSV; comes from GDS) |
+| `riskType` | Only **`DEFAULT`**, **`HIGH_RISK`**, **`TIRE_AGENT`** (entity `ApprovedAmountBySegment.java`; derived from `peakCampaignId` by `LeadRiskService.determineRiskType` — see [appendix-e](appendix-e-campanhas-uw.md)) |
+| `maxApprovedAmountCR` | Maximum approved amount |
 
-> **Correcao R1.53.0 (drift doc-vs-codigo):** a matriz e chaveada em `lambdaSegment` (1-20) + `riskType` (`DEFAULT`/`HIGH_RISK`/`TIRE_AGENT`). Os antigos rotulos "PRIME/GOOD/FAIR/POOR" e o range "1-10" estavam incorretos. Os scores `npm_segment`/`tam_score` (abaixo) sao **snapshot, NAO entram nesta selecao**. **Fontes:** `db/entity/ApprovedAmountBySegment.java`, `db/repository/ApprovedAmountBySegmentRepo.java`, `service/LeadRiskService.java`, `resources/combined_approval_amounts.csv`.
+> **R1.53.0 correction (doc-vs-code drift):** the matrix is keyed on `lambdaSegment` (1-20) + `riskType` (`DEFAULT`/`HIGH_RISK`/`TIRE_AGENT`). The old "PRIME/GOOD/FAIR/POOR" labels and the "1-10" range were incorrect. The `npm_segment`/`tam_score` scores (below) are **a snapshot, they do NOT enter this selection**. **Sources:** `db/entity/ApprovedAmountBySegment.java`, `db/repository/ApprovedAmountBySegmentRepo.java`, `service/LeadRiskService.java`, `resources/combined_approval_amounts.csv`.
 
-### Como Atualizar
+### How to Update
 
 ```
 POST /uown/loadApprovedAmountsFromExcel
 ```
-Upload de novo arquivo CSV com limites atualizados.
+Upload a new CSV file with updated limits.
 
-### Impacto
+### Impact
 
-O valor de aprovacao do cliente e limitado ao `maxApprovedAmountCR` do seu segmento. Afeta diretamente quanto o cliente pode financiar.
+The customer's approval amount is capped at the `maxApprovedAmountCR` of their segment. It directly affects how much the customer can finance.
 
-### Scores Adicionais do GDS: npm_segment e tam_score (R1.53.0)
+### Additional GDS Scores: npm_segment and tam_score (R1.53.0)
 
-A release 1.53.0 adicionou dois scores inteiros vindos do motor de underwriting GDS, persistidos junto aos demais outputs de UW em `uown_los_uwdata` (lead) e copiados para `uown_sv_uwdata` na criacao da conta:
+Release 1.53.0 added two integer scores coming from the GDS underwriting engine, persisted alongside the other UW outputs in `uown_los_uwdata` (lead) and copied to `uown_sv_uwdata` on account creation:
 
-| Campo | Tipo | Origem | Significado |
+| Field | Type | Origin | Meaning |
 |-------|------|--------|-------------|
-| `npm_segment` | INTEGER (nullable) | node `out.npm_segment` da resposta GDS | Segmento de risco — **[HIPOTESE]** semantica/range nao documentados no codigo svc |
-| `tam_score` | INTEGER (nullable) | node `out.tam_score` da resposta GDS | Score de modelo (TireAgent-only per memoria; valor live observado 475 em stg) — **[HIPOTESE]** |
+| `npm_segment` | INTEGER (nullable) | `out.npm_segment` node of the GDS response | Risk segment — **[HYPOTHESIS]** semantics/range not documented in the svc code |
+| `tam_score` | INTEGER (nullable) | `out.tam_score` node of the GDS response | Model score (TireAgent-only per memory; live value observed 475 in stg) — **[HYPOTHESIS]** |
 
-- Fluxo: `GdsResponseParser` le os nodes -> `UnderwritingService.toUWInfo` seta em `UWInfo` -> persistido em `uown_los_uwdata` -> mesmo objeto `UWInfo` copiado para `uown_sv_uwdata` no import LOS->SVC.
-- So populados quando presentes no node `out`; ausentes => NULL. svc **nao** filtra por client-type (a logica de quais clientes emitem as chaves vive no `uwengine`).
-- **Fontes:** `service/gds/GdsResponseParser.java:58-63`, `service/UnderwritingService.java:107-108`, `pojo/UWResponse.java:66-67`, migration `V20260603054943_1.53.0`.
+- Flow: `GdsResponseParser` reads the nodes -> `UnderwritingService.toUWInfo` sets them in `UWInfo` -> persisted in `uown_los_uwdata` -> the same `UWInfo` object copied to `uown_sv_uwdata` in the LOS->SVC import.
+- Only populated when present in the `out` node; absent => NULL. svc does **not** filter by client-type (the logic of which clients emit the keys lives in `uwengine`).
+- **Sources:** `service/gds/GdsResponseParser.java:58-63`, `service/UnderwritingService.java:107-108`, `pojo/UWResponse.java:66-67`, migration `V20260603054943_1.53.0`.
 
 ---
 
-## 62. Continuacao e Finalizacao de Aplicacao
+## 62. Application Continuation and Finalization
 
-### 62.1 Continuacao de Aplicacao (Can Continue)
+### 62.1 Application Continuation (Can Continue)
 
-**O que e:** Verifica se uma aplicacao pode ser continuada, validando existencia do lead e requisitos pendentes.
+**What it is:** Checks whether an application can be continued, validating the lead's existence and pending requirements.
 
-**Logica de busca do lead:**
-- Aceita UUID ou short code
-- UUID e dividido no underscore e apenas a primeira parte e usada
+**Lead lookup logic:**
+- Accepts a UUID or short code
+- The UUID is split on the underscore and only the first part is used
 
-**Verificacoes:**
+**Checks:**
 
-| Verificacao | Resultado |
+| Check | Result |
 |-------------|-----------|
-| Lead nao encontrado | `leadFound = false`, retorna |
-| Merchant nao encontrado | Retorna incompleto |
-| Cliente primario nao existe | Pode continuar (`canContinue = true`) |
-| Cliente existe | Verifica elegibilidade para Plaid |
+| Lead not found | `leadFound = false`, returns |
+| Merchant not found | Returns incomplete |
+| Primary customer does not exist | Can continue (`canContinue = true`) |
+| Customer exists | Checks Plaid eligibility |
 
-**Verificacao Plaid:**
-- Depende do status do lead, flag `isPlaidVerificationRequired` do merchant, e dados de UW
-- Se Plaid requerido e config habilitada, verificacao de telefone tambem e requerida
+**Plaid check:**
+- Depends on the lead status, the merchant's `isPlaidVerificationRequired` flag, and the UW data
+- If Plaid is required and the config is enabled, phone verification is also required
 
 **Endpoint:** `POST /uown/los/canContinueApplication`
 
-### 62.2 Finalizacao de Aplicacao
+### 62.2 Application Finalization
 
-**O que e:** Recupera campos obrigatorios faltantes e envia comunicacoes de aprovacao.
+**What it is:** Retrieves missing required fields and sends approval communications.
 
-**Campos de emprego verificados:**
-- `nextPayDate` (proxima data de pagamento)
-- `payFrequency` (frequencia salarial)
-- `employer` (nome do empregador)
+**Employment fields checked:**
+- `nextPayDate` (next pay date)
+- `payFrequency` (pay frequency)
+- `employer` (employer name)
 
-**Se lead DENIED:** Mensagem de nao aprovacao retornada, sem email/SMS enviado.
+**If lead DENIED:** A not-approved message is returned, with no email/SMS sent.
 
-**Se lead aprovado:**
-- **Email de aprovacao** enviado (sincrono ou assincrono, configuravel)
-- **SMS de aprovacao** enviado se telefone com area code valido existir
-- Formato do telefone: `areaCode + phoneNumber`
+**If lead approved:**
+- **Approval email** sent (synchronous or asynchronous, configurable)
+- **Approval SMS** sent if a phone with a valid area code exists
+- Phone format: `areaCode + phoneNumber`
 
 **Endpoint:** `GET /uown/los/getFinalApprovalDetails/{leadPk}`
 
 ---
 
-## 64. Verificacao de Endereco (Melissa Data)
+## 64. Address Verification (Melissa Data)
 
-### O Que e
+### What It Is
 
-Servico de verificacao e padronizacao de enderecos usando o servico externo Melissa Data, com mecanismo de cache para evitar chamadas redundantes.
+An address verification and standardization service using the external Melissa Data service, with a caching mechanism to avoid redundant calls.
 
-### Para Que Serve
+### What It's For
 
-Garante que enderecos fornecidos pelos clientes sao validos e padronizados conforme USPS. Enderecos invalidos podem indicar fraude ou causar problemas de entrega.
+Ensures that addresses provided by customers are valid and standardized according to USPS. Invalid addresses can indicate fraud or cause delivery problems.
 
-### Mecanismo de Cache
+### Caching Mechanism
 
-| Condicao | Acao |
+| Condition | Action |
 |----------|------|
-| Endereco nao verificado anteriormente | Executa Melissa Data |
-| Verificacao existente, `lastRun` > 30 dias atras | Executa Melissa Data novamente |
-| Verificacao existente, `lastRun` <= 30 dias atras | Retorna resultado em cache |
+| Address not previously verified | Runs Melissa Data |
+| Existing verification, `lastRun` > 30 days ago | Runs Melissa Data again |
+| Existing verification, `lastRun` <= 30 days ago | Returns the cached result |
 
-**Config:** `days.past.last.run` (default: 30 dias)
+**Config:** `days.past.last.run` (default: 30 days)
 
-### Correspondencia de Endereco
+### Address Matching
 
-Busca por quatro componentes:
+Looks up by four components:
 - Street Address 1
 - City
 - State
@@ -670,51 +670,50 @@ Busca por quatro componentes:
 
 ---
 
-## 65. Geolocalizacao por CEP
+## 65. Geolocation by ZIP Code
 
-### O Que e
+### What It Is
 
-Servico que converte CEP (ZIP code) em informacao de condado (county) usando fonte externa.
+A service that converts a ZIP code into county information using an external source.
 
-### Para Que Serve
+### What It's For
 
-A informacao de condado e necessaria para calculo correto de impostos, pois nos EUA cada condado pode ter taxas diferentes. Tambem usado para compliance regulatorio.
+County information is needed for correct tax calculation, since in the U.S. each county may have different rates. It is also used for regulatory compliance.
 
-### Como Funciona
+### How It Works
 
-- **Fonte:** `https://www.getzips.com/cgi-bin/ziplook.exe?Zip={zipcode}`
-- **Parser:** JSoup para extrair condado do HTML retornado
-- **Fallback:** Retorna `null` silenciosamente em caso de erro
-- **Sem cache:** Cada consulta faz chamada HTTP
+- **Source:** `https://www.getzips.com/cgi-bin/ziplook.exe?Zip={zipcode}`
+- **Parser:** JSoup to extract the county from the returned HTML
+- **Fallback:** Returns `null` silently on error
+- **No cache:** Each lookup makes an HTTP call
 
 ---
 
-## 66. Customer Journey Tracking (Analytics de Funil) — R1.53.0
+## 66. Customer Journey Tracking (Funnel Analytics) — R1.53.0
 
-### O Que e
+### What It Is
 
-Rastreamento do **funil de aplicacao do cliente** para analise de abandono e performance, introduzido na R1.53.0. Captura, por jornada: contagem de sessoes, refreshes e tentativas de submit; por sessao: browser/device/OS, iframe vs portal, embedder origin; por evento: pagina, timing de API/render/pagina, e erros.
+Tracking of the **customer application funnel** for abandonment and performance analysis, introduced in R1.53.0. It captures, per journey: count of sessions, refreshes, and submit attempts; per session: browser/device/OS, iframe vs portal, embedder origin; per event: page, API/render/page timing, and errors.
 
-### Como Funciona
+### How It Works
 
-- Alimentado pelo **frontend** (Website/origination application form, iframe-embeddable) via REST sob `/api/journeys`. `journeyId` = `leadPk`; `source` = `IFRAME`/`PORTAL`.
-- **Design race-tolerant:** jornada e sessao sao criadas lazy (`getOrCreate`) no 1o contato — **nao ha endpoint de criar jornada**. Jornada nasce `IN_PROGRESS`.
-- **Eventos:** `PAGE_REFRESHED` incrementa refreshes (sessao + jornada); `REDIRECT_COMPLETED` marca a jornada `COMPLETED`; demais event_types sao texto livre. `currentStep` = ultima `pageName`.
-- **Sessao:** `start` enriquece com device/browser/OS/iframe/embedder; `end` => status `ENDED`.
+- Fed by the **frontend** (Website/origination application form, iframe-embeddable) via REST under `/api/journeys`. `journeyId` = `leadPk`; `source` = `IFRAME`/`PORTAL`.
+- **Race-tolerant design:** the journey and session are created lazily (`getOrCreate`) on first contact — **there is no endpoint to create a journey**. The journey is born `IN_PROGRESS`.
+- **Events:** `PAGE_REFRESHED` increments refreshes (session + journey); `REDIRECT_COMPLETED` marks the journey `COMPLETED`; other event_types are free text. `currentStep` = the last `pageName`.
+- **Session:** `start` enriches with device/browser/OS/iframe/embedder; `end` => status `ENDED`.
 
 ### Endpoints
 
-| Acao | Endpoint |
+| Action | Endpoint |
 |------|----------|
-| Iniciar sessao | `POST /api/journeys/{journeyId}/session/start` |
-| Encerrar sessao | `POST /api/journeys/{journeyId}/session/{sessionId}/end` |
-| Registrar evento | `POST /api/journeys/{journeyId}/events` |
+| Start session | `POST /api/journeys/{journeyId}/session/start` |
+| End session | `POST /api/journeys/{journeyId}/session/{sessionId}/end` |
+| Record event | `POST /api/journeys/{journeyId}/events` |
 
-### Observacoes (R1.53.0)
+### Notes (R1.53.0)
 
-- **[OBSERVACAO]** `ABANDONED` (JourneyStatus) declarado mas **nunca setado** em codigo svc — abandono provavelmente computado por job/consumidor externo (ha index em `last_activity_at`).
-- **[OBSERVACAO]** `total_submit_attempts`, `application_id`, `merchant_id`, `shortcode`, `source` declarados mas **nunca populados** em codigo svc R1.53.0; possivel no-op de persistencia em `CustomerJourneyService.complete()` (muta sem `save()` fora de tx gerenciada). Confirmar com produto.
-- Tabelas e enum: [appendix-c](appendix-c-tabelas-banco.md) · [appendix-d D.37](appendix-d-constantes-enums.md). Fontes: pacote `svc/analytics/` (entity/service/controller/dto, enum `JourneyStatus`).
+- **[OBSERVATION]** `ABANDONED` (JourneyStatus) declared but **never set** in svc code — abandonment is probably computed by an external job/consumer (there is an index on `last_activity_at`).
+- **[OBSERVATION]** `total_submit_attempts`, `application_id`, `merchant_id`, `shortcode`, `source` declared but **never populated** in svc R1.53.0 code; possible persistence no-op in `CustomerJourneyService.complete()` (mutates without `save()` outside a managed tx). Confirm with product.
+- Tables and enum: [appendix-c](appendix-c-tabelas-banco.md) · [appendix-d D.37](appendix-d-constantes-enums.md). Sources: package `svc/analytics/` (entity/service/controller/dto, enum `JourneyStatus`).
 
 ---
-

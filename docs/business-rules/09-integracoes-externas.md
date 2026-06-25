@@ -1,5 +1,5 @@
 ---
-title: Integracoes com Terceiros
+title: Third-Party Integrations
 domain: business-rules
 status: stable
 volatility: volatile
@@ -12,360 +12,360 @@ sources:
 covers: [buddy-insurance, taxcloud, taxjar, five9, kornerstone, proget, skit-ai, vendor-health, rightfoot]
 ---
 
-# Integracoes com Terceiros
+# Third-Party Integrations
 ## UOwn Leasing - SVC Platform
 
-Buddy Insurance, TaxCloud/TaxJar, Five9, RTR/Kornerstone, Proget e Skit.ai.
+Buddy Insurance, TaxCloud/TaxJar, Five9, RTR/Kornerstone, Proget and Skit.ai.
 
 ---
 
-## 23. Plano de Protecao (Buddy Insurance)
+## 23. Protection Plan (Buddy Insurance)
 
-### O Que e
+### What It Is
 
-O plano de protecao e um **produto de seguro opcional** oferecido ao cliente, operado pela **Buddy Insurance** (parceira da AON). O produto e `AON_PURCHASEPROTECTION` -- seguro de protecao de compra para a mercadoria alugada.
+The protection plan is an **optional insurance product** offered to the customer, operated by **Buddy Insurance** (an AON partner). The product is `AON_PURCHASEPROTECTION` -- purchase protection insurance for the leased merchandise.
 
-### Para Que Serve
+### What It's For
 
-Protege o cliente contra danos, roubo ou perda do produto alugado durante o periodo do lease.
+It protects the customer against damage, theft, or loss of the leased product during the lease period.
 
-### Preco
+### Pricing
 
-**$12.99/mes** (mensal), $38.97 (trimestral), $155.88 (pagamento unico). A Buddy coleta diretamente via token de cartao do cliente.
+**$12.99/month** (monthly), $38.97 (quarterly), $155.88 (one-time payment). Buddy collects directly via the customer's card token.
 
-### Como o Cliente Seleciona
+### How the Customer Selects It
 
-**Canal 1 - Na Originacao (durante assinatura):**
-O formulario de e-sign apresenta a oferta do plano. O cliente marca `optIn = true` para participar ou `optIn = false` para recusar.
+**Channel 1 - At Origination (during signing):**
+The e-sign form presents the plan offer. The customer checks `optIn = true` to enroll or `optIn = false` to decline.
 
-**Canal 2 - No Portal do Cliente (pos-funding):**
-Endpoint `GET /getPlanEligibilityForAccount/{accountPk}` verifica elegibilidade, e `POST /enrollAccountInProtectionPlan` efetua a inscricao.
+**Channel 2 - In the Customer Portal (post-funding):**
+The endpoint `GET /getPlanEligibilityForAccount/{accountPk}` checks eligibility, and `POST /enrollAccountInProtectionPlan` performs the enrollment.
 
-### Verificacao de Elegibilidade (Portal)
+### Eligibility Check (Portal)
 
-| Condicao | Requerido |
+| Condition | Required |
 |----------|-----------|
-| Conta ACTIVE | Sim |
-| Merchant tem `offerInsurance = true` | Sim |
-| Estado do cliente na lista de estados permitidos | Sim |
-| Nao esta ja inscrito | Sim |
-| Nenhuma outra conta com mesmo email ja tem plano ativo | Sim |
+| Account ACTIVE | Yes |
+| Merchant has `offerInsurance = true` | Yes |
+| Customer's state in the list of allowed states | Yes |
+| Not already enrolled | Yes |
+| No other account with the same email already has an active plan | Yes |
 
-### Fluxo de Inscricao (Opt-In)
+### Enrollment Flow (Opt-In)
 
-1. **Tokenizacao do cartao:** Cria token de pagamento via USA ePay para que a Buddy possa cobrar diretamente
-2. **Chamada ao Buddy:** POST para `https://partners.buddyinsurance.com/v3/policy` com dados do cliente e token de pagamento
-3. **Resposta:** Recebe `policyId` e `customerId`
-4. **Status:** COMPLETED com `enrollmentDate = hoje`
+1. **Card tokenization:** Creates a payment token via USA ePay so Buddy can charge directly
+2. **Call to Buddy:** POST to `https://partners.buddyinsurance.com/v3/policy` with customer data and payment token
+3. **Response:** Receives `policyId` and `customerId`
+4. **Status:** COMPLETED with `enrollmentDate = today`
 
-### Cross-Coverage (Cobertura Cruzada)
+### Cross-Coverage
 
-Se o cliente optou por NAO participar, o sistema verifica se ele ja tem cobertura via outro lead/conta com o mesmo email. Se sim, marca `alreadyCovered = true` e copia os dados da policia existente.
+If the customer chose NOT to enroll, the system checks whether they already have coverage via another lead/account with the same email. If so, it sets `alreadyCovered = true` and copies the data from the existing policy.
 
-### Impacto nos Pagamentos e Financeiro
+### Impact on Payments and Finances
 
-| Aspecto | Impacto |
+| Aspect | Impact |
 |---------|---------|
-| Recebiveis | Para contas UOWN atuais: Buddy coleta diretamente (sem receivable). Para Kornerstone migradas: receivable `PROTECTION_PLAN_FEE` criado |
-| EPO | Taxas do plano sao **excluidas** do calculo de pagamentos para EPO |
-| Saldo do contrato | Taxas do plano somadas como "Protection Plan AddOn To Date" |
-| Funding | Fee incluido no calculo de custo de funding |
+| Receivables | For current UOWN accounts: Buddy collects directly (no receivable). For migrated Kornerstone accounts: a `PROTECTION_PLAN_FEE` receivable is created |
+| EPO | Plan fees are **excluded** from the payment calculation for EPO |
+| Contract balance | Plan fees are added as "Protection Plan AddOn To Date" |
+| Funding | Fee included in the funding cost calculation |
 
-### Cancelamento
+### Cancellation
 
-**Por parte da UOwn:** Quando lease e cancelado/expirado, sistema autentica com Buddy via OAuth e chama API de cancelamento. Cancela em cascata para todos os leads associados.
+**On UOwn's side:** When a lease is cancelled/expired, the system authenticates with Buddy via OAuth and calls the cancellation API. It cancels in cascade for all associated leads.
 
-**Por parte da Buddy:** Buddy envia CSVs via SFTP para pasta `buddy/cancellations`. Sweep semanal (sexta 8h) processa os arquivos.
+**On Buddy's side:** Buddy sends CSVs via SFTP to the `buddy/cancellations` folder. A weekly sweep (Friday 8 AM) processes the files.
 
-### Configuracoes Principais
+### Main Configurations
 
-| Config | Descricao |
+| Config | Description |
 |--------|-----------|
-| `cancel.protection.plan` | Kill switch para cancelamento (default: true) |
-| `offer.insurance.in.states` | Estados onde o plano e oferecido |
-| `BuddyClient.base.url` | URL da API da Buddy |
-| `BuddyClient.partner.id` | ID do parceiro (producao: `p-19g61kzm0yy7d`) |
+| `cancel.protection.plan` | Kill switch for cancellation (default: true) |
+| `offer.insurance.in.states` | States where the plan is offered |
+| `BuddyClient.base.url` | Buddy API URL |
+| `BuddyClient.partner.id` | Partner ID (production: `p-19g61kzm0yy7d`) |
 
 ---
 
-## 24. Taxas e Impostos (TaxCloud / TaxJar)
+## 24. Taxes and Fees (TaxCloud / TaxJar)
 
-### O Que e
+### What It Is
 
-O sistema de impostos calcula automaticamente a **taxa de imposto sobre vendas** (sales tax) para cada transacao baseado no endereco do cliente ou merchant.
+The tax system automatically calculates the **sales tax rate** for each transaction based on the customer's or merchant's address.
 
-### Para Que Serve
+### What It's For
 
-Compliance fiscal. Nos EUA, cada estado, condado e cidade pode ter taxas diferentes. A UOwn precisa calcular e recolher o imposto correto para cada jurisdicao.
+Tax compliance. In the US, each state, county, and city can have different rates. UOwn needs to calculate and collect the correct tax for each jurisdiction.
 
-### Como o Roteamento Funciona
+### How Routing Works
 
-O `TaxService` e a camada de roteamento:
+The `TaxService` is the routing layer:
 
-1. **Verifica isencao:** Se merchant e `taxExempted` para o estado do cliente -> taxa = 0%
-2. **Roteia para provedor:** Config `useTaxCloudApi` (default: true)
+1. **Checks exemption:** If the merchant is `taxExempted` for the customer's state -> rate = 0%
+2. **Routes to provider:** Config `useTaxCloudApi` (default: true)
    - True -> TaxCloud
    - False -> TaxJar
 
-### TaxCloud (Provedor Principal)
+### TaxCloud (Primary Provider)
 
-**O que faz:**
-1. **Rate lookup:** Dado endereco completo, retorna taxa combinada (estado + condado + cidade + distrito)
-2. **Compliance reporting:** Recebe dados de cada pagamento e reembolso diariamente para filing automatico
+**What it does:**
+1. **Rate lookup:** Given a complete address, returns the combined rate (state + county + city + district)
+2. **Compliance reporting:** Receives data from each payment and refund daily for automated filing
 
-**Cache:** Resultados armazenados na tabela `TaxForZip`. Se existir resultado nao expirado para o mesmo endereco, nao faz chamada de API.
+**Cache:** Results stored in the `TaxForZip` table. If an unexpired result exists for the same address, no API call is made.
 
-**Sweeps diarios:**
-- `DailyTaxCloudPaymentsSync`: Envia todas as alocacoes de pagamento do dia para TaxCloud (10 threads)
-- `DailyTaxCloudRefundsSync`: Envia todos os pagamentos revertidos do dia para TaxCloud (5 threads)
+**Daily sweeps:**
+- `DailyTaxCloudPaymentsSync`: Sends all of the day's payment allocations to TaxCloud (10 threads)
+- `DailyTaxCloudRefundsSync`: Sends all of the day's reversed payments to TaxCloud (5 threads)
 
-**Como o usuario interno usa:** Admin pode consultar taxa via `GET /getTaxForZip/{zipCode}`. Sweeps rodam automaticamente.
+**How the internal user uses it:** An admin can look up a rate via `GET /getTaxForZip/{zipCode}`. Sweeps run automatically.
 
-**Como afeta o cliente:** Imposto e calculado transparentemente em cada parcela do lease.
+**How it affects the customer:** Tax is calculated transparently on each lease installment.
 
-### TaxJar (Provedor Alternativo/Legado)
+### TaxJar (Alternative/Legacy Provider)
 
-**O que faz:** Apenas rate lookup (sem compliance reporting).
+**What it does:** Rate lookup only (no compliance reporting).
 
-**Diferenciais:**
-- Suporta override por zip code (util para correcoes)
-- Cache com expiracao configuravel (default 30 dias)
-- Armazena mais detalhes (nome do condado, resposta completa)
+**Differentiators:**
+- Supports override by zip code (useful for corrections)
+- Cache with configurable expiration (default 30 days)
+- Stores more details (county name, full response)
 
-**Quando usar:** Se TaxCloud tiver problemas, admin pode trocar via config flag sem deploy.
-
----
-
-## 25. Five9 (Call Center e IVR)
-
-### O Que e
-
-Five9 e uma plataforma de **call center na nuvem** que opera o sistema IVR (Interactive Voice Response) da UOwn -- o sistema telefonica automatizado.
-
-### Para Que Serve
-
-Permite que clientes interajam com a UOwn por telefone e que agentes facam discagem de cobranca. A integracao sincroniza preferencias do cliente entre Five9 e o sistema da UOwn.
-
-### Como o Cliente Interage
-
-O cliente liga para o numero da UOwn. Durante o fluxo IVR, pode ser perguntado sobre preferencias de comunicacao (ex: "Deseja continuar recebendo mensagens de texto?"). A resposta e capturada e enviada automaticamente para o sistema da UOwn.
-
-### Como Funciona Tecnicamente
-
-Five9 envia um POST para `POST /uown/tms/updateContactPreferences` com:
-- Numero de telefone
-- Flag `doNotText`
-
-O sistema busca todos os registros de telefone correspondentes, atualiza a flag, e cria log de atividade nas contas associadas.
-
-### Impacto
-
-Quando cliente opta por nao receber textos via IVR, `doNotText = true` e setado em seus registros de telefone, prevenindo futuras comunicacoes SMS.
+**When to use:** If TaxCloud has problems, an admin can switch via a config flag without a deploy.
 
 ---
 
-## 43. RTR (Real Time Reporting / Migracao Kornerstone)
+## 25. Five9 (Call Center and IVR)
 
-### O Que e
+### What It Is
 
-Integracao com sistema externo RTR para importacao de dados do legado Kornerstone/Katerba.
+Five9 is a **cloud call center** platform that operates UOwn's IVR (Interactive Voice Response) system -- the automated telephone system.
 
-### Para Que Serve
+### What It's For
 
-Migra portfolios do sistema antigo (Kornerstone) para o novo sistema UOwn. Sincroniza contas, dados de clientes e transacoes.
+It allows customers to interact with UOwn by phone and agents to make collection calls. The integration synchronizes customer preferences between Five9 and the UOwn system.
 
-### Como Funciona
+### How the Customer Interacts
 
-**Servidor remoto:** `http://34.69.198.41:8080`
+The customer calls UOwn's number. During the IVR flow, they may be asked about communication preferences (e.g., "Do you want to keep receiving text messages?"). The response is captured and sent automatically to the UOwn system.
 
-| Metodo | Funcao |
+### How It Works Technically
+
+Five9 sends a POST to `POST /uown/tms/updateContactPreferences` with:
+- Phone number
+- `doNotText` flag
+
+The system looks up all matching phone records, updates the flag, and creates an activity log on the associated accounts.
+
+### Impact
+
+When a customer opts out of receiving texts via IVR, `doNotText = true` is set on their phone records, preventing future SMS communications.
+
+---
+
+## 43. RTR (Real Time Reporting / Kornerstone Migration)
+
+### What It Is
+
+Integration with the external RTR system for importing data from the legacy Kornerstone/Katerba systems.
+
+### What It's For
+
+It migrates portfolios from the old system (Kornerstone) to the new UOwn system. It synchronizes accounts, customer data, and transactions.
+
+### How It Works
+
+**Remote server:** `http://34.69.198.41:8080`
+
+| Method | Function |
 |--------|--------|
-| `getAccountsThatChanged()` | Busca contas com dados alterados |
-| `getImportPojoByRtrAccounData()` | Importa dados completos da conta |
-| `getImportPojoByApplicationId()` | Busca por ID de aplicacao |
-| `getAllCompanyInfo()` | Dados de referencia de empresas |
-| `processRtoData()` | Processa dados RTO |
-| `processKatabatData()` | Importa de arquivo Katabat |
+| `getAccountsThatChanged()` | Fetches accounts with changed data |
+| `getImportPojoByRtrAccounData()` | Imports complete account data |
+| `getImportPojoByApplicationId()` | Looks up by application ID |
+| `getAllCompanyInfo()` | Company reference data |
+| `processRtoData()` | Processes RTO data |
+| `processKatabatData()` | Imports from a Katabat file |
 
-### Como Disparar
+### How to Trigger
 
-- **Sweep automatico:** `kornerstoneDailyImportSweep` (10:00 PM diario)
-- **Manual:** Via API interna do MigrationService
-
----
-
-## 44. Proget (Bloqueio de Dispositivos)
-
-### O Que e
-
-Integracao com sistema **Proget** para bloqueio remoto de dispositivos (IoT/GPS tracking) associados a mercadorias em lease.
-
-### Para Que Serve
-
-Quando um cliente fica inadimplente, os dispositivos associados ao produto podem ser bloqueados remotamente como incentivo ao pagamento.
-
-### Como Funciona
-
-Sweep diario `progetDeviceLockingSweep` identifica contas inadimplentes e envia comandos de bloqueio ao Proget.
-
-### Como Ativar
-
-- Sweep roda automaticamente a meia-noite
-- Requer integracao Proget configurada no merchant
-- Para disparar manualmente: `POST /uown/svc/triggerScheduledTask/progetDeviceLockingSweep`
+- **Automatic sweep:** `kornerstoneDailyImportSweep` (10:00 PM daily)
+- **Manual:** Via the MigrationService internal API
 
 ---
 
-## 45. Skit.ai (Bot de Cobranca Automatizado)
+## 44. Proget (Device Locking)
 
-### O Que e
+### What It Is
 
-Integracao com **Skit.ai**, plataforma de bot de voz para cobranca automatizada.
+Integration with the **Proget** system for remote locking of devices (IoT/GPS tracking) associated with leased merchandise.
 
-### Para Que Serve
+### What It's For
 
-O bot liga para clientes inadimplentes automaticamente, oferece acordos de pagamento e processa transacoes via TMS -- sem necessidade de agente humano.
+When a customer becomes delinquent, the devices associated with the product can be locked remotely as an incentive to pay.
 
-### Como Funciona
+### How It Works
 
-1. **Sweeps geram arquivos** com dados de clientes inadimplentes:
-   - `createSkitDelinquentFileSweep` - Lista de inadimplentes
-   - `createSkitDelinquentOfferFileSweep` - Lista com ofertas de settlement
-2. **Arquivos enviados via SFTP** para Skit.ai
-3. **Bot liga para clientes** e negocia
-4. **Se cliente aceita:** Bot usa TMS para processar pagamento
-5. **Notas registradas** com tipo `SKIT_CALL_LOG` via `addLogNote`
+The daily sweep `progetDeviceLockingSweep` identifies delinquent accounts and sends lock commands to Proget.
 
-### Como Ativar
+### How to Enable
 
-- Sweeps rodam automaticamente a meia-noite
-- Para gerar arquivo manualmente: `POST /uown/svc/triggerScheduledTask/createSkitDelinquentFileSweep`
-- SQL do sweep define criterios de selecao (configuravel via banco)
+- The sweep runs automatically at midnight
+- Requires Proget integration configured on the merchant
+- To trigger manually: `POST /uown/svc/triggerScheduledTask/progetDeviceLockingSweep`
 
 ---
 
-## 46. PayPair (Portal de Merchant Externo)
+## 45. Skit.ai (Automated Collection Bot)
 
-### O Que e
+### What It Is
 
-PayPair e uma plataforma de **marketplace de financiamento** que permite merchants oferecerem multiplas opcoes de leasing/financiamento (incluindo UOWN) aos clientes atraves de um unico widget.
+Integration with **Skit.ai**, a voice bot platform for automated collections.
 
-### Para Que Serve
+### What It's For
 
-Merchants como TireAgent usam o portal PayPair (`dw93bg.paypair.com`) para oferecer financiamento ao cliente final sem precisar integrar diretamente com cada provedor. O widget PayPair apresenta planos de bread, koalafi, paytomorrow e uown.
+The bot calls delinquent customers automatically, offers payment arrangements, and processes transactions via TMS -- with no need for a human agent.
 
-### Como Funciona
+### How It Works
 
-1. **Acesso ao portal:** Merchant acessa `dw93bg.paypair.com` (pagina publica, sem login)
-2. **Selecao de merchant:** Dropdown com lista de merchants configurados
-3. **Preenchimento de dados:** Textareas JSON com dados pessoais do cliente e carrinho de compras
-4. **Configuracao:** Provider=`anybody`, prequalification=`false`, productSelectionType=`ShopByVehicle`
-5. **Widget modal:** Botao "Get lease" abre iframe `#llapp-iframe` (src: `fesandbox2.paypair.com/widget`)
+1. **Sweeps generate files** with delinquent customer data:
+   - `createSkitDelinquentFileSweep` - List of delinquents
+   - `createSkitDelinquentOfferFileSweep` - List with settlement offers
+2. **Files sent via SFTP** to Skit.ai
+3. **Bot calls customers** and negotiates
+4. **If the customer accepts:** The bot uses TMS to process the payment
+5. **Notes logged** with type `SKIT_CALL_LOG` via `addLogNote`
 
-### Fluxo do Cliente no Widget
+### How to Enable
 
-| Etapa | Acao | Detalhes |
+- Sweeps run automatically at midnight
+- To generate a file manually: `POST /uown/svc/triggerScheduledTask/createSkitDelinquentFileSweep`
+- The sweep's SQL defines the selection criteria (configurable via the database)
+
+---
+
+## 46. PayPair (External Merchant Portal)
+
+### What It Is
+
+PayPair is a **financing marketplace** platform that lets merchants offer multiple leasing/financing options (including UOWN) to customers through a single widget.
+
+### What It's For
+
+Merchants like TireAgent use the PayPair portal (`dw93bg.paypair.com`) to offer financing to the end customer without integrating directly with each provider. The PayPair widget presents plans from bread, koalafi, paytomorrow, and uown.
+
+### How It Works
+
+1. **Accessing the portal:** The merchant goes to `dw93bg.paypair.com` (public page, no login)
+2. **Merchant selection:** Dropdown with a list of configured merchants
+3. **Filling in data:** JSON textareas with the customer's personal data and shopping cart
+4. **Configuration:** Provider=`anybody`, prequalification=`false`, productSelectionType=`ShopByVehicle`
+5. **Modal widget:** The "Get lease" button opens the iframe `#llapp-iframe` (src: `fesandbox2.paypair.com/widget`)
+
+### Customer Flow in the Widget
+
+| Step | Action | Details |
 |-------|------|---------|
-| 1 | Verificacao de telefone | Telefone (prefixo 111/222 no sandbox) → OTP enviado via SMS |
-| 2 | Captura de OTP | Interceptado via response da API `/api/v1/users/send_code` → campo `otp_code` |
-| 3 | Dados da aplicacao | SSN, renda, data de nascimento |
-| 4 | Pre-qualificacao | Sistema avalia elegibilidade → banner "Congratulations" se aprovado |
-| 5 | Selecao de plano | 4 planos disponiveis: bread(0), koalafi(1), paytomorrow(2), uown(3) |
-| 6 | Frequencia de pagamento | Weekly / Bi-Weekly / Twice a month |
-| 7 | Pagamento | Iframe aninhado `#pt-iframe` dentro de `#llapp-iframe` para formulario CC/banco UOWN |
+| 1 | Phone verification | Phone (prefix 111/222 in sandbox) → OTP sent via SMS |
+| 2 | OTP capture | Intercepted via the response of the `/api/v1/users/send_code` API → `otp_code` field |
+| 3 | Application data | SSN, income, date of birth |
+| 4 | Pre-qualification | The system evaluates eligibility → "Congratulations" banner if approved |
+| 5 | Plan selection | 4 plans available: bread(0), koalafi(1), paytomorrow(2), uown(3) |
+| 6 | Payment frequency | Weekly / Bi-Weekly / Twice a month |
+| 7 | Payment | Nested iframe `#pt-iframe` inside `#llapp-iframe` for the UOWN CC/bank form |
 | 8 | E-sign | ContractPage.completeESign() via UOWN Origination |
 
-### Arquitetura de Iframes
+### Iframe Architecture
 
 ```
-Pagina (dw93bg.paypair.com)
+Page (dw93bg.paypair.com)
 └── #llapp-iframe (PayPair widget sandbox)
-    ├── Phone input / OTP / Dados / Planos
-    └── #pt-iframe (formulario de pagamento UOWN)
-        └── Campos CC/Banco
+    ├── Phone input / OTP / Data / Plans
+    └── #pt-iframe (UOWN payment form)
+        └── CC/Bank fields
 ```
 
-### Merchants Integrados via PayPair
+### Merchants Integrated via PayPair
 
-| Merchant | Produto | Preco |
+| Merchant | Product | Price |
 |----------|---------|-------|
 | TireAgent | Michelin Primacy 4 Tire Set | $800 + $10 tax |
 
-### Diferenciais em Relacao ao PayTomorrow
+### Differences Compared to PayTomorrow
 
-| Aspecto | PayTomorrow | PayPair |
+| Aspect | PayTomorrow | PayPair |
 |---------|-------------|---------|
-| Login | Requer login no portal | Sem login (publico) |
-| OTP | Email (IMAP) | Telefone (network intercept) |
-| Iframe | Pagina direta | Duplo nesting (#llapp → #pt) |
-| Provedores | Apenas PayTomorrow | 4 provedores (bread, koalafi, paytomorrow, uown) |
+| Login | Requires login to the portal | No login (public) |
+| OTP | Email (IMAP) | Phone (network intercept) |
+| Iframe | Direct page | Double nesting (#llapp → #pt) |
+| Providers | PayTomorrow only | 4 providers (bread, koalafi, paytomorrow, uown) |
 | Textareas | N/A | JSON via evaluate() |
 
 ---
 
-## 47. Podium (Gestao de Avaliacoes de Clientes)
+## 47. Podium (Customer Review Management)
 
-### O Que e
+### What It Is
 
-Podium e uma plataforma de **gestao de reputacao e avaliacoes online** (reviews). A integracao permite que agentes do portal Servicing enviem convites de avaliacao diretamente para clientes, sem sair da interface da UOwn.
+Podium is an **online reputation and review management** platform. The integration lets Servicing portal agents send review invitations directly to customers without leaving the UOwn interface.
 
-### Para Que Serve
+### What It's For
 
-Facilitar a coleta de avaliacoes de clientes satisfeitos via Google, Yelp e outras plataformas gerenciadas pelo Podium. O agente nao precisa copiar emails nem usar o portal Podium separadamente.
+To make it easier to collect reviews from satisfied customers via Google, Yelp, and other platforms managed by Podium. The agent does not need to copy emails or use the Podium portal separately.
 
-### Como o Agente Usa
+### How the Agent Uses It
 
-1. **Acesso ao modal Send Invite:** Na pagina de Customer Information do portal Servicing, o agente clica no icone de envelope (`#invitation`) na barra lateral esquerda
-2. **Botao Send Podium Link:** Visivel dentro do modal apenas para usuarios com a permissao `send_podium_link` (permissao `customer_information.modify.send_podium_link`)
-3. **Confirmacao:** O agente clica em "Send Podium Link" e confirma no modal de confirmacao ("Please Confirm" / "Continue")
-4. **Feedback:** Toast verde "Podium invitation sent successfully." confirma o envio
+1. **Accessing the Send Invite modal:** On the Customer Information page of the Servicing portal, the agent clicks the envelope icon (`#invitation`) in the left sidebar
+2. **Send Podium Link button:** Visible inside the modal only for users with the `send_podium_link` permission (permission `customer_information.modify.send_podium_link`)
+3. **Confirmation:** The agent clicks "Send Podium Link" and confirms in the confirmation modal ("Please Confirm" / "Continue")
+4. **Feedback:** Green toast "Podium invitation sent successfully." confirms the send
 
-### Como Funciona Tecnicamente
+### How It Works Technically
 
 **Endpoint:** `POST /uown/svc/accounts/{accountPk}/podium-link`
 
 **Backend:**
-1. Valida que existe um cliente primario para a conta (`No primary customer found for this account.` se nao existir)
-2. Obtem ou renova o token OAuth2 Podium via ciclo de vida gerenciado automaticamente
-3. Envia o convite via API Podium para o email/telefone do cliente primario
-4. Registra a chamada em `sv_outbound_api_log` (schema SVC separado)
+1. Validates that a primary customer exists for the account (`No primary customer found for this account.` if not)
+2. Obtains or renews the Podium OAuth2 token via an automatically managed lifecycle
+3. Sends the invitation via the Podium API to the primary customer's email/phone
+4. Logs the call in `sv_outbound_api_log` (separate SVC schema)
 
-**Autenticacao com Podium (OAuth2):**
-- Token armazenado em `uown_podium_token` (`access_token`, `refresh_token`, `expiration_time`)
-- O sistema renova automaticamente o token antes de cada chamada se necessario
+**Authentication with Podium (OAuth2):**
+- Token stored in `uown_podium_token` (`access_token`, `refresh_token`, `expiration_time`)
+- The system automatically renews the token before each call if needed
 - Flyway migration: `V20260317121000__create_podium_token_table.sql`
 
-### Controle de Acesso
+### Access Control
 
-| Permissao | Papel |
+| Permission | Role |
 |-----------|-------|
-| `send_podium_link` | Necessaria para ver/usar o botao no modal Send Invite |
-| Usuarios sem a permissao | Modal Send Invite pode estar acessivel, mas o botao "Send Podium Link" nao e renderizado |
+| `send_podium_link` | Required to see/use the button in the Send Invite modal |
+| Users without the permission | The Send Invite modal may be accessible, but the "Send Podium Link" button is not rendered |
 
-### Estrutura de Banco de Dados
+### Database Structure
 
-**Tabela `uown_podium_token`:**
+**`uown_podium_token` table:**
 
-| Coluna | Tipo | Descricao |
+| Column | Type | Description |
 |--------|------|-----------|
-| `pk` | bigint | PK auto-incremento |
-| `access_token` | text | Token OAuth2 ativo |
-| `refresh_token` | text | Token de renovacao |
-| `expiration_time` | timestamp | Data/hora de expiracao do access_token |
-| `tenant_id` | bigint | FK para tenant |
-| `row_created_timestamp` | timestamp | Audit: criacao |
-| `row_updated_timestamp` | timestamp | Audit: ultima atualizacao |
+| `pk` | bigint | Auto-increment PK |
+| `access_token` | text | Active OAuth2 token |
+| `refresh_token` | text | Renewal token |
+| `expiration_time` | timestamp | Date/time the access_token expires |
+| `tenant_id` | bigint | FK to tenant |
+| `row_created_timestamp` | timestamp | Audit: creation |
+| `row_updated_timestamp` | timestamp | Audit: last update |
 
-**Tabela `sv_outbound_api_log`** (schema SVC separado):
-Registra cada chamada de saida para o Podium com `url`, `call_type`, `request` e `response`. Nao e acessivel via conexao DB dos testes (schema boundary).
+**`sv_outbound_api_log` table** (separate SVC schema):
+Logs each outbound call to Podium with `url`, `call_type`, `request`, and `response`. Not accessible via the tests' DB connection (schema boundary).
 
-### Tratamento de Erros
+### Error Handling
 
-| Situacao | Resposta da API |
+| Situation | API Response |
 |----------|----------------|
-| `accountPk` inexistente | HTTP 400 -- `"No primary customer found for this account."` |
-| Token expirado | Sistema renova automaticamente antes de chamar o Podium |
-| Erro na API Podium | HTTP 5xx com mensagem de erro do Podium |
+| Nonexistent `accountPk` | HTTP 400 -- `"No primary customer found for this account."` |
+| Expired token | The system renews automatically before calling Podium |
+| Error in the Podium API | HTTP 5xx with an error message from Podium |
 
 ### Milestone
 
@@ -373,79 +373,79 @@ RU03.26.1.50.0 -- Task #442 (`uownSvcPodiumApiIntegration`)
 
 ---
 
-## 48. RightFoot (Verificacao de Saldo Bancario ACH) — R1.53.0
+## 48. RightFoot (ACH Bank Balance Verification) — R1.53.0
 
-### O Que e
+### What It Is
 
-RightFoot e um fornecedor externo de **verificacao de saldo bancario (bank balance check)** para pagamentos ACH, introduzido em R1.53.0 (svc#540). Base URL `https://api.rightfoot.com` (mesma em prod e sandbox).
+RightFoot is an external vendor for **bank balance verification (bank balance check)** for ACH payments, introduced in R1.53.0 (svc#540). Base URL `https://api.rightfoot.com` (the same in prod and sandbox).
 
-### Para Que Serve
+### What It's For
 
-Confirmar que a conta bancaria do cliente tem **fundos suficientes antes de criar/retentar um debito ACH**, reduzindo retornos NSF. Um novo ACH so e semeado quando `exposure + requested_amount + buffer $100 <= balance` (buffer hardcoded em `DailyRerunACHCreate.sql:70`).
+To confirm that the customer's bank account has **sufficient funds before creating/retrying an ACH debit**, reducing NSF returns. A new ACH is only seeded when `exposure + requested_amount + buffer $100 <= balance` (buffer hardcoded in `DailyRerunACHCreate.sql:70`).
 
-### Escopo (Quando Roda)
+### Scope (When It Runs)
 
-Aplica-se a contas **ACTIVE com auto-pay ACH em janela de inadimplencia**. Ambos os sweeps de balance-check selecionam `account_status='ACTIVE'`, `auto_pay_types LIKE '%ACH%'`, conta bancaria com `auto_pay=true`, dentro da janela de delinquencia. **Nao ha flag por merchant nem por client-type** — a selecao e puramente account-state/delinquency-driven (via SQL seedado).
+It applies to **ACTIVE accounts with ACH auto-pay in a delinquency window**. Both balance-check sweeps select `account_status='ACTIVE'`, `auto_pay_types LIKE '%ACH%'`, bank account with `auto_pay=true`, within the delinquency window. **There is no per-merchant or per-client-type flag** — the selection is purely account-state/delinquency-driven (via seeded SQL).
 
-### Fluxo (3 Etapas)
+### Flow (3 Steps)
 
-1. Um **sweep de balance-check** submete requests ao RightFoot (`rightFootBalanceCheckService.submit`).
-2. RightFoot responde via **webhook** que completa o batch (`POST /uown/webhooks/rightfoot/batch-ready`).
-3. O evento Spring `RightFootBatchCompleteEvent` (listener **AFTER_COMMIT**) dispara `DailyRerunAchCreationService.createDailyRerunACHs(batchIds)`, que cria as linhas `uown_sv_achpayment`.
+1. A **balance-check sweep** submits requests to RightFoot (`rightFootBalanceCheckService.submit`).
+2. RightFoot responds via a **webhook** that completes the batch (`POST /uown/webhooks/rightfoot/batch-ready`).
+3. The Spring event `RightFootBatchCompleteEvent` (listener **AFTER_COMMIT**) triggers `DailyRerunAchCreationService.createDailyRerunACHs(batchIds)`, which creates the `uown_sv_achpayment` rows.
 
 ### Sweeps
 
-| Sweep | Cron seedado | process_type | Selecao (resumo) | Batch |
+| Sweep | Seeded cron | process_type | Selection (summary) | Batch |
 |-------|--------------|--------------|------------------|-------|
-| `DailyAchBalanceCheckSweep` | `0 0 15 * * ?` (15:00 diario) | `DAILY_RERUN_DELINQUENT` | janela `CURRENT_DATE-150 .. -15`, ultimo ACH SETTLED por conta, `LIMIT 5000` | 5000, pool 3 threads |
-| `RerunAchBalanceCheckSweep` | `0 0 9 ? * THU` (Qui 09:00) | `RERUN` | `SCHEDULED` ou `REQUEST` ligado a arranjo `SETTLEMENT`; `return_code IN (R01,R09)`; `status IN (RETURNED,REVERSED)`; `tries<2`; delinquency `<45d`; sem RERUN previo | 500 (config), single-thread |
-| `DailyRerunAchCreationService` | **nao e Quartz** — disparado pelo evento de batch-complete + REST | — | SQL `DailyRerunACHCreate` | 1000, pool 4 threads, `username=SYSTEM` |
+| `DailyAchBalanceCheckSweep` | `0 0 15 * * ?` (15:00 daily) | `DAILY_RERUN_DELINQUENT` | window `CURRENT_DATE-150 .. -15`, last SETTLED ACH per account, `LIMIT 5000` | 5000, 3-thread pool |
+| `RerunAchBalanceCheckSweep` | `0 0 9 ? * THU` (Thu 09:00) | `RERUN` | `SCHEDULED` or `REQUEST` tied to a `SETTLEMENT` arrangement; `return_code IN (R01,R09)`; `status IN (RETURNED,REVERSED)`; `tries<2`; delinquency `<45d`; no previous RERUN | 500 (config), single-thread |
+| `DailyRerunAchCreationService` | **not Quartz** — triggered by the batch-complete event + REST | — | SQL `DailyRerunACHCreate` | 1000, 4-thread pool, `username=SYSTEM` |
 
-### Gating do ACH (`DailyRerunACHCreate.sql`)
+### ACH Gating (`DailyRerunACHCreate.sql`)
 
-Um ACH so e criado quando o balance check correspondente satisfaz: `status='SUCCESS'`, `response_timestamp IS NOT NULL`, **mesmo routing+account number** da conta bancaria, dentro da janela, e `exposure + requested_amount + 100 <= balance`. O novo `uown_sv_achpayment` carrega a FK `right_foot_balance_check_pk` de volta ao balance check aprovado. **Guard de duplicidade**: nenhum novo ACH `DAILY_RERUN_DELINQUENT` e criado se ja houver um in-flight (`PENDING/PICKED_TO_SEND/STATUS_UPDATE_PENDING/SENT`) para a conta.
+An ACH is only created when the corresponding balance check satisfies: `status='SUCCESS'`, `response_timestamp IS NOT NULL`, **same routing+account number** as the bank account, within the window, and `exposure + requested_amount + 100 <= balance`. The new `uown_sv_achpayment` carries the FK `right_foot_balance_check_pk` back to the approved balance check. **Duplicate guard**: no new `DAILY_RERUN_DELINQUENT` ACH is created if there is already one in-flight (`PENDING/PICKED_TO_SEND/STATUS_UPDATE_PENDING/SENT`) for the account.
 
 ### Webhook & Batch
 
-- Endpoint inbound: `POST /uown/webhooks/rightfoot/batch-ready` (aceita JSON ou text/plain) -> `RightFootWebhookService.handleWebhook`.
-- `uown_right_foot_batch` guarda `webhook_payload`, `errors`, `status`, `process_type`, `webhook_payload_received_at`, e `batch_complete_event_fired` (BOOLEAN default FALSE) — flag de idempotencia do evento de conclusao.
-- Triggers admin (`RightFootController`, `/uown/rightfoot`): `POST /uown/rightfoot/batch-result` (reprocessa 1 batch), `POST /uown/rightfoot/ach-payments/daily-rerun` (cria ACH manualmente a partir de uma lista de batchIds).
+- Inbound endpoint: `POST /uown/webhooks/rightfoot/batch-ready` (accepts JSON or text/plain) -> `RightFootWebhookService.handleWebhook`.
+- `uown_right_foot_batch` stores `webhook_payload`, `errors`, `status`, `process_type`, `webhook_payload_received_at`, and `batch_complete_event_fired` (BOOLEAN default FALSE) — idempotency flag for the completion event.
+- Admin triggers (`RightFootController`, `/uown/rightfoot`): `POST /uown/rightfoot/batch-result` (reprocesses 1 batch), `POST /uown/rightfoot/ach-payments/daily-rerun` (creates ACHs manually from a list of batchIds).
 
 ### Status & Failure
 
-Unico valor confirmado em codigo svc: `uown_right_foot_balance_check.status = 'SUCCESS'` (condicao do gate). Os demais valores de `status`/`failure_reason` e o parser do webhook vivem na lib `com.uownleasing:rightfoot:1.53.0`, que **nao esta disponivel em disco** (nao checked-out, nao no cache Gradle). **[HIPOTESE]** — nao assumir valores alem de `SUCCESS`.
+The only value confirmed in svc code: `uown_right_foot_balance_check.status = 'SUCCESS'` (the gate condition). The remaining `status`/`failure_reason` values and the webhook parser live in the `com.uownleasing:rightfoot:1.53.0` lib, which is **not available on disk** (not checked out, not in the Gradle cache). **[HYPOTHESIS]** — do not assume values beyond `SUCCESS`.
 
-### Configuracoes
+### Configurations
 
-Prefixo `com.uownleasing.svc.rightfoot.`, via `ConfigurationManagement`/Hazelcast — **nao** presentes em `application.yaml`:
+Prefix `com.uownleasing.svc.rightfoot.`, via `ConfigurationManagement`/Hazelcast — **not** present in `application.yaml`:
 
-| Chave | Default | Observacao |
+| Key | Default | Note |
 |-------|---------|------------|
-| `api.key` | prod vazio / sandbox literal | **[SEGURANCA]** fallback sandbox hardcoded em `RightFootConfig.java:26-28` |
+| `api.key` | prod empty / sandbox literal | **[SECURITY]** hardcoded sandbox fallback in `RightFootConfig.java:26-28` |
 | `base.url` | `https://api.rightfoot.com` | |
 | `webhook.url` | host + `/uown/webhooks/rightfoot/batch-ready` | |
-| `balance.threshold` | 100 | sem caller em svc — **[HIPOTESE]** consumido na lib; buffer real e literal no SQL |
-| `balance.check.sweep.cron` | `0 0 8 ? * THU` | **[OBSERVACAO]** divergente do cron seedado (`0 0 15 * * ?`); getter sem caller em svc |
+| `balance.threshold` | 100 | no caller in svc — **[HYPOTHESIS]** consumed in the lib; the real buffer is a literal in the SQL |
+| `balance.check.sweep.cron` | `0 0 8 ? * THU` | **[OBSERVATION]** diverges from the seeded cron (`0 0 15 * * ?`); getter has no caller in svc |
 | `...RerunAchBalanceCheckSweep.batchSize` | 500 | |
 | `...DailyRerunAchCreationService.interrupt` | false | kill-switch |
 
-### Tabelas
+### Tables
 
-- `uown_right_foot_balance_check` — `authorizer_unique_id` UNIQUE (`RFBC-{accountPk}-{snowflakeId}`), `account_pk`, `batch_id`, `routing_number`/`account_number`, `requested_amount` (= `next_payment_with_tax`, ou `amount` do ACH em arranjo SETTLEMENT), `balance`, `status`, `failure_reason`, `process_type`, `request/response_timestamp`.
+- `uown_right_foot_balance_check` — `authorizer_unique_id` UNIQUE (`RFBC-{accountPk}-{snowflakeId}`), `account_pk`, `batch_id`, `routing_number`/`account_number`, `requested_amount` (= `next_payment_with_tax`, or the ACH `amount` in a SETTLEMENT arrangement), `balance`, `status`, `failure_reason`, `process_type`, `request/response_timestamp`.
 - `uown_right_foot_batch` — `batch_id`, `status`, `webhook_payload`, `errors`, `process_type`, `batch_complete_event_fired`.
-- `uown_right_foot_outbound_api_log` — log de chamadas de saida (endpoint, url, method, headers, request/response, http_status, stack_trace).
-- `uown_sv_achpayment.right_foot_balance_check_pk` — FK do ACH para o balance check.
-- Cleanup: `CleanupService.deleteOldEntries(deletionCutOff)` purga linhas antigas das duas primeiras tabelas.
+- `uown_right_foot_outbound_api_log` — outbound call log (endpoint, url, method, headers, request/response, http_status, stack_trace).
+- `uown_sv_achpayment.right_foot_balance_check_pk` — FK from the ACH to the balance check.
+- Cleanup: `CleanupService.deleteOldEntries(deletionCutOff)` purges old rows from the first two tables.
 
-### Observacoes para o Time (R1.53.0)
+### Notes for the Team (R1.53.0)
 
-- **[OBSERVACAO]** Divergencia de cron entre config default e task seedada (acima).
-- **[OBSERVACAO]** Artefato de sintaxe em `DailyAchBalanceCheckSweep.java:241` — `TO_CHAR(date_of_birth, 'YYYY-MM-DD') AS date_of_birth,\n,\n` contem virgula solta (`,\n,\n`) que quebraria a query se executada verbatim. Confirmar com o time.
-- **[SEGURANCA]** API key literal hardcoded como fallback sandbox (`RightFootConfig.java:26-28`).
+- **[OBSERVATION]** Cron divergence between the default config and the seeded task (above).
+- **[OBSERVATION]** Syntax artifact in `DailyAchBalanceCheckSweep.java:241` — `TO_CHAR(date_of_birth, 'YYYY-MM-DD') AS date_of_birth,\n,\n` contains a stray comma (`,\n,\n`) that would break the query if run verbatim. Confirm with the team.
+- **[SECURITY]** Literal API key hardcoded as a sandbox fallback (`RightFootConfig.java:26-28`).
 
-### Fontes (svc R1.53.0)
+### Sources (svc R1.53.0)
 
-`config/rightfoot/RightFootConfig.java` · `service/sweeps/rightfoot/{DailyAchBalanceCheckSweep,RerunAchBalanceCheckSweep,RightFootBalanceCheckMapper}.java` · `service/ach/DailyRerunAchCreationService.java` · `service/ach/listener/RightFootCompleteListener.java` · `rest/svc/{RightFootController,RightFootWebhookController}.java` · `service/BootstrapService.java` (~2275) · `resources/sqls/DailyRerunACHCreate.sql` · migrations `V20260612102430` / `V20260616122043` / `V20260619131000`. Lib `com.uownleasing:rightfoot:1.53.0` (internals nao disponiveis em disco).
+`config/rightfoot/RightFootConfig.java` · `service/sweeps/rightfoot/{DailyAchBalanceCheckSweep,RerunAchBalanceCheckSweep,RightFootBalanceCheckMapper}.java` · `service/ach/DailyRerunAchCreationService.java` · `service/ach/listener/RightFootCompleteListener.java` · `rest/svc/{RightFootController,RightFootWebhookController}.java` · `service/BootstrapService.java` (~2275) · `resources/sqls/DailyRerunACHCreate.sql` · migrations `V20260612102430` / `V20260616122043` / `V20260619131000`. Lib `com.uownleasing:rightfoot:1.53.0` (internals not available on disk).
 
 ### Milestone
 

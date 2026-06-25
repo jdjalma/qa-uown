@@ -1,11 +1,11 @@
 /**
- * MissingDataFormPage — tela /[shortCode]/complete?planId=...
+ * MissingDataFormPage — /[shortCode]/complete?planId=... screen.
  *
- * Aparece quando o cliente clica no link `paymentDetailsList[idx].redirectUrl`
- * (que e o `providerURL` retornado pela API UOwn apos UW_APPROVED).
+ * Appears when the customer clicks the `paymentDetailsList[idx].redirectUrl` link
+ * (which is the `providerURL` returned by the UOwn API after UW_APPROVED).
  *
- * Coleta dados do cartao de credito (obrigatorio) e conta bancaria (opcional)
- * antes de avancar para Terms of Agreement.
+ * Collects credit card data (required) and bank account data (optional)
+ * before advancing to Terms of Agreement.
  *
  * Form ID: `missingDataForm`
  * Submit button: `#completeApplication-submit`
@@ -18,7 +18,7 @@ export interface MissingDataCreditCardInfo {
   lastName: string;
   cardNumber: string;
   cvc: string;
-  /** Format: MM/YYYY (ex: "12/2030") */
+  /** Format: MM/YYYY (e.g. "12/2030") */
   expiration: string;
 }
 

@@ -167,7 +167,7 @@ export async function extractContractValues(pdfData: Buffer | Uint8Array): Promi
  *      week 1 / 2 / 4 depending on frequency, always under 90 days).
  *
  * Returns `undefined` when neither source is available, letting callers
- * decide whether the assertion is a hard failure or `[OBSERVAÇÃO]`.
+ * decide whether the assertion is a hard failure or `[OBSERVATION]`.
  *
  * NOTE: the labelled extraction relies on regex over `pdf-parse` text and
  * is template-sensitive (memory `feedback_consult_svc_when_unsure`). The

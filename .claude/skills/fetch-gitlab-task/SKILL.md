@@ -1,34 +1,34 @@
 ---
 name: fetch-gitlab-task
-description: Carregue quando o input do user contém URL de issue do GitLab (https://*/issues/{iid}). Busca via API v4, extrai título/descrição/labels/comentários/milestone, classifica tipo de pipeline, gera test name padronizado.
+description: Load when the user's input contains a GitLab issue URL (https://*/issues/{iid}). Fetches via API v4, extracts title/description/labels/comments/milestone, classifies the pipeline type, generates a standardized test name.
 disable-model-invocation: true
 ---
 
 # Fetch GitLab Task
 
-## Quando aplicar
+## When to apply
 
-Input do user contém URL do tipo `https://{host}/{project_path}/-/issues/{iid}`.
+The user's input contains a URL of the form `https://{host}/{project_path}/-/issues/{iid}`.
 
-Padrão de detecção: regex `/-/issues/\d+`.
+Detection pattern: regex `/-/issues/\d+`.
 
-## Procedimento
+## Procedure
 
-### 1. Verificar token
+### 1. Check the token
 
 ```bash
 test -n "$GITLAB_TOKEN" && echo OK || echo "MISSING — abort"
 ```
 
-`GITLAB_TOKEN` deve estar em `.env`. Se ausente, **pare** e peça ao user.
+`GITLAB_TOKEN` must be in `.env`. If missing, **stop** and ask the user.
 
-### 2. Parse URL
+### 2. Parse the URL
 
 ```
 https://{host}/{project_path}/-/issues/{iid}
 ```
 
-`project_path` precisa URL-encode (`/` → `%2F`).
+`project_path` needs URL-encoding (`/` → `%2F`).
 
 ### 3. Fetch issue
 
@@ -37,11 +37,11 @@ curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
  "https://{host}/api/v4/projects/{encoded_path}/issues/{iid}"
 ```
 
-Extraia:
+Extract:
 - `title`
 - `description`
 - `labels[]`
-- `milestone.title` (ex: `R1.49.1`)
+- `milestone.title` (e.g.: `R1.49.1`)
 - `assignee.name`
 - `state`
 - `web_url`
@@ -54,37 +54,37 @@ curl -s --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
  "https://{host}/api/v4/projects/{encoded_path}/issues/{iid}/notes?sort=asc"
 ```
 
-Filtre `system=false` — só comentários humanos.
+Filter `system=false` — human comments only.
 
-### 5. Classificar pipeline type
+### 5. Classify the pipeline type
 
-| Labels presentes | Pipeline sugerido |
+| Labels present | Suggested pipeline |
 |------------------|-------------------|
 | `e2e`, `test`, `automation` | new-flow |
 | `api`, `endpoint`, `integration` | new-api |
 | `bug`, `flaky`, `broken` | debug |
 | `refactor`, `tech-debt` | refactor |
 | `docs`, `documentation` | docs |
-| Sem match claro | custom |
+| No clear match | custom |
 
-### 6. Gerar test name
+### 6. Generate the test name
 
-Convenção do projeto:
+Project convention:
 
 ```
 {milestone}_{camelCaseTitle}_{iid}
 ```
 
-Exemplo: `R1.49.1_separateShortCodeInANewEntity_469`
+Example: `R1.49.1_separateShortCodeInANewEntity_469`
 
 camelCase rule:
-- lowercase a primeira palavra
-- capitalize a primeira letra de cada palavra subsequente
-- remover spaces e special chars
+- lowercase the first word
+- capitalize the first letter of each subsequent word
+- remove spaces and special chars
 
-File name idêntico + `.spec.ts`.
+File name identical + `.spec.ts`.
 
-## Output esperado
+## Expected output
 
 ```markdown
 ## Issue: {title}
@@ -93,41 +93,41 @@ File name idêntico + `.spec.ts`.
 - Milestone: {milestone}
 - Issue Number: {iid}
 - State: {state}
-- Pipeline sugerido: {pipeline_type}
+- Suggested pipeline: {pipeline_type}
 
-## Descrição
+## Description
 {description}
 
-## ACs detectados
-{listar ACs extraídos da descrição — se não tem AC explícito, FLAG: "task sem AC — não testar antes de definir com PO"}
+## Detected ACs
+{list ACs extracted from the description — if there is no explicit AC, FLAG: "task has no AC — do not test before defining it with the PO"}
 
-## Comentários relevantes
-{comentários humanos resumidos}
+## Relevant comments
+{summarized human comments}
 
 ## Test naming
 - describe: `{milestone}_{camelCaseTitle}_{iid}`
 - file: `{milestone}_{camelCaseTitle}_{iid}.spec.ts`
 
-## Próximo passo
-Encaminhar para qa-planner com este contexto.
+## Next step
+Forward to qa-planner with this context.
 ```
 
 ## DoR check (memory `project_qa_task_structure`)
 
-Antes de prosseguir:
+Before proceeding:
 
-- AC explícito? Se não, **flag** "sem AC = não testa".
-- Cenários definidos? Se não, agent vai gerar via [[scope-analysis]] + [[test-design-techniques]].
-- DoD claro? Se não, flag — DoD do projeto exige QA + Staging + regressão.
+- Explicit AC? If not, **flag** "no AC = no test".
+- Scenarios defined? If not, the agent will generate them via [[scope-analysis]] + [[test-design-techniques]].
+- Clear DoD? If not, flag — the project's DoD requires QA + Staging + regression.
 
 ## Pitfalls
 
-- Token expirado retorna 401 → mensagem amigável.
-- Issue privada sem acesso → 404 — peça ao user verificar perms.
-- URL com fragmento `#note_123` → ignorar fragmento, usar só `/issues/{iid}`.
+- An expired token returns 401 → friendly message.
+- A private issue without access → 404 — ask the user to check permissions.
+- A URL with a `#note_123` fragment → ignore the fragment, use only `/issues/{iid}`.
 
 ## Cross-links
 
 - Memory: `project_qa_task_structure`
-- Skill [[scope-analysis]] — consome este output
-- Skill [[acceptance-criteria-review]] — analisa AC extraído
+- Skill [[scope-analysis]] — consumes this output
+- Skill [[acceptance-criteria-review]] — analyzes the extracted AC

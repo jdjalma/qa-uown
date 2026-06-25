@@ -1,168 +1,168 @@
 ---
 name: acceptance-criteria-review
-description: Carregar quando avaliar AC de ticket UOWN (GitLab issue, draft DoR, conversa com PO) — testa cada AC contra Given/When/Then, detecta ACs implícitos faltantes, valida DoR/DoD do time e bloqueia ticket sem AC.
+description: Load when evaluating the AC of a UOWN ticket (GitLab issue, DoR draft, conversation with the PO) — tests each AC against Given/When/Then, detects missing implicit ACs, validates the team's DoR/DoD, and blocks tickets without AC.
 disable-model-invocation: true
 ---
 
-# Acceptance Criteria Review — destravar (ou travar) o pipeline
+# Acceptance Criteria Review — unblock (or block) the pipeline
 
-> O time de QA UOWN (Yuri/Washington/Lucas/José) acordou: **sem AC explícito, ticket não entra em teste** (`project_qa_task_structure`). Esta skill é a guarda nesse portão.
+> The UOWN QA team agreed: **without explicit AC, a ticket does not enter testing** (`project_qa_task_structure`). This skill is the guard at that gate.
 
-## Quando aplicar
+## When to apply
 
-- skill [[fetch-gitlab-task]] retornou issue do GitLab.
-- Usuário pediu "cria a tarefa X" / "abre ticket pra Y" — você está PRODUZINDO o ticket no formato DoR.
-- Você está revisando AC que o PO escreveu antes de gerar SPEC.
-- AC parecem completos mas você desconfia ("isso aqui é testável?", "como eu sei que passou?").
-- Bug ticket sem reprodução fresh: virar bug em AC ("ao reproduzir X em condições Y, sistema deve responder Z").
+- skill [[fetch-gitlab-task]] returned a GitLab issue.
+- The user asked "create task X" / "open a ticket for Y" — you are PRODUCING the ticket in the DoR format.
+- You are reviewing the AC the PO wrote before generating the SPEC.
+- The AC look complete but you suspect otherwise ("is this testable?", "how do I know it passed?").
+- Bug ticket without fresh reproduction: turn the bug into AC ("when reproducing X under conditions Y, the system must respond Z").
 
-## Princípios
+## Principles
 
-1. **AC não-testável = AC ausente.** "Sistema deve ser rápido" não é AC.
-2. **AC implícito é a maior fonte de retrabalho** (regra inviolável #11 — descobrir requisito durante debug obriga atualização de protocolo).
-3. **Given/When/Then não é dogma — é diagnóstico.** Se não consegue formatar um AC em GWT, ele provavelmente está mal definido.
-4. **DoR/DoD são contratos, não sugestões** (`project_qa_task_structure`).
+1. **Non-testable AC = absent AC.** "The system must be fast" is not an AC.
+2. **Implicit AC is the biggest source of rework** (inviolable rule #11 — discovering a requirement during debug mandates a protocol update).
+3. **Given/When/Then is not dogma — it's a diagnostic.** If you can't format an AC into GWT, it is probably poorly defined.
+4. **DoR/DoD are contracts, not suggestions** (`project_qa_task_structure`).
 
-## Procedimento
+## Procedure
 
-### Passo 1 — Inventário dos AC declarados
+### Step 1 — Inventory of declared AC
 
-Lista cada AC do ticket. Se o ticket não tem seção "AC" explícita, tenta extrair da descrição. Se não houver:
+List each AC of the ticket. If the ticket has no explicit "AC" section, try to extract it from the description. If there is none:
 
-> **HALT.** Devolve para o user com mensagem: "Ticket {id} sem AC explícito. DoR exige AC. Posso (a) bloquear até o PO escrever, ou (b) propor draft de AC com base na descrição para sua revisão. Qual prefere?"
+> **HALT.** Return to the user with the message: "Ticket {id} has no explicit AC. DoR requires AC. I can (a) block until the PO writes it, or (b) propose a draft AC based on the description for your review. Which do you prefer?"
 
-Não inventa AC silenciosamente.
+Do not invent AC silently.
 
-### Passo 2 — Score de testabilidade por AC
+### Step 2 — Testability score per AC
 
-Para cada AC, aplica esta rubrica (cada pergunta vale ✓):
+For each AC, apply this rubric (each question is worth ✓):
 
-| Critério | Pergunta |
+| Criterion | Question |
 |---|---|
-| **Observável** | Posso verificar com browser / API / DB / log? Ou é subjetivo ("rápido", "intuitivo")? |
-| **Específico** | Há valor concreto? ("processa em <2s", não "rápido") |
-| **Estado inicial claro** | O AC diz de que estado parte? (lead pre-qualified? account ativo? agent logado?) |
-| **Ação clara** | A ação está descrita em verbo concreto, com inputs? |
-| **Resultado mensurável** | O resultado é assert-able? (UI render exato, DB row, response code) |
-| **Reversibilidade** | Caso falhe, qual o estado esperado? (mantém AC ou tem AC de error path?) |
+| **Observable** | Can I verify it with browser / API / DB / log? Or is it subjective ("fast", "intuitive")? |
+| **Specific** | Is there a concrete value? ("processes in <2s", not "fast") |
+| **Clear initial state** | Does the AC say which state it starts from? (lead pre-qualified? active account? agent logged in?) |
+| **Clear action** | Is the action described with a concrete verb, with inputs? |
+| **Measurable result** | Is the result assertable? (exact UI render, DB row, response code) |
+| **Reversibility** | If it fails, what is the expected state? (does it keep the AC or have an error-path AC?) |
 
-Score 6/6 = pronto. Score ≤4 = devolver / refinar. Score 5 com gap claro = propor refinamento e marcar `[REFINADO POR QA]`.
+Score 6/6 = ready. Score ≤4 = return / refine. Score 5 with a clear gap = propose refinement and mark it `[REFINED BY QA]`.
 
-### Passo 3 — Reformat para Given/When/Then
+### Step 3 — Reformat to Given/When/Then
 
-Re-escreve cada AC em GWT:
+Rewrite each AC in GWT:
 
 ```
-Given <estado inicial concreto, incluindo brand/portal/role/lead state>
-And <pré-condições adicionais — merchant config, sql config, feature flag>
-When <ação única, com inputs concretos>
-Then <resultado observável principal>
-And <side-effects esperados — activity log, email, DB row>
+Given <concrete initial state, including brand/portal/role/lead state>
+And <additional preconditions — merchant config, sql config, feature flag>
+When <single action, with concrete inputs>
+Then <main observable result>
+And <expected side-effects — activity log, email, DB row>
 ```
 
-Se você não consegue preencher um campo sem inventar, o AC tem buraco. Marca o buraco como Open Question.
+If you can't fill a field without inventing, the AC has a hole. Mark the hole as an Open Question.
 
-### Passo 4 — Detectar AC implícitos
+### Step 4 — Detect implicit AC
 
-AC implícitos mais comuns em UOWN:
+Most common implicit AC in UOWN:
 
-| Implícito | Pergunta-gatilho |
+| Implicit | Trigger question |
 |---|---|
-| **Activity log** (regra #13) | Que linha em `uown_los_lead_notes` deve aparecer? Conteúdo? |
-| **Idempotência** | Se a ação roda 2x, comportamento? (caso `submitApplication` single-flight) |
-| **Cross-portal visibility** | A mudança aparece no portal Servicing? Customer Website? Origination? |
-| **Email / SMS** | Dispara comunicação? Template? Quando? |
-| **Locale/state matrix** | Comportamento muda por state (CA, FL, GA)? |
-| **Brand parity** | Funciona em KS3015 igual a UOWN? (`feedback_qa_flow_scope_dual_brand_lease_edit`) |
-| **Permissions** | Agent com role X consegue? Customer consegue? |
-| **Error path** | Vendor (Kount/SEON/Plaid) retorna erro — comportamento? |
-| **Rollback** | Como desfazer? Tem undo? |
-| **Audit trail** | Quem fez a ação fica registrado? |
-| **Money invariants** | Float repr (`feedback_float_repr_not_bug`) — tolerância especificada? |
-| **Feature flag fallback** | Comportamento se SQL config = off? |
+| **Activity log** (rule #13) | Which row in `uown_los_lead_notes` should appear? Content? |
+| **Idempotency** | If the action runs twice, behavior? (the `submitApplication` single-flight case) |
+| **Cross-portal visibility** | Does the change appear in the Servicing portal? Customer Website? Origination? |
+| **Email / SMS** | Does it trigger a communication? Template? When? |
+| **Locale/state matrix** | Does behavior change by state (CA, FL, GA)? |
+| **Brand parity** | Does it work in KS3015 the same as in UOWN? (`feedback_qa_flow_scope_dual_brand_lease_edit`) |
+| **Permissions** | Can an agent with role X do it? Can a customer? |
+| **Error path** | A vendor (Kount/SEON/Plaid) returns an error — behavior? |
+| **Rollback** | How do you undo it? Is there an undo? |
+| **Audit trail** | Is whoever performed the action recorded? |
+| **Money invariants** | Float repr (`feedback_float_repr_not_bug`) — is the tolerance specified? |
+| **Feature flag fallback** | Behavior if SQL config = off? |
 
-Cada implícito ausente vira **AC adicional proposto** (não imposto — devolve ao PO para confirmar).
+Each absent implicit becomes a **proposed additional AC** (not imposed — returned to the PO to confirm).
 
-### Passo 5 — Validar contra DoR
+### Step 5 — Validate against DoR
 
-Checklist DoR (do `project_qa_task_structure`):
+DoR checklist (from `project_qa_task_structure`):
 
-- [ ] Descrição clara do problema + solução
-- [ ] AC explícitos (depois do passo 3)
-- [ ] Edge cases mapeados (depois do passo 4)
-- [ ] Build deployada (qual env? qa1/qa2/stg?)
-- [ ] Dependências externas documentadas (Kount, GowSign etc.)
-- [ ] Dev fez teste básico (perguntar se ausente)
-- [ ] Mudanças de escopo documentadas
-- [ ] T-shirt size (S/M/L) estimado pelo QA — você estima
+- [ ] Clear description of the problem + solution
+- [ ] Explicit AC (after step 3)
+- [ ] Edge cases mapped (after step 4)
+- [ ] Build deployed (which env? qa1/qa2/stg?)
+- [ ] External dependencies documented (Kount, GowSign etc.)
+- [ ] Dev did basic testing (ask if absent)
+- [ ] Scope changes documented
+- [ ] T-shirt size (S/M/L) estimated by QA — you estimate it
 
-DoR incompleto → ticket volta. Não testa.
+Incomplete DoR → the ticket goes back. Don't test.
 
-### Passo 6 — Validar contra DoD (para já avisar o que regressão exige)
+### Step 6 — Validate against DoD (to flag upfront what regression requires)
 
-- [ ] AC vão ser testados em **QA E em Staging**, não só QA
-- [ ] Edge cases vão ser cobertos
-- [ ] **Regressão nos fluxos impactados** — listar quais fluxos vai regredir
-- [ ] Evidências planejadas (print/vídeo/texto conforme tipo)
-- [ ] Item vai para Stage Verified
+- [ ] AC will be tested in **QA AND in Staging**, not just QA
+- [ ] Edge cases will be covered
+- [ ] **Regression in the impacted flows** — list which flows will regress
+- [ ] Planned evidence (screenshot/video/text per type)
+- [ ] Item goes to Stage Verified
 
-### Passo 7 — Output
+### Step 7 — Output
 
-Entrega:
+Deliver:
 
 ```markdown
 ## AC Review — {task-id}
 
 ### AC Inventory
-1. AC original: "<texto>"
- - Score testabilidade: X/6
- - Buracos: {lista}
- - Reformat GWT: ...
+1. Original AC: "<text>"
+ - Testability score: X/6
+ - Holes: {list}
+ - GWT reformat: ...
 2. ...
 
-### AC Implícitos Propostos
-- [IMPLÍCITO] activity log esperado: ...
-- [IMPLÍCITO] dual-brand: ...
+### Proposed Implicit AC
+- [IMPLICIT] expected activity log: ...
+- [IMPLICIT] dual-brand: ...
 
-### Open Questions para PO
+### Open Questions for the PO
 - Q1: ...
 
 ### DoR Status
-- ✅ Descrição
-- ❌ AC explícitos (precisa de refino — ver acima)
+- ✅ Description
+- ❌ Explicit AC (needs refinement — see above)
 - ...
 
-### DoD Antecipado
-- Regressão obrigatória: {lista de fluxos}
-- Evidências planejadas: {tipo por AC}
+### Anticipated DoD
+- Mandatory regression: {list of flows}
+- Planned evidence: {type per AC}
 - T-shirt size: S | M | L
 
-### Decisão
-PROSSEGUIR | BLOQUEAR | PROSSEGUIR COM ASSUNÇÕES MARCADAS
+### Decision
+PROCEED | BLOCK | PROCEED WITH MARKED ASSUMPTIONS
 ```
 
-## Heurísticas
+## Heuristics
 
-- **Teste do GWT silencioso**: se você consegue escrever o teste sem ler o AC duas vezes, o AC está bom. Se precisa "interpretar", está ruim.
-- **Teste do absurdo**: leia o AC com má-fé. "Sistema deve mostrar mensagem de sucesso" — mostrar QUE mensagem? em QUE lugar? por QUANTO tempo? O que o cliente vê?
-- **Cada AC tem 1 verbo principal**. Se tem "e... e... e...", são múltiplos AC mascarados — separa.
-- **AC sem assert sobre side-effect é AC parcial.** Se a feature dispara email, AC sem mencionar email é incompleto.
-- **Yuri tem palavra final em bug vs melhoria** (`project_qa_task_structure`). Se o AC parece descrever uma melhoria além do bug original, sinaliza — não absorve silenciosamente.
+- **The silent GWT test**: if you can write the test without reading the AC twice, the AC is good. If you need to "interpret" it, it's bad.
+- **The absurdity test**: read the AC in bad faith. "The system must show a success message" — show WHICH message? WHERE? for HOW long? What does the customer see?
+- **Each AC has 1 main verb.** If it has "and... and... and...", it's multiple masked AC — split them.
+- **An AC with no assert on a side-effect is a partial AC.** If the feature triggers an email, an AC that doesn't mention the email is incomplete.
+- **Yuri has the final word on bug vs improvement** (`project_qa_task_structure`). If the AC seems to describe an improvement beyond the original bug, flag it — don't absorb it silently.
 
-## Output esperado
+## Expected output
 
-Documento markdown de 40–120 linhas anexado ao SPEC (ou retornado ao orquestrador como sinal de bloqueio). Sempre termina com `### Decisão` explícita.
+A 40–120 line markdown document attached to the SPEC (or returned to the orchestrator as a blocking signal). Always ends with an explicit `### Decision`.
 
 ## Anti-patterns
 
-- "Vou só assumir que o AC implícito existe" — não, escreve e devolve ao PO.
-- Aceitar AC com "deve ser fluido" / "boa UX" / "rápido" — não testável.
-- Não estimar t-shirt size porque "é pequeno" — DoR exige.
-- Misturar AC com design técnico ("usa endpoint X com payload Y") — o AC é sobre comportamento observável, não implementação.
-- Pular o passo 4 (implícitos) — esse é o passo onde a maioria dos bugs futuros nasce.
-- Aprovar AC porque "o PO escreveu, deve estar certo" — review é review.
+- "I'll just assume the implicit AC exists" — no, write it down and return it to the PO.
+- Accepting AC with "must be fluid" / "good UX" / "fast" — not testable.
+- Not estimating the t-shirt size because "it's small" — DoR requires it.
+- Mixing AC with technical design ("uses endpoint X with payload Y") — the AC is about observable behavior, not implementation.
+- Skipping step 4 (implicit) — that is the step where most future bugs are born.
+- Approving AC because "the PO wrote it, it must be right" — a review is a review.
 
-## Referências
+## References
 
 - `.claude/rules/testing.md`
 - `skill [[qa-domain-reflexes]]`

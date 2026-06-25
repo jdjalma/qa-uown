@@ -23,7 +23,7 @@ Quick base-class lookup:
 
 ```
 ❌ Page object without extending BasePage (or portal base)
-❌ Selector inline num SPEC (use o método do page object); cross-cutting selector fora de common.selectors.ts
+❌ Inline selector in a SPEC (use the page object method); cross-cutting selector outside common.selectors.ts
 ❌ expect() inside page object methods — return values, assert in tests
 ❌ waitForTimeout() — use waitFor({ state }) or polling helpers
 ❌ Import from internal files — use barrel exports via index.ts
@@ -44,17 +44,17 @@ Quick base-class lookup:
 
 ## DOM-First investigation (MANDATORY — CLAUDE.md #16)
 
-Quando criar OU refatorar locators para um page object, **validar o DOM real via MCP Playwright** antes de escolher a estratégia:
+When creating OR refactoring locators for a page object, **validate the real DOM via MCP Playwright** before choosing the strategy:
 
-- `getByRole('button')` vs `getByRole('link')` é determinado pelo `tagName` real (`<button>` vs `<a>`), NÃO pela aparência visual ou classes Bootstrap (`btn`, `dropdown-toggle`)
-- Elementos em dropdowns/menus podem estar no DOM com `display: none` no ancestor — `browser_evaluate` retorna `visible: false`, exigindo abrir o dropdown antes
-- Responsive breakpoints (Bootstrap `d-lg-block` = ≥992px) podem esconder navbar inteira em viewport pequeno — fixar viewport 1440×900 antes de inspecionar
-- Page object NÃO pode ter retry/fallback `try { ... } catch { ... try alternativo }` para mascarar selector instável — se o selector primário falha, ele está errado e o protocolo deve ser rodado
+- `getByRole('button')` vs `getByRole('link')` is determined by the real `tagName` (`<button>` vs `<a>`), NOT by visual appearance or Bootstrap classes (`btn`, `dropdown-toggle`)
+- Elements in dropdowns/menus may be in the DOM with `display: none` on an ancestor — `browser_evaluate` returns `visible: false`, requiring the dropdown to be opened first
+- Responsive breakpoints (Bootstrap `d-lg-block` = ≥992px) can hide the entire navbar at a small viewport — fix viewport to 1440×900 before inspecting
+- Page objects MUST NOT have a retry/fallback `try { ... } catch { ... alternative try }` to mask an unstable selector — if the primary selector fails, it is wrong and the protocol must be run
 
-Quando aplicar:
-- Criando um page object novo → inspecionar DOM real do portal alvo via MCP antes de declarar `readonly` locators
-- Refatorando page object existente com falhas → rodar protocolo ANTES de mexer no código
-- Migrando seletor XPath/CSS para semântico (`getByRole`) → validar via MCP que role/name reais batem
+When to apply:
+- Creating a new page object → inspect the real DOM of the target portal via MCP before declaring `readonly` locators
+- Refactoring an existing page object with failures → run the protocol BEFORE touching the code
+- Migrating an XPath/CSS selector to semantic (`getByRole`) → validate via MCP that the real role/name match
 
-Protocolo completo: skill [[dom-investigation]] em `.claude/skills/dom-investigation/SKILL.md`
+Full protocol: skill [[dom-investigation]] at `.claude/skills/dom-investigation/SKILL.md`
 

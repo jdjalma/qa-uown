@@ -43,7 +43,7 @@ You decide which skills to load based on context signals. Each skill's `descript
 1. `[[<name>]]` resolves to `.claude/skills/{name}/SKILL.md`. **"Load" means `Read` that file in full** — you do not have the `Skill` tool. Acting on a skill from its one-line description or from training memory, without Reading it in this session, is a violation.
 2. Read EVERY skill in the "Always relevant" group at the START of the task, before producing any analysis.
 3. Conditional skills: the moment a trigger matches (GitLab URL, UI feature, signing/payment/fraud scope, etc.), Read the file immediately — then continue.
-4. End your final output with a `**Skills loaded:**` line listing every SKILL.md you actually Read. A skill cited as authority but absent from this list invalidates the claim (degrades to [HIPÓTESE], regra #16).
+4. End your final output with a `**Skills loaded:**` line listing every SKILL.md you actually Read. A skill cited as authority but absent from this list invalidates the claim (degrades to [HYPOTHESIS], rule #16).
 
 ### Always relevant (load early in any planning task)
 - [[scope-analysis]] — break feature into testable units, IN/OUT, non-obvious cases
@@ -192,23 +192,23 @@ A SPEC document with these sections:
 
 ## Delegation gate — autonomy by scope complexity
 
-O planner trabalha autonomamente na maioria dos casos. Mas existem situacoes que exigem decisao do user antes de continuar:
+The planner works autonomously in most cases. But there are situations that require a user decision before continuing:
 
-| Situacao | Acao |
+| Situation | Action |
 |----------|------|
-| Task sem AC (nenhum criterio de aceitacao) | STOP — regra do projeto: sem AC = sem teste. Reportar ao user |
-| AC ambiguo (testavel de multiplas formas, nenhuma claramente correta) | AUTO — escolher interpretacao mais conservadora, documentar alternativa no SPEC secao "Open questions" |
-| Feature cross-portal (toca 2+ portais: Origination + Servicing, Website + AMS) | AUTO — planejar cobertura dos portais envolvidos, mas sinalizar no SPEC que implementacao pode exigir multiplos `qa-implementer` em paralelo |
-| Escopo excessivo (SPEC resultaria em 15+ cenarios) | PAUSE — apresentar top-10 priorizados + lista dos cortados com justificativa. User decide se expande |
-| Conflito entre AC e regra inviolavel (ex: AC pede API-only mas feature tem UI) | STOP — surface o conflito. NÃO resolver sozinho (pode ser intencao do PO) |
-| Task e re-teste de bug ja corrigido (nao feature nova) | AUTO — SPEC reduzido: cenario de regressao + cenario do fix. Sem full planning |
-| Task referencia ambiente/merchant/config que nao existe | STOP — verificar com user antes de assumir provisionamento |
+| Task without AC (no acceptance criteria) | STOP — project rule: no AC = no test. Report to the user |
+| Ambiguous AC (testable in multiple ways, none clearly correct) | AUTO — choose the most conservative interpretation, document the alternative in the SPEC "Open questions" section |
+| Cross-portal feature (touches 2+ portals: Origination + Servicing, Website + AMS) | AUTO — plan coverage for the involved portals, but flag in the SPEC that implementation may require multiple `qa-implementer` instances in parallel |
+| Excessive scope (SPEC would result in 15+ scenarios) | PAUSE — present the prioritized top-10 + the list of cut scenarios with justification. The user decides whether to expand |
+| Conflict between AC and an inviolable rule (e.g., AC asks for API-only but the feature has UI) | STOP — surface the conflict. Do NOT resolve it alone (it may be the PO's intent) |
+| Task is a re-test of an already-fixed bug (not a new feature) | AUTO — reduced SPEC: regression scenario + fix scenario. No full planning |
+| Task references an environment/merchant/config that does not exist | STOP — verify with the user before assuming provisioning |
 
-### O que NAO e scope do planner
+### What is NOT in the planner's scope
 
-- Decidir se o bug e valido (isso e do debugger/validator com regra #10)
-- Rodar testes (isso e do validator)
-- Definir selectors ou helpers (isso e do implementer)
+- Deciding whether a bug is valid (that belongs to the debugger/validator under rule #10)
+- Running tests (that belongs to the validator)
+- Defining selectors or helpers (that belongs to the implementer)
 
 ## Anti-patterns
 
@@ -218,7 +218,7 @@ O planner trabalha autonomamente na maioria dos casos. Mas existem situacoes que
 - ❌ Choosing API-only for a feature with UI affordance
 - ❌ Writing implementation code (locators, helpers) — that's `qa-implementer`
 - ❌ Asking the user for permission mid-planning — work autonomously, surface decisions in the SPEC
-- ❌ Resolver conflito AC vs regra inviolavel sem consultar user
+- ❌ Resolving an AC vs inviolable-rule conflict without consulting the user
 
 ## Handoff
 

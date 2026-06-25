@@ -1,167 +1,167 @@
 ---
 name: risk-based-prioritization
-description: Carregar quando há mais cenários candidatos do que tempo para implementá-los — produz top-N priorizado por risco (novelty, integration, boundary, regressão histórica) com justificativa rastreável.
+description: Load when there are more candidate scenarios than time to implement them — produces a top-N prioritized by risk (novelty, integration, boundary, historical regression) with a traceable justification.
 disable-model-invocation: true
 ---
 
-# Risk-Based Prioritization — testa o que mais pode quebrar primeiro
+# Risk-Based Prioritization — test what is most likely to break first
 
-> Cobertura total é mito. Esta skill devolve uma fila ordenada onde os top-N concentram o risco real.
+> Total coverage is a myth. This skill returns an ordered queue where the top-N concentrate the real risk.
 
-## Quando aplicar
+## When to apply
 
-- Saída do `scope-analysis` tem >5 testable units candidatas e t-shirt size é S/M.
-- Pipeline `qa-flow` precisa decidir o que vai pra smoke vs full vs regressão.
-- Regressão pós-refactor: o diff toca muita coisa, precisa decidir onde focar.
-- Janela de release apertada: o que sai agora vs o que segue pra próxima sprint.
-- Bug em prod: priorizar qual reprodução tentar primeiro (caso Daniel's Jewelers CA — `project_gosign_rollout`).
+- The `scope-analysis` output has >5 candidate testable units and the t-shirt size is S/M.
+- The `qa-flow` pipeline needs to decide what goes to smoke vs full vs regression.
+- Post-refactor regression: the diff touches a lot, you need to decide where to focus.
+- Tight release window: what ships now vs what goes to the next sprint.
+- Bug in prod: prioritize which reproduction to attempt first (Daniel's Jewelers CA case — `project_gosign_rollout`).
 
-## Princípios
+## Principles
 
-1. **Risco = Probabilidade × Impacto.** Cobertura segue o risco, não o tamanho do diff.
-2. **Histórico bate teoria.** Se o módulo já regrediu 3x, ele regride de novo. Memória do projeto vale ouro.
-3. **Cliente externo > regressão interna > nice-to-have.** Bug visível ao cliente final pesa mais que bug visível só pra agent.
-4. **Justificativa explícita** — cada prioridade tem 1 linha de "porque P0 / porque P3", auditável.
+1. **Risk = Probability × Impact.** Coverage follows the risk, not the size of the diff.
+2. **History beats theory.** If the module has already regressed 3x, it will regress again. The project's memory is worth gold.
+3. **External customer > internal regression > nice-to-have.** A bug visible to the end customer weighs more than a bug visible only to the agent.
+4. **Explicit justification** — each priority has 1 line of "why P0 / why P3", auditable.
 
-## Dimensões de risco (rubrica)
+## Risk dimensions (rubric)
 
-Para cada cenário candidato, pontuar 0–3 em cada dimensão:
+For each candidate scenario, score 0–3 in each dimension:
 
-### Probabilidade (de quebrar)
-- **N — Novelty (código novo / acabou de mudar)**
- - 0: código intocado há >6 meses
- - 1: refactor cosmético recente
- - 2: lógica alterada na release atual
- - 3: feature nova greenfield
+### Probability (of breaking)
+- **N — Novelty (new code / just changed)**
+ - 0: code untouched for >6 months
+ - 1: recent cosmetic refactor
+ - 2: logic changed in the current release
+ - 3: new greenfield feature
 - **I — Integration points**
- - 0: in-process puro
+ - 0: pure in-process
  - 1: 1 DB query
- - 2: 1 vendor externo (Kount, SEON, GowSign, Plaid, Twilio, Tilled, Repay, EasyPay, MX)
- - 3: 2+ vendors ou orquestração assíncrona (webhook + scheduled task)
+ - 2: 1 external vendor (Kount, SEON, GowSign, Plaid, Twilio, Tilled, Repay, EasyPay, MX)
+ - 3: 2+ vendors or asynchronous orchestration (webhook + scheduled task)
 - **B — Boundary / edge density**
- - 0: input fechado (enum de 2 valores)
- - 1: input com 1 range
- - 2: input com múltiplos ranges (term 13m/16m, money, dates)
- - 3: input livre / unicode / locales / float
-- **H — Histórico de bug**
- - 0: módulo limpo
- - 1: 1 bug fechado >6m atrás
- - 2: bug recente (<3 meses)
- - 3: regressão recorrente / hotfix recente (caso GoSign CA — `project_gosign_rollout`)
+ - 0: closed input (2-value enum)
+ - 1: input with 1 range
+ - 2: input with multiple ranges (term 13m/16m, money, dates)
+ - 3: free input / unicode / locales / float
+- **H — Bug history**
+ - 0: clean module
+ - 1: 1 bug closed >6m ago
+ - 2: recent bug (<3 months)
+ - 3: recurring regression / recent hotfix (GoSign CA case — `project_gosign_rollout`)
 
-### Impacto (se quebrar)
-- **C — Cliente final atinge?**
- - 0: só agent vê (Origination/Servicing/AMS internos)
- - 1: customer-facing mas reversível
- - 2: customer-facing com efeito financeiro (signing, payment, schedule)
- - 3: customer-facing irreversível ou regulado (lease assinado errado, NACHA, NSF)
-- **F — Função crítica de negócio?**
- - 0: cosmético
- - 1: feature secundária
- - 2: feature core (origination, signing, payment)
- - 3: bloqueia revenue (não consegue submit, não consegue assinar, não consegue pagar)
+### Impact (if it breaks)
+- **C — Does the end customer hit it?**
+ - 0: only the agent sees it (internal Origination/Servicing/AMS)
+ - 1: customer-facing but reversible
+ - 2: customer-facing with a financial effect (signing, payment, schedule)
+ - 3: customer-facing irreversible or regulated (lease signed wrong, NACHA, NSF)
+- **F — Critical business function?**
+ - 0: cosmetic
+ - 1: secondary feature
+ - 2: core feature (origination, signing, payment)
+ - 3: blocks revenue (can't submit, can't sign, can't pay)
 - **A — Audit / compliance?**
- - 0: nada
- - 1: log interno
- - 2: trilha de auditoria de agent
- - 3: legal/regulatório (lease document, NACHA, sanctions, ECOA)
+ - 0: nothing
+ - 1: internal log
+ - 2: agent audit trail
+ - 3: legal/regulatory (lease document, NACHA, sanctions, ECOA)
 
-**Score total = (N + I + B + H) × (C + F + A)**
+**Total score = (N + I + B + H) × (C + F + A)**
 
-Range: 0 a 108. Bucket sugerido:
-- **P0 (crítico):** ≥60 — sempre testa, blocker se falhar
-- **P1 (alta):** 30–59 — testa nesta release
-- **P2 (média):** 10–29 — testa se houver tempo; caso contrário, próxima
-- **P3 (baixa):** <10 — backlog
+Range: 0 to 108. Suggested bucket:
+- **P0 (critical):** ≥60 — always test, blocker if it fails
+- **P1 (high):** 30–59 — test in this release
+- **P2 (medium):** 10–29 — test if there's time; otherwise, next
+- **P3 (low):** <10 — backlog
 
-## Procedimento
+## Procedure
 
-### Passo 1 — Receber candidatos
+### Step 1 — Receive candidates
 
-Pega a saída do `scope-analysis` (IN scope + edge cases). Lista cada cenário candidato em 1 linha (ID + descrição curta).
+Take the `scope-analysis` output (IN scope + edge cases). List each candidate scenario in 1 line (ID + short description).
 
-### Passo 2 — Pontuar
+### Step 2 — Score
 
-Tabela:
+Table:
 
-| ID | Cenário | N | I | B | H | C | F | A | Score | Bucket |
+| ID | Scenario | N | I | B | H | C | F | A | Score | Bucket |
 |---|---|---|---|---|---|---|---|---|---|---|
 | 1 | submit happy UOWN | 2 | 2 | 1 | 1 | 2 | 3 | 1 | 36 | P1 |
 | 2 | submit happy KS | 2 | 2 | 1 | 2 | 2 | 3 | 1 | 42 | P1 |
 | 3 | submit lease-edit UOWN | 3 | 2 | 2 | 3 | 2 | 3 | 1 | 60 | P0 |
 
-Justificativa por linha: 1 frase explicando o N e o C dominantes ("3-novelty: handler novo refatorado; 3-customer: dupla submissão gera contrato errado").
+Justification per row: 1 sentence explaining the dominant N and C ("3-novelty: new refactored handler; 3-customer: double submission generates the wrong contract").
 
-### Passo 3 — Validar com histórico de projeto
+### Step 3 — Validate against the project history
 
-Antes de fechar, varre:
-- `.claude/agent-memory/` — algum agent recente reportou bug nesse módulo?
-- `docs/taskTestingUown/*/report.md` — alguma task recente teve fail aqui?
-- User memories (`feedback_*`, `project_*`) — algum aprendizado direto do user?
+Before closing, sweep:
+- `.claude/agent-memory/` — did any recent agent report a bug in this module?
+- `docs/taskTestingUown/*/report.md` — did any recent task fail here?
+- User memories (`feedback_*`, `project_*`) — any direct learning from the user?
 
-Promove score em +5 se há hit recente. Documenta o hit como justificativa.
+Promote the score by +5 if there's a recent hit. Document the hit as justification.
 
-### Passo 4 — Aplicar regras de chão
+### Step 4 — Apply floor rules
 
-Algumas situações forçam P0 independente do score:
+Some situations force P0 regardless of the score:
 
-- Toca `submitApplication`, `MissingDataPanel`, Complete page → P0 dual-brand + lease-edit (`feedback_qa_flow_scope_dual_brand_lease_edit`)
-- Toca template GoSign de state X → P0 inclui regressão SignWell + diff visual (`project_gosign_rollout`)
-- Toca activity log (regra #13) → P0 incluir validação de log
-- Toca money flow → P0 incluir tolerância float
-- Toca OTP / email → P0 inclui IMAP click-link real (`feedback_email_imap_click_link`)
+- Touches `submitApplication`, `MissingDataPanel`, the Complete page → P0 dual-brand + lease-edit (`feedback_qa_flow_scope_dual_brand_lease_edit`)
+- Touches a GoSign template of state X → P0 includes SignWell regression + visual diff (`project_gosign_rollout`)
+- Touches the activity log (rule #13) → P0 includes log validation
+- Touches a money flow → P0 includes float tolerance
+- Touches OTP / email → P0 includes the real IMAP click-link (`feedback_email_imap_click_link`)
 
-### Passo 5 — Output
+### Step 5 — Output
 
 ```markdown
 ## Risk-Based Prioritization — {task-id}
 
-### Top-N (priorizado)
+### Top-N (prioritized)
 **P0 (must-have):**
-1. [score=60] submit lease-edit UOWN — novelty: handler refatorado, customer-facing irreversible
-2. [score=60] submit lease-edit KS — paridade brand obrigatória (regra dual-brand)
+1. [score=60] submit lease-edit UOWN — novelty: refactored handler, customer-facing irreversible
+2. [score=60] submit lease-edit KS — mandatory brand parity (dual-brand rule)
 3. ...
 
 **P1 (should-have):**
-4. [score=42] submit happy KS — feature core, sem mudança direta mas merchant config diferente
+4. [score=42] submit happy KS — core feature, no direct change but different merchant config
 ...
 
-**P2 (nice-to-have, se sobrar):**
+**P2 (nice-to-have, if there's room):**
 ...
 
 **P3 (defer):**
 ...
 
-### Forças aplicadas
-- Regra dual-brand (feedback_qa_flow_scope_dual_brand_lease_edit) — promoveu IDs 2 e 4
-- Histórico CA template (project_gosign_rollout) — promoveu ID X
+### Forces applied
+- Dual-brand rule (feedback_qa_flow_scope_dual_brand_lease_edit) — promoted IDs 2 and 4
+- CA template history (project_gosign_rollout) — promoted ID X
 
-### Cobertura escolhida
-Vou implementar: P0 + P1 = N cenários. P2/P3 ficam para próxima sprint.
+### Chosen coverage
+I will implement: P0 + P1 = N scenarios. P2/P3 are left for the next sprint.
 ```
 
-## Heurísticas
+## Heuristics
 
-- **Regra dos 80/20**: top 20% dos cenários por score normalmente capturam 80% do risco. Se você precisa cortar, corta de baixo pra cima.
-- **Regra do "se quebrar agora, quem grita?"**: cenário onde o cliente externo nota = sobe; cenário só de agent = mantém; cenário interno de dev = desce.
-- **Regra do hotfix**: pós-hotfix em prod, +1 em H para todo o módulo afetado por 30 dias.
-- **Regra do "primeira vez"**: se o vendor / integração nunca foi testada nesse path antes, +1 em I.
-- **Regra do "feliz mas tem 3 estados prévios"**: caminho feliz com pré-condições obrigatórias é mais frágil que parece — vale checar B.
+- **The 80/20 rule**: the top 20% of scenarios by score normally capture 80% of the risk. If you need to cut, cut from the bottom up.
+- **The "if it breaks now, who screams?" rule**: a scenario where the external customer notices = goes up; a scenario only for the agent = stays; an internal dev scenario = goes down.
+- **The hotfix rule**: post-hotfix in prod, +1 on H for the entire affected module for 30 days.
+- **The "first time" rule**: if the vendor / integration has never been tested on this path before, +1 on I.
+- **The "happy but with 3 prior states" rule**: a happy path with mandatory preconditions is more fragile than it looks — worth checking B.
 
-## Output esperado
+## Expected output
 
-Tabela + lista priorizada (template acima). 40–100 linhas. Sempre termina com **Cobertura escolhida** explícita — quais P-buckets entram nesta entrega.
+Table + prioritized list (template above). 40–100 lines. Always ends with an explicit **Chosen coverage** — which P-buckets enter this delivery.
 
 ## Anti-patterns
 
-- Priorizar por "ordem do ticket" — ordem do ticket não reflete risco.
-- Priorizar por "esse é mais fácil de implementar" — fácil não é risco. Implementar fácil quando ele é P3 e deixar P0 fora.
-- Cobertura "total" — se prometeu 100%, está prometendo errado.
-- Score sem justificativa de 1 linha — score só vale se é auditável.
-- Ignorar memórias de projeto — `feedback_*` e `project_*` são input obrigatório.
-- Não promover lease-edit / dual-brand quando aplica — viola regra inviolável.
+- Prioritizing by "ticket order" — the ticket order doesn't reflect risk.
+- Prioritizing by "this one is easier to implement" — easy is not risk. Implementing the easy one when it's P3 and leaving a P0 out.
+- "Total" coverage — if you promised 100%, you promised wrong.
+- A score without a 1-line justification — a score is only worth it if it's auditable.
+- Ignoring project memories — `feedback_*` and `project_*` are mandatory input.
+- Not promoting lease-edit / dual-brand when it applies — violates an inviolable rule.
 
-## Referências
+## References
 
 - `skill [[qa-domain-reflexes]]`
 - `skill [[application-lifecycle]]`

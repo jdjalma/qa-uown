@@ -1,199 +1,199 @@
 ---
 name: ssn-test-modalities
-description: Carregue ao planejar teste de application por programa: 13m, 13m+16m, ou 16m Second Look. Define SSNs de teste, regras de elegibilidade por merchant config, expected approval path.
+description: Load when planning an application test by program: 13m, 13m+16m, or 16m Second Look. Defines test SSNs, eligibility rules by merchant config, expected approval path.
 disable-model-invocation: true
 ---
 
 # SSN Test Modalities - UOWN Leasing
 
-> **Proposito:** tabela de decisao para SSNs de teste e receitas para criar aplicacoes nas 3 modalidades de programa (13m apenas / 13m+16m / 16m apenas).
+> **Purpose:** decision table for test SSNs and recipes for creating applications in the 3 program modalities (13m only / 13m+16m / 16m only).
 >
-> **Mandatario para:** `qa-planner`, `qa-implementer`, `qa-debugger`, e `/qa-flow`.
+> **Mandatory for:** `qa-planner`, `qa-implementer`, `qa-debugger`, and `/qa-flow`.
 
-> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **HOW TO TEST** — SSN catalog, modality recipes, brand coverage matrix. O **comportamento canônico do produto** (regras de elegibilidade, enums de UW, routing de templates por estado) NÃO mora aqui — é fonte única em `docs/business-rules/02-originacao-pipeline.md` + `appendix-e-campanhas-uw.md` e `src/config/constants.ts` (`generateTestSSN`). Para resolver um tópico, rode `node scripts/docs-tooling.mjs resolve underwriting` (ou `ssn`, `gowsign-routing`). Investigações recentes: `docs/knowledge-base/underwriting-and-funding-test-data-paths.md`. **Não duplique regras de produto aqui** — elas driftam.
+> **Authority boundary** (`docs/_docs-conventions.md` §7): this skill covers **HOW TO TEST** — SSN catalog, modality recipes, brand coverage matrix. The **canonical product behavior** (eligibility rules, UW enums, template routing by state) does NOT live here — the single source is `docs/business-rules/02-originacao-pipeline.md` + `appendix-e-campanhas-uw.md` and `src/config/constants.ts` (`generateTestSSN`). To resolve a topic, run `node scripts/docs-tooling.mjs resolve underwriting` (or `ssn`, `gowsign-routing`). Recent investigations: `docs/knowledge-base/underwriting-and-funding-test-data-paths.md`. **Do not duplicate product rules here** — they drift.
 
-> Catalogo completo de SSN values, ambientes, e brand coverage: [references/ssn-values.md](references/ssn-values.md)
+> Full catalog of SSN values, environments, and brand coverage: [references/ssn-values.md](references/ssn-values.md)
 
 ---
 
-## 1. Tabela de decisao - qual SSN usar
+## 1. Decision table - which SSN to use
 
-| Cenario | SSN | Merchant | Notas |
+| Scenario | SSN | Merchant | Notes |
 |---------|-----|----------|-------|
-| Aprovacao generica (qualquer modalidade) | `generateTestSSN(true)` | qualquer | Default para maioria dos testes |
-| Denial generico | `generateTestSSN(false)` (termina em 9) | qualquer | UW_DENIED imediato **so em sandbox/qa1** (mock). Em qa2 TERRACE_FINANCE aprova via BlackBox/ABB - ver caveat qa2 §6 |
-| 16m direto (single submission) | `888880916` (ou qualquer sufixo `916`) | qualquer com 16m ativo | NAO amarrado a profile |
-| Second Look (denied 13m -> approved 16m) | `100000053` | TireAgent + CA + profile Brian | Amarrado a profile especifico |
-| 13m + 16m (cliente escolhe) | `generateTestSSN(true)` | Kornerstone com 16m + bank data | planId seleciona modalidade |
-| BUGGY - evitar | `888888888` | - | NullPointerException no svc |
+| Generic approval (any modality) | `generateTestSSN(true)` | any | Default for most tests |
+| Generic denial | `generateTestSSN(false)` (ends in 9) | any | Immediate UW_DENIED **only in sandbox/qa1** (mock). In qa2 TERRACE_FINANCE approves via BlackBox/ABB - see qa2 caveat §6 |
+| 16m direct (single submission) | `888880916` (or any `916` suffix) | any with 16m active | NOT tied to a profile |
+| Second Look (denied 13m -> approved 16m) | `100000053` | TireAgent + CA + Brian profile | Tied to a specific profile |
+| 13m + 16m (customer chooses) | `generateTestSSN(true)` | Kornerstone with 16m + bank data | planId selects the modality |
+| BUGGY - avoid | `888888888` | - | NullPointerException in svc |
 
 ---
 
-## 2. Regra de elegibilidade 16m - INVIOLAVEL
+## 2. 16m eligibility rule - INVIOLABLE
 
-> **Axioma:** a possibilidade de criar aplicacao 16 meses depende **exclusivamente da configuracao do merchant**, NAO da brand (UOWN vs Kornerstone).
+> **Axiom:** the possibility of creating a 16-month application depends **exclusively on the merchant's configuration**, NOT on the brand (UOWN vs Kornerstone).
 
-### Condicao necessaria e suficiente
+### Necessary and sufficient condition
 
-Merchant suporta 16m se tem `uown_merchant_program` com `term_in_months=16` + `is_active=true` + janela de data valida.
+A merchant supports 16m if it has a `uown_merchant_program` with `term_in_months=16` + `is_active=true` + a valid date window.
 
-### Implicacoes
+### Implications
 
-- **Qualquer merchant** (UOWN ou Kornerstone) com 16m configurado suporta
-- NAO existe "brand X nao oferece 16m por design"
-- `ensureMerchantReady` valida o contrato automaticamente
-- Contrato canonico: `src/data/merchant-config-contract.ts`
+- **Any merchant** (UOWN or Kornerstone) with 16m configured supports it
+- There is NO "brand X does not offer 16m by design"
+- `ensureMerchantReady` validates the contract automatically
+- Canonical contract: `src/data/merchant-config-contract.ts`
 
 ---
 
-## 3. Modalidades de programa - receitas
+## 3. Program modalities - recipes
 
-### Modalidade A - 13m apenas
+### Modality A - 13m only
 
-| Campo | Valor |
+| Field | Value |
 |-------|-------|
 | SSN | `generateTestSSN(true)` |
-| Merchant | qualquer sem 16m ativo |
-| Bank data | NAO enviar |
+| Merchant | any without 16m active |
+| Bank data | do NOT send |
 
-**Expected:** `paymentDetailsList` contem apenas `planId` padrao `*13`.
+**Expected:** `paymentDetailsList` contains only the default `planId` `*13`.
 
-### Modalidade B - 13m + 16m (cliente escolhe)
+### Modality B - 13m + 16m (customer chooses)
 
-| Campo | Valor |
+| Field | Value |
 |-------|-------|
 | SSN | `generateTestSSN(true)` |
-| Merchant | Kornerstone (ex: `KS3015`) com 13m E 16m ativos |
+| Merchant | Kornerstone (e.g., `KS3015`) with both 13m AND 16m active |
 | Bank data | `TEST_BANK.DEFAULT_ROUTING` + `TEST_BANK.DEFAULT_ACCOUNT` |
 
-**Fluxo:** `sendApplication` retorna ambos -> `getMissingFields(shortCode, planId)` -> `submitApplication` com planId escolhido.
+**Flow:** `sendApplication` returns both -> `getMissingFields(shortCode, planId)` -> `submitApplication` with the chosen planId.
 
-### Modalidade C.1 - 16m direto (preferida)
+### Modality C.1 - 16m direct (preferred)
 
-| Campo | Valor |
+| Field | Value |
 |-------|-------|
-| SSN | `888880916` (sufixo `916` forca EligibleTerms 16) |
-| Merchant | qualquer com 16m ativo |
-| Profile | qualquer valido |
+| SSN | `888880916` (the `916` suffix forces EligibleTerms 16) |
+| Merchant | any with 16m active |
+| Profile | any valid |
 
-> **Route B — merchant 16m-only por programa (Daniel's clone `OL90205-0079_clone`, qa2, 2026-06-22):** neste clone EligibleTerms 16 vem do merchant ser **16m-only por programa** (não do sufixo SSN). Logo **QUALQUER SSN aprovador** rende 16m — um `generateTestSSN(true)` com sufixo `916` fresco funciona; **NÃO está amarrado** ao sticky `082390916`. Preferir SSN fresco aqui (ver caveat de routing de assinatura abaixo e [[application-lifecycle]] #132). `[test-execution:qa2, leads 16865/16866/16867]`.
+> **Route B — merchant 16m-only by program (Daniel's clone `OL90205-0079_clone`, qa2, 2026-06-22):** in this clone EligibleTerms 16 comes from the merchant being **16m-only by program** (not from the SSN suffix). Therefore **ANY approving SSN** yields 16m — a fresh `generateTestSSN(true)` with a `916` suffix works; it is **NOT tied** to the sticky `082390916`. Prefer a fresh SSN here (see the signing routing caveat below and [[application-lifecycle]] #132). `[test-execution:qa2, leads 16865/16866/16867]`.
 
-### Modalidade C.2 - 16m Second Look
+### Modality C.2 - 16m Second Look
 
-| Campo | Valor |
+| Field | Value |
 |-------|-------|
 | SSN | `100000053` |
 | Merchant | TireAgent |
-| Profile | Brian/hayden/Columbus/92821/CA (INVIOLAVEL) |
+| Profile | Brian/hayden/Columbus/92821/CA (INVIOLABLE) |
 
-**Fluxo:** 1a submissao sem bank data -> UW_DENIED + preview 16m -> 2a submissao com bank data -> UW_APPROVED 16m.
+**Flow:** 1st submission without bank data -> UW_DENIED + 16m preview -> 2nd submission with bank data -> UW_APPROVED 16m.
 
-> **Gatilho do `tam_score` (GDS snapshot):** a familia Second Look `100000053` (TireAgent) e o caminho que produz `tam_score` em `uown_los_uwdata`/`uown_sv_uwdata` — mas SO quando a 2a submissao aprova 16m. Em **qa2 essa modalidade DENEGA e short-circuita** (Second Look validado so em **stg**), logo `tam_score` e **inalcancavel em qa2** (`count=0` sobre 6046+2037 linhas, discovery 2026-06-19). O env-alvo p/ `tam_score` (stg vs dev2) esta **PENDENTE de confirmacao do Marcos** — nao afirmar como fato. O outro campo, `npm_segment`, vem de **qualquer decisao GDS 16m** (Kornerstone/UOWN/PayTomorrow) e NAO esta amarrado a SSN. Detalhe: `docs/knowledge-base/npm-segment-tam-score-snapshot-routing.md`.
+> **`tam_score` trigger (GDS snapshot):** the Second Look family `100000053` (TireAgent) is the path that produces `tam_score` in `uown_los_uwdata`/`uown_sv_uwdata` — but ONLY when the 2nd submission approves 16m. In **qa2 this modality DENIES and short-circuits** (Second Look validated only in **stg**), so `tam_score` is **unreachable in qa2** (`count=0` over 6046+2037 rows, discovery 2026-06-19). The target env for `tam_score` (stg vs dev2) is **PENDING confirmation from Marcos** — do not state it as a fact. The other field, `npm_segment`, comes from **any GDS 16m decision** (Kornerstone/UOWN/PayTomorrow) and is NOT tied to a SSN. Detail: `docs/knowledge-base/npm-segment-tam-score-snapshot-routing.md`.
 
-### Modalidade D - Denied
+### Modality D - Denied
 
-| Campo | Valor |
+| Field | Value |
 |-------|-------|
 | SSN | `generateTestSSN(false)` |
 
-**Expected:** UW_DENIED imediato.
+**Expected:** immediate UW_DENIED.
 
 ---
 
-## 4. Checklist obrigatorio (spec-test)
+## 4. Mandatory checklist (spec-test)
 
-Ao planejar CTs de feature que envolve `sendApplication`:
+When planning CTs for a feature that involves `sendApplication`:
 
-- [ ] CT para **Modalidade A (13m apenas)** planejado?
-- [ ] CT para **Modalidade B (13m+16m)** planejado?
-- [ ] CT para **Modalidade C (16m)** planejado?
-- [ ] CT para **Modalidade D (denied)** planejado?
-- [ ] Cada modalidade tem CT para UOWN E Kornerstone?
+- [ ] CT for **Modality A (13m only)** planned?
+- [ ] CT for **Modality B (13m+16m)** planned?
+- [ ] CT for **Modality C (16m)** planned?
+- [ ] CT for **Modality D (denied)** planned?
+- [ ] Does each modality have a CT for UOWN AND Kornerstone?
 
-### Quando omitir modalidade
+### When to omit a modality
 
-- Feature 100% servicing/portal-only (sem sendApplication) - todas N/A
-- Feature especifica de uma modalidade - justificar no SPEC
-- Fixture limitada no ambiente-alvo - documentar como `test.skip` condicional
+- Feature 100% servicing/portal-only (no sendApplication) - all N/A
+- Feature specific to one modality - justify in the SPEC
+- Limited fixture in the target environment - document as a conditional `test.skip`
 
-Toda omissao DEVE ser explicita. Silent skips nao sao aceitos.
+Every omission MUST be explicit. Silent skips are not accepted.
 
 ---
 
-## 5. Brand coverage - UOWN + Kornerstone (INVIOLAVEL)
+## 5. Brand coverage - UOWN + Kornerstone (INVIOLABLE)
 
-> Toda feature que cria aplicacao DEVE ter CTs para **ambas as brands**.
+> Every feature that creates an application MUST have CTs for **both brands**.
 
-### Matriz brand x modalidade
+### Brand × modality matrix
 
-| Modalidade | UOWN | Kornerstone |
+| Modality | UOWN | Kornerstone |
 |------------|------|-------------|
-| A - 13m | merchant UOWN sem 16m | merchant KS sem banking/BIN |
-| B - 13m+16m | UOWN com ambos + banking | `KS3015` + banking + BIN |
-| C.1 - 16m direto | UOWN com 16m + SSN 916 | KS1337 + SSN 916 |
-| C.2 - Second Look | TireAgent + 100000053 | N/A documentado |
+| A - 13m | UOWN merchant without 16m | KS merchant without banking/BIN |
+| B - 13m+16m | UOWN with both + banking | `KS3015` + banking + BIN |
+| C.1 - 16m direct | UOWN with 16m + SSN 916 | KS1337 + SSN 916 |
+| C.2 - Second Look | TireAgent + 100000053 | N/A documented |
 | D - Denied | `generateTestSSN(false)` | `generateTestSSN(false)` |
 
-### Checklist de brand coverage
+### Brand coverage checklist
 
-- [ ] Cada modalidade tem CT para UOWN?
-- [ ] Cada modalidade tem CT para Kornerstone?
-- [ ] Cada CT Kornerstone valida `uown_sv_account.company='KORNERSTONE'`?
-- [ ] CTs com UI/email tem assertions de styling por brand?
-- [ ] Cross-contamination check (brand A nao tem marcadores de brand B)?
+- [ ] Does each modality have a CT for UOWN?
+- [ ] Does each modality have a CT for Kornerstone?
+- [ ] Does each Kornerstone CT validate `uown_sv_account.company='KORNERSTONE'`?
+- [ ] Do CTs with UI/email have per-brand styling assertions?
+- [ ] Cross-contamination check (brand A has no brand B markers)?
 
-Silent skip de brand = violacao.
+A silent brand skip = a violation.
 
-### 5.1. Kornerstone brand-parity findings — abertos, NAO confirmados
+### 5.1. Kornerstone brand-parity findings — open, NOT confirmed
 
-> Descobertos ao validar snapshot por brand. Ambos `[HIPÓTESE]`/`[OBSERVAÇÃO]` — NAO tratar como bug confirmado; candidatos a confirmar com dev/PO.
+> Discovered while validating the per-brand snapshot. Both `[HYPOTHESIS]`/`[OBSERVATION]` — do NOT treat as a confirmed bug; candidates to confirm with dev/PO.
 
-- **OQ-KS-1 `[HIPÓTESE]`:** `uown_los_lead.company='UOWN'` (propagando para `uown_sv_account.company`) em leads funded de **KS1011 / merchant_pk=315**, apesar de `client_type=KORNERSTONE`. Hipotese: a **brand e carimbada na CRIACAO do lead**, NAO no funding/copia do snapshot — o proprio snapshot carrega corretamente `merchant_pk=315` + `fraud_threshold=5`. Reproduzido **3×** em qa2. Candidato a app issue — confirmar com dev/PO antes de classificar como bug. Impacta o checklist de brand coverage (§5): a assertion `uown_sv_account.company='KORNERSTONE'` pode falhar legitimamente por este motivo — investigar a fonte antes de marcar o teste como red. Tag: `[db-observation:qa2,2026-06-17]` + `[test-execution:qa2, KS1011/merchant_pk=315]`.
-- **OQ-KS-2 `[OBSERVAÇÃO]`:** KS `submitApplication` retorna `"Failed to verify identification"` apesar de `is_seon_id_check_required=FALSE`. Co-sinal de OQ-KS-1 (ambos em fluxo Kornerstone qa2). Tag: `[api-response:submitApplication]` + `[test-execution:qa2]`.
-
----
-
-## 6. Principios
-
-- `generateTestSSN(true|false)` e o gerador canonico - NUNCA fixar SSN para testes genericos
-- Ultimo digito `9` forca denial no motor UW mockado (convencao sandbox/qa1 — caveat qa2 §6: no-op em qa2; e a memoria datada `ssn9-denial-gate-off-sandbox-qa1` indica gate OFF tambem em sandbox/qa1 desde 2026-06-17 → cross-check antes de assumir denial). Para denial deterministico em qa2 usar `auto_deny_application` (§6.1)
-- Sufixo `916` forca EligibleTerms 16 no mock BlackBox (qa1 confirmado 2026-05-24)
-
-### Caveat qa2 - UW denial determinism e environment-specific (INVIOLAVEL)
-
-> O "ending-in-9 -> UW_DENIED" e um gate de **test-server** controlado por config boolean, NAO uma propriedade da credit engine. So dispara em **nao-prod** e quando a flag `deny.ssn.ending.with.9` esta `true`. Em **sandbox/qa1** a flag esta efetivamente `true` (nega); em **qa2** esta efetivamente `false` (aprova).
-
-- **Config que controla:** `com.uownleasing.svc.service.SendApplicationService.deny.ssn.ending.with.9` (boolean, default no codigo `true`). Codigo: `svc/.../application/SendApplicationService.java:361-365` — nega se `!isProduction()` **E** flag `true` **E** `mainSSN.endsWith("9")`. Store: tabela `uown_configuration_management(key,value)` (key ausente em qa2 → default `true` deveria valer; override `false` vem de properties de deploy acima da tabela, `[HIPÓTESE]`). **TESTADO 2026-06-16: setar a key `=true` (via `POST /ConfigurationManagement/createOrUpdateConfig` + `forceReloadConfig`) NAO bastou em qa2** — ending-in-9 ainda aprovou (lead 16583). A denial tambem exige `!isProduction()`; qa2 e tratado como prod p/ esse gate (ou build defasado). Config sozinha NAO habilita denial em qa2 → usar sandbox/qa1 ou escalar dev/DevOps. (Config foi revertida.)
-- `[CONFIRMADO]` (2026-06-16, qa2): um lead terraceFinance com SSN ending-in-9 retornou **UW_APPROVED** com **0 vendor calls** em `uown_los_outbound_api_log` (o gate nao disparou → BlackBox decidiu) - `[db-observation:uown_los_lead_notes]`. Reproduzir com `src/scripts/probe-uw-denial-engine.ts <env> <leadPk>`.
-- **Antes de usar ending-in-9 como trigger de denial fora de sandbox/qa1:** confirmar a engine decisora via `uown_los_outbound_api_log` / `uown_los_lead_notes`. Se a engine real decide, o mock nao dispara.
-- **SUPERSEDED (parcialmente):** o ending-in-9 mock e no-op em qa2, mas **agora EXISTE um trigger de denial deterministico em qa2** — `uown_merchant.auto_deny_application=TRUE` (ver §6.1 abaixo). Isso substitui o gap anterior que dizia "sem trigger UW_DENIED deterministico em qa2". Nuance: auto-deny e PRE-UW, NAO exercita o decline literal da engine UW (ver §6.1).
-- Para testes que precisam de um **lead DENIED** em qa2: usar `auto_deny_application` (§6.1). Para testar o **decline literal da engine de underwriting** em qa2/prod-like: rodar o cenario negativo em sandbox/qa1 (mock honrado) OU obter trigger `UW_DENIED` da engine confirmado pela PO/dev — auto-deny e pre-UW e nao substitui esse AC especifico. Pre-UW deny (Blacklist button -> BLACKLIST_DENIED, no-business-in-state) NAO e "denied by underwriting" e nao substitui o AC de decline da engine.
-- Cross-link: [[application-lifecycle]] Pitfall #109; `docs/knowledge-base/underwriting-and-funding-test-data-paths.md`; [[fraud-vendors-knowledge]] §5; memoria datada `ssn9-denial-gate-off-sandbox-qa1` (gate OFF tambem em sandbox/qa1 desde 2026-06-17 — cross-check, nao copiar cego).
+- **OQ-KS-1 `[HYPOTHESIS]`:** `uown_los_lead.company='UOWN'` (propagating to `uown_sv_account.company`) in funded leads of **KS1011 / merchant_pk=315**, despite `client_type=KORNERSTONE`. Hypothesis: the **brand is stamped at lead CREATION**, NOT at funding/snapshot copy — the snapshot itself correctly carries `merchant_pk=315` + `fraud_threshold=5`. Reproduced **3x** in qa2. Candidate app issue — confirm with dev/PO before classifying as a bug. It impacts the brand coverage checklist (§5): the assertion `uown_sv_account.company='KORNERSTONE'` may legitimately fail for this reason — investigate the source before marking the test red. Tag: `[db-observation:qa2,2026-06-17]` + `[test-execution:qa2, KS1011/merchant_pk=315]`.
+- **OQ-KS-2 `[OBSERVATION]`:** KS `submitApplication` returns `"Failed to verify identification"` despite `is_seon_id_check_required=FALSE`. Co-signal of OQ-KS-1 (both in the Kornerstone qa2 flow). Tag: `[api-response:submitApplication]` + `[test-execution:qa2]`.
 
 ---
 
-### 6.1. Receita de denial DETERMINISTICO em qa2 — `auto_deny_application` (INVIOLAVEL)
+## 6. Principles
 
-> **`uown_merchant.auto_deny_application = TRUE` e o trigger de denial deterministico e vendor-independent para qa2.** Independe da engine UW (real ou mock), independe de SSN.
+- `generateTestSSN(true|false)` is the canonical generator - NEVER fix an SSN for generic tests
+- The last digit `9` forces denial in the mocked UW engine (sandbox/qa1 convention — qa2 caveat §6: no-op in qa2; and the dated memory `ssn9-denial-gate-off-sandbox-qa1` indicates the gate is OFF in sandbox/qa1 as well since 2026-06-17 → cross-check before assuming denial). For deterministic denial in qa2 use `auto_deny_application` (§6.1)
+- The `916` suffix forces EligibleTerms 16 in the BlackBox mock (qa1 confirmed 2026-05-24)
 
-- **Onde dispara:** origination pipeline **Step 2 `merchantAutoDenyCheck`** — **PRE-UW**, ANTES do underwriting engine.
-- **Resultado:** `uown_los_lead.lead_status='DENIED'` (motivo interno `MERCHANT_AUTO_DENIED`) — **distinto de `UW_DENIED`** (o decline da engine UW). Ambos os valores existem como estados separados em qa2.
+### Caveat qa2 - UW denial determinism is environment-specific (INVIOLABLE)
+
+> The "ending-in-9 -> UW_DENIED" is a **test-server** gate controlled by a boolean config, NOT a property of the credit engine. It only fires in **non-prod** and when the flag `deny.ssn.ending.with.9` is `true`. In **sandbox/qa1** the flag is effectively `true` (denies); in **qa2** it is effectively `false` (approves).
+
+- **Controlling config:** `com.uownleasing.svc.service.SendApplicationService.deny.ssn.ending.with.9` (boolean, code default `true`). Code: `svc/.../application/SendApplicationService.java:361-365` — denies when `!isProduction()` **AND** flag is `true` **AND** `mainSSN.endsWith("9")`. Store: table `uown_configuration_management(key,value)` (key absent in qa2 → default `true` should apply; the `false` override comes from deploy-level properties above the table, `[HYPOTHESIS]`). **TESTED 2026-06-16: setting the key `=true` (via `POST /ConfigurationManagement/createOrUpdateConfig` + `forceReloadConfig`) was NOT enough in qa2** — ending-in-9 still approved (lead 16583). Denial also requires `!isProduction()`; qa2 is treated as prod for this gate (or a stale build is deployed). Config alone does NOT enable denial in qa2 → use sandbox/qa1 or escalate to dev/DevOps. (Config was reverted.)
+- `[CONFIRMED]` (2026-06-16, qa2): a terraceFinance lead with an SSN ending-in-9 returned **UW_APPROVED** with **0 vendor calls** in `uown_los_outbound_api_log` (gate did not fire → BlackBox decided) - `[db-observation:uown_los_lead_notes]`. Reproduce with `src/scripts/probe-uw-denial-engine.ts <env> <leadPk>`.
+- **Before using ending-in-9 as a denial trigger outside sandbox/qa1:** confirm the decision engine via `uown_los_outbound_api_log` / `uown_los_lead_notes`. If the real engine decides, the mock does not fire.
+- **PARTIALLY SUPERSEDED:** the ending-in-9 mock is a no-op in qa2, but **a deterministic denial trigger NOW EXISTS in qa2** — `uown_merchant.auto_deny_application=TRUE` (see §6.1 below). This replaces the previous gap that said "no deterministic UW_DENIED trigger in qa2". Nuance: auto-deny is PRE-UW, does NOT exercise a literal decline from the UW engine (see §6.1).
+- For tests that need a **DENIED lead** in qa2: use `auto_deny_application` (§6.1). To test the **literal decline from the underwriting engine** in qa2/prod-like: run the negative scenario in sandbox/qa1 (mock honored) OR obtain a `UW_DENIED` trigger from the engine confirmed by the PO/dev — auto-deny is pre-UW and does not substitute for that specific AC. Pre-UW deny (Blacklist button -> BLACKLIST_DENIED, no-business-in-state) is NOT "denied by underwriting" and does not substitute the engine decline AC.
+- Cross-link: [[application-lifecycle]] Pitfall #109; `docs/knowledge-base/underwriting-and-funding-test-data-paths.md`; [[fraud-vendors-knowledge]] §5; dated memory `ssn9-denial-gate-off-sandbox-qa1` (gate OFF also in sandbox/qa1 since 2026-06-17 — cross-check, do not copy blindly).
+
+---
+
+### 6.1. DETERMINISTIC denial recipe in qa2 — `auto_deny_application` (INVIOLABLE)
+
+> **`uown_merchant.auto_deny_application = TRUE` is the deterministic, vendor-independent denial trigger for qa2.** Independent of the UW engine (real or mock), independent of SSN.
+
+- **Where it fires:** origination pipeline **Step 2 `merchantAutoDenyCheck`** — **PRE-UW**, BEFORE the underwriting engine.
+- **Result:** `uown_los_lead.lead_status='DENIED'` (internal reason `MERCHANT_AUTO_DENIED`) — **distinct from `UW_DENIED`** (the UW engine decline). Both values exist as separate states in qa2.
 - **Activity log:** `Executed: merchantAutoDenyCheck → Application denied as merchant is set to be auto denied`.
-- **Quando usar:** quando o teste precisa de um lead **DENIED** em qa2 (o mock ending-in-9 e no-op em qa2 — ver §6 e memoria `ssn9-denial-gate-off-sandbox-qa1`).
-- **Nuance critica:** auto-deny e denial **PRE-UW** — **NAO exercita um decline literal da engine de underwriting**. Para AC que exige especificamente "denied BY underwriting", isto NAO substitui (usar sandbox/qa1 ou trigger de engine confirmado).
-- **Mutacao do merchant:** ligar/desligar `auto_deny_application` e UPDATE no DB (Exception 2/3 do CLAUDE.md) — exige autorizacao explicita do user; preferir setup via UI de merchant config quando disponivel. NAO deixar o flag ligado apos o teste se outras suites usam o mesmo merchant.
+- **When to use:** when the test needs a **DENIED lead** in qa2 (the ending-in-9 mock is a no-op in qa2 — see §6 and memory `ssn9-denial-gate-off-sandbox-qa1`).
+- **Critical nuance:** auto-deny is a **PRE-UW** denial — it does **NOT exercise a literal decline from the underwriting engine**. For an AC that specifically requires "denied BY underwriting", this does NOT substitute (use sandbox/qa1 or a confirmed engine trigger).
+- **Merchant mutation:** toggling `auto_deny_application` on/off is a DB UPDATE (CLAUDE.md Exception 2/3) — requires explicit user authorization; prefer setup via merchant config UI when available. Do NOT leave the flag enabled after the test if other suites use the same merchant.
 - **Tag:** `[db-observation:qa2,2026-06-17]` + `[test-execution:qa2, leads 16597/16598]`.
-- SSN `100000053` e amarrado a profile exato - reusar com dados diferentes causa ADDRESS_MISMATCH
-- Kornerstone (KS*) sempre recebe 16m por rota separada (independente de sufixo SSN)
-- Brand e ortogonal a modalidade - depende da config do merchant, nao do nome
+- SSN `100000053` is tied to an exact profile - reusing it with different data causes ADDRESS_MISMATCH
+- Kornerstone (KS*) always gets 16m via a separate route (independent of SSN suffix)
+- Brand is orthogonal to modality - depends on merchant config, not on the name
 
-### Routing do template por CUSTOMER state — Daniel's clone `OL90205-0079_clone` (qa2, 2026-06-22)
+### Template routing by CUSTOMER state — Daniel's clone `OL90205-0079_clone` (qa2, 2026-06-22)
 
-> **CORREÇÃO da nota antiga "INSTORE → store-state CA template" (resolve Open Question Q1 do SPEC `docs/scenarios/ohio-scenario3-contract-validation-spec.md`):** o clone roteia o template GowSign pelo **CUSTOMER state**, NÃO pelo store state CA. Customer OH → `OH_2025_SAC_16_MONTHS`. `[CONFIRMADO]` em qa2 (leads 16865/16866/16867) — contradiz a regra documentada "INSTORE roteia por merchant state". Antes de confiar na regra INSTORE→merchant-state para este clone, **assertar o template selecionado** (`assertSelectedTemplateForLead`). Cross-link: [[gowsign-knowledge]] OH render facts, [[volatile-knowledge-registry]] §17 (GowSign state-routing).
+> **CORRECTION of the old note "INSTORE → store-state CA template" (resolves Open Question Q1 in SPEC `docs/scenarios/ohio-scenario3-contract-validation-spec.md`):** the clone routes the GowSign template by **CUSTOMER state**, NOT by the store state CA. Customer OH → `OH_2025_SAC_16_MONTHS`. `[CONFIRMED]` in qa2 (leads 16865/16866/16867) — contradicts the documented rule "INSTORE routes by merchant state". Before trusting the INSTORE→merchant-state rule for this clone, **assert the selected template** (`assertSelectedTemplateForLead`). Cross-link: [[gowsign-knowledge]] OH render facts, [[volatile-knowledge-registry]] §17 (GowSign state-routing).
 
 ---
 
-## 7. Referencias cruzadas
+## 7. Cross-references
 
 - Business rule: `docs/business-rules/02-originacao-pipeline.md`
 - Brand/company enum: `Company.java` (`UOWN`, `KORNERSTONE`)
@@ -203,4 +203,4 @@ Silent skip de brand = violacao.
 - SSN generator: `src/config/constants.ts` - `generateTestSSN(approved: boolean)`
 - Application lifecycle: [[application-lifecycle]]
 
-> Detalhes de SSN values, ambientes confirmados, queries de validacao, e brand styling checks: [references/ssn-values.md](references/ssn-values.md)
+> SSN values, confirmed environments, validation queries, and brand styling checks in detail: [references/ssn-values.md](references/ssn-values.md)

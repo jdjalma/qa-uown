@@ -124,7 +124,7 @@ AC-2/AC-3 oracle. Captured the **Signwell** AL contract in **qa1** (which has no
 
 ### Modify / re-analysis with more items (lead 16660) — regression persists
 
-Tested the "re-análise com mais itens" path: fresh AL lead on TerraceFinance (qa2), invoiced with the default 2 items (contract A), then **re-invoiced with 4 items via `orderType='1'` (modify)** → contract B regenerated (new shortCode, recalculated). Driver: `tests/api/__scratch_alabama_modify_items_svc555.spec.ts`.
+Tested the "re-analysis with more items" path: fresh AL lead on TerraceFinance (qa2), invoiced with the default 2 items (contract A), then **re-invoiced with 4 items via `orderType='1'` (modify)** → contract B regenerated (new shortCode, recalculated). Driver: `tests/api/__scratch_alabama_modify_items_svc555.spec.ts`.
 
 - ✅ **Re-analysis works.** Contract B's "Items On Lease" table rendered **all 4 items** (Ottoman $500, Recliner $300, **Sofa $600, Dining Table $400**); totals/EPO recalculated ($2,078.61 total, 56 × $36.40, 90-Day EPO $2,020.00). The modified lead reached `uown_esign_document` pk13854 `client='GOWSIGN'`, `status='SENT_TO_CUSTOMER'`.
 - 🔴 **Regression persists unchanged.** Backend missing-token log for 16660 = **same 3 tokens** `[payOffDiscountPercent, epoDays, nextPaymentDueAmount]` as the un-modified 13m contract (16649). More items does **not** fix or worsen the blanks. `[confirmed]` (backend log + UI items table; same `AL_2025_SAC` template already visually proven to render those 3 blank).

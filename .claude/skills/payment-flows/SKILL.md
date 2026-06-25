@@ -6,13 +6,13 @@ disable-model-invocation: true
 
 # Payment Flows — UOWN domain knowledge
 
-> Tudo que um teste de payment precisa saber. Para tabelas detalhadas de endpoints, DB columns, enums, e activity log patterns, ver [references/endpoints-tables.md](references/endpoints-tables.md).
+> Everything a payment test needs to know. For detailed endpoint tables, DB columns, enums, and activity log patterns, see [references/endpoints-tables.md](references/endpoints-tables.md).
 
-> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **HOW TO TEST** — patterns, sequências, pitfalls. O **comportamento canônico do produto** (enums `PaymentStatus`/`AllocationStrategy`, máquina de estado, regras de sweep) NÃO mora aqui — é fonte única em `docs/business-rules/05-pagamentos.md` + `04-calculos-financeiros.md` e `src/api/clients/payment-arrangement.client.ts`. Para resolver um tópico, rode `node scripts/docs-tooling.mjs resolve cc-payments` (ou `ach-payments`, `nsf-fee`, `sweeps`). Investigações recentes: `docs/knowledge-base/*sticky*`. **Não duplique regras de produto aqui** — elas driftam.
+> **Authority boundary** (`docs/_docs-conventions.md` §7): this skill covers **HOW TO TEST** — patterns, sequences, pitfalls. The **canonical product behavior** (enums `PaymentStatus`/`AllocationStrategy`, state machine, sweep rules) does NOT live here — the single source is `docs/business-rules/05-pagamentos.md` + `04-calculos-financeiros.md` and `src/api/clients/payment-arrangement.client.ts`. To resolve a topic, run `node scripts/docs-tooling.mjs resolve cc-payments` (or `ach-payments`, `nsf-fee`, `sweeps`). Recent investigations: `docs/knowledge-base/*sticky*`. **Do not duplicate product rules here** — they drift.
 
-## Quando aplicar
+## When to apply
 
-Aplicar quando teste/PR toca:
+Apply when a test/PR touches:
 - Origination contract page (CC_AUTH_PASSED flow)
 - Servicing portal payments (CC/ACH, Payment History, CC Transactions, Due Amounts)
 - API payment arrangement (`PaymentArrangementClient`)
@@ -21,7 +21,7 @@ Aplicar quando teste/PR toca:
 - Refund flows (PT refund, status revert)
 - 13m vs 16m program selection
 
-NAO aplicar para: signing (use `gowsign-knowledge`), fraud-vendor (use `fraud-vendors-knowledge`), merchant-config (use `merchant-preflight`).
+Do NOT apply for: signing (use `gowsign-knowledge`), fraud-vendor (use `fraud-vendors-knowledge`), merchant-config (use `merchant-preflight`).
 
 ## Lease state machine (payment context)
 
@@ -64,129 +64,129 @@ Calls `ensureMerchantReady` (rule 12), fills bank info for Kornerstone, avoids t
 
 ## Refund / Reverse via Servicing (dev3 2026-06-01)
 
-**Tela correta:** `/payment-history/{accountPk}` (History - Payments), NAO `/payment-transaction`. A tela Transaction mostra resumo financeiro mas NAO tem icone de reverse por linha.
+**Correct screen:** `/payment-history/{accountPk}` (History - Payments), NOT `/payment-transaction`. The Transaction screen shows a financial summary but does NOT have a per-row reverse icon.
 
 - **Page object:** `PaymentHistoryPage` (`src/pages/servicing/payment-history.page.ts`)
-- **Icone de reverse:** `svg[data-icon="arrow-rotate-left"]` (NAO `.fa-undo`)
-- **`reverseReason` e React Select** (`<div>`, NAO `<select>` nativo): selecionar via clique no controle + clique na opcao. `selectOption` NAO funciona. Confirmar `tagName` via `browser_evaluate` antes de qualquer assert.
-- **Opcoes do dropdown (texto exato no DOM):** "Reverse", "Fully Refund", "**Partially** Refund" (NAO "Partial Refund" - o enum `ReverseReason.PARTIAL_REFUND` tem valor de texto errado)
-- **Campo amount (`#paymentAmount`)** visivel APENAS quando "Partially Refund" e selecionado
-- **Activity log:** refund vai para `uown_sv_activity_log` (acao de Servicing), NAO `uown_los_lead_notes` (LOS) - mesma tabela do Move Due Date
+- **Reverse icon:** `svg[data-icon="arrow-rotate-left"]` (NOT `.fa-undo`)
+- **`reverseReason` is a React Select** (`<div>`, NOT a native `<select>`): select via click on the control + click on the option. `selectOption` does NOT work. Confirm `tagName` via `browser_evaluate` before any assert.
+- **Dropdown options (exact text in DOM):** "Reverse", "Fully Refund", "**Partially** Refund" (NOT "Partial Refund" — the enum `ReverseReason.PARTIAL_REFUND` has the wrong text value)
+- **Amount field (`#paymentAmount`)** is visible ONLY when "Partially Refund" is selected
+- **Activity log:** refund goes to `uown_sv_activity_log` (Servicing action), NOT `uown_los_lead_notes` (LOS) — same table as Move Due Date
 
-Cross-links: application-lifecycle pitfalls #77 (tela) e #78 (React Select). Page object catalog em [[page-object-pattern]].
+Cross-links: application-lifecycle pitfalls #77 (screen) and #78 (React Select). Page object catalog in [[page-object-pattern]].
 
 ## Make Payment via Servicing (modal `#makePayment`, dev3 2026-06-01)
 
-**ACH Make Payment e ASSINCRONO.** Ao submeter ACH pelo modal `#makePayment`, o efeito IMEDIATO (sincrono) e:
-- `uown_sv_achpayment` com `status='PENDING'`, `amount=X`, `ach_process_type='REQUEST'`
-- Activity log sincrono em `uown_sv_activity_log`: `ADDED : ACHPayment[...status=PENDING...amount=X...]`
+**ACH Make Payment is ASYNCHRONOUS.** When submitting ACH via the `#makePayment` modal, the IMMEDIATE (synchronous) effect is:
+- `uown_sv_achpayment` with `status='PENDING'`, `amount=X`, `ach_process_type='REQUEST'`
+- Synchronous activity log in `uown_sv_activity_log`: `ADDED : ACHPayment[...status=PENDING...amount=X...]`
 
-O que NAO existe imediatamente (so pos-sweep, via cron `CreateScheduledACHPaymentsSweep` 19:00 diario):
+What does NOT exist immediately (only after the sweep, via cron `CreateScheduledACHPaymentsSweep` at 19:00 daily):
 - `uown_sv_payment` row
 - `ADDED : Payment[paymentType=ACH...]` DATA_CHANGE log
-- `status='PICKED_TO_SEND'` em `uown_sv_achpayment`
+- `status='PICKED_TO_SEND'` in `uown_sv_achpayment`
 
-**Regra para testes:** Assertir `uown_sv_achpayment WHERE status='PENDING'` + `ADDED : ACHPayment` log. NUNCA assertir `uown_sv_payment` para ACH dentro de timeout razoavel. Sinal de diagnostico: assert de ACH tima out a 60s apesar de toast de sucesso = esperando estado pos-sweep.
+**Rule for tests:** Assert `uown_sv_achpayment WHERE status='PENDING'` + `ADDED : ACHPayment` log. NEVER assert `uown_sv_payment` for ACH within a reasonable timeout. Diagnostic signal: ACH assert times out at 60s despite a success toast = waiting for post-sweep state that never arrives.
 
-**Make Payment aceita overpayment INTENCIONALMENTE.** O modal `#makePayment` NAO tem validacao de teto de valor. Amount > saldo restante (ou > EPO payoff) e aceito: CC SALE APPROVED no valor submetido, `uown_sv_payment` row criada, log `ADDED : Payment[...]`, conta transiciona para `PAID_OUT_EARLY_EPO` se amount >= EPO amount. Confirmado pelo usuario como comportamento esperado - reembolso do excedente e back-office separado. Testes de overpayment devem assertir o comportamento positivo (payment criado, CC APPROVED), NAO rejeicao.
+**Make Payment accepts overpayment INTENTIONALLY.** The `#makePayment` modal has NO upper-limit validation. An amount > remaining balance (or > EPO payoff) is accepted: CC SALE APPROVED for the submitted amount, `uown_sv_payment` row created, log `ADDED : Payment[...]`, account transitions to `PAID_OUT_EARLY_EPO` if amount >= EPO amount. Confirmed by the user as expected behavior — excess refund is a separate back-office process. Overpayment tests must assert the positive behavior (payment created, CC APPROVED), NOT rejection.
 
-Cross-links: application-lifecycle pitfalls #79 (ACH async) e #80 (overpayment aceito).
+Cross-links: application-lifecycle pitfalls #79 (ACH async) and #80 (overpayment accepted).
 
 ## Payment Arrangement via Servicing UI (modal Make Payment, dev3 2026-06-01)
 
-Criar um **Payment Arrangement** (parcelamento) pelo modal Make Payment do Servicing. Diferente do Make Payment one-shot acima: aqui o checkbox "Payment Arrangement" abre Start Date / End Date / Frequency + tabela de parcelas auto-populada.
+Creating a **Payment Arrangement** (installment plan) via the Make Payment modal in Servicing. Different from the one-shot Make Payment above: here the "Payment Arrangement" checkbox opens Start Date / End Date / Frequency + an auto-populated installment table.
 
-- **Page objects:** `ServicingBasePage.makeCcPaymentArrangement` (CC) e `ServicingBasePage.makeAchPaymentArrangement` (ACH, criado 2026-06-01). Schedule comum via privado `fillArrangementSchedule`.
+- **Page objects:** `ServicingBasePage.makeCcPaymentArrangement` (CC) and `ServicingBasePage.makeAchPaymentArrangement` (ACH, created 2026-06-01). Common schedule via private `fillArrangementSchedule`.
 
-- **Arrangement Type e React Select UI EXPLICITO, NAO backend-derivado.** O modal tem `label[for="paymentArrangementType"]` com opcoes `NORMAL` / `SETTLEMENT`. O JSDoc antigo de `makeCcPaymentArrangement` (2026-03-17) dizia "UI does NOT expose an explicit arrangementType field; backend derives it from amount" — esse comentario estava ERRADO/desatualizado. Selector: `SELECTORS.arrangementTypeDropdown` (label-scoped `label[for=paymentArrangementType] ~ div[class*=control]`). Confirmado via DOM-first dev3 2026-06-01.
+- **Arrangement Type is an EXPLICIT React Select in the UI, NOT backend-derived.** The modal has `label[for="paymentArrangementType"]` with options `NORMAL` / `SETTLEMENT`. The old JSDoc for `makeCcPaymentArrangement` (2026-03-17) said "UI does NOT expose an explicit arrangementType field; backend derives it from amount" — that comment was WRONG/outdated. Selector: `SELECTORS.arrangementTypeDropdown` (label-scoped `label[for=paymentArrangementType] ~ div[class*=control]`). Confirmed via DOM-first dev3 2026-06-01.
 
-- **Frequency dropdown:** opcoes `Weekly` | `BiWeekly` | `Monthly` | `SemiMonthly` — usar **exact regex** ("Weekly" como substring tambem casa "BiWeekly").
+- **Frequency dropdown:** options `Weekly` | `BiWeekly` | `Monthly` | `SemiMonthly` — use **exact regex** ("Weekly" as a substring also matches "BiWeekly").
 
-- **Date pickers `#startDate` / `#endDate` IGNORAM `fill` / `type` / `pressSequentially`.** Sao date pickers React renderizados como `<input type="search">` (mesma DatePicker de `application-wizard.page.ts`). Escrever via `fill`/`type` NAO dispara o `onChange` que o React observa → endDate fica = startDate = today → **1 parcela sempre** (foi a raiz dos bugs F-001 e F-007/S7). Setar via native `HTMLInputElement.prototype.value` setter + dispatch de `input`/`change` events (padrao ja existente em `application-wizard.page.ts`). Cross-link: application-lifecycle pitfall #85.
+- **Date pickers `#startDate` / `#endDate` IGNORE `fill` / `type` / `pressSequentially`.** They are React-controlled date pickers rendered as `<input type="search">` (same DatePicker as `application-wizard.page.ts`). Writing via `fill`/`type` does NOT trigger the `onChange` that React observes → endDate stays = startDate = today → **always 1 installment** (this was the root of bugs F-001 and F-007/S7). Set via native `HTMLInputElement.prototype.value` setter + dispatch of `input`/`change` events (existing pattern in `application-wizard.page.ts`). Cross-link: application-lifecycle pitfall #85.
 
-- **Auto-distribuicao:** `totalPaymentAmount` (input editavel, auto-populado do schedule) e distribuido automaticamente pelas parcelas geradas. Com o date picker corretamente preenchido via native setter, `today → today+28` Weekly gera **5 parcelas** (F-007/S7 RESOLVIDO 2026-06-01 - nao era bug de produto, era o date picker ignorando o texto).
+- **Auto-distribution:** `totalPaymentAmount` (editable input, auto-populated from the schedule) is distributed automatically across the generated installments. With the date picker correctly filled via native setter, `today → today+28` Weekly generates **5 installments** (F-007/S7 RESOLVED 2026-06-01 — it was not a product bug, it was the date picker ignoring the text).
 
-- **ACH vs CC (estado pos-submit):**
- - **ACH** = arrangement `status=NOT_STARTED` + `uown_sv_achpayment` parcelas `PENDING` (ASSINCRONO — promove a `PICKED_TO_SEND` so pos-sweep diario). DB-confirmado dev3: arrangement pk77 acct138.
- - **CC single-installment** = SINCRONO, arrangement `status=SUCCESS` na mesma request; SALE transaction criada com `payment_arrangement_pk` setado. DB-confirmado dev3: arrangement pk72 acct141 → SALE APPROVED.
- - **CC multi-installment** = arrangement fica em **`IN_PROGRESS`**, NAO `SUCCESS`. So a parcela de `posting_date = today` processa sincronamente (APPROVED); as parcelas futuras (`posting_date > today`) ficam `PENDING` ate o posting date chegar. **Comportamento CORRETO do produto** - NAO bug. `simulateCcSweepForArrangement` (date-gated `posting_date <= CURRENT_DATE`) NAO destrava as futuras. Em env sem processor (dev3): usar `db.approveAllPendingCcSalesForArrangement(arrangementPk)` (sem date gate, stand-in autorizado Exception 3, mesmo padrao S4/S5) + `recalculateArrangementStatus`. DB-confirmado dev3: arrangement pk100 com 5 SALEs (pk3328 APPROVED + pk3329-3332 PENDING). Cross-link: application-lifecycle pitfall #86.
+- **ACH vs CC (post-submit state):**
+ - **ACH** = arrangement `status=NOT_STARTED` + `uown_sv_achpayment` installments `PENDING` (ASYNCHRONOUS — promoted to `PICKED_TO_SEND` only after the daily sweep). DB-confirmed dev3: arrangement pk77 acct138.
+ - **CC single-installment** = SYNCHRONOUS, arrangement `status=SUCCESS` in the same request; SALE transaction created with `payment_arrangement_pk` set. DB-confirmed dev3: arrangement pk72 acct141 → SALE APPROVED.
+ - **CC multi-installment** = arrangement stays in **`IN_PROGRESS`**, NOT `SUCCESS`. Only the installment with `posting_date = today` processes synchronously (APPROVED); future installments (`posting_date > today`) stay `PENDING` until their posting date arrives. **This is the CORRECT product behavior** — NOT a bug. `simulateCcSweepForArrangement` (date-gated `posting_date <= CURRENT_DATE`) does NOT unblock future ones. In envs without a processor (dev3): use `db.approveAllPendingCcSalesForArrangement(arrangementPk)` (no date gate, authorized stand-in Exception 3, same pattern as S4/S5) + `recalculateArrangementStatus`. DB-confirmed dev3: arrangement pk100 with 5 SALEs (pk3328 APPROVED + pk3329-3332 PENDING). Cross-link: application-lifecycle pitfall #86.
 
-Cross-links: application-lifecycle pitfalls #82 (Arrangement Type UI explicito), #85 (date picker native setter), #86 (CC multi-installment IN_PROGRESS). Page object catalog em [[page-object-pattern]]. Helper catalog em [[helpers-catalog]].
+Cross-links: application-lifecycle pitfalls #82 (explicit Arrangement Type UI), #85 (date picker native setter), #86 (CC multi-installment IN_PROGRESS). Page object catalog in [[page-object-pattern]]. Helper catalog in [[helpers-catalog]].
 
-## ACH sweep chain + finalizacao do arranjo (dev3 2026-06-01)
+## ACH sweep chain + arrangement finalization (dev3 2026-06-01)
 
-**Cron chain confirmada (ACH arrangement → terminal):**
+**Confirmed cron chain (ACH arrangement → terminal):**
 
-| Sweep / Listener | Schedule | Efeito |
+| Sweep / Listener | Schedule | Effect |
 |------------------|----------|--------|
-| `SendACHPaymentsSweep` | a cada 5 min | `PENDING → PICKED_TO_SEND` |
-| `getSendACHPaymentsStatusSweep` | a cada 6 min | polling do Profituity (status do envio) |
-| `getStatusDatePaymentsListSweep` | diario 20:30 | status final do dia |
-| `PaymentArrangementACHListener` | callback do processor | so em `SETTLED` / `RETURNED` / `ACK_ERROR` → atualiza o arranjo |
+| `SendACHPaymentsSweep` | every 5 min | `PENDING → PICKED_TO_SEND` |
+| `getSendACHPaymentsStatusSweep` | every 6 min | polls Profituity (submission status) |
+| `getStatusDatePaymentsListSweep` | daily 20:30 | final status for the day |
+| `PaymentArrangementACHListener` | processor callback | only on `SETTLED` / `RETURNED` / `ACK_ERROR` → updates the arrangement |
 
-**Estados intermediarios NAO promovem o arranjo.** `PENDING → PICKED_TO_SEND → SENT` deixam o arrangement em `NOT_STARTED`. So um estado terminal do payment (`SETTLED`/`RETURNED`/`ACK_ERROR`) dispara a atualizacao do arranjo (app-lifecycle pitfall #84). Confirmado dev3: arranjos 63/64/65 com payments `SENT` e arrangement `NOT_STARTED`.
+**Intermediate states do NOT advance the arrangement.** `PENDING → PICKED_TO_SEND → SENT` leave the arrangement in `NOT_STARTED`. Only a terminal payment state (`SETTLED`/`RETURNED`/`ACK_ERROR`) triggers the arrangement update (app-lifecycle pitfall #84). Confirmed dev3: arrangements 63/64/65 with payments in `SENT` and arrangement in `NOT_STARTED`.
 
-**Env sem processor real (dev3): ACH fica preso em `PICKED_TO_SEND`.** Sem Profituity real, nao ha callback - o payment nunca atinge terminal, e `recalculateAchArrangementStatus` retorna `IN_PROGRESS` (pois `PICKED_TO_SEND ∈ PENDING_STATUSES`). Para sintetizar terminal: UPDATE payments para `SETTLED` (Exception 3 - autorizacao explicita do user) ANTES do recalc → arranjo avanca para `SUCCESS` (app-lifecycle pitfall #83).
+**Env without a real processor (dev3): ACH gets stuck at `PICKED_TO_SEND`.** Without real Profituity, there is no callback — the payment never reaches a terminal state, and `recalculateAchArrangementStatus` returns `IN_PROGRESS` (since `PICKED_TO_SEND ∈ PENDING_STATUSES`). To synthesize a terminal state: UPDATE payments to `SETTLED` (Exception 3 — explicit user authorization required) BEFORE the recalc → arrangement advances to `SUCCESS` (app-lifecycle pitfall #83).
 
-**`@blocked-by-missing-log` em paths sinteticos.** Os logs de finalizacao (`Arrangement finalized as SUCCESS`/`FAILED`) so sao emitidos pelo `PaymentArrangementACHListener` em callback REAL do processor - **nunca** pelos paths sinteticos (`recalculateAchArrangementStatus` / UPDATE + recalc), que escrevem direto na tabela do arranjo sem executar o listener Java. Em testes nesses paths: assert HARD do estado DB (status + is_active) e do log de CRIACAO ("ACH Arrangement created", organico pre-sweep); marcar o log de FINALIZACAO como `@blocked-by-missing-log` (NAO remover - documenta divida vs rule #13). Prova cruzada: o path CC SETTLEMENT sincrono REAL **gera** o log de finalizacao - confirma que o log vem da execucao backend, nao do recalc helper.
+**`@blocked-by-missing-log` in synthetic paths.** Finalization logs (`Arrangement finalized as SUCCESS`/`FAILED`) are only emitted by `PaymentArrangementACHListener` on a REAL processor callback — **never** by the synthetic paths (`recalculateAchArrangementStatus` / UPDATE + recalc), which write directly to the arrangement table without executing the Java listener. In tests using these paths: HARD assert the DB state (status + is_active) and the CREATION log ("ACH Arrangement created", organic pre-sweep); mark the FINALIZATION log as `@blocked-by-missing-log` (do NOT remove — documents debt vs rule #13). Cross-validation: the synchronous CC SETTLEMENT REAL path **does** generate the finalization log — confirms the log comes from backend execution, not the recalc helper.
 
 ## RightFoot ACH balance-check rerun (R1.53.0)
 
-Fornecedor de verificacao de saldo bancario que **gateia o rerun de ACH** para contas delinquentes (auto-pay ACH). Cadeia:
+Balance verification vendor that **gates the ACH rerun** for delinquent accounts (auto-pay ACH). Chain:
 
-| Sweep / Service | Schedule | Efeito |
+| Sweep / Service | Schedule | Effect |
 |-----------------|----------|--------|
-| `DailyAchBalanceCheckSweep` | `0 0 15 * * ?` | submete balance-checks (`process_type=DAILY_RERUN_DELINQUENT`) ao RightFoot |
-| `RerunAchBalanceCheckSweep` | `0 0 9 ? * THU` | balance-check para reruns (`process_type=RERUN`) |
-| `DailyRerunAchCreationService` | evento `RightFootBatchCompleteEvent` (AFTER_COMMIT), **nao-Quartz** | cria os ACH apos o webhook do RightFoot |
+| `DailyAchBalanceCheckSweep` | `0 0 15 * * ?` | submits balance-checks (`process_type=DAILY_RERUN_DELINQUENT`) to RightFoot |
+| `RerunAchBalanceCheckSweep` | `0 0 9 ? * THU` | balance-check for reruns (`process_type=RERUN`) |
+| `DailyRerunAchCreationService` | `RightFootBatchCompleteEvent` event (AFTER_COMMIT), **non-Quartz** | creates ACH after the RightFoot webhook |
 
-ACH so e criado quando o balance check tem `status='SUCCESS'`, mesmo routing+account number, e `exposure + amount + $100 <= balance`; o ACH carrega FK `right_foot_balance_check_pk`. Guard de duplicidade: nenhum novo ACH se ja houver um in-flight. Cliente: `scheduledTask.dailyAchBalanceCheckSweep()` / `.rerunAchBalanceCheckSweep()` (constantes `SCHEDULED_TASK_NAMES`). Regra completa: `09-integracoes-externas.md §48`.
+ACH is only created when the balance check has `status='SUCCESS'`, same routing+account number, and `exposure + amount + $100 <= balance`; the ACH carries FK `right_foot_balance_check_pk`. Deduplication guard: no new ACH if one is already in-flight. Client: `scheduledTask.dailyAchBalanceCheckSweep()` / `.rerunAchBalanceCheckSweep()` (constants `SCHEDULED_TASK_NAMES`). Full rule: `09-integracoes-externas.md §48`.
 
 ## Sticky — Recovery / Cancel / Refund (R1.53.0)
 
-Motor de recovery/dunning de CC recusado (`uown_sticky.recovery_status`). Mudancas R1.53.0 (code-confirmed):
+CC declined recovery/dunning engine (`uown_sticky.recovery_status`). R1.53.0 changes (code-confirmed):
 
-- **Cancel nao-cancelavel:** `StickyRecoverCancelSweep` so cancela nao-terminais (`recovery_status NOT IN ('RECOVERED','FAILED','CANCELED')`); se o Sticky responde "Cannot cancel transaction", svc marca CANCELED **localmente** + grava log INTERNAL/SYSTEM (ver [[activity-log-validation]]).
-- **Prior attempts (svc#564):** envia historico de declines + contagem via `StickyPriorAttempts.sql`. ⚠️ **timezone**: o tempo da transacao original e resolvido como **`America/New_York`** (apesar do commit dizer "UTC") — verificar no DB antes de asserir horarios.
-- **Duplicate payment:** >1 SvPayment PAID por `ccPk` => WARN + usa o mais recente (**nao bloqueia**).
-- **Refund idempotente:** sem chave dedicada — protege via maquina de estado PAID (refund so se `STICKY`+`PAID`; reverter remove PAID → 2a tentativa rejeitada). Refund/recovery happy-path = **sandbox-only** (KB `sticky-payment-refund.md`).
+- **Non-cancellable cancel:** `StickyRecoverCancelSweep` only cancels non-terminal states (`recovery_status NOT IN ('RECOVERED','FAILED','CANCELED')`); if Sticky responds "Cannot cancel transaction", svc marks CANCELED **locally** + writes an INTERNAL/SYSTEM log (see [[activity-log-validation]]).
+- **Prior attempts (svc#564):** sends decline history + count via `StickyPriorAttempts.sql`. ⚠️ **timezone**: the original transaction time is resolved as **`America/New_York`** (despite the commit message saying "UTC") — verify in the DB before asserting timestamps.
+- **Duplicate payment:** >1 SvPayment PAID per `ccPk` => WARN + uses the most recent one (**does not block**).
+- **Idempotent refund:** no dedicated key — protected via the PAID state machine (refund only if `STICKY`+`PAID`; reverting removes PAID → 2nd attempt rejected). Refund/recovery happy-path = **sandbox-only** (KB `sticky-payment-refund.md`).
 
-Regra de produto: `05-pagamentos.md §53b`.
+Product rule: `05-pagamentos.md §53b`.
 
-## Recibo de pagamento — Balance & "You Save" (R1.53.0)
+## Payment receipt — Balance & "You Save" (R1.53.0)
 
-`balance` no recibo agora **inclui todas as fees** (PP/NSF/reinstatement/misc); "You Save" (`balance - payoffBeforeEPOExpiry`) so renderiza quando `> 0`. Corrige balance negativo/corrompido com fees. **ExtBrand**: logo PayNearMe email/SMS = `company.name().toLowerCase()+".png"`. Detalhe: `05-pagamentos.md §72`.
+`balance` in the receipt now **includes all fees** (PP/NSF/reinstatement/misc); "You Save" (`balance - payoffBeforeEPOExpiry`) only renders when `> 0`. Fixes negative/corrupted balance with fees. **ExtBrand**: PayNearMe email/SMS logo = `company.name().toLowerCase()+".png"`. Detail: `05-pagamentos.md §72`.
 
 ## Email Sweep validation + selection conditions (dev3 2026-06-02)
 
-Sweeps de email (`settledInFullAccountEmailSweep`, `RecurringPaymentReminderSweep`, `FirstPaymentReminderSweep`) escrevem em `uown_email_queue` e `uown_correspondence_logs`. Validados em `email-sweeps-servicing.spec.ts` (3 cenarios, 5/5 PASS).
+Email sweeps (`settledInFullAccountEmailSweep`, `RecurringPaymentReminderSweep`, `FirstPaymentReminderSweep`) write to `uown_email_queue` and `uown_correspondence_logs`. Validated in `email-sweeps-servicing.spec.ts` (3 scenarios, 5/5 PASS).
 
-**Template names confirmados (case-sensitive, dev3 2026-06-02):**
+**Confirmed template names (case-sensitive, dev3 2026-06-02):**
 
-| Sweep | `template_name` em `uown_email_queue` |
+| Sweep | `template_name` in `uown_email_queue` |
 |-------|----------------------------------------|
 | `settledInFullAccountEmailSweep` | `SettledInFullEmail` |
 | `RecurringPaymentReminderSweep` | `RecurringPaymentReminder` |
 | `FirstPaymentReminderSweep` | `FirstPaymentReminder` |
 
-> `src/scripts/dev3-trigger-sweeps.ts` usa template ERRADO (`SettledInFullAccountEmail`) e porta ERRADA (`5446`). NAO copiar desse arquivo. Catalogo canonico em [[email-templates-catalog]].
+> `src/scripts/dev3-trigger-sweeps.ts` uses the WRONG template (`SettledInFullAccountEmail`) and the WRONG port (`5446`). Do NOT copy from that file. Canonical catalog in [[email-templates-catalog]].
 
-**Tabelas de audit:**
-- `uown_email_queue`: `pk, account_pk, lead_pk, template_name, status (STORED/SENT/PICKED_TO_STORE), sent_time, row_created_timestamp` — evidencia PRIMARIA (PK monotonico).
-- `uown_correspondence_logs`: `pk, account_pk, lead_pk, correspondence_type ('EMAIL'), template_name, error, row_created_timestamp` — campo `error` carrega texto informativo MESMO em sucesso; NAO assertir `error IS NULL`.
+**Audit tables:**
+- `uown_email_queue`: `pk, account_pk, lead_pk, template_name, status (STORED/SENT/PICKED_TO_STORE), sent_time, row_created_timestamp` — PRIMARY evidence (monotonic PK).
+- `uown_correspondence_logs`: `pk, account_pk, lead_pk, correspondence_type ('EMAIL'), template_name, error, row_created_timestamp` — the `error` field carries informational text EVEN on success; do NOT assert `error IS NULL`.
 - `uown_sweep_logs`: `pk, sweep_name, number_of_records_processed, row_created_timestamp`.
 
-**Regra 1 — `uown_sweep_logs.number_of_records_processed` NAO e confiavel em leitura imediata.** O Java cria a row com `processed=0` ANTES de processar e atualiza DEPOIS. Leitura `< 5s` apos trigger pega o valor pre-processamento. Usar `uown_email_queue` (row nova de hoje, PK monotonico) como evidencia primaria, NUNCA `processed >= 1` via leitura imediata (app-lifecycle pitfall #87).
+**Rule 1 — `uown_sweep_logs.number_of_records_processed` is NOT reliable on immediate read.** Java creates the row with `processed=0` BEFORE processing and updates it AFTER. A read `< 5s` after trigger captures the pre-processing value. Use `uown_email_queue` (new row for today, monotonic PK) as primary evidence, NEVER `processed >= 1` via immediate read (app-lifecycle pitfall #87).
 
-**Regra 2 — `settledInFullAccountEmailSweep` tem janela DOW na data de settlement.** A query do sweep tem CASE-WHEN em `settled_in_full_date_time`:
-- DOW 1/2 (Seg/Ter): `DATE(settled_in_full_date_time) = CURRENT_DATE - 4`
-- DOW 3 (Qua): `DATE(...) IN (CURRENT_DATE-4, CURRENT_DATE-3, CURRENT_DATE-2)`
-- DOW 4/5 (Qui/Sex): `DATE(...) = CURRENT_DATE - 2`
-- Fim de semana (`DOW NOT BETWEEN 1 AND 5`): sweep NAO roda.
+**Rule 2 — `settledInFullAccountEmailSweep` has a DOW window on the settlement date.** The sweep query has a CASE-WHEN on `settled_in_full_date_time`:
+- DOW 1/2 (Mon/Tue): `DATE(settled_in_full_date_time) = CURRENT_DATE - 4`
+- DOW 3 (Wed): `DATE(...) IN (CURRENT_DATE-4, CURRENT_DATE-3, CURRENT_DATE-2)`
+- DOW 4/5 (Thu/Fri): `DATE(...) = CURRENT_DATE - 2`
+- Weekend (`DOW NOT BETWEEN 1 AND 5`): sweep does NOT run.
 
-Usar a query EXATA do sweep para selecionar a conta de teste; query simplificada superestima o conjunto elegivel (app-lifecycle pitfall #88).
+Use the EXACT sweep query to select the test account; a simplified query overestimates the eligible set (app-lifecycle pitfall #88).
 
-**Regra 3 — `FirstPaymentReminderSweep` exige `sched_summary` E `receivable` alinhados.** Condicoes:
+**Rule 3 — `FirstPaymentReminderSweep` requires both `sched_summary` AND `receivable` to be aligned.** Conditions:
 ```sql
 AND schedSummary.first_payment_due_date <= CURRENT_DATE + 3
 AND receivable.due_date = schedSummary.first_payment_due_date
@@ -194,21 +194,21 @@ AND receivable.receivable_type IN ('REGULAR_PAYMENT')
 AND receivable.allocation_status IN ('UNPAID')
 AND receivable.status IN ('ACTIVE')
 ```
-Atualizar so `uown_sv_sched_summary.first_payment_due_date` deixa o JOIN em 0 rows. Atualizar TAMBEM a `uown_sv_receivable.due_date` do primeiro REGULAR_PAYMENT UNPAID ACTIVE para o mesmo valor `<= today+3` (UPDATE — Exception 3, autorizacao explicita). Contas fresh tem `first_payment_due_date = today+7` (fora da janela) (app-lifecycle pitfall #89).
+Updating only `uown_sv_sched_summary.first_payment_due_date` leaves the JOIN at 0 rows. Also update `uown_sv_receivable.due_date` on the first REGULAR_PAYMENT UNPAID ACTIVE to the same value `<= today+3` (UPDATE — Exception 3, explicit authorization required). Fresh accounts have `first_payment_due_date = today+7` (outside the window) (app-lifecycle pitfall #89).
 
-**Regra 4 — dedup same-day (Java-side) em `settledInFullAccountEmailSweep`.** O sweep pula contas que ja tem email `STORED`/`SENT`/`PICKED_TO_STORE` hoje. Re-triggers do mesmo dia retornam `processed=0`. Assertir PRESENCA de row em `uown_email_queue` de hoje (NAO `>= triggerTs`) e tolerar `processed=0` (app-lifecycle pitfall #90).
+**Rule 4 — same-day dedup (Java-side) in `settledInFullAccountEmailSweep`.** The sweep skips accounts that already have an email in `STORED`/`SENT`/`PICKED_TO_STORE` today. Re-triggers on the same day return `processed=0`. Assert the PRESENCE of a row in `uown_email_queue` from today (NOT `>= triggerTs`) and tolerate `processed=0` (app-lifecycle pitfall #90).
 
 Cross-links: application-lifecycle pitfalls #87-#90; [[email-templates-catalog]]; [[activity-log-validation]] (email audit tables).
 
-## Rating letter em Payment Arrangement (CORRIGIDO dev3 2026-06-01)
+## Rating letter in Payment Arrangement (CORRECTED dev3 2026-06-01)
 
-**`uown_sv_account.rating='P'` (Promise to Pay) E PERSISTIDO na criacao do arranjo** - tanto ACH quanto CC. Isto **corrige** business-rule §54, que documentava como "BUG CONHECIDO" a NAO-persistencia do campo. DB-confirmado em dev3 (2026-06-01): o campo PERSISTE corretamente. §54 estava documentando o bug de forma incorreta.
+**`uown_sv_account.rating='P'` (Promise to Pay) IS PERSISTED when the arrangement is created** — both ACH and CC. This **corrects** business-rule §54, which had documented the field's non-persistence as a "KNOWN BUG". DB-confirmed in dev3 (2026-06-01): the field DOES persist correctly. §54 was incorrectly documenting the bug.
 
-- **Criacao do arranjo (ACH e CC):** `rating='P'` gravado em `uown_sv_account`; `previous_rating` salvo no arranjo para auditoria; auto-pay existente preservado.
-- **CC arrangement SUCCESS:** `rating` resetado para `null` + autopay re-ligado. Isto e **comportamento correto de negocio** (conta voltou ao normal apos quitar), NAO bug.
-- **Arrangement FAILED:** `current_rating` volta para `null` (reset).
+- **Arrangement creation (ACH and CC):** `rating='P'` written to `uown_sv_account`; `previous_rating` saved in the arrangement for auditing; existing auto-pay preserved.
+- **CC arrangement SUCCESS:** `rating` reset to `null` + auto-pay re-enabled. This is **correct business behavior** (account returned to normal after paying off), NOT a bug.
+- **Arrangement FAILED:** `current_rating` reverts to `null` (reset).
 
-**Regra para testes:** assertir `rating='P'` apos criar arranjo (e HARD assert, nao `@blocked`). Apos CC SUCCESS, assertir `rating IS NULL` + autopay ativo.
+**Rule for tests:** assert `rating='P'` after creating the arrangement (HARD assert, not `@blocked`). After CC SUCCESS, assert `rating IS NULL` + active auto-pay.
 
 ## AllocationStrategy (CRITICAL)
 
@@ -248,20 +248,20 @@ enum AllocationStrategy {
 | 8 | CC sweep row not at pk=1 | Use `ORDER BY pk DESC LIMIT 1` |
 | 9 | Confusing accountPk/leadPk/leadUuid | leadPk for LOS, accountPk for SVC (only after FUNDED) |
 | 10 | Missing `getMissingFields` call | Required before `submitApplication` |
-| 11 | Refund procurado em `/payment-transaction` (sem icone reverse) | Usar `/payment-history/{accountPk}` + `PaymentHistoryPage` (app-lifecycle #77) |
-| 12 | `selectOption` no `reverseReason` (React Select) no-op | Clique no controle + clique na opcao "Partially Refund" (app-lifecycle #78) |
-| 13 | Assert de ACH Make Payment tima out a 60s apesar de toast de sucesso | ACH e assincrono: assertir `uown_sv_achpayment WHERE status='PENDING'` + `ADDED : ACHPayment` log; NUNCA `uown_sv_payment` (so pos-sweep 19:00) (app-lifecycle #79) |
-| 14 | Teste assertando rejeicao de overpayment no modal Make Payment falha | Modal NAO valida teto de valor - overpayment e aceito de proposito; assertir comportamento positivo (payment criado, CC APPROVED) (app-lifecycle #80) |
-| 15 | Codigo/JSDoc assume Arrangement Type backend-derivado do amount | Arrangement Type e React Select UI explicito (`label[for=paymentArrangementType]`, NORMAL/SETTLEMENT). Selecionar via `SELECTORS.arrangementTypeDropdown`. JSDoc antigo de `makeCcPaymentArrangement` (2026-03-17) estava errado (app-lifecycle #82) |
-| 16 | Em env sem processor real (dev3), transicao terminal de ACH arrangement sintetizada via `recalculateAchArrangementStatus`/`recalculateArrangementStatus` + UPDATE autorizado **NAO gera activity log** de finalizacao ("Arrangement finalized as SUCCESS"/failure). Causa: esses helpers escrevem direto em `uown_sv_payment_arrangement` e nunca executam o `PaymentArrangementACHListener` Java — codigo que escreveria o log so e disparado por callback REAL do processor (SETTLED/RETURNED). Sintoma: estado FAILED/SUCCESS + `is_active` corretos, mas assert de log rule #13 falha. NAO e bug de produto. | Validacao terminal: estado DB (status + is_active) e HARD assert. Log de criacao ("ACH Arrangement created") e organico (pre-sweep) → HARD assert. Log de **finalizacao** no path sintetico → `@blocked-by-missing-log` (NAO remover, rule #13) + comentario explicativo + Q ao dev para env com processor. Confirmacao: S6 (CC SETTLEMENT, path sincrono REAL) **gera** o log de finalizacao — prova que o log vem da execucao backend, nao do recalc helper. (S4/S5 do payment-arrangement-servicing, dev3 2026-06-01) |
-| 17 | ACH arrangement preso em `IN_PROGRESS` apos `SendACHPaymentsSweep` em env sem processor (dev3); recalc nunca chega a `SUCCESS` | Payment para em `PICKED_TO_SEND` (sem callback Profituity) e `PICKED_TO_SEND ∈ PENDING_STATUSES`. UPDATE payments → `SETTLED` (Exception 3, autorizacao explicita) ANTES do recalc → arranjo avanca para `SUCCESS`. Estados intermediarios (`PENDING/PICKED_TO_SEND/SENT`) deixam o arranjo em `NOT_STARTED` - so terminais (`SETTLED/RETURNED/ACK_ERROR`) o promovem (app-lifecycle #83/#84). |
-| 18 | Assert de rating letter trata `rating='P'` como nao-persistido seguindo "BUG CONHECIDO" de §54 | **§54 estava errado** - `uown_sv_account.rating='P'` PERSISTE na criacao do arranjo (ACH e CC), DB-confirmado dev3 2026-06-01. Assertir `rating='P'` como HARD assert. CC SUCCESS reseta `rating` para `null` + re-liga autopay (comportamento correto, nao bug). Ver secao "Rating letter em Payment Arrangement". |
-| 19 | Date pickers `#startDate`/`#endDate` do arrangement modal ignoram `fill`/`type`/`pressSequentially` → endDate=startDate=today → 1 parcela sempre (raiz de F-001 e F-007/S7) | `<input type="search">` controlado por React; `fill`/`type` nao disparam o `onChange`. Setar via native `HTMLInputElement.prototype.value` setter + dispatch de `input`/`change` (padrao em `application-wizard.page.ts`). Com o fix, `today→today+28` Weekly gera 5 parcelas (app-lifecycle #85). |
-| 20 | CC multi-installment arrangement preso em `IN_PROGRESS`, nao chega a `SUCCESS` apos `simulateCcSweepForArrangement` | So a parcela `posting_date=today` processa sincronamente (APPROVED); futuras (`posting_date>today`) ficam `PENDING` - comportamento CORRETO do produto. `simulateCcSweepForArrangement` e date-gated. Em env sem processor (dev3): `db.approveAllPendingCcSalesForArrangement(arrangementPk)` (sem date gate, Exception 3) + `recalculateArrangementStatus` (app-lifecycle #86). |
-| 21 | `uown_sweep_logs.number_of_records_processed=0` em leitura imediata apesar de sweep processar contas | Java escreve `processed` DEPOIS de processar; row inicial e `0`. Evidencia primaria = `uown_email_queue` row nova de hoje (PK monotonico), nao `processed>=1` imediato (app-lifecycle #87). |
-| 22 | `settledInFullAccountEmailSweep` nao processa conta "elegivel" | Sweep tem CASE-WHEN DOW na `settled_in_full_date_time` (Seg/Ter=today-4, Qua=today-4/-3/-2, Qui/Sex=today-2, fds=nao roda). Usar query EXATA do sweep para selecionar conta (app-lifecycle #88). |
-| 23 | `FirstPaymentReminderSweep` pula conta apesar de `first_payment_due_date <= today+3` | Sweep exige `receivable.due_date = schedSummary.first_payment_due_date` (REGULAR_PAYMENT/UNPAID/ACTIVE). Atualizar TAMBEM `uown_sv_receivable.due_date` (Exception 3). Fresh = today+7 (fora) (app-lifecycle #89). |
-| 24 | Re-trigger do `settledInFullAccountEmailSweep` retorna `processed=0` | Dedup same-day Java (STORED/SENT/PICKED_TO_STORE de hoje). Assertir presenca de row em `uown_email_queue` de hoje (nao `>= triggerTs`); tolerar `processed=0` (app-lifecycle #90). |
+| 11 | Refund looked for in `/payment-transaction` (no reverse icon) | Use `/payment-history/{accountPk}` + `PaymentHistoryPage` (app-lifecycle #77) |
+| 12 | `selectOption` on `reverseReason` (React Select) is a no-op | Click on the control + click on the "Partially Refund" option (app-lifecycle #78) |
+| 13 | ACH Make Payment assert times out at 60s despite success toast | ACH is asynchronous: assert `uown_sv_achpayment WHERE status='PENDING'` + `ADDED : ACHPayment` log; NEVER `uown_sv_payment` (only after the 19:00 sweep) (app-lifecycle #79) |
+| 14 | Test asserting overpayment rejection in the Make Payment modal fails | Modal does NOT validate an upper limit — overpayment is intentionally accepted; assert positive behavior (payment created, CC APPROVED) (app-lifecycle #80) |
+| 15 | Code/JSDoc assumes Arrangement Type is backend-derived from the amount | Arrangement Type is an explicit React Select in the UI (`label[for=paymentArrangementType]`, NORMAL/SETTLEMENT). Select via `SELECTORS.arrangementTypeDropdown`. Old JSDoc for `makeCcPaymentArrangement` (2026-03-17) was wrong (app-lifecycle #82) |
+| 16 | In envs without a real processor (dev3), the terminal ACH arrangement transition synthesized via `recalculateAchArrangementStatus`/`recalculateArrangementStatus` + authorized UPDATE does **NOT generate an activity log** for finalization ("Arrangement finalized as SUCCESS"/failure). Cause: these helpers write directly to `uown_sv_payment_arrangement` and never execute the Java `PaymentArrangementACHListener` — the code that would write the log is only triggered by a REAL processor callback (SETTLED/RETURNED). Symptom: FAILED/SUCCESS state + correct `is_active`, but rule #13 log assert fails. NOT a product bug. | Terminal validation: DB state (status + is_active) is a HARD assert. Creation log ("ACH Arrangement created") is organic (pre-sweep) → HARD assert. **Finalization** log in the synthetic path → `@blocked-by-missing-log` (do NOT remove, rule #13) + explanatory comment + question to dev for an env with a processor. Confirmation: S6 (CC SETTLEMENT, REAL synchronous path) **does** generate the finalization log — proves the log comes from backend execution, not from the recalc helper. (S4/S5 of payment-arrangement-servicing, dev3 2026-06-01) |
+| 17 | ACH arrangement stuck in `IN_PROGRESS` after `SendACHPaymentsSweep` in env without a processor (dev3); recalc never reaches `SUCCESS` | Payment stops at `PICKED_TO_SEND` (no Profituity callback) and `PICKED_TO_SEND ∈ PENDING_STATUSES`. UPDATE payments → `SETTLED` (Exception 3, explicit authorization) BEFORE recalc → arrangement advances to `SUCCESS`. Intermediate states (`PENDING/PICKED_TO_SEND/SENT`) leave the arrangement in `NOT_STARTED` — only terminal states (`SETTLED/RETURNED/ACK_ERROR`) promote it (app-lifecycle #83/#84). |
+| 18 | Rating letter assert treats `rating='P'` as non-persisted based on "KNOWN BUG" in §54 | **§54 was wrong** — `uown_sv_account.rating='P'` DOES PERSIST when the arrangement is created (ACH and CC), DB-confirmed dev3 2026-06-01. Assert `rating='P'` as a HARD assert. CC SUCCESS resets `rating` to `null` + re-enables auto-pay (correct behavior, not a bug). See "Rating letter in Payment Arrangement" section. |
+| 19 | Date pickers `#startDate`/`#endDate` of the arrangement modal ignore `fill`/`type`/`pressSequentially` → endDate=startDate=today → always 1 installment (root of F-001 and F-007/S7) | `<input type="search">` controlled by React; `fill`/`type` do not trigger `onChange`. Set via native `HTMLInputElement.prototype.value` setter + dispatch of `input`/`change` events (pattern in `application-wizard.page.ts`). With the fix, `today→today+28` Weekly generates 5 installments (app-lifecycle #85). |
+| 20 | CC multi-installment arrangement stuck in `IN_PROGRESS`, never reaches `SUCCESS` after `simulateCcSweepForArrangement` | Only the installment with `posting_date=today` processes synchronously (APPROVED); future ones (`posting_date>today`) stay `PENDING` — CORRECT product behavior. `simulateCcSweepForArrangement` is date-gated. In envs without a processor (dev3): `db.approveAllPendingCcSalesForArrangement(arrangementPk)` (no date gate, Exception 3) + `recalculateArrangementStatus` (app-lifecycle #86). |
+| 21 | `uown_sweep_logs.number_of_records_processed=0` on immediate read despite the sweep processing accounts | Java writes `processed` AFTER processing; the initial row is `0`. Primary evidence = new `uown_email_queue` row from today (monotonic PK), not immediate `processed>=1` (app-lifecycle #87). |
+| 22 | `settledInFullAccountEmailSweep` does not process an "eligible" account | Sweep has a DOW CASE-WHEN on `settled_in_full_date_time` (Mon/Tue=today-4, Wed=today-4/-3/-2, Thu/Fri=today-2, weekend=does not run). Use the EXACT sweep query to select the account (app-lifecycle #88). |
+| 23 | `FirstPaymentReminderSweep` skips account despite `first_payment_due_date <= today+3` | Sweep requires `receivable.due_date = schedSummary.first_payment_due_date` (REGULAR_PAYMENT/UNPAID/ACTIVE). Also update `uown_sv_receivable.due_date` (Exception 3). Fresh accounts have today+7 (outside window) (app-lifecycle #89). |
+| 24 | Re-trigger of `settledInFullAccountEmailSweep` returns `processed=0` | Same-day dedup in Java (STORED/SENT/PICKED_TO_STORE from today). Assert presence of a row in `uown_email_queue` from today (not `>= triggerTs`); tolerate `processed=0` (app-lifecycle #90). |
 
 ## Checklist (pre-merge)
 

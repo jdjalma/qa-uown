@@ -1,164 +1,164 @@
 ---
 name: test-strategy-decision
-description: Carregar antes de escolher como implementar cada cenário — decide E2E vs API vs híbrido vs DB-only, smoke vs full, paralelização e ambiente (sandbox/qa1/qa2/stg). Aplica a regra inviolável #14 (UI-first).
+description: Load before choosing how to implement each scenario — decides E2E vs API vs hybrid vs DB-only, smoke vs full, parallelization and environment (sandbox/qa1/qa2/stg). Applies inviolable rule #14 (UI-first).
 disable-model-invocation: true
 ---
 
-# Test Strategy Decision — escolher o nível certo de teste
+# Test Strategy Decision — choose the right test level
 
-> **Authority boundary** (fronteira de autoridade — `docs/_docs-conventions.md` §7): esta skill cobre **HOW TO CHOOSE** — E2E vs API vs híbrido, smoke vs full, ambiente, paralelização. Para **nomes canônicos de portais** (Website/Servicing/Origination/AMS) rode `node scripts/docs-tooling.mjs resolve customer-portal` ou leia `docs/business-rules/01-fundamentos.md` (portal naming está em [[volatile-knowledge-registry]] — cross-check obrigatório). Para **env URLs, variáveis e timeouts**, leia `docs/claude/environments.md`. **Não duplique configuração de env aqui** — ela drifta.
+> **Authority boundary** (`docs/_docs-conventions.md` §7): this skill covers **HOW TO CHOOSE** — E2E vs API vs hybrid, smoke vs full, environment, parallelization. For **canonical portal names** (Website/Servicing/Origination/AMS) run `node scripts/docs-tooling.mjs resolve customer-portal` or read `docs/business-rules/01-fundamentos.md` (portal naming is in [[volatile-knowledge-registry]] — cross-check mandatory). For **env URLs, variables and timeouts**, read `docs/claude/environments.md`. **Do not duplicate env configuration here** — it drifts.
 
-> Regra inviolável #14 do projeto: feature com UI affordance OBRIGA browser test. API-only é exceção, não default.
+> Inviolable project rule #14: a feature with a UI affordance REQUIRES a browser test. API-only is the exception, not the default.
 
-## Quando aplicar
+## When to apply
 
-- Pós `scope-analysis` + `risk-based-prioritization`, antes do SPEC.
-- Você está tentado a escrever API-only "porque é mais rápido" — pare aqui.
-- Vai escolher ambiente: sandbox? qa1? qa2? stg? (cada um tem trade-offs)
-- Vai decidir paralelização (`test.describe.parallel`, `workers`, sharding).
-- Pipeline `qa-flow` precisa definir smoke vs full antes do CI.
+- After `scope-analysis` + `risk-based-prioritization`, before the SPEC.
+- You are tempted to write API-only "because it's faster" — stop here.
+- You are about to choose an environment: sandbox? qa1? qa2? stg? (each has trade-offs)
+- You are about to decide parallelization (`test.describe.parallel`, `workers`, sharding).
+- The `qa-flow` pipeline needs to define smoke vs full before CI.
 
-## Princípios
+## Principles
 
-1. **UI-first como default** (regra #14). API-only só com justificativa escrita.
-2. **Nível de teste = onde o risco mora.** Risco visual → UI. Risco contratual → API. Risco de invariante → DB.
-3. **Híbrido é regra, não exceção.** Setup via API + assertion via UI é o padrão UOWN (cria lead via `sendApplication`, exerce signing via browser).
-4. **Ambiente importa.** Sandbox = isolado; qa1 = compartilhado; qa2 = compartilhado mais estável; stg = pré-prod, fonte da verdade para DoD.
+1. **UI-first as default** (rule #14). API-only only with written justification.
+2. **Test level = where the risk lives.** Visual risk → UI. Contract risk → API. Invariant risk → DB.
+3. **Hybrid is the rule, not the exception.** Setup via API + assertion via UI is the UOWN standard (creates a lead via `sendApplication`, exercises signing via the browser).
+4. **Environment matters.** Sandbox = isolated; qa1 = shared; qa2 = shared, more stable; stg = pre-prod, the source of truth for DoD.
 
-## Procedimento
+## Procedure
 
-### Passo 1 — Decidir o nível (UI / API / DB / híbrido)
+### Step 1 — Decide the level (UI / API / DB / hybrid)
 
-Pergunta-checklist por cenário:
+Checklist question per scenario:
 
-| Pergunta | Se SIM → |
+| Question | If YES → |
 |---|---|
-| A feature tem botão / página / fluxo no portal (Origination/Servicing/Website/AMS)? | UI obrigatório (regra #14) |
-| O bug histórico foi sobre rendering visual (placeholders, PDF, badges, layout)? | UI obrigatório (caso Daniel's Jewelers) |
-| Existe assertion que só faz sentido via UI (PDF preview, GowSign iframe, toast text)? | UI obrigatório |
-| A operação é admin/ops sem UI exposta (PATCH gowsign-templates, sweep scheduled task, internal CRUD)? | API-only OK |
-| Setup é caro via UI (criar lead, propagar a um estado)? | API para setup + UI para assertion (híbrido) |
-| Assertion cross-cutting (validar invariante em N rows, agregação de schedule)? | DB para assertion |
-| Activity log esperado (regra #13)? | DB assertion obrigatória (`uown_los_lead_notes`) |
+| Does the feature have a button / page / flow in the portal (Origination/Servicing/Website/AMS)? | UI mandatory (rule #14) |
+| Was the historical bug about visual rendering (placeholders, PDF, badges, layout)? | UI mandatory (Daniel's Jewelers case) |
+| Is there an assertion that only makes sense via UI (PDF preview, GowSign iframe, toast text)? | UI mandatory |
+| Is the operation admin/ops with no exposed UI (PATCH gowsign-templates, sweep scheduled task, internal CRUD)? | API-only OK |
+| Is setup expensive via UI (create a lead, propagate to a state)? | API for setup + UI for assertion (hybrid) |
+| Is the assertion cross-cutting (validate an invariant across N rows, schedule aggregation)? | DB for assertion |
+| Is an activity log expected (rule #13)? | DB assertion mandatory (`uown_los_lead_notes`) |
 
-Regra de bolso (decision tree):
+Rule of thumb (decision tree):
 
 ```
-[Feature tem UI?]
-├── SIM
-│ ├── [Setup caro?]
-│ │ ├── SIM → híbrido (API setup + UI exercise + DB assert)
-│ │ └── NÃO → UI puro (UI exercise + DB assert)
-│ └── (UI obrigatório no caminho do cliente)
-└── NÃO
- ├── [Endpoint admin/sweep?]
- │ ├── SIM → API-only (justifica em 1 linha)
- │ └── NÃO → reconsiderar — talvez exista UI escondida
- └── (API-only com DB assert)
+[Feature has UI?]
+├── YES
+│ ├── [Setup expensive?]
+│ │ ├── YES → hybrid (API setup + UI exercise + DB assert)
+│ │ └── NO → pure UI (UI exercise + DB assert)
+│ └── (UI mandatory on the customer path)
+└── NO
+ ├── [Admin/sweep endpoint?]
+ │ ├── YES → API-only (justify in 1 line)
+ │ └── NO → reconsider — maybe there is a hidden UI
+ └── (API-only with DB assert)
 ```
 
-### Passo 2 — Setup vs Exercise vs Assertion (separar)
+### Step 2 — Setup vs Exercise vs Assertion (separate them)
 
-Para cada cenário, declara 3 fases:
+For each scenario, declare 3 phases:
 
-- **Setup** (precondition): mais rápido possível. API `sendApplication`, helpers como `createPreQualifiedApplication`, factories. Não exerce o que está sob teste.
-- **Exercise** (the thing under test): respeita regra #14 — se tem UI, exerce UI.
-- **Assertion** (oracle): UI render + DB row + log + email/SMS quando aplicável. Activity log assertion não é opcional (regra #13).
+- **Setup** (precondition): as fast as possible. API `sendApplication`, helpers like `createPreQualifiedApplication`, factories. Does not exercise what is under test.
+- **Exercise** (the thing under test): respects rule #14 — if it has a UI, exercise the UI.
+- **Assertion** (oracle): UI render + DB row + log + email/SMS when applicable. Activity log assertion is not optional (rule #13).
 
-Exemplo:
+Example:
 ```
-Setup: API sendApplication (UOWN happy path) → lead em PRE_QUALIFIED
-Exercise: UI Origination → completar Personal Info → submit
-Assertion: UI mostra confirmação + uown_los_lead.status = QUALIFIED + uown_los_lead_notes(note_type=PERSONAL_INFO_SUBMITTED)
+Setup: API sendApplication (UOWN happy path) → lead in PRE_QUALIFIED
+Exercise: UI Origination → complete Personal Info → submit
+Assertion: UI shows confirmation + uown_los_lead.status = QUALIFIED + uown_los_lead_notes(note_type=PERSONAL_INFO_SUBMITTED)
 ```
 
-### Passo 3 — Decidir smoke vs full
+### Step 3 — Decide smoke vs full
 
-Smoke (≤10min, blocker no merge):
-- 1 cenário P0 happy path por brand
-- 1 cenário de erro principal
-- Sem regressão profunda
+Smoke (≤10min, blocker on merge):
+- 1 P0 happy-path scenario per brand
+- 1 main error scenario
+- No deep regression
 
-Full (rodando em scheduled / pre-release):
-- Todos P0 + P1
-- Regressão dos fluxos impactados (DoD)
-- Diff visual quando aplicável (GoSign vs SignWell)
+Full (running on scheduled / pre-release):
+- All P0 + P1
+- Regression of the impacted flows (DoD)
+- Visual diff when applicable (GoSign vs SignWell)
 
-Decide explicitamente: **este cenário entra em smoke ou só em full?**
+Decide explicitly: **does this scenario go into smoke or only into full?**
 
-### Passo 4 — Escolher ambiente
+### Step 4 — Choose the environment
 
-| Ambiente | Quando usar | Quando NÃO usar |
+| Environment | When to use | When NOT to use |
 |---|---|---|
-| **sandbox** (default) | Dev local, debug rápido, dados sintéticos próprios | Quando precisa de config compartilhada (vendor real, IMAP) |
-| **qa1** | Testes contra primeiro env compartilhado | Quando outage conhecido (`project_dv360_uat_qa1_outage_2026_05_18` — sendApplication 500 em qa1) |
-| **qa2** | Testes mais estáveis, env preferido para validação | OK como default quando qa1 instável |
-| **stg** | Validação final, DoD exige (`project_qa_task_structure` — DoD = QA + Staging) | Não rodar testes destrutivos de exploração |
-| **dev1/2/3** | Quando dev específico está iterando | Estado imprevisível, não confiar para report |
+| **sandbox** (default) | Local dev, fast debug, own synthetic data | When you need shared config (real vendor, IMAP) |
+| **qa1** | Tests against the first shared env | When there is a known outage (`project_dv360_uat_qa1_outage_2026_05_18` — sendApplication 500 in qa1) |
+| **qa2** | More stable tests, preferred env for validation | OK as default when qa1 is unstable |
+| **stg** | Final validation, DoD requires it (`project_qa_task_structure` — DoD = QA + Staging) | Do not run destructive exploration tests |
+| **dev1/2/3** | When a specific dev is iterating | Unpredictable state, do not rely on it for a report |
 
-Regra de chão: **DoD exige stg**. Quem fecha task só com qa não atende DoD.
+Ground rule: **DoD requires stg**. Whoever closes a task with only qa does not meet the DoD.
 
-### Passo 5 — Paralelização
+### Step 5 — Parallelization
 
-| Cenário | Paralelizar? |
+| Scenario | Parallelize? |
 |---|---|
-| Cenários compartilham mesma lead/account | NÃO — serialize |
-| Cenários compartilham merchant com config drift potencial | NÃO — ou usa `skipMerchantPreflight` (regra #12) |
-| Cenários usam IMAP inbox compartilhado (`fintechgroup777@gmail.com`) | SIM com plus-addressing por `runId` (`reference_imap_fintechgroup777`) |
-| Cenários independentes com dados fresh | SIM |
-| CI com workers limitados | Configurar `workers: N` baseado em projeto (PW projects em `docs/claude/environments.md`) |
+| Scenarios share the same lead/account | NO — serialize |
+| Scenarios share a merchant with potential config drift | NO — or use `skipMerchantPreflight` (rule #12) |
+| Scenarios use a shared IMAP inbox (`fintechgroup777@gmail.com`) | YES with plus-addressing per `runId` (`reference_imap_fintechgroup777`) |
+| Independent scenarios with fresh data | YES |
+| CI with limited workers | Configure `workers: N` based on the project (PW projects in `docs/claude/environments.md`) |
 
-Default Playwright: `fullyParallel: true` quando dados são fresh. Marca `test.describe.serial` se houver shared state.
+Playwright default: `fullyParallel: true` when data is fresh. Mark `test.describe.serial` if there is shared state.
 
-### Passo 6 — Output
+### Step 6 — Output
 
 ```markdown
 ## Test Strategy — {task-id}
 
-### Cenário 1: {nome}
-- Nível: UI puro | API-only | híbrido | DB-only
-- Justificativa nível: ...
-- Setup: ... (caminho rápido, sem exercer o que está sob teste)
-- Exercise: ... (respeita UI-first)
+### Scenario 1: {name}
+- Level: pure UI | API-only | hybrid | DB-only
+- Level justification: ...
+- Setup: ... (fast path, without exercising what is under test)
+- Exercise: ... (respects UI-first)
 - Assertion: UI: ... | DB: ... | Activity log: ... | Email: ...
-- Smoke ou full: smoke | full
-- Ambiente recomendado: qa2 (e stg para DoD)
-- Paralelização: sim/não — justificativa
+- Smoke or full: smoke | full
+- Recommended environment: qa2 (and stg for DoD)
+- Parallelization: yes/no — justification
 
-### Cenário 2: ...
+### Scenario 2: ...
 
-### Decisões globais
-- Smoke set: cenários {ids}
-- Full set: todos
+### Global decisions
+- Smoke set: scenarios {ids}
+- Full set: all
 - Workers/sharding: ...
-- Ambientes da run: qa2 (primary) + stg (validação DoD)
+- Run environments: qa2 (primary) + stg (DoD validation)
 ```
 
-## Heurísticas
+## Heuristics
 
-- **"Se o cliente vê, o teste exerce o que ele vê."** Validar via UI render, não só via log.
-- **"PDF / iframe / placeholder → UI obrigatório."** Caso Daniel's Jewelers CA fechou essa porta: API-only que lia log perdeu coluna sumida no PDF.
-- **"Setup é UI quando setup É a feature."** Se o que está sob teste é o new-application, não cria lead via API — cria via UI (`feedback_setup_via_ui_new_application`).
-- **"Email = IMAP + click no link."** Não pega URL do payload da API (`feedback_email_imap_click_link`).
-- **"Stg ou nada"** — sem rodar em stg, DoD não fechou.
-- **"qa1 hoje pode estar fora"** — verificar `project_dv360_uat_qa1_outage_2026_05_18`; se outage ativo, fallback qa2.
-- **"Helpers existentes primeiro"** — antes de criar novo helper, consultar `skill [[helpers-catalog]]`.
+- **"If the customer sees it, the test exercises what they see."** Validate via UI render, not only via the log.
+- **"PDF / iframe / placeholder → UI mandatory."** The Daniel's Jewelers CA case closed that door: API-only that read the log missed a column gone from the PDF.
+- **"Setup is UI when setup IS the feature."** If what is under test is the new-application, do not create a lead via API — create it via UI (`feedback_setup_via_ui_new_application`).
+- **"Email = IMAP + click the link."** Do not take the URL from the API payload (`feedback_email_imap_click_link`).
+- **"Stg or nothing"** — without running on stg, the DoD is not closed.
+- **"qa1 today may be down"** — check `project_dv360_uat_qa1_outage_2026_05_18`; if the outage is active, fall back to qa2.
+- **"Existing helpers first"** — before creating a new helper, consult `skill [[helpers-catalog]]`.
 
-## Output esperado
+## Expected output
 
-Bloco markdown estruturado por cenário (template acima). Tamanho proporcional ao número de cenários. Sempre termina com **Decisões globais**.
+A markdown block structured per scenario (template above). Size proportional to the number of scenarios. Always ends with **Global decisions**.
 
 ## Anti-patterns
 
-- API-only "porque é mais rápido" quando a feature tem UI — viola regra #14.
-- Setup via UI quando setup não é a feature (e o caminho UI é caro / flake-prone).
-- Skip do stg "porque qa passou" — DoD violado.
-- Paralelizar cenários que compartilham merchant sem cuidado de preflight — drift de config gera flake.
-- Rodar testes em dev1/2/3 e reportar como evidência DoD — dev é instável.
-- Misturar Setup/Exercise/Assertion em uma única chamada borrando o que está sob teste.
-- Implementar smoke pesado (≥30min) — smoke é blocker rápido; pesado vira full.
+- API-only "because it's faster" when the feature has a UI — violates rule #14.
+- Setup via UI when setup is not the feature (and the UI path is expensive / flake-prone).
+- Skipping stg "because qa passed" — DoD violated.
+- Parallelizing scenarios that share a merchant without preflight care — config drift causes flake.
+- Running tests on dev1/2/3 and reporting it as DoD evidence — dev is unstable.
+- Mixing Setup/Exercise/Assertion in a single call, blurring what is under test.
+- Implementing a heavy smoke (≥30min) — smoke is a fast blocker; heavy becomes full.
 
-## Referências
+## References
 
 - `.claude/rules/testing.md` § UI-First Principle
 - `docs/claude/environments.md`

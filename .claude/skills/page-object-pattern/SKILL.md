@@ -1,16 +1,16 @@
 ---
 name: page-object-pattern
-description: Carregue ao criar ou refatorar page object em src/pages/. Define hierarquia BasePage > PortalBase > Page, catalogo de page objects existentes (nao duplicar), padrao de selectors centralizados.
+description: Load when creating or refactoring a page object in src/pages/. Defines the BasePage > PortalBase > Page hierarchy, a catalog of existing page objects (do not duplicate), and the centralized-selectors pattern.
 disable-model-invocation: true
 ---
 
 # Page Object Pattern - UOWN Leasing
 
-> Catalogo detalhado de page objects com metodos por task: [references/catalog.md](references/catalog.md)
+> Detailed catalog of page objects with methods per task: [references/catalog.md](references/catalog.md)
 
 ---
 
-## 1. Hierarquia
+## 1. Hierarchy
 
 ```
 BasePage
@@ -81,11 +81,11 @@ BasePage
 
 ---
 
-## 5b. `MerchantLocationFilterPO` — escopo de uso
+## 5b. `MerchantLocationFilterPO` — scope of use
 
-`MerchantLocationFilterPO` (`src/pages/origination/merchant-location-filter.po.ts`) é EXCLUSIVO para páginas que consomem o componente React compartilhado `MerchantLocationFilters` — que renderiza filtros via `<label>` elements (Overview-bottom, Open To Buy, Rebate, Leads, Merchant list, Merchant Setting, New Application, MMH, Modification Report). Seu lookup (`controlByLabel`) ancora no `<label>` adjacente.
+`MerchantLocationFilterPO` (`src/pages/origination/merchant-location-filter.po.ts`) is EXCLUSIVE to pages that consume the shared React component `MerchantLocationFilters` — which renders filters via `<label>` elements (Overview-bottom, Open To Buy, Rebate, Leads, Merchant list, Merchant Setting, New Application, MMH, Modification Report). Its lookup (`controlByLabel`) anchors on the adjacent `<label>`.
 
-**NÃO usar no Funding Queue.** O Funding Queue (`/funding`) tem DOM custom: labels são `<div>` (não `<label>`) e os react-select têm IDs estáveis (`#statuses`, `#merchantName`, `#merchantLocation`). Aplicar o `MerchantLocationFilterPO` lá faz o XPath baseado em `<label>` não casar nada → `scrollIntoViewIfNeeded` timeout. Use os métodos próprios da `FundingPage` (`listAvailableLocations()`, `filterByLocations()`, `filterByStatuses()`, etc.), que delegam para os helpers `fq*` ancorados nos IDs estáveis.
+**Do NOT use on the Funding Queue.** The Funding Queue (`/funding`) has custom DOM: labels are `<div>` (not `<label>`) and the react-selects have stable IDs (`#statuses`, `#merchantName`, `#merchantLocation`). Applying `MerchantLocationFilterPO` there makes the `<label>`-based XPath match nothing → `scrollIntoViewIfNeeded` timeout. Use `FundingPage`'s own methods (`listAvailableLocations()`, `filterByLocations()`, `filterByStatuses()`, etc.), which delegate to the `fq*` helpers anchored on the stable IDs.
 
 ## 6. Key patterns
 

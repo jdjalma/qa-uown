@@ -1,51 +1,52 @@
-# UOwn Leasing — SVC (Servicing) Platform · Regras de Negócio
+# UOwn Leasing — SVC (Servicing) Platform · Business Rules
 
-**Plataforma:** Sistema de Lease-to-Own (Aluguel com Opção de Compra)
+**Platform:** Lease-to-Own System
 **Stack:** Java 17, Spring Boot, PostgreSQL, Hazelcast
 
-> **Este arquivo é um ÍNDICE, não fonte de conteúdo.** As regras canônicas vivem nos capítulos temáticos e appendices abaixo. Até 2026-06-18 este arquivo era um master monolítico de ~4.800 linhas que **duplicava** os subordinados e drift­ava (estava parado em 2026-02-20 enquanto os capítulos avançavam). Foi convertido em índice: cada fato agora tem **uma** fonte.
+> **This file is an INDEX, not a source of content.** The canonical rules live in the thematic chapters and appendices below. Until 2026-06-18 this file was a monolithic master of ~4,800 lines that **duplicated** its subordinates and drifted (it was frozen at 2026-02-20 while the chapters moved ahead). It has been converted into an index: every fact now has **one** source.
+
 >
-> **Frescor e volatilidade** de cada doc: ver o manifesto gerado [`_index.md`](_index.md) (campos `last_verified` / `volatility`, produzidos por `scripts/docs-tooling.mjs index`).
-> **Convenções** (frontmatter, proveniência, promoção KB→business-rules): [`../_docs-conventions.md`](../_docs-conventions.md).
+> **Freshness and volatility** of each doc: see the generated manifest [`_index.md`](_index.md) (`last_verified` / `volatility` fields, produced by `scripts/docs-tooling.mjs index`).
+> **Conventions** (frontmatter, provenance, KB→business-rules promotion): [`../_docs-conventions.md`](../_docs-conventions.md).
 
 ---
 
-## Capítulos temáticos
+## Thematic chapters
 
-| # | Arquivo | Cobre |
+| # | File | Covers |
 |---|---------|-------|
-| 01 | [01-fundamentos.md](01-fundamentos.md) | Visão geral do negócio · conceitos financeiros (money factor, security deposit, processing/buyout fee) · programas de merchant · configuration management |
-| 02 | [02-originacao-pipeline.md](02-originacao-pipeline.md) | Pipeline de aplicação (17 steps) · verificação de fraude · underwriting · valores aprovados por segmento · validação pré-assinatura |
-| 03 | [03-contratos-esign.md](03-contratos-esign.md) | Fluxo e-sign · routing GowSign/Signwell · taxa de assinatura · redirect · telas pós-assinatura |
-| 04 | [04-calculos-financeiros.md](04-calculos-financeiros.md) | Calculadora de pagamentos · EPO (Early Pay Off) · cálculo de payoff · regras EPO por estado |
-| 05 | [05-pagamentos.md](05-pagamentos.md) | CC · CC Peek · cheque · ACH · alocação · PayWallet · idempotência · reembolso · payment arrangement · NSF por estado · overpayment prevention |
-| 06 | [06-conta-ciclo-vida.md](06-conta-ciclo-vida.md) | Recebíveis · auto-pay · rating letters · inadimplência · status de conta/lead · cancelamento · auto paid-out |
-| 07 | [07-modificacoes-conta.md](07-modificacoes-conta.md) | Rewind/replay · settlement · modificação de invoice · frequência · due date · alteração de aprovação · lease adicional · FPD · reset Kornerstone |
-| 08 | [08-funding-merchants.md](08-funding-merchants.md) | Fila de financiamento · importação LOS→SVC · webhooks · gestão de merchants/leads · API de integração (endpoints detalhados) · regras sandbox SSN |
+| 01 | [01-fundamentos.md](01-fundamentos.md) | Business overview · financial concepts (money factor, security deposit, processing/buyout fee) · merchant programs · configuration management |
+| 02 | [02-originacao-pipeline.md](02-originacao-pipeline.md) | Application pipeline (17 steps) · fraud verification · underwriting · approved amounts by segment · pre-signing validation |
+| 03 | [03-contratos-esign.md](03-contratos-esign.md) | E-sign flow · GowSign/Signwell routing · signing fee · redirect · post-signing screens |
+| 04 | [04-calculos-financeiros.md](04-calculos-financeiros.md) | Payment calculator · EPO (Early Pay Off) · payoff calculation · EPO rules by state |
+| 05 | [05-pagamentos.md](05-pagamentos.md) | CC · CC Peek · check · ACH · allocation · PayWallet · idempotency · refund · payment arrangement · NSF by state · overpayment prevention |
+| 06 | [06-conta-ciclo-vida.md](06-conta-ciclo-vida.md) | Receivables · auto-pay · rating letters · delinquency · account/lead status · cancellation · auto paid-out |
+| 07 | [07-modificacoes-conta.md](07-modificacoes-conta.md) | Rewind/replay · settlement · invoice modification · frequency · due date · approval change · additional lease · FPD · Kornerstone reset |
+| 08 | [08-funding-merchants.md](08-funding-merchants.md) | Funding queue · LOS→SVC import · webhooks · merchant/lead management · integration API (detailed endpoints) · sandbox SSN rules |
 | 09 | [09-integracoes-externas.md](09-integracoes-externas.md) | Buddy Insurance · TaxCloud/TaxJar · Five9 · RTR · Proget · Skit.ai · PayPair · Podium |
-| 10 | [10-portal-comunicacoes.md](10-portal-comunicacoes.md) | TMS · portal do cliente · correspondência · consentimento · preferências de contato · convite ao portal |
-| 11 | [11-administracao.md](11-administracao.md) | Blacklist · item split · second opportunity · sweeps (catálogo) · cleanup · autenticação de API · painel administrativo |
-| 12 | [12-produto-lease-deep-dive.md](12-produto-lease-deep-dive.md) | Fórmulas e regras extraídas do código-fonte (suplementar) |
+| 10 | [10-portal-comunicacoes.md](10-portal-comunicacoes.md) | TMS · customer portal · correspondence · consent · contact preferences · portal invitation |
+| 11 | [11-administracao.md](11-administracao.md) | Blacklist · item split · second opportunity · sweeps (catalog) · cleanup · API authentication · admin panel |
+| 12 | [12-produto-lease-deep-dive.md](12-produto-lease-deep-dive.md) | Formulas and rules extracted from source code (supplementary) |
 
-## Appendices (referência)
+## Appendices (reference)
 
-| Appendix | Arquivo | Cobre |
+| Appendix | File | Covers |
 |----------|---------|-------|
-| A | [appendix-a-integracoes.md](appendix-a-integracoes.md) | Integrações com terceiros — referência rápida |
-| B | [appendix-b-endpoints.md](appendix-b-endpoints.md) | Endpoints ops/admin — referência rápida |
-| C | [appendix-c-tabelas-banco.md](appendix-c-tabelas-banco.md) | Tabelas de banco para verificação · indexes de performance · Merchant Settings Snapshot |
-| D | [appendix-d-constantes-enums.md](appendix-d-constantes-enums.md) | Constantes e enumerações · disambiguation E0 (AppApprovalStatus vs transactionStatus) |
-| E | [appendix-e-campanhas-uw.md](appendix-e-campanhas-uw.md) | Campanhas de underwriting (Peak/Off-Peak) |
-| F | [appendix-f-sql-reference.md](appendix-f-sql-reference.md) | Consultas SQL operacionais por domínio · queries de snapshot |
-| G | [appendix-g-cenarios-risco.md](appendix-g-cenarios-risco.md) | Cenários de risco de lease — base para parametrização de testes |
+| A | [appendix-a-integracoes.md](appendix-a-integracoes.md) | Third-party integrations — quick reference |
+| B | [appendix-b-endpoints.md](appendix-b-endpoints.md) | Ops/admin endpoints — quick reference |
+| C | [appendix-c-tabelas-banco.md](appendix-c-tabelas-banco.md) | Database tables for verification · performance indexes · Merchant Settings Snapshot |
+| D | [appendix-d-constantes-enums.md](appendix-d-constantes-enums.md) | Constants and enumerations · disambiguation E0 (AppApprovalStatus vs transactionStatus) |
+| E | [appendix-e-campanhas-uw.md](appendix-e-campanhas-uw.md) | Underwriting campaigns (Peak/Off-Peak) |
+| F | [appendix-f-sql-reference.md](appendix-f-sql-reference.md) | Operational SQL queries by domain · snapshot queries |
+| G | [appendix-g-cenarios-risco.md](appendix-g-cenarios-risco.md) | Lease risk scenarios — basis for test parameterization |
 
 ---
 
-## Como consumir (agentes e skills)
+## How to consume (agents and skills)
 
-Ordem de carga (ver [`../_docs-conventions.md`](../_docs-conventions.md) §5):
-1. [`_index.md`](_index.md) — localize o arquivo canônico por tópico e veja `last_verified`/`volatility` sem ler tudo.
-2. O capítulo/appendix específico acima.
-3. `docs/knowledge-base/` — investigações pontuais (mais frescas, exigem cross-check).
+Loading order (see [`../_docs-conventions.md`](../_docs-conventions.md) §5):
+1. [`_index.md`](_index.md) — locate the canonical file by topic and check `last_verified`/`volatility` without reading everything.
+2. The specific chapter/appendix above.
+3. `docs/knowledge-base/` — point investigations (fresher, require cross-check).
 
-Nunca responda de memória sobre categoria `volatile` — cross-check contra a `source` primária (Regra #16 + [[volatile-knowledge-registry]]).
+Never answer from memory about a `volatile` category — cross-check against the primary `source` (Rule #16 + [[volatile-knowledge-registry]]).

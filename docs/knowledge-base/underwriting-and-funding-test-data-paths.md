@@ -78,12 +78,12 @@ NEW/PENDING_UW → UW_APPROVED → CONTRACT_CREATED → SIGNED → FUNDING → F
 
 ### Producing a `UW_DENIED` lead — environment-specific
 
-> ⚠️ **The "SSN ending-in-9 → UW_DENIED" rule is sandbox/qa1-only.** In **qa2** an ending-in-9 SSN for **terraceFinance** returns **UW_APPROVED** — `[CONFIRMADO]` (2026-06-16): the lead's activity log shows the **BlackBox/ABB** engine approving with **0 vendor calls** in `uown_los_outbound_api_log`, i.e. qa2 routes TERRACE_FINANCE through the real BlackBox/ABB engine, which does NOT honour the mock short-circuit. Reproduce with `src/scripts/probe-uw-denial-engine.ts <env> <leadPk>`. **Do NOT rely on ending-in-9 for a qa2 denial.** See [[application-lifecycle]] Pitfall #109, [[ssn-test-modalities]] §6.
+> ⚠️ **The "SSN ending-in-9 → UW_DENIED" rule is sandbox/qa1-only.** In **qa2** an ending-in-9 SSN for **terraceFinance** returns **UW_APPROVED** — `[CONFIRMED]` (2026-06-16): the lead's activity log shows the **BlackBox/ABB** engine approving with **0 vendor calls** in `uown_los_outbound_api_log`, i.e. qa2 routes TERRACE_FINANCE through the real BlackBox/ABB engine, which does NOT honour the mock short-circuit. Reproduce with `src/scripts/probe-uw-denial-engine.ts <env> <leadPk>`. **Do NOT rely on ending-in-9 for a qa2 denial.** See [[application-lifecycle]] Pitfall #109, [[ssn-test-modalities]] §6.
 
 - **An SSN ending in `9` (`generateTestSSN(false)`, `src/config/constants.ts`) is rejected deterministically by the MOCKED UW engine — on sandbox/qa1 only.** `[confirmed]` on sandbox/qa1, corroborated by four sources:
-  - `ssn-test-modalities` SKILL: *"Denial generico | `generateTestSSN(false)` (termina em 9) | UW_DENIED imediato"*.
-  - `ssn-values.md`: *"último dígito `9` força denial no motor de UW mockado"*.
-  - business-rules 08 §"Regras do Sandbox": *"SSN terminando em 9 → Aplicação será negada"*; API example `fieldInError1: "SSN : ending with 9 is rejected on test server"`, `appApprovalStatus: "DECLINED"`.
+  - `ssn-test-modalities` SKILL: *"Generic denial | `generateTestSSN(false)` (ends in 9) | immediate UW_DENIED"*.
+  - `ssn-values.md`: *"last digit `9` forces denial in the mocked UW engine"*.
+  - business-rules 08 §"Sandbox Rules": *"SSN ending in 9 → Application will be denied"*; API example `fieldInError1: "SSN : ending with 9 is rejected on test server"`, `appApprovalStatus: "DECLINED"`.
   - `fraud-vendors-knowledge` SKILL: `= 9 → UW_DENIED`.
 - **The mock path is vendor-independent**, so on sandbox/qa1 it stays reliable even when DV360/Kount/GDS token sweeps are degraded (SSNs *outside* the catalog can return spurious `UW_DENIED` when a sweep token expires). `[confirmed]` (fraud-vendors-knowledge §5).
 - **Distinction:** `UW_DENIED` (the engine declines at the underwriting step) is "denied by underwriting". Pre-UW denials — State Check (NJ/VT/MN/ME), Blacklist ("Blacklist Lead" button), Merchant Auto-Deny — produce a `DENIED` variant *without reaching underwriting*; they also create no snapshot but are **not** "denied by underwriting". `[confirmed]` (business-rules 02 §4 steps 1–12).
@@ -92,7 +92,7 @@ NEW/PENDING_UW → UW_APPROVED → CONTRACT_CREATED → SIGNED → FUNDING → F
 
 #### The config that gates the ending-in-9 denial
 
-The ending-in-9 → `UW_DENIED` behaviour is a **backend test-server convenience**, controlled by a single boolean config key. `[CONFIRMADO]` via backend code:
+The ending-in-9 → `UW_DENIED` behaviour is a **backend test-server convenience**, controlled by a single boolean config key. `[CONFIRMED]` via backend code:
 
 - **Config key:** `com.uownleasing.svc.service.SendApplicationService.deny.ssn.ending.with.9` (boolean, code default **`true`**).
 - **Code:** `svc/src/main/java/com/uownleasing/svc/service/application/SendApplicationService.java:361-365`. The denial returns only when **ALL three** are true:
@@ -101,13 +101,13 @@ The ending-in-9 → `UW_DENIED` behaviour is a **backend test-server convenience
   3. `applicationRequest.getMainSSN().endsWith("9")`.
   → `getDeniedResponse(lead, "SSN : ending with 9 is rejected on test server", LeadStatus.UW_DENIED, ...)`.
   (Base logic since 2024-04; flag-wrapped in commit `d6c943f411`.)
-- **Config store:** live key/value table **`uown_configuration_management(key, value)`** (the dynamic config source; 92 rows, incl. 43 `com.uownleasing.svc.*` keys). The `deny.ssn.ending.with.9` key is **absent** in qa2 → by code the default `true` should apply, **yet qa2 approves ending-in-9**. So the effective value is being forced to `false` at a layer above this table (deploy-level application properties / the `SystemConfigurationManagement` source) — `[HIPÓTESE]` on the exact layer; confirm with DevOps which config source qa2's svc reads.
+- **Config store:** live key/value table **`uown_configuration_management(key, value)`** (the dynamic config source; 92 rows, incl. 43 `com.uownleasing.svc.*` keys). The `deny.ssn.ending.with.9` key is **absent** in qa2 → by code the default `true` should apply, **yet qa2 approves ending-in-9**. So the effective value is being forced to `false` at a layer above this table (deploy-level application properties / the `SystemConfigurationManagement` source) — `[HYPOTHESIS]` on the exact layer; confirm with DevOps which config source qa2's svc reads.
 
 **To make ending-in-9 a denial in qa2:** ensure the key resolves to `true` for qa2's svc. Options, in order of cleanliness:
 1. **DevOps** — set `com.uownleasing.svc.service.SendApplicationService.deny.ssn.ending.with.9=true` in qa2's effective svc config (authoritative; covers all merchants/client types).
 2. **DB config row** — upsert `uown_configuration_management (key, value)` via the admin API `POST /ConfigurationManagement/createOrUpdateConfig {key, value:"true"}` then `GET /ConfigurationManagement/forceReloadConfig` (no raw DB write needed; this is how the value is stored + cached).
 
-> ⚠️ **TESTED 2026-06-16 — the flag alone is NOT sufficient in qa2.** I set the key to `true` via the API (`createOrUpdateConfig` returned 200, DB row confirmed `value='true'`, `forceReloadConfig` 200), refreshed Kount/GDS sweeps, then submitted a **fresh ending-in-9 application** to terraceFinance → it **still returned `UW_APPROVED`** (lead 16583), NOT denied. `[CONFIRMADO]`. → The denial is gated by **`!isProduction()` AND the flag** (code line 361); with the flag now `true` and still approving, **qa2's svc is effectively treated as production for this gate** (or the deployed build predates the flag-wrapping commit `d6c943f411`). **Conclusion: ending-in-9 denial CANNOT be enabled in qa2 by config alone** — it needs dev/DevOps to confirm `SystemConfigurationManagement.isProduction()` for qa2 (and the deployed svc build). The config change was **reverted** (row deleted, cache reloaded). For denial tests, **use sandbox/qa1** (mock honoured) or a PO/dev-confirmed trigger.
+> ⚠️ **TESTED 2026-06-16 — the flag alone is NOT sufficient in qa2.** I set the key to `true` via the API (`createOrUpdateConfig` returned 200, DB row confirmed `value='true'`, `forceReloadConfig` 200), refreshed Kount/GDS sweeps, then submitted a **fresh ending-in-9 application** to terraceFinance → it **still returned `UW_APPROVED`** (lead 16583), NOT denied. `[CONFIRMED]`. → The denial is gated by **`!isProduction()` AND the flag** (code line 361); with the flag now `true` and still approving, **qa2's svc is effectively treated as production for this gate** (or the deployed build predates the flag-wrapping commit `d6c943f411`). **Conclusion: ending-in-9 denial CANNOT be enabled in qa2 by config alone** — it needs dev/DevOps to confirm `SystemConfigurationManagement.isProduction()` for qa2 (and the deployed svc build). The config change was **reverted** (row deleted, cache reloaded). For denial tests, **use sandbox/qa1** (mock honoured) or a PO/dev-confirmed trigger.
 
 This is environment/config knowledge — it does NOT change the test code; the existing `generateTestSSN(false)` denial test runs unchanged **once a denial is actually reachable in the target env** (sandbox/qa1 today, not qa2).
 

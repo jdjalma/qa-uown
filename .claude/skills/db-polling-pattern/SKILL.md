@@ -1,26 +1,26 @@
 ---
 name: db-polling-pattern
-description: Carregue ao validar resultado assíncrono no DB (callback de vendor, activity log, status transition, sweep task). Use waitForRecord com backoff exponencial, nunca query única + sleep. Polling é prevenção de flakiness — não otimização.
+description: Load when validating an asynchronous result in the DB (vendor callback, activity log, status transition, sweep task). Use waitForRecord with exponential backoff, never a single query + sleep. Polling is flakiness prevention — not optimization.
 disable-model-invocation: true
 ---
 
 # DB Polling Pattern
 
-## Quando aplicar
+## When to apply
 
-Sempre que precisar validar um efeito assíncrono no DB:
+Whenever you need to validate an asynchronous effect in the DB:
 
-- Activity log (regra inviolável #13)
-- Callback de vendor (Kount, SEON, DV360, GowSign)
-- Status transition disparada por background job
+- Activity log (inviolable rule #13)
+- Vendor callback (Kount, SEON, DV360, GowSign)
+- Status transition triggered by a background job
 - Sweep task (scheduled)
 - Payment settlement
 
-**NÃO use** para validação síncrona (response de API imediato). Use `expect` direto.
+**Do NOT use** for synchronous validation (immediate API response). Use `expect` directly.
 
-## Procedimento
+## Procedure
 
-### Helper canônico
+### Canonical helper
 
 ```ts
 import { db } from "@/helpers/database.helpers";
@@ -29,65 +29,65 @@ const log = await db.waitForRecord({
  table: "uown_los_lead_notes",
  filter: { lead_id: leadId, note_type: "SIGNING_COMPLETED" },
  timeoutMs: 30_000,
- intervalMs: 500, // primeiro intervalo, depois cresce
+ intervalMs: 500, // first interval, then grows
  maxIntervalMs: 5_000,
 });
 ```
 
-### Política de backoff
+### Backoff policy
 
 ```
-attempt 1: t=0 (imediato — pode já estar lá)
+attempt 1: t=0 (immediate — it may already be there)
 attempt 2: t=500ms
-attempt 3: t=1.5s (cresce 1.5x ou 2x)
+attempt 3: t=1.5s (grows 1.5x or 2x)
 attempt 4: t=3.5s
-attempt 5: t=7.5s (cap em 5s para próximos)
+attempt 5: t=7.5s (cap at 5s for the next ones)
 ...
 ```
 
-Backoff exponencial é importante porque:
-- Carga no DB de teste cai quando o evento demora
-- Logs ficam menos poluídos
-- Falsos negativos por race são mais raros
+Exponential backoff matters because:
+- Load on the test DB drops when the event is slow
+- Logs are less polluted
+- False negatives from a race are rarer
 
-### Quando usar polling vs `waitForRecord`
+### When to use polling vs `waitForRecord`
 
-| Caso | Helper |
+| Case | Helper |
 |------|--------|
-| Esperar 1 row específica aparecer | `db.waitForRecord({ filter })` |
-| Esperar count >= N | `db.waitForCount({ filter, min: N })` |
-| Esperar campo mudar (UPDATE) | `db.waitForChange({ filter, field, expected })` |
-| Validação imediata após resposta API síncrona | `db.getSingleRow` (sem polling) |
+| Wait for 1 specific row to appear | `db.waitForRecord({ filter })` |
+| Wait for count >= N | `db.waitForCount({ filter, min: N })` |
+| Wait for a field to change (UPDATE) | `db.waitForChange({ filter, field, expected })` |
+| Immediate validation after a synchronous API response | `db.getSingleRow` (no polling) |
 
-(Verifique nomes exatos em `src/helpers/database.helpers.ts`.)
+(Check the exact names in `src/helpers/database.helpers.ts`.)
 
 ## Pitfalls
 
 ### 1. `setTimeout` + 1 query
 ```ts
-// ❌ Anti-pattern — flakiness garantida
+// ❌ Anti-pattern — guaranteed flakiness
 await page.waitForTimeout(5000);
 const row = await db.query("SELECT ...");
 expect(row).toBeDefined;
 ```
-Se o evento demora 6s nesse ambiente, falha. Se chega em 100ms, perdeu 4.9s. Use `waitForRecord`.
+If the event takes 6s in that environment, it fails. If it arrives in 100ms, you wasted 4.9s. Use `waitForRecord`.
 
-### 2. Timeout curto demais
-- Activity log síncrono: 5–10s
-- Activity log de Settle Application em qa1: **120s** configurado — mas se polling retorna 0 rows mesmo com 120s, suspeitar de TZ drift (pitfall #6 abaixo) ANTES de aumentar mais o timeout. Ver [[application-lifecycle]] pitfall #66 (TZ drift, causa raiz real) e #65 (SUPERSEDED — timeout era tratamento de sintoma).
+### 2. Timeout too short
+- Synchronous activity log: 5–10s
+- Settle Application activity log in qa1: **120s** configured — but if polling returns 0 rows even with 120s, suspect TZ drift (pitfall #6 below) BEFORE increasing the timeout further. See [[application-lifecycle]] pitfall #66 (TZ drift, the real root cause) and #65 (SUPERSEDED — the timeout was treating a symptom).
 - Vendor callback (Kount/SEON): 30–60s
-- DV360 / fraud externo: até 2min em sandbox
-- Sweep task: depende do schedule — verificar `uown_sv_sql_config` ou config docs
+- DV360 / external fraud: up to 2min in sandbox
+- Sweep task: depends on the schedule — check `uown_sv_sql_config` or the config docs
 
-### 3. Filter muito amplo
+### 3. Filter too broad
 ```ts
-// ❌ Ambíguo se múltiplos eventos do mesmo lead
+// ❌ Ambiguous when there are multiple events for the same lead
 filter: { lead_id }
 ```
-Sempre inclua `note_type` ou outro discriminador.
+Always include `note_type` or another discriminator.
 
-### 4. Cleanup ausente
-Polling acumula latência se a row ficou de uma execução anterior. Garanta cleanup ou use timestamp/runId no filter:
+### 4. Missing cleanup
+Polling accumulates latency if the row was left over from a previous run. Ensure cleanup or use a timestamp/runId in the filter:
 ```ts
 filter: { lead_id, created_at_gte: testStartedAt }
 ```
@@ -123,43 +123,43 @@ SELECT column_name, data_type
 ```
 Never assume column names from entity field names, DTO names, or issue title wording.
 
-### 5. Conexão DB exposta no teste
-Use o helper. Não abrir `pg.Client` direto no spec — viola layering e quebra connection pool.
+### 5. DB connection exposed in the test
+Use the helper. Do not open a `pg.Client` directly in the spec — it violates layering and breaks the connection pool.
 
-### 8. Loop `while/for` + `sleep()` re-implementa `pollUntil`/`waitForRecord` (DRY)
+### 8. A `while/for` loop + `sleep()` re-implements `pollUntil`/`waitForRecord` (DRY)
 
-O `sleep()` (`@helpers/index.js`) é o helper do projeto que vira substituto de `page.waitForTimeout` — e por isso escapa do ban de `waitForTimeout`. Mas **`sleep()` dentro de um loop que espera uma condição é o mesmo anti-pattern**: re-implementa à mão o `pollUntil` (cujo próprio docstring diz "Primitivo compartilhado — antes reimplementado em database/esign-db/settled-in-full").
+`sleep()` (`@helpers/index.js`) is the project's helper that serves as a substitute for `page.waitForTimeout` — which is why it escapes the `waitForTimeout` ban. But **`sleep()` inside a loop that waits for a condition is the same anti-pattern**: it hand-rolls `pollUntil` (whose own docstring says "Shared primitive — previously reimplemented in database/esign-db/settled-in-full").
 
 ```ts
-// ❌ Hand-rolled poll loop — re-implementa pollUntil, cadência fixa, polui o spec
+// ❌ Hand-rolled poll loop — re-implements pollUntil, fixed cadence, pollutes the spec
 while (Date.now() < deadline) {
   await sleep(5_000);
   const row = await db.getSingleRow('SELECT ... WHERE pk=$1', [pk]);
   if (row) break;
 }
 
-// ✅ Helper compartilhado — backoff exponencial, um lugar para ajustar timing
+// ✅ Shared helper — exponential backoff, one place to tune timing
 const row = await pollUntil(
   () => db.getSingleRow('SELECT ... WHERE pk=$1', [pk]),
   { timeoutMs: 120_000, logPrefix: 'sticky-recover' },
 );
-// ✅ ou, para uma row de tabela conhecida:
+// ✅ or, for a row from a known table:
 const note = await db.waitForRecord('SELECT ... WHERE lead_pk=$1 ORDER BY pk DESC LIMIT 1', [leadPk]);
 ```
 
-**`sleep()` nu (fora de loop de condição) só é aceitável** para um delay de propagação externa que NÃO tem condição observável (ex: dar tempo a um webhook de vendor antes da PRIMEIRA query, sweep async sem flag de status) — e sempre com comentário de uma linha justificando. Retry de navegação (`for (attempt) { try goto; catch { await sleep(backoff) } }`) é uso legítimo de sleep como backoff entre tentativas, não espera condicional.
+**A bare `sleep()` (outside a condition loop) is only acceptable** for an external propagation delay that has NO observable condition (e.g. giving a vendor webhook time before the FIRST query, an async sweep with no status flag) — and always with a one-line comment justifying it. A navigation retry (`for (attempt) { try goto; catch { await sleep(backoff) } }`) is a legitimate use of sleep as backoff between attempts, not a conditional wait.
 
-**Como detectar (auditoria):** `grep -rn -B6 "await sleep(" tests/` → todo `sleep` precedido por `while (`/`for (` que consulta DB/estado é candidato a `pollUntil`/`waitForRecord`. Origem: auditoria DRY 2026-06-23 — ~30 loops hand-rolled re-implementando o primitivo em specs de domínio (sticky, seon, gowsign).
+**How to detect (audit):** `grep -rn -B6 "await sleep(" tests/` → every `sleep` preceded by `while (`/`for (` that queries the DB/state is a candidate for `pollUntil`/`waitForRecord`. Origin: DRY audit 2026-06-23 — ~30 hand-rolled loops re-implementing the primitive in domain specs (sticky, seon, gowsign).
 
-## Output esperado
+## Expected output
 
-Cada step que valida efeito async tem:
-1. Action que disparou
-2. `await db.waitForRecord({ ... })` com timeout adequado ao tipo
-3. Assertion de conteúdo (não só presença — ver skill `activity-log-validation`)
+Each step that validates an async effect has:
+1. The action that triggered it
+2. `await db.waitForRecord({ ... })` with a timeout appropriate to the type
+3. A content assertion (not just presence — see the `activity-log-validation` skill)
 
 ## Cross-links
 
-- Skill [[activity-log-validation]] — primeiro consumidor desse padrão
-- Skill [[helpers-catalog]] — verifica nomes/assinaturas reais dos helpers
+- Skill [[activity-log-validation]] — first consumer of this pattern
+- Skill [[helpers-catalog]] — check the real helper names/signatures
 - Source: `src/helpers/database.helpers.ts`

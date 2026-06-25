@@ -125,11 +125,11 @@ export function buildTestData(options: BuildTestDataOptions): TestData {
     number: merchantConfig.number,
   };
 
-  // Pessoa + endereço. Realistic mode (default) delega ao `randomPerson` (nome
-  // real, cidade/ZIP reais blacklist-immune, SSN/phone/DOB válidos) em vez de
-  // reinlinar os primitivos. O email PRESERVA o comportamento atual
-  // (`emailOverride ?? env.uniqueEmailAlias`) via override — a geração de email
-  // NÃO muda. Legacy mode mantém o fixture estático + nomes alpha-only TestFN.
+  // Person + address. Realistic mode (default) delegates to `randomPerson` (real
+  // name, real blacklist-immune city/ZIP, valid SSN/phone/DOB) instead of
+  // re-inlining the primitives. The email PRESERVES the current behavior
+  // (`emailOverride ?? env.uniqueEmailAlias`) via override — email generation
+  // does NOT change. Legacy mode keeps the static fixture + alpha-only TestFN names.
   let address: AddressData;
   let applicant: ApplicantInfo;
   if (realistic) {

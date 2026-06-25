@@ -572,7 +572,7 @@ Validates the Servicing portal bank account management flow and rating letter ge
 **E2E (`docs/taskTestingUown/R1.52.0_multiSelectFiltersMMHModReportFunding_1319/R1.52.0_multiSelectFiltersMMHModReportFunding_1319.spec.ts`):**
 Validates the multi-select Merchant/Location filter component (originally shipped in #1292) extended in R1.52.0 to three remaining Origination pages: Merchant Modification History (`/merchantModificationHistory`), Modification Report (`/modificationReport`), and Funding Queue (`/funding`). The component DOM is shared across pages but behavior diverges per page (see divergence notes below). Environment: QA2. Project: `task-testing`.
 
-> **Status:** spec criada; ainda NÃO validada pelo `qa-validator` (sem report). Dois itens permanecem `[HIPÓTESE]` (ver KB) — o endpoint da Funding Queue (`getLeadsForFundingQueue`) e os sweep names `dailyRefundReportSweep`/`dailyRefundedReportSweep`.
+> **Status:** spec created; NOT yet validated by `qa-validator` (no report). Two items remain `[HYPOTHESIS]` (see KB) — the Funding Queue endpoint (`getLeadsForFundingQueue`) and the sweep names `dailyRefundReportSweep`/`dailyRefundedReportSweep`.
 
 | CT | Page | Flow | Key Assertions |
 |----|------|------|----------------|
@@ -949,6 +949,10 @@ Validates that `POST /uown/svc/refreshKountAccessTokenSweep` and `POST /uown/svc
 
 ## Test Structure Conventions
 
+### Database Waits
+
+DB validations use a shared `pollUntil` with exponential backoff (100ms → 2s cap, 30s timeout; see `src/config/constants.ts` `DB_POLL_*`). **Never** use `page.waitForTimeout`/`setTimeout` to wait for DB state — fixed sleeps are flaky and slow. Use the typed `db.waitFor*` helpers.
+
 ### Parameterized Tests
 
 Use `for...of` loops over test data arrays instead of Cucumber Examples tables:
@@ -1185,6 +1189,8 @@ Use `contentType: 'text/plain'` (not `'application/json'`) so the data renders i
 | Test artifacts | `reports/test-results/` | (automatic) |
 
 ### Custom JSON Summary
+
+The custom reporter (`src/support/custom-reporter.ts`, registered in `playwright.config.ts`) emits `reports/test-summary.json` for CI parsing — chosen over JUnit XML so it can carry custom fields (environment, flaky count) alongside the HTML/list reporters.
 
 After each test run, `reports/test-summary.json` contains:
 
