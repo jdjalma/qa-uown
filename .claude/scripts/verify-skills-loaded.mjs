@@ -95,13 +95,13 @@ if (!agent) {
   }
 }
 if (!agent) {
-  allow(`not a qa-* agent (keys: ${Object.keys(input).join(",")})`);
+  allow(`not a qa-* agent (input keys: ${Object.keys(input).join(",")})`);
 }
 
 // ---- 2. Collect SKILL.md Reads + final assistant text ----
 const readSkills = new Set();
 let lastText = "";
-let consultedCanonical = false; // leu business-rules OU rodou `resolve` OU leu _index
+let consultedCanonical = false; // read business-rules OR ran `resolve` OR read _index
 for (const entry of scope) {
   const msg = entry.message;
   if (!msg) continue;
@@ -125,13 +125,13 @@ for (const entry of scope) {
 
 const declared = /\*{0,2}skills loaded:?\*{0,2}/i.test(lastText);
 
-// ---- Advisory (NÃO bloqueia): claim [CONFIRMADO] sem consulta à fonte canônica ----
-// Sinaliza no log quando o agente afirma [CONFIRMADO]/[CONFIRMED] mas não leu
-// business-rules nem rodou `resolve`. Pura auditoria — control flow inalterado.
+// ---- Advisory (does NOT block): [CONFIRMED] claim without consulting canonical source ----
+// Signals in the log when an agent asserts [CONFIRMED] but did not read
+// business-rules or run `resolve`. Audit only — control flow unchanged.
 if (/\[CONFIRMAD[OA]\]|\[CONFIRMED\]/i.test(lastText) && !consultedCanonical) {
   log(
-    `ADVISORY — agent=${agent} fez claim [CONFIRMADO] sem consultar fonte canônica ` +
-    `(nenhum docs/business-rules lido, nenhum 'resolve' rodado). Regra #16: cross-check contra source primária.`
+    `ADVISORY — agent=${agent} made a [CONFIRMED] claim without consulting a canonical source ` +
+    `(no docs/business-rules read, no 'resolve' run). Rule #16: cross-check against primary source.`
   );
 }
 
@@ -142,22 +142,22 @@ if (readSkills.size > 0 && declared) {
 
 const problems = [];
 if (readSkills.size === 0)
-  problems.push("nenhum `.claude/skills/*/SKILL.md` foi lido via Read nesta sessão");
-if (!declared) problems.push("o output final não contém a linha `**Skills loaded:**`");
+  problems.push("no `.claude/skills/*/SKILL.md` was read via Read in this session");
+if (!declared) problems.push("the final output does not contain the `**Skills loaded:**` line");
 
 log(
-  `BLOCK — agent=${agent} read=[${[...readSkills].join(", ") || "(nenhuma)"}] declared=${declared}`
+  `BLOCK — agent=${agent} read=[${[...readSkills].join(", ") || "(none)"}] declared=${declared}`
 );
 
 console.log(
   JSON.stringify({
     decision: "block",
     reason:
-      `[hook verify-skills-loaded] Protocolo de carga de skills não cumprido: ${problems.join("; ")}. ` +
-      `Antes de encerrar: (1) faça Read dos SKILL.md do seu grupo "Always" em .claude/skills/{slug}/SKILL.md ` +
-      `e dos condicionais cujo trigger se aplica à task; (2) termine o output com a linha **Skills loaded:** ` +
-      `listando exatamente os arquivos lidos. ` +
-      `Skills já lidas nesta sessão: ${[...readSkills].join(", ") || "(nenhuma)"}.`,
+      `[hook verify-skills-loaded] Skill loading protocol not fulfilled: ${problems.join("; ")}. ` +
+      `Before stopping: (1) Read the SKILL.md files from your "Always" group at .claude/skills/{slug}/SKILL.md ` +
+      `and any conditional ones whose trigger applies to this task; (2) end the output with the **Skills loaded:** line ` +
+      `listing exactly the files read. ` +
+      `Skills already read in this session: ${[...readSkills].join(", ") || "(none)"}.`,
   })
 );
 process.exit(0);

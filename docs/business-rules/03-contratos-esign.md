@@ -204,6 +204,8 @@ After a successful electronic signature, the customer is redirected to the `/{sh
 - Added: confetti animation, check icon, contact information
 - Animation: clip-path reveal with a duration of 0.75s
 
+> **[VERIFY] code-vs-doc conflict (audit 2026-06-25):** this chapter states the post-signature "View Document" link was *removed* in R1.50.0, yet `src/pages/origination/contract.page.ts:784-795` still targets a `viewCompletedDocument` link and it is used by active specs (unified-flow / new-application / seon-e2e). Confirm against the live completion screen which state is current before relying on either claim.
+
 ---
 
 ### Payment Program Selection Screen (MissingPaymentProgram)

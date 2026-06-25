@@ -867,6 +867,642 @@
       ]
     },
     {
+      "file": "origination-customer-lead-detail-page.md",
+      "path": "docs/knowledge-base/origination-customer-lead-detail-page.md",
+      "title": "Origination Customer / Lead Detail Page",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "volatile",
+      "last_verified": "2026-06-25",
+      "covers": [
+        "lead-management",
+        "lead-management",
+        "lead-status",
+        "lead-status",
+        "lead-management",
+        "lead-management",
+        "cancellation",
+        "lead-management",
+        "blacklist",
+        "lead-management",
+        "activity-log",
+        "origination-portal",
+        "origination-portal"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "stg"
+        },
+        {
+          "type": "lead",
+          "value": "7218178"
+        },
+        {
+          "type": "code",
+          "value": "src/pages/origination/customer.page.ts"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "How to reach it",
+          "anchor": "how-to-reach-it"
+        },
+        {
+          "heading": "Header summary (top band)",
+          "anchor": "header-summary-top-band"
+        },
+        {
+          "heading": "Available operations (status-dependent action bar)",
+          "anchor": "available-operations-status-dependent-action-bar"
+        },
+        {
+          "heading": "Data sections (cards)",
+          "anchor": "data-sections-cards"
+        },
+        {
+          "heading": "Alerts",
+          "anchor": "alerts"
+        },
+        {
+          "heading": "Business rules / observations",
+          "anchor": "business-rules-observations"
+        },
+        {
+          "heading": "Connections with what we already knew",
+          "anchor": "connections-with-what-we-already-knew"
+        },
+        {
+          "heading": "Gaps / to investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "origination-funding-queue-page.md",
+      "path": "docs/knowledge-base/origination-funding-queue-page.md",
+      "title": "Origination Funding Queue Page",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "volatile",
+      "last_verified": "2026-06-25",
+      "covers": [
+        "funding-queue",
+        "csv-export",
+        "multi-select-filters",
+        "lead-status"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "stg"
+        },
+        {
+          "type": "lead",
+          "value": "7218178"
+        },
+        {
+          "type": "code",
+          "value": "src/pages/origination/funding.page.ts"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Available operations",
+          "anchor": "available-operations"
+        },
+        {
+          "heading": "Filters",
+          "anchor": "filters"
+        },
+        {
+          "heading": "Columns (35)",
+          "anchor": "columns-35"
+        },
+        {
+          "heading": "Business rules / observations",
+          "anchor": "business-rules-observations"
+        },
+        {
+          "heading": "Connections with what we already knew",
+          "anchor": "connections-with-what-we-already-knew"
+        },
+        {
+          "heading": "Gaps / to investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "origination-lead-detail-actions-and-invoice.md",
+      "path": "docs/knowledge-base/origination-lead-detail-actions-and-invoice.md",
+      "title": "Origination Lead-Detail Actions & Invoice/Lease Creation",
+      "domain": "knowledge-base",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-25",
+      "covers": [
+        "lead-management",
+        "cancellation",
+        "approval-change",
+        "invoice-modification",
+        "settlement",
+        "lead-status"
+      ],
+      "sources": [
+        {
+          "type": "code",
+          "value": "src/pages/origination/customer.page.ts"
+        },
+        {
+          "type": "test",
+          "value": "tests/e2e/origination/modify-approval-amount.spec.ts"
+        },
+        {
+          "type": "test",
+          "value": "tests/e2e/origination/modify-lease.spec.ts"
+        },
+        {
+          "type": "test",
+          "value": "tests/e2e/origination/lease-cancellation.spec.ts"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Scope",
+          "anchor": "scope"
+        },
+        {
+          "heading": "Shared action-bar mechanics (apply to every `clickActionButton(...)` modal)",
+          "anchor": "shared-action-bar-mechanics-apply-to-every-clickactionbutton-modal"
+        },
+        {
+          "heading": "Action modals",
+          "anchor": "action-modals"
+        },
+        {
+          "heading": "Change to Signed",
+          "anchor": "change-to-signed"
+        },
+        {
+          "heading": "Set to Expired",
+          "anchor": "set-to-expired"
+        },
+        {
+          "heading": "Cancel Lease",
+          "anchor": "cancel-lease"
+        },
+        {
+          "heading": "Modify Approval Amount",
+          "anchor": "modify-approval-amount"
+        },
+        {
+          "heading": "Modify Lease",
+          "anchor": "modify-lease"
+        },
+        {
+          "heading": "Settle Lease",
+          "anchor": "settle-lease"
+        },
+        {
+          "heading": "Invoice / lease creation flow",
+          "anchor": "invoice-lease-creation-flow"
+        },
+        {
+          "heading": "Sales Rep panel inline edit",
+          "anchor": "sales-rep-panel-inline-edit"
+        },
+        {
+          "heading": "Activity Log entries (Rule #13)",
+          "anchor": "activity-log-entries-rule-13"
+        },
+        {
+          "heading": "Connections with what we already knew",
+          "anchor": "connections-with-what-we-already-knew"
+        },
+        {
+          "heading": "Gaps / to investigate (live-UI-only)",
+          "anchor": "gaps-to-investigate-live-ui-only"
+        }
+      ]
+    },
+    {
+      "file": "origination-merchant-detail-edit-page.md",
+      "path": "docs/knowledge-base/origination-merchant-detail-edit-page.md",
+      "title": "Origination Merchant Detail / Edit Page",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "volatile",
+      "last_verified": "2026-06-25",
+      "covers": [
+        "merchant-config",
+        "merchant-management",
+        "merchant-programs",
+        "fraud-vendors",
+        "esign",
+        "webhooks",
+        "correspondence",
+        "merchant-snapshot"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "stg"
+        },
+        {
+          "type": "merchant",
+          "value": "OW90218-0001"
+        },
+        {
+          "type": "code",
+          "value": "src/pages/origination/merchant-edit.page.ts"
+        },
+        {
+          "type": "code",
+          "value": "src/pages/origination/merchant-setting.page.ts"
+        },
+        {
+          "type": "code",
+          "value": "src/data/merchant-config-contract.ts"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Layout",
+          "anchor": "layout"
+        },
+        {
+          "heading": "Merchant Information",
+          "anchor": "merchant-information"
+        },
+        {
+          "heading": "Settings — toggles (checkboxes)",
+          "anchor": "settings-toggles-checkboxes"
+        },
+        {
+          "heading": "Settings — values",
+          "anchor": "settings-values"
+        },
+        {
+          "heading": "GDS Data (collapsible section)",
+          "anchor": "gds-data-collapsible-section"
+        },
+        {
+          "heading": "Contact",
+          "anchor": "contact"
+        },
+        {
+          "heading": "Programs section",
+          "anchor": "programs-section"
+        },
+        {
+          "heading": "Business rules / observations",
+          "anchor": "business-rules-observations"
+        },
+        {
+          "heading": "Connections with what we already knew",
+          "anchor": "connections-with-what-we-already-knew"
+        },
+        {
+          "heading": "Gaps / to investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "origination-merchant-location-filters.md",
+      "path": "docs/knowledge-base/origination-merchant-location-filters.md",
+      "title": "Origination Merchant/Location Filter Widgets",
+      "domain": "knowledge-base",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-25",
+      "covers": [
+        "multi-select-filters",
+        "merchant-management",
+        "csv-export"
+      ],
+      "sources": [
+        {
+          "type": "code",
+          "value": "src/pages/origination/merchant-location-filter.po.ts"
+        },
+        {
+          "type": "code",
+          "value": "src/helpers/merchant-location-report.helper.ts"
+        },
+        {
+          "type": "code",
+          "value": "src/pages/origination/funding.page.ts"
+        },
+        {
+          "type": "test",
+          "value": "tests/e2e/origination/multi-select-filters.spec.ts"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "What it is for",
+          "anchor": "what-it-is-for"
+        },
+        {
+          "heading": "The three mechanisms",
+          "anchor": "the-three-mechanisms"
+        },
+        {
+          "heading": "Behavioral contract",
+          "anchor": "behavioral-contract"
+        },
+        {
+          "heading": "Per-page mapping",
+          "anchor": "per-page-mapping"
+        },
+        {
+          "heading": "Connections with what we already knew",
+          "anchor": "connections-with-what-we-already-knew"
+        },
+        {
+          "heading": "Gaps / to investigate (live-UI-only items)",
+          "anchor": "gaps-to-investigate-live-ui-only-items"
+        }
+      ]
+    },
+    {
+      "file": "origination-portal-map.md",
+      "path": "docs/knowledge-base/origination-portal-map.md",
+      "title": "Origination Portal — Map & Documentation Coverage",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "volatile",
+      "last_verified": "2026-06-25",
+      "covers": [
+        "origination-portal",
+        "origination-portal",
+        "origination-portal",
+        "origination-portal",
+        "origination-portal",
+        "lead-management",
+        "funding-queue",
+        "troubleshooting",
+        "state-rules",
+        "blacklist",
+        "lead-management",
+        "funding-queue",
+        "merchant-config",
+        "originacao",
+        "merchant-config"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "stg"
+        },
+        {
+          "type": "code",
+          "value": "src/pages/origination/"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Navigation menu (18 items) + sub-pages",
+          "anchor": "navigation-menu-18-items-sub-pages"
+        },
+        {
+          "heading": "Documentation coverage — what we already had",
+          "anchor": "documentation-coverage-what-we-already-had"
+        },
+        {
+          "heading": "Newly documented screens (this file)",
+          "anchor": "newly-documented-screens-this-file"
+        },
+        {
+          "heading": "Overview (`/overview`) — full structure",
+          "anchor": "overview-overview-full-structure"
+        },
+        {
+          "heading": "Leads (`/leads`) — **NEW**",
+          "anchor": "leads-leads-new"
+        },
+        {
+          "heading": "New Application (`/newApplication`) — **NEW (corrected)**",
+          "anchor": "new-application-newapplication-new-corrected"
+        },
+        {
+          "heading": "Error Log (`/errorLog`) — **NEW**",
+          "anchor": "error-log-errorlog-new"
+        },
+        {
+          "heading": "State Configs (`/stateConfigs`) — **NEW**",
+          "anchor": "state-configs-stateconfigs-new"
+        },
+        {
+          "heading": "Blacklist (`/blacklist`) — **NEW**",
+          "anchor": "blacklist-blacklist-new"
+        },
+        {
+          "heading": "Alerts (`/alerts`) — **NEW**",
+          "anchor": "alerts-alerts-new"
+        },
+        {
+          "heading": "Funding Modification History (`/fundingModificationHistory`) — **NEW**",
+          "anchor": "funding-modification-history-fundingmodificationhistory-new"
+        },
+        {
+          "heading": "Merchant Setting (`/merchantSetting`) — **NEW**",
+          "anchor": "merchant-setting-merchantsetting-new"
+        },
+        {
+          "heading": "Open To Buy (`/openToBuy`) — **NEW**",
+          "anchor": "open-to-buy-opentobuy-new"
+        },
+        {
+          "heading": "Rebate (`/rebate`) — **NEW**",
+          "anchor": "rebate-rebate-new"
+        },
+        {
+          "heading": "Cross-cutting patterns",
+          "anchor": "cross-cutting-patterns"
+        },
+        {
+          "heading": "Gaps / still not documented (prioritized — refreshed by the 2026-06-25 code/doc coverage audit)",
+          "anchor": "gaps-still-not-documented-prioritized-refreshed-by-the-2026-06-25-codedoc-coverage-audit"
+        },
+        {
+          "heading": "Companion discovery docs",
+          "anchor": "companion-discovery-docs"
+        }
+      ]
+    },
+    {
+      "file": "origination-programs-program-settings-groups.md",
+      "path": "docs/knowledge-base/origination-programs-program-settings-groups.md",
+      "title": "Origination Programs, Program Settings & Program Groups",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "volatile",
+      "last_verified": "2026-06-25",
+      "covers": [
+        "merchant-programs",
+        "merchant-programs",
+        "merchant-programs",
+        "merchant-programs",
+        "merchant-programs",
+        "merchant-programs",
+        "money-factor",
+        "epo",
+        "merchant-programs",
+        "merchant-programs",
+        "state-rules"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "stg"
+        },
+        {
+          "type": "code",
+          "value": "src/pages/origination/programs.page.ts"
+        },
+        {
+          "type": "code",
+          "value": "src/pages/origination/program-details.page.ts"
+        },
+        {
+          "type": "code",
+          "value": "src/pages/origination/programs-list.page.ts"
+        },
+        {
+          "type": "code",
+          "value": "src/pages/origination/program-groups.page.ts"
+        },
+        {
+          "type": "code",
+          "value": "src/pages/origination/merchant-programs-section.page.ts"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "What it is for",
+          "anchor": "what-it-is-for"
+        },
+        {
+          "heading": "The three screens",
+          "anchor": "the-three-screens"
+        },
+        {
+          "heading": "Programs catalog (`/programs`)",
+          "anchor": "programs-catalog-programs"
+        },
+        {
+          "heading": "Program Settings — editable fields (`/programSettings`)",
+          "anchor": "program-settings-editable-fields-programsettings"
+        },
+        {
+          "heading": "Program Groups (`/programGroups`)",
+          "anchor": "program-groups-programgroups"
+        },
+        {
+          "heading": "ADD NEW PROGRAM — create form (`/programs/new`, \"PROGRAM DETAILS\")",
+          "anchor": "add-new-program-create-form-programsnew-program-details"
+        },
+        {
+          "heading": "Business rules / observations",
+          "anchor": "business-rules-observations"
+        },
+        {
+          "heading": "Connections with what we already knew",
+          "anchor": "connections-with-what-we-already-knew"
+        },
+        {
+          "heading": "Gaps / to investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "origination-role-based-access-and-pii.md",
+      "path": "docs/knowledge-base/origination-role-based-access-and-pii.md",
+      "title": "Origination Portal — Role-Based Access & PII Visibility",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "volatile",
+      "last_verified": "2026-06-25",
+      "covers": [
+        "origination-portal",
+        "admin-panel",
+        "lead-management",
+        "origination-portal"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "stg"
+        },
+        {
+          "type": "env",
+          "value": "sandbox"
+        },
+        {
+          "type": "lead",
+          "value": "7218178"
+        },
+        {
+          "type": "lead",
+          "value": "98086"
+        },
+        {
+          "type": "account",
+          "value": "jmndes.gow (admin/manager)"
+        },
+        {
+          "type": "account",
+          "value": "supervisor (supervisor)"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "What was compared",
+          "anchor": "what-was-compared"
+        },
+        {
+          "heading": "Side-menu visibility by account",
+          "anchor": "side-menu-visibility-by-account"
+        },
+        {
+          "heading": "Lead detail — action bar by account (lead 7218178, status Funding)",
+          "anchor": "lead-detail-action-bar-by-account-lead-7218178-status-funding"
+        },
+        {
+          "heading": "PII visibility",
+          "anchor": "pii-visibility"
+        },
+        {
+          "heading": "Business rules / observations",
+          "anchor": "business-rules-observations"
+        },
+        {
+          "heading": "Connections with what we already knew",
+          "anchor": "connections-with-what-we-already-knew"
+        },
+        {
+          "heading": "Gaps / to investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
       "file": "overview-csv-export-merchant-support.md",
       "path": "docs/knowledge-base/overview-csv-export-merchant-support.md",
       "title": "Overview Page — CSV Export & Merchant Support Filter",
@@ -1335,6 +1971,286 @@
       ]
     },
     {
+      "file": "servicing-account-edit-modals.md",
+      "path": "docs/knowledge-base/servicing-account-edit-modals.md",
+      "title": "Servicing — Account Edit Modals & Inline CRUD (Customer Information)",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "volatile",
+      "last_verified": "2026-06-25",
+      "covers": [],
+      "sources": [
+        {
+          "type": "env",
+          "value": "sandbox"
+        },
+        {
+          "type": "account",
+          "value": "17298 (Sanjay James, Tire Agent, 13m ACTIVE, NY)"
+        },
+        {
+          "type": "url",
+          "value": "https://svc-website-sandbox.uownleasing.com/customer-information/17298"
+        },
+        {
+          "type": "code",
+          "value": "servicing/pages/customer-information/[account].tsx"
+        },
+        {
+          "type": "code",
+          "value": "servicing/domain/stores/customer.tsx"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "BR-00 — Hidden fields appear only in edit mode",
+          "anchor": "br-00-hidden-fields-appear-only-in-edit-mode"
+        },
+        {
+          "heading": "1. Primary Applicant — inline edit  `[confirmed]`",
+          "anchor": "1-primary-applicant-inline-edit-confirmed"
+        },
+        {
+          "heading": "2. Primary Contact — inline edit + DNC reason modal  `[confirmed]`",
+          "anchor": "2-primary-contact-inline-edit-dnc-reason-modal-confirmed"
+        },
+        {
+          "heading": "⚠️ BR-01 — DNC/DNT/email reason modal is phone-number-scoped (cross-account side effect)",
+          "anchor": "-br-01-dncdntemail-reason-modal-is-phone-number-scoped-cross-account-side-effect"
+        },
+        {
+          "heading": "3a. Employment — inline edit  `[confirmed]`",
+          "anchor": "3a-employment-inline-edit-confirmed"
+        },
+        {
+          "heading": "3b. Third Party Information — inline edit  `[confirmed]`",
+          "anchor": "3b-third-party-information-inline-edit-confirmed"
+        },
+        {
+          "heading": "4. Add a Bank Account — modal  `[confirmed]`",
+          "anchor": "4-add-a-bank-account-modal-confirmed"
+        },
+        {
+          "heading": "5. Add a Credit Card — modal  `[confirmed]`",
+          "anchor": "5-add-a-credit-card-modal-confirmed"
+        },
+        {
+          "heading": "6. Servicing Information — inline edit (selective)  `[confirmed]`",
+          "anchor": "6-servicing-information-inline-edit-selective-confirmed"
+        },
+        {
+          "heading": "7. CC Peek Consent — inline edit  `[source/pattern]`",
+          "anchor": "7-cc-peek-consent-inline-edit-sourcepattern"
+        },
+        {
+          "heading": "8. Add New Log (Notes) — modal  `[confirmed]`",
+          "anchor": "8-add-new-log-notes-modal-confirmed"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Connections with What Was Already Known",
+          "anchor": "connections-with-what-was-already-known"
+        },
+        {
+          "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "servicing-account-status-and-cancellation.md",
+      "path": "docs/knowledge-base/servicing-account-status-and-cancellation.md",
+      "title": "Servicing — Account Status Change & Cancellation (CANCELLED ⇄ ACTIVE, Refund-All)",
+      "domain": "knowledge-base",
+      "status": "hypothesis",
+      "volatility": "volatile",
+      "last_verified": "2026-06-25",
+      "covers": [],
+      "sources": [
+        {
+          "type": "env",
+          "value": "source-audit (no live env)"
+        },
+        {
+          "type": "code",
+          "value": "servicing FE @ R1.50.2 (2026-04-07, stale)"
+        },
+        {
+          "type": "code",
+          "value": "svc backend @ R1.53.0"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Portal / URL",
+          "anchor": "portal-url"
+        },
+        {
+          "heading": "Available Operations",
+          "anchor": "available-operations"
+        },
+        {
+          "heading": "Flow & States",
+          "anchor": "flow-states"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Logic & Exceptions",
+          "anchor": "logic-exceptions"
+        },
+        {
+          "heading": "Connections",
+          "anchor": "connections"
+        },
+        {
+          "heading": "Gaps / Open Questions",
+          "anchor": "gaps-open-questions"
+        },
+        {
+          "heading": "Live-Verify Checklist (run before trusting `[needs-live]` claims)",
+          "anchor": "live-verify-checklist-run-before-trusting-needs-live-claims"
+        }
+      ]
+    },
+    {
+      "file": "servicing-customer-information-page.md",
+      "path": "docs/knowledge-base/servicing-customer-information-page.md",
+      "title": "Servicing — Customer Information Page (Account Detail)",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "volatile",
+      "last_verified": "2026-06-25",
+      "covers": [
+        "activity-log"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "sandbox"
+        },
+        {
+          "type": "account",
+          "value": "17298 (Sanjay James, Tire Agent, 13-month ACTIVE lease, NY)"
+        },
+        {
+          "type": "url",
+          "value": "https://svc-website-sandbox.uownleasing.com/customer-information/17298"
+        },
+        {
+          "type": "code",
+          "value": "servicing/pages/customer-information/[account].tsx"
+        },
+        {
+          "type": "code",
+          "value": "servicing/components/account-summary/index.tsx"
+        },
+        {
+          "type": "code",
+          "value": "servicing/domain/stores/customer.tsx"
+        },
+        {
+          "type": "code",
+          "value": "servicing/layouts/auth/index.tsx"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Portal / URL",
+          "anchor": "portal-url"
+        },
+        {
+          "heading": "⚠️ BR-00 — Identity-Verification Gate (mandatory, blocks the whole page)",
+          "anchor": "-br-00-identity-verification-gate-mandatory-blocks-the-whole-page"
+        },
+        {
+          "heading": "⚠️ BR-01 — Opening the account auto-writes a REVIEW activity log",
+          "anchor": "-br-01-opening-the-account-auto-writes-a-review-activity-log"
+        },
+        {
+          "heading": "Page Layout",
+          "anchor": "page-layout"
+        },
+        {
+          "heading": "Left sidebar rail (per-account navigation)",
+          "anchor": "left-sidebar-rail-per-account-navigation"
+        },
+        {
+          "heading": "Account Summary Bar (header)",
+          "anchor": "account-summary-bar-header"
+        },
+        {
+          "heading": "BR-02 — Change Account Status (New Status combobox)",
+          "anchor": "br-02-change-account-status-new-status-combobox"
+        },
+        {
+          "heading": "Panels (read + edit) and their endpoints",
+          "anchor": "panels-read-edit-and-their-endpoints"
+        },
+        {
+          "heading": "Left column",
+          "anchor": "left-column"
+        },
+        {
+          "heading": "Middle column",
+          "anchor": "middle-column"
+        },
+        {
+          "heading": "Right column — Servicing Information panel (`getServicingInfo` + edit `createOrUpdateServicingInfo`)",
+          "anchor": "right-column-servicing-information-panel-getservicinginfo-edit-createorupdateservicinginfo"
+        },
+        {
+          "heading": "Payment Transactions panel (read-only summary)",
+          "anchor": "payment-transactions-panel-read-only-summary"
+        },
+        {
+          "heading": "Notes / Activity Log (full-width table)",
+          "anchor": "notes-activity-log-full-width-table"
+        },
+        {
+          "heading": "API endpoints — page load (17 concurrent `GET`s)",
+          "anchor": "api-endpoints-page-load-17-concurrent-gets"
+        },
+        {
+          "heading": "API endpoints — actions",
+          "anchor": "api-endpoints-actions"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Permissions (view + modify)",
+          "anchor": "permissions-view-modify"
+        },
+        {
+          "heading": "Connections with What Was Already Known",
+          "anchor": "connections-with-what-was-already-known"
+        },
+        {
+          "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
       "file": "servicing-documents-page.md",
       "path": "docs/knowledge-base/servicing-documents-page.md",
       "title": "Servicing Documents Page",
@@ -1441,6 +2357,813 @@
         {
           "heading": "Gaps / To Investigate",
           "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "servicing-edit-pending-ach-cc-modals.md",
+      "path": "docs/knowledge-base/servicing-edit-pending-ach-cc-modals.md",
+      "title": "Servicing — Edit-Pending ACH & CC History Modals",
+      "domain": "knowledge-base",
+      "status": "hypothesis",
+      "volatility": "volatile",
+      "last_verified": "2026-06-25",
+      "covers": [],
+      "sources": [
+        {
+          "type": "env",
+          "value": "source-audit (no live env)"
+        },
+        {
+          "type": "code",
+          "value": "servicing FE @ R1.50.2 (2026-04-07, stale)"
+        },
+        {
+          "type": "code",
+          "value": "svc backend @ R1.53.0"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Portal / URL",
+          "anchor": "portal-url"
+        },
+        {
+          "heading": "Available Operations",
+          "anchor": "available-operations"
+        },
+        {
+          "heading": "Divergence: a newer validated ACH PUT exists but is NOT wired",
+          "anchor": "divergence-a-newer-validated-ach-put-exists-but-is-not-wired"
+        },
+        {
+          "heading": "Modal fields",
+          "anchor": "modal-fields"
+        },
+        {
+          "heading": "Flow & States",
+          "anchor": "flow-states"
+        },
+        {
+          "heading": "ACH status model",
+          "anchor": "ach-status-model"
+        },
+        {
+          "heading": "CC status model (`CCUpdateTransactionService.isStatusValidForUpdate`)",
+          "anchor": "cc-status-model-ccupdatetransactionserviceisstatusvalidforupdate"
+        },
+        {
+          "heading": "CC \"run today\" branch (high-risk)",
+          "anchor": "cc-run-today-branch-high-risk"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Logic & Exceptions",
+          "anchor": "logic-exceptions"
+        },
+        {
+          "heading": "Connections",
+          "anchor": "connections"
+        },
+        {
+          "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        },
+        {
+          "heading": "Live-Verify Checklist (run before trusting `[needs-live]` claims)",
+          "anchor": "live-verify-checklist-run-before-trusting-needs-live-claims"
+        }
+      ]
+    },
+    {
+      "file": "servicing-history-pages.md",
+      "path": "docs/knowledge-base/servicing-history-pages.md",
+      "title": "Servicing — History & Transaction-View Pages (ACH · CC · Items · Email · Phone · Due-Date · Frequency · PayNearMe)",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "volatile",
+      "last_verified": "2026-06-25",
+      "covers": [],
+      "sources": [
+        {
+          "type": "env",
+          "value": "sandbox"
+        },
+        {
+          "type": "account",
+          "value": "17298 (Sanjay James, Tire Agent, 13m ACTIVE; 2 CC txns, 1 due-date move)"
+        },
+        {
+          "type": "url",
+          "value": "https://svc-website-sandbox.uownleasing.com/credit-card-history/17298"
+        },
+        {
+          "type": "url",
+          "value": "https://svc-website-sandbox.uownleasing.com/ach-history/17298"
+        },
+        {
+          "type": "url",
+          "value": "https://svc-website-sandbox.uownleasing.com/due-date-moves-history/17298"
+        },
+        {
+          "type": "code",
+          "value": "servicing/pages/{ach-history,credit-card-history,items-history,email-history,phone-history,due-date-moves-history,frequency-history}/[account].tsx"
+        },
+        {
+          "type": "code",
+          "value": "servicing/utils/data-table-columns.tsx"
+        },
+        {
+          "type": "code",
+          "value": "servicing/domain/stores/customer.tsx"
+        },
+        {
+          "type": "code",
+          "value": "servicing/layouts/auth/index.tsx"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Shared pattern (all 7)",
+          "anchor": "shared-pattern-all-7"
+        },
+        {
+          "heading": "1. ACH History — `History ▸ ACH`  `[live-verified]`",
+          "anchor": "1-ach-history-history-ach-live-verified"
+        },
+        {
+          "heading": "2. Credit Card Transactions — `History ▸ CC Transactions`  `[live-verified]`",
+          "anchor": "2-credit-card-transactions-history-cc-transactions-live-verified"
+        },
+        {
+          "heading": "3. Items Purchased — `History ▸ Items Purchased`  `[source]`",
+          "anchor": "3-items-purchased-history-items-purchased-source"
+        },
+        {
+          "heading": "4. Email History — `History ▸ Email`  `[source]`",
+          "anchor": "4-email-history-history-email-source"
+        },
+        {
+          "heading": "5. Phone History — `History ▸ Phone`  `[source]`",
+          "anchor": "5-phone-history-history-phone-source"
+        },
+        {
+          "heading": "6. Due Date Moves History — `History ▸ Due Date Changes`  `[live-verified]`",
+          "anchor": "6-due-date-moves-history-history-due-date-changes-live-verified"
+        },
+        {
+          "heading": "7. Frequency Changes — `History ▸ Frequency Changes`  `[source]`",
+          "anchor": "7-frequency-changes-history-frequency-changes-source"
+        },
+        {
+          "heading": "8. PayNearMe History — `History ▸ PayNearMe`  `[live-verified]`",
+          "anchor": "8-paynearme-history-history-paynearme-live-verified"
+        },
+        {
+          "heading": "Endpoint quick-reference",
+          "anchor": "endpoint-quick-reference"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Connections with What Was Already Known",
+          "anchor": "connections-with-what-was-already-known"
+        },
+        {
+          "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "servicing-make-payment-modal.md",
+      "path": "docs/knowledge-base/servicing-make-payment-modal.md",
+      "title": "Servicing — Make Payment Modal (CC / ACH / Check) + Charge-Fee Suppression",
+      "domain": "knowledge-base",
+      "status": "hypothesis",
+      "volatility": "volatile",
+      "last_verified": "2026-06-25",
+      "covers": [
+        "allocation"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "source-audit (no live env)"
+        },
+        {
+          "type": "code",
+          "value": "servicing FE @ R1.50.2 (2026-04-07, stale)"
+        },
+        {
+          "type": "code",
+          "value": "svc backend @ R1.53.0"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Portal / URL",
+          "anchor": "portal-url"
+        },
+        {
+          "heading": "Available Operations",
+          "anchor": "available-operations"
+        },
+        {
+          "heading": "Enums driving the selectors",
+          "anchor": "enums-driving-the-selectors"
+        },
+        {
+          "heading": "Flow & States",
+          "anchor": "flow-states"
+        },
+        {
+          "heading": "Prohibited / blocked transitions",
+          "anchor": "prohibited-blocked-transitions"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Logic & Exceptions",
+          "anchor": "logic-exceptions"
+        },
+        {
+          "heading": "Connections",
+          "anchor": "connections"
+        },
+        {
+          "heading": "Gaps",
+          "anchor": "gaps"
+        },
+        {
+          "heading": "Appendix — Charge-Fee Toggle & Restricted-State Suppression (CT/ME/MA/PR)",
+          "anchor": "appendix-charge-fee-toggle-restricted-state-suppression-ctmemapr"
+        },
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Portal / URL",
+          "anchor": "portal-url"
+        },
+        {
+          "heading": "Available Operations",
+          "anchor": "available-operations"
+        },
+        {
+          "heading": "Flow & States",
+          "anchor": "flow-states"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Logic & Exceptions",
+          "anchor": "logic-exceptions"
+        },
+        {
+          "heading": "Connections",
+          "anchor": "connections"
+        },
+        {
+          "heading": "Gaps",
+          "anchor": "gaps"
+        },
+        {
+          "heading": "Live-Verify Checklist (run before trusting `[needs-live]` claims)",
+          "anchor": "live-verify-checklist-run-before-trusting-needs-live-claims"
+        }
+      ]
+    },
+    {
+      "file": "servicing-payment-arrangement-creation-flow.md",
+      "path": "docs/knowledge-base/servicing-payment-arrangement-creation-flow.md",
+      "title": "Servicing — Payment Arrangement Creation Flow & Status Lifecycle",
+      "domain": "knowledge-base",
+      "status": "hypothesis",
+      "volatility": "volatile",
+      "last_verified": "2026-06-25",
+      "covers": [],
+      "sources": [
+        {
+          "type": "env",
+          "value": "source-audit (no live env)"
+        },
+        {
+          "type": "code",
+          "value": "servicing FE @ R1.50.2 (2026-04-07, stale)"
+        },
+        {
+          "type": "code",
+          "value": "svc backend @ R1.53.0"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Portal / URL",
+          "anchor": "portal-url"
+        },
+        {
+          "heading": "Available Operations",
+          "anchor": "available-operations"
+        },
+        {
+          "heading": "Flow & States",
+          "anchor": "flow-states"
+        },
+        {
+          "heading": "CC creation (`runTransactions`, `:56-130`) `[confirmed-source]`",
+          "anchor": "cc-creation-runtransactions-56-130-confirmed-source"
+        },
+        {
+          "heading": "ACH creation (`createOrUpdateAchPayments`, `:132-201`) `[confirmed-source]`",
+          "anchor": "ach-creation-createorupdateachpayments-132-201-confirmed-source"
+        },
+        {
+          "heading": "createPaymentArrangement (shared, `:231-295`) `[confirmed-source]`",
+          "anchor": "createpaymentarrangement-shared-231-295-confirmed-source"
+        },
+        {
+          "heading": "Status lifecycle (`PaymentArrangementStatus`) `[confirmed-source]`",
+          "anchor": "status-lifecycle-paymentarrangementstatus-confirmed-source"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Logic & Exceptions",
+          "anchor": "logic-exceptions"
+        },
+        {
+          "heading": "Connections",
+          "anchor": "connections"
+        },
+        {
+          "heading": "Gaps",
+          "anchor": "gaps"
+        },
+        {
+          "heading": "Live-Verify Checklist (run before trusting `[needs-live]` claims)",
+          "anchor": "live-verify-checklist-run-before-trusting-needs-live-claims"
+        }
+      ]
+    },
+    {
+      "file": "servicing-payment-arrangement-page.md",
+      "path": "docs/knowledge-base/servicing-payment-arrangement-page.md",
+      "title": "Servicing — Payment Arrangement Page",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "stable",
+      "last_verified": "2026-06-25",
+      "covers": [],
+      "sources": [
+        {
+          "type": "env",
+          "value": "sandbox"
+        },
+        {
+          "type": "account",
+          "value": "17298 (empty-state — no arrangements)"
+        },
+        {
+          "type": "url",
+          "value": "https://svc-website-sandbox.uownleasing.com/payment-arrangement/17298"
+        },
+        {
+          "type": "code",
+          "value": "servicing/pages/payment-arrangement/[account].tsx"
+        },
+        {
+          "type": "code",
+          "value": "servicing/components/payment-arrangement-expandable-row/index.tsx"
+        },
+        {
+          "type": "code",
+          "value": "servicing/domain/stores/payment.tsx"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Portal / URL",
+          "anchor": "portal-url"
+        },
+        {
+          "heading": "Main table (one row per arrangement)",
+          "anchor": "main-table-one-row-per-arrangement"
+        },
+        {
+          "heading": "Expandable row (click an arrangement)",
+          "anchor": "expandable-row-click-an-arrangement"
+        },
+        {
+          "heading": "API",
+          "anchor": "api"
+        },
+        {
+          "heading": "Data model",
+          "anchor": "data-model"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Connections with What Was Already Known",
+          "anchor": "connections-with-what-was-already-known"
+        },
+        {
+          "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "servicing-payment-history-page.md",
+      "path": "docs/knowledge-base/servicing-payment-history-page.md",
+      "title": "Servicing — Payment History Page (Reverse / Refund / Update / Rewind)",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "volatile",
+      "last_verified": "2026-06-25",
+      "covers": [
+        "sticky",
+        "rewind-replay"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "sandbox"
+        },
+        {
+          "type": "account",
+          "value": "17298 (1 PAID CC payment of $10.00)"
+        },
+        {
+          "type": "url",
+          "value": "https://svc-website-sandbox.uownleasing.com/payment-history/17298"
+        },
+        {
+          "type": "code",
+          "value": "servicing/pages/payment-history/[account].tsx"
+        },
+        {
+          "type": "code",
+          "value": "servicing/components/reverse-payment-modal/index.tsx"
+        },
+        {
+          "type": "code",
+          "value": "servicing/components/modals/update-payment/index.tsx"
+        },
+        {
+          "type": "code",
+          "value": "servicing/domain/stores/payment.tsx"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Portal / URL",
+          "anchor": "portal-url"
+        },
+        {
+          "heading": "Table columns (`data-table-columns.tsx:1379-1472`)",
+          "anchor": "table-columns-data-table-columnstsx1379-1472"
+        },
+        {
+          "heading": "Toolbar — Rewind / Replay",
+          "anchor": "toolbar-rewind-replay"
+        },
+        {
+          "heading": "Reverse / Refund modal `[confirmed live]`",
+          "anchor": "reverse-refund-modal-confirmed-live"
+        },
+        {
+          "heading": "Action endpoints",
+          "anchor": "action-endpoints"
+        },
+        {
+          "heading": "Update Payment modal",
+          "anchor": "update-payment-modal"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "API summary",
+          "anchor": "api-summary"
+        },
+        {
+          "heading": "Connections with What Was Already Known",
+          "anchor": "connections-with-what-was-already-known"
+        },
+        {
+          "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "servicing-payment-transaction-page.md",
+      "path": "docs/knowledge-base/servicing-payment-transaction-page.md",
+      "title": "Servicing — Payment Transactions Page (Transaction History)",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "stable",
+      "last_verified": "2026-06-25",
+      "covers": [
+        "csv-export"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "sandbox"
+        },
+        {
+          "type": "account",
+          "value": "17298 (Sanjay James, Tire Agent, 13-month ACTIVE lease)"
+        },
+        {
+          "type": "url",
+          "value": "https://svc-website-sandbox.uownleasing.com/payment-transaction/17298"
+        },
+        {
+          "type": "code",
+          "value": "servicing/pages/payment-transaction/[account].tsx"
+        },
+        {
+          "type": "code",
+          "value": "servicing/utils/data-table-columns.tsx#663-798"
+        },
+        {
+          "type": "code",
+          "value": "servicing/domain/stores/payment.tsx"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Portal / URL",
+          "anchor": "portal-url"
+        },
+        {
+          "heading": "Summary Metrics (top band)",
+          "anchor": "summary-metrics-top-band"
+        },
+        {
+          "heading": "Table — 17 columns (`data-table-columns.tsx:663-798`)",
+          "anchor": "table-17-columns-data-table-columnstsx663-798"
+        },
+        {
+          "heading": "Export",
+          "anchor": "export"
+        },
+        {
+          "heading": "API",
+          "anchor": "api"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Connections with What Was Already Known",
+          "anchor": "connections-with-what-was-already-known"
+        },
+        {
+          "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "servicing-paywallet-allocation.md",
+      "path": "docs/knowledge-base/servicing-paywallet-allocation.md",
+      "title": "Servicing — PayWallet (pw) Salary-Allocation Flow",
+      "domain": "knowledge-base",
+      "status": "hypothesis",
+      "volatility": "volatile",
+      "last_verified": "2026-06-25",
+      "covers": [
+        "paywallet"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "source-audit (no live env)"
+        },
+        {
+          "type": "code",
+          "value": "servicing FE @ R1.50.2 (2026-04-07, stale)"
+        },
+        {
+          "type": "code",
+          "value": "svc backend @ R1.53.0"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Portal / URL",
+          "anchor": "portal-url"
+        },
+        {
+          "heading": "Available Operations",
+          "anchor": "available-operations"
+        },
+        {
+          "heading": "Flow & States",
+          "anchor": "flow-states"
+        },
+        {
+          "heading": "Re-fetch side effect (confirmed)",
+          "anchor": "re-fetch-side-effect-confirmed"
+        },
+        {
+          "heading": "Lifecycle (UI sequence)",
+          "anchor": "lifecycle-ui-sequence"
+        },
+        {
+          "heading": "Backend payment states",
+          "anchor": "backend-payment-states"
+        },
+        {
+          "heading": "Prohibited / unverified transitions",
+          "anchor": "prohibited-unverified-transitions"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Logic & Exceptions",
+          "anchor": "logic-exceptions"
+        },
+        {
+          "heading": "Connections",
+          "anchor": "connections"
+        },
+        {
+          "heading": "Gaps",
+          "anchor": "gaps"
+        },
+        {
+          "heading": "Live-Verify Checklist (run before trusting `[needs-live]` claims)",
+          "anchor": "live-verify-checklist-run-before-trusting-needs-live-claims"
+        }
+      ]
+    },
+    {
+      "file": "servicing-permissions-matrix.md",
+      "path": "docs/knowledge-base/servicing-permissions-matrix.md",
+      "title": "Servicing — Permission/Role Matrix, BFF Route-Gate & PII Masking",
+      "domain": "knowledge-base",
+      "status": "hypothesis",
+      "volatility": "volatile",
+      "last_verified": "2026-06-25",
+      "covers": [],
+      "sources": [
+        {
+          "type": "env",
+          "value": "source-audit (no live env)"
+        },
+        {
+          "type": "code",
+          "value": "servicing FE @ R1.50.2 (2026-04-07, stale)"
+        },
+        {
+          "type": "code",
+          "value": "svc backend @ R1.53.0"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Portal / URL",
+          "anchor": "portal-url"
+        },
+        {
+          "heading": "The permissions object (shape)",
+          "anchor": "the-permissions-object-shape"
+        },
+        {
+          "heading": "Typed model declares only a SUBSET of runtime keys (drift hazard)",
+          "anchor": "typed-model-declares-only-a-subset-of-runtime-keys-drift-hazard"
+        },
+        {
+          "heading": "Available Operations (BFF route-gate map)",
+          "anchor": "available-operations-bff-route-gate-map"
+        },
+        {
+          "heading": "Whitelisted (no permission required)",
+          "anchor": "whitelisted-no-permission-required"
+        },
+        {
+          "heading": "Flow & States",
+          "anchor": "flow-states"
+        },
+        {
+          "heading": "Prohibited / blocked transitions",
+          "anchor": "prohibited-blocked-transitions"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Logic & Exceptions (QA-relevant anomalies)",
+          "anchor": "logic-exceptions-qa-relevant-anomalies"
+        },
+        {
+          "heading": "Connections",
+          "anchor": "connections"
+        },
+        {
+          "heading": "Gaps (to verify before publishing)",
+          "anchor": "gaps-to-verify-before-publishing"
+        },
+        {
+          "heading": "Appendix — PII Masking by Role (Server-Side BFF Interceptor)",
+          "anchor": "appendix-pii-masking-by-role-server-side-bff-interceptor"
+        },
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Portal / URL",
+          "anchor": "portal-url"
+        },
+        {
+          "heading": "Available Operations",
+          "anchor": "available-operations"
+        },
+        {
+          "heading": "Flow & States",
+          "anchor": "flow-states"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Logic & Exceptions",
+          "anchor": "logic-exceptions"
+        },
+        {
+          "heading": "Connections",
+          "anchor": "connections"
+        },
+        {
+          "heading": "Gaps",
+          "anchor": "gaps"
+        },
+        {
+          "heading": "Live-Verify Checklist (run before trusting `[needs-live]` claims)",
+          "anchor": "live-verify-checklist-run-before-trusting-needs-live-claims"
         }
       ]
     },
