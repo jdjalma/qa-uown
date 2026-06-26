@@ -3,7 +3,7 @@ title: Payment Processing
 domain: business-rules
 status: stable
 volatility: volatile
-last_verified: 2026-06-23
+last_verified: 2026-06-25
 sources:
   - code: src/api/clients/tms-payment.client.ts#TmsPaymentClient
   - code: src/data/test-cards.ts#TEST_CARDS
@@ -11,8 +11,26 @@ sources:
   - db: uown_sv_achpayment
   - db: uown_sv_payment_arrangement
   - svc-source: service/cc/sticky/StickyRefundCompletionService.java
+  - svc-source: service/cc/CCTransactionService.java
+  - svc-source: service/cc/CCSaleService.java
+  - svc-source: service/cc/CCTransactionHelper.java
+  - svc-source: service/cc/CCRunRefundService.java
+  - svc-source: service/cc/CCUpdateTransactionService.java
+  - svc-source: service/ach/ACHPaymentService.java
+  - svc-source: service/ach/AchUpdatePaymentService.java
+  - svc-source: service/PaymentArrangementService.java
   - env: qa2
+  - env: sandbox
 covers: [credit-card, ach, cc-peek, refunds, payment-arrangements, nsf, sweeps, rightfoot, sticky]
+derived_from:
+  - servicing-payment-arrangement-page
+  - servicing-payment-transaction-page
+  - servicing-payment-history-page
+  - servicing-history-pages
+  - servicing-make-payment-modal
+  - servicing-edit-pending-ach-cc-modals
+  - servicing-payment-arrangement-creation-flow
+  - servicing-paywallet-allocation
 ---
 
 # Payment Processing

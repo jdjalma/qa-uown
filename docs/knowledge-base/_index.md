@@ -1,7 +1,7 @@
 <!-- GERADO por scripts/docs-tooling.mjs — NÃO editar à mão. Rode: node scripts/docs-tooling.mjs index -->
 # Índice — docs/knowledge-base
 
-> Manifesto gerado a partir do frontmatter (ver `docs/_docs-conventions.md`). 39 arquivos.
+> Manifesto gerado a partir do frontmatter (ver `docs/_docs-conventions.md`). 40 arquivos.
 > Consumidores: leia este índice primeiro para localizar o arquivo canônico por tópico antes de abrir os docs.
 
 | Arquivo | Título | Status | Volatilidade | Verificado | Cobre |
@@ -16,6 +16,7 @@
 | [new-york-gowsign-template.md](new-york-gowsign-template.md) | New York (NY) GowSign Lease/Rental-Purchase Template | snapshot | volatile | 2026-06-18 | gowsign, esign, new-york, epo, template-rendering |
 | [npm-segment-tam-score-snapshot-routing.md](npm-segment-tam-score-snapshot-routing.md) | 1313 — npm_segment / tam_score snapshot: env & engine routing | stable | volatile | 2026-06-21 | npm-segment, tam-score, gds-snapshot, uwdata |
 | [origination-customer-lead-detail-page.md](origination-customer-lead-detail-page.md) | Origination Customer / Lead Detail Page | snapshot | volatile | 2026-06-25 | origination-customer-page, lead-detail, lead-status, internal-status, agent-actions, modify-lease, cancel-lease, send-to-signed, blacklist-lead, documents-lease-panel, activity-log, pii-display, session-replay |
+| [origination-esign-section-lead-detail.md](origination-esign-section-lead-detail.md) | Origination Lead Detail — E-Sign / Sign Section (Modify Lease) | snapshot | volatile | 2026-06-26 | esign-section, lead-detail, modify-lease, lease-mod, contract-created, esign-provider, chargeProcessingFeeBeforeEsign, documents-panel, activity-log, action-bar |
 | [origination-funding-queue-page.md](origination-funding-queue-page.md) | Origination Funding Queue Page | snapshot | volatile | 2026-06-25 | funding-queue, csv-export, multi-select-filters, lead-status |
 | [origination-lead-detail-actions-and-invoice.md](origination-lead-detail-actions-and-invoice.md) | Origination Lead-Detail Actions & Invoice/Lease Creation | stable | volatile | 2026-06-25 | lead-management, cancellation, approval-change, invoice-modification, settlement, lead-status |
 | [origination-merchant-detail-edit-page.md](origination-merchant-detail-edit-page.md) | Origination Merchant Detail / Edit Page | snapshot | volatile | 2026-06-25 | merchant-config, merchant-management, merchant-programs, fraud-vendors, esign, webhooks, correspondence, merchant-snapshot |

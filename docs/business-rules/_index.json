@@ -9,7 +9,7 @@
       "domain": "business-rules",
       "status": "stable",
       "volatility": "volatile",
-      "last_verified": "2026-06-18",
+      "last_verified": "2026-06-25",
       "covers": [
         "business-overview",
         "merchant-management",
@@ -28,8 +28,24 @@
           "value": "src/data/merchants.ts#MERCHANTS"
         },
         {
+          "type": "code",
+          "value": "src/pages/origination/programs.page.ts"
+        },
+        {
+          "type": "code",
+          "value": "src/pages/origination/program-details.page.ts"
+        },
+        {
+          "type": "code",
+          "value": "src/pages/origination/program-groups.page.ts"
+        },
+        {
           "type": "env",
           "value": "qa2"
+        },
+        {
+          "type": "env",
+          "value": "stg"
         }
       ],
       "sections": [
@@ -797,7 +813,7 @@
       "domain": "business-rules",
       "status": "stable",
       "volatility": "volatile",
-      "last_verified": "2026-06-23",
+      "last_verified": "2026-06-25",
       "covers": [
         "cc-payments",
         "ach-payments",
@@ -831,9 +847,21 @@
           "value": "uown_sv_payment_arrangement"
         },
         "svc-source: service/cc/sticky/StickyRefundCompletionService.java",
+        "svc-source: service/cc/CCTransactionService.java",
+        "svc-source: service/cc/CCSaleService.java",
+        "svc-source: service/cc/CCTransactionHelper.java",
+        "svc-source: service/cc/CCRunRefundService.java",
+        "svc-source: service/cc/CCUpdateTransactionService.java",
+        "svc-source: service/ach/ACHPaymentService.java",
+        "svc-source: service/ach/AchUpdatePaymentService.java",
+        "svc-source: service/PaymentArrangementService.java",
         {
           "type": "env",
           "value": "qa2"
+        },
+        {
+          "type": "env",
+          "value": "sandbox"
         }
       ],
       "sections": [

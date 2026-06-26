@@ -24,7 +24,7 @@ promoted_to: []
 
 In scope: the agent-action modals reachable from the lead-detail summary action bar and the Documents card, plus the invoice/lease creation form. All driven by `OriginationCustomerPage` in [`src/pages/origination/customer.page.ts`](../../src/pages/origination/customer.page.ts). Global selector strings resolve from [`src/selectors/common.selectors.ts`](../../src/selectors/common.selectors.ts) via the `SELECTORS` import (`customer.page.ts:3` [confirmed via code]).
 
-Out of scope: the read view, PII masking, e-sign / GowSign routing, funding queue, merchant config — see the companion docs.
+Out of scope: the read view, PII masking, e-sign / GowSign routing, funding queue, merchant config — see the companion docs. For the **E-Sign / Sign section** specifically (button label variants, `chargeProcessingFeeBeforeEsign` checkbox, Documents → Lease panel cascade, activity log oracle, known pitfalls), see [`origination-esign-section-lead-detail.md`](origination-esign-section-lead-detail.md).
 
 ### Shared action-bar mechanics (apply to every `clickActionButton(...)` modal)
 

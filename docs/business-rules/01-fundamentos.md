@@ -3,12 +3,17 @@ title: Fundamentals and Overview
 domain: business-rules
 status: stable
 volatility: volatile
-last_verified: 2026-06-18
+last_verified: 2026-06-25
 sources:
   - code: src/data/merchant-config-contract.ts#REQUIRED_MERCHANT_CONFIG
   - code: src/data/merchants.ts#MERCHANTS
+  - code: src/pages/origination/programs.page.ts
+  - code: src/pages/origination/program-details.page.ts
+  - code: src/pages/origination/program-groups.page.ts
   - env: qa2
+  - env: stg
 covers: [business-model, merchant-types, programs, merchant-config, kornerstone, epo]
+derived_from: [origination-programs-program-settings-groups, origination-merchant-detail-edit-page]
 ---
 
 # Fundamentals and Overview

@@ -6,11 +6,11 @@
 
 | Arquivo | Título | Status | Volatilidade | Verificado | Cobre |
 |---------|--------|--------|--------------|------------|-------|
-| [01-fundamentos.md](01-fundamentos.md) | Fundamentals and Overview | stable | volatile | 2026-06-18 | business-model, merchant-types, programs, merchant-config, kornerstone, epo |
+| [01-fundamentos.md](01-fundamentos.md) | Fundamentals and Overview | stable | volatile | 2026-06-25 | business-model, merchant-types, programs, merchant-config, kornerstone, epo |
 | [02-originacao-pipeline.md](02-originacao-pipeline.md) | Origination and Application Pipeline | stable | volatile | 2026-06-23 | pipeline, underwriting, fraud-vendors, neuroid, kount, state-check, geolocation, customer-journey, segment-limits |
 | [03-contratos-esign.md](03-contratos-esign.md) | Contracts and Electronic Signature | stable | volatile | 2026-06-18 | esign, signwell, gowsign, pandadoc, contracts, signing-fee, state-routing |
 | [04-calculos-financeiros.md](04-calculos-financeiros.md) | Financial Calculations and Formulas | stable | stable | 2026-06-23 | payment-calculator, epo, payoff, money-factor, payment-frequency, state-rules |
-| [05-pagamentos.md](05-pagamentos.md) | Payment Processing | stable | volatile | 2026-06-23 | credit-card, ach, cc-peek, refunds, payment-arrangements, nsf, sweeps, rightfoot, sticky |
+| [05-pagamentos.md](05-pagamentos.md) | Payment Processing | stable | volatile | 2026-06-25 | credit-card, ach, cc-peek, refunds, payment-arrangements, nsf, sweeps, rightfoot, sticky |
 | [06-conta-ciclo-vida.md](06-conta-ciclo-vida.md) | Account Lifecycle Management | stable | volatile | 2026-06-18 | receivables, auto-pay, rating-letters, delinquency, account-status, cancellation, paid-out, sweeps |
 | [07-modificacoes-conta.md](07-modificacoes-conta.md) | Account Modifications and Adjustments | stable | volatile | 2026-06-18 | rewind-replay, settlement, invoice-modification, frequency-change, due-date, fpd-adjustment, additional-lease, sweeps, modification-report-agent-attribution |
 | [08-funding-merchants.md](08-funding-merchants.md) | Funding and Merchant Management | stable | volatile | 2026-06-18 | funding, merchants, webhooks, ssn, los-svc-import, integration-api |

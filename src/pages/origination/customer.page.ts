@@ -141,6 +141,56 @@ export class OriginationCustomerPage extends OriginationBasePage {
     return true;
   }
 
+  // E-Sign trigger — its LABEL is context-dependent (live sandbox DOM,
+  // 2026-06-26): "E-Sign" on the first dispatch of a contract, "Resend E-sign"
+  // once the embedded contract was already auto-sent. The base
+  // {@link signContractButton} getter (line 54) stays an EXACT `/^E[-\s]?Sign$/i`
+  // match for its other call sites; this getter absorbs the Resend variant so
+  // {@link clickESign}/{@link isESignVisible} work in both states. In SIGNED the
+  // button is absent entirely (AC-01, confirmed in sandbox).
+  readonly eSignTrigger = this.page.getByRole('button', { name: /^(resend\s+)?e[-\s]?sign$/i });
+
+  /**
+   * Clicks the "E-Sign" / "Resend E-sign" trigger in the customer-summary
+   * action bar. Expands the collapsible menu first, then JS-dispatches the click
+   * to survive the horizontally `overflow-auto` container that can render the
+   * button off-screen-right while still reporting `visible:true` (see
+   * {@link clickActionButton} docstring for the off-screen rationale).
+   *
+   * On a lead in CONTRACT_CREATED (e.g. after a Modify Lease invoice increase),
+   * this is the agent-facing trigger for the LEASE_MOD signing flow.
+   */
+  async clickESign(): Promise<void> {
+    await this.expandActionsMenu();
+    await this.eSignTrigger.waitFor({ state: 'visible', timeout: 10_000 });
+    const dispatched = await this.eSignTrigger
+      .evaluate((el) => {
+        (el as HTMLElement).scrollIntoView({ block: 'center', inline: 'center' });
+        (el as HTMLElement).click();
+        return true;
+      })
+      .catch(() => false);
+    if (!dispatched) {
+      throw new Error('[Customer] E-Sign / Resend E-sign button not found in DOM');
+    }
+    console.log('[Customer] Clicked E-Sign / Resend E-sign');
+    await this.waitForSpinner();
+  }
+
+  /**
+   * Whether the "E-Sign" / "Resend E-sign" button is present in the action bar.
+   * Returns false (rather than throwing) when absent, so callers can assert
+   * visible/hidden — e.g. AC-01 (button absent in SIGNED).
+   *
+   * NOTE: the action bar is collapsible — call {@link expandActionsMenu} before
+   * this when the menu may be collapsed (the buttons render inside an
+   * overflow-auto container; even off-screen-right buttons report visible:true,
+   * which is the correct signal for "the action is available").
+   */
+  async isESignVisible(): Promise<boolean> {
+    return this.eSignTrigger.isVisible({ timeout: 3_000 }).catch(() => false);
+  }
+
   async getLeadStatus(): Promise<string> {
     return this.getTextContent(this.leadStatus);
   }

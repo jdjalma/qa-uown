@@ -157,6 +157,7 @@ Per CLAUDE.md rule #12, when an agent discovers an undocumented implicit require
 - 13m / 13m+16m / 16m Second Look modalities: [[ssn-test-modalities]]
 - Risk tiers + state-specific rules: `docs/business-rules/appendix-g-cenarios-risco.md`
 - Test bank constants: `src/config/constants.ts` - `TEST_BANK.DEFAULT_ROUTING` / `DEFAULT_ACCOUNT`
+- **Sweep validation checklist (mandatory 5 points):** [[common-operations]] cookbook §Scheduled Tasks → "Sweep Validation Checklist"
 - Test cards: `src/data/test-cards.ts` - use `MASTERCARD_APPROVED` (BIN 5500)
 - Payment arrangement patterns: `test-patterns-arrangements.md`
 - Test Data Hierarchy: `../../rules/testing.md`

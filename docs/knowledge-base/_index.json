@@ -943,6 +943,130 @@
       ]
     },
     {
+      "file": "origination-esign-section-lead-detail.md",
+      "path": "docs/knowledge-base/origination-esign-section-lead-detail.md",
+      "title": "Origination Lead Detail — E-Sign / Sign Section (Modify Lease)",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "volatile",
+      "last_verified": "2026-06-26",
+      "covers": [
+        "lead-management",
+        "lead-management",
+        "esign",
+        "activity-log"
+      ],
+      "sources": [
+        {
+          "type": "code",
+          "value": "src/pages/origination/customer.page.ts"
+        },
+        {
+          "type": "test",
+          "value": "tests/e2e/origination/modify-lease.spec.ts"
+        },
+        {
+          "type": "test",
+          "value": "tests/e2e/gowsign/gowsign-modify-lease-qa2.spec.ts"
+        },
+        "live-inspection: sandbox leads 98093/98094/98095 (MCP Playwright, 2026-06-26)"
+      ],
+      "sections": [
+        {
+          "heading": "1. Context: when does the E-Sign section become relevant?",
+          "anchor": "1-context-when-does-the-e-sign-section-become-relevant"
+        },
+        {
+          "heading": "2. Button: label variants and selector",
+          "anchor": "2-button-label-variants-and-selector"
+        },
+        {
+          "heading": "Existing page-object getter (narrow regex)",
+          "anchor": "existing-page-object-getter-narrow-regex"
+        },
+        {
+          "heading": "Recommended getter for new tests (broader regex)",
+          "anchor": "recommended-getter-for-new-tests-broader-regex"
+        },
+        {
+          "heading": "3. Button visibility per lead internal status",
+          "anchor": "3-button-visibility-per-lead-internal-status"
+        },
+        {
+          "heading": "4. `chargeProcessingFeeBeforeEsign` checkbox",
+          "anchor": "4-chargeprocessingfeebeforeesign-checkbox"
+        },
+        {
+          "heading": "What it controls",
+          "anchor": "what-it-controls"
+        },
+        {
+          "heading": "Page-object selector",
+          "anchor": "page-object-selector"
+        },
+        {
+          "heading": "Merchant-level flag",
+          "anchor": "merchant-level-flag"
+        },
+        {
+          "heading": "[HYPOTHESIS] Render conditions",
+          "anchor": "hypothesis-render-conditions"
+        },
+        {
+          "heading": "5. `Get Document Status` button",
+          "anchor": "5-get-document-status-button"
+        },
+        {
+          "heading": "6. Documents → Lease panel cascade",
+          "anchor": "6-documents-lease-panel-cascade"
+        },
+        {
+          "heading": "7. Activity log expectations (Rule #13)",
+          "anchor": "7-activity-log-expectations-rule-13"
+        },
+        {
+          "heading": "Dispatch activity log (after E-Sign click)",
+          "anchor": "dispatch-activity-log-after-e-sign-click"
+        },
+        {
+          "heading": "Signing activity log (after customer signs)",
+          "anchor": "signing-activity-log-after-customer-signs"
+        },
+        {
+          "heading": "8. Post-signing lead status cascade",
+          "anchor": "8-post-signing-lead-status-cascade"
+        },
+        {
+          "heading": "9. Known pitfalls",
+          "anchor": "9-known-pitfalls"
+        },
+        {
+          "heading": "P1 — Invoice # field is REQUIRED in Modify Lease form",
+          "anchor": "p1-invoice-field-is-required-in-modify-lease-form"
+        },
+        {
+          "heading": "P2 — `signContractButton` regex is too narrow for Resend E-sign",
+          "anchor": "p2-signcontractbutton-regex-is-too-narrow-for-resend-e-sign"
+        },
+        {
+          "heading": "P3 — Action bar off-screen at 1440×900",
+          "anchor": "p3-action-bar-off-screen-at-1440×900"
+        },
+        {
+          "heading": "P4 — `chargeProcessingFeeBeforeEsign` checkbox may be absent in embedded flows",
+          "anchor": "p4-chargeprocessingfeebeforeesign-checkbox-may-be-absent-in-embedded-flows"
+        },
+        {
+          "heading": "P5 — Backend auto-dispatches LEASE_MOD on Modify Lease save",
+          "anchor": "p5-backend-auto-dispatches-lease_mod-on-modify-lease-save"
+        },
+        {
+          "heading": "10. Test coverage (as of 2026-06-26)",
+          "anchor": "10-test-coverage-as-of-2026-06-26"
+        }
+      ]
+    },
+    {
       "file": "origination-funding-queue-page.md",
       "path": "docs/knowledge-base/origination-funding-queue-page.md",
       "title": "Origination Funding Queue Page",
