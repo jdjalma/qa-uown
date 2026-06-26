@@ -17,8 +17,8 @@ Converts a demand (user story, ticket, requirement) into test scenarios **via UI
 3. **Extract acceptance criteria** with IDs (`AC-01`, ...). **Micro-gate per AC:** can you write an observable `Then` with unambiguous pass/fail? If **not**, it is a gap candidate → step 4 (never guess).
 4. **Detect gaps** and apply the [missing information protocol](#missing-information-protocol).
 5. **Draft the AC→scenario(s) matrix** (titles only) as a **coverage plan**; validate that every AC has at least one scenario and that there are no orphan scenarios. Only then write.
-6. **Write the scenarios** (negatives → happy path) following the [rules](#rules) and the [coverage checklist](#coverage-checklist).
-7. **Self-validate** each scenario against the rules and the [quality checklist](references/checklist-qualidade-cenario.md). Found a violation? Fix and re-validate. **Only proceed when it passes.**
+6. **Write the scenarios** (negatives → happy path) following the [rules](#rules) and the [coverage checklist](#coverage-checklist). While writing each `Then`: apply the **consequence oracle** — ask "where does the user look to confirm this?" and "is the expected value stated explicitly?" Refer to the [[check-points]] catalog for the full list of after-action checkpoints (persistence, side effects, derived values, cross-screen consistency).
+7. **Self-validate** each scenario against the rules and the [quality checklist](references/checklist-qualidade-cenario.md). For every `Then`, run the three-question gate from rule #10. Found a violation? Fix and re-validate. **Only proceed when it passes.**
 8. **Finalize the matrix** and **save the `.md`** (copy [assets/modelo-cenarios.md](assets/modelo-cenarios.md)); report the path.
 
 ```
@@ -30,6 +30,8 @@ Converts a demand (user story, ticket, requirement) into test scenarios **via UI
 [ ] Scenarios written (negatives → happy path)
 [ ] Self-validation per scenario (rules + quality)
 [ ] Final matrix + .md saved and path reported
+[ ] Frontmatter added (last-reviewed + covers list)
+[ ] Row added to docs/scenarios/_index.md (operation, keywords, filename, last-reviewed)
 ```
 
 ## Rules
@@ -40,9 +42,33 @@ Converts a demand (user story, ticket, requirement) into test scenarios **via UI
 4. **Negatives first, happy path last.**
 5. **Full coverage.** Every acceptance criterion becomes at least one scenario (prove it in the [matrix](#coverage-matrix)).
 6. **Limits/boundaries are mandatory to consider** (zero, empty, minimum, maximum, expired session, no permission).
-7. **`Then` = observable result on screen**, never internal state. Each scenario illustrates **one** rule; the result derives from the rule identified in the impact analysis, not from assumption.
+7. **`Then` = observable consequence at the business decision point.** Ask: *"Where does the user look to confirm this worked? What exact value or state do they read to make a decision?"* That is the check point — the `Then` must land there.
+   - When the feature **produces a number**: assert it is the *correct* number, not just that a number appeared.
+   - When the feature **changes a status**: assert the correct status, everywhere it is visible.
+   - When the action has a **side effect** (log, balance, counter, notification): assert the side effect explicitly.
+   - When a value **appears in more than one place**: assert consistency across places.
+   - **Never internal state.** Each scenario illustrates **one** rule; the result derives from the rule in the impact analysis, not from assumption.
 8. **Never invent behavior** — without a basis, go to the [missing information protocol](#missing-information-protocol).
 9. **Domain language** and **concrete, realistic data** (avoid "foo"/"bar").
+10. **Apply the consequence oracle for every `Then`.** Before accepting a `Then`, run the three-question gate:
+    - *Value:* does it state **what** value/text/state should appear, not just that something appeared?
+    - *Decision point:* does it land where the user makes a real business decision (not an intermediate step)?
+    - *Failure detection:* would this `Then` catch the most likely failure mode for this scenario?
+    If any answer is No → rewrite the `Then`. A `Then` that passes the gate is a real test; one that fails is documentation noise.
+
+## `Then` Anti-Patterns (forbidden)
+
+These are weak `Then`s that look correct but are not tests — they would pass even if the feature is broken:
+
+| Anti-pattern | Why it's weak | Corrected form |
+|---|---|---|
+| `Then the amount is displayed` | Doesn't say *what* amount or if it's *correct* | `Then the Prorated Amount field shows $X,XXX.XX matching the payoff for that date` |
+| `Then the operation is successful` | No observable evidence | `Then a success message "…" is shown and the record appears in the list` |
+| `Then a message is shown` | Which message? What text? | `Then the message "Coupon expired" is shown and the cart total remains unchanged` |
+| `Then the form is submitted` | Not a user-observable consequence | `Then the payment appears in the account history with the correct amount and date` |
+| `Then no error is shown` | Absence alone is not evidence | Pair with a positive consequence: `Then no error is shown and the value X is saved` |
+| `Then the page refreshes` | Implementation detail | Assert what changed *because of* the refresh, not the refresh itself |
+| `Then the value is recalculated` | Doesn't say what changed or whether it's right | `Then the result field shows a different amount than before, matching the payoff for the new date` |
 
 ## Missing Information Protocol
 
@@ -56,22 +82,24 @@ Do not guess. There are **two types** of gap:
 ```gherkin
 Feature: <business capability>
   As <actor>
-  I want <action>
-  So that <benefit>
+  In order to <benefit>
+  <The actor> must <capability>
 
   Background:
     Given <common precondition: logged-in user, profile, initial screen, test data>
 
   Scenario: [negative] <error behavior>
     Given <initial state>
-    When <a user action in the UI>
+    When <the actor> <performs an action>
     Then <observable result on screen>
 
   Scenario: [positive] <success behavior>
     Given <initial state>
-    When <a user action in the UI>
+    When <the actor> <performs an action>
     Then <observable result on screen>
 ```
+
+> **Actor naming:** use the role name explicitly — `the agent`, `the customer`, `the manager`, `the merchant`. When the subject is the system reacting, use passive voice — `the dashboard is displayed`, `an error message is displayed`. Never `I`, `my`, or `you` in steps.
 
 - **Keywords:** `Feature`, `Background`, `Scenario`, `Scenario Outline` + `Examples`, `Given`, `When`, `Then`, `And`, `But`.
 - **Order `Given → When → Then`** without repeating phases. **There is no "Or"** — alternatives are separate scenarios.
@@ -79,17 +107,20 @@ Feature: <business capability>
 - **Background:** use **only** for preconditions shared by **multiple** scenarios and keep it short (one per Feature). Setup for a single scenario goes in a local `Given`; never build complex state in the Background.
 - **Scenario Outline + Examples:** when the same behavior varies only by **data**. Each row in `Examples` is a distinct **equivalence class** (e.g.: min−1 / min / max / max+1) — do not enumerate dozens of equivalent data values.
 - **Data table** inside a `Given` for structured test data in a single scenario (`Given the following items:` + table `| product | qty | price |`) — different from `Scenario Outline`, which varies behavior per row.
-- **Person and tense:** consistent throughout the file, in the present tense; keep the **actor explicit** when more than one profile is involved in the flow (`the manager approves`, `the customer requests`). Do not alternate person within the same file.
+- **Person and tense:** NEVER use first person (`I`, `my`) in Given/When/Then steps — this is a hard rule with no exceptions. Use the actor's name explicitly (`the agent submits`, `the customer enters`, `the manager approves`) or behavioral passive (`valid credentials are submitted`). First person is only acceptable in the Feature narrative block (`As a customer, In order to...`). Keep consistent present tense throughout. Do not alternate person within the same file.
 
 ## Coverage Checklist
 
 Consider (and include when applicable), in this order:
 
-- [ ] **Negatives / validations** — invalid inputs, violated rules, error messages.
+- [ ] **Negatives / validations** — invalid inputs, violated rules, error messages with exact text.
 - [ ] **Limits / boundaries** — zero, empty, minimum, maximum, expired session, no permission.
 - [ ] **Alternative flows** — other valid ways to achieve the objective.
 - [ ] **Data variations** — `Scenario Outline` when the flow changes only by data.
-- [ ] **Happy path** — the main success flow.
+- [ ] **Happy path** — the main success flow, with value correctness verified.
+- [ ] **Side effects** — for every action that mutates state: log/audit entry, notification, balance change, counter, derived value update. Use the [[check-points]] catalog. A scenario that exercises a business action without verifying its side effects is incomplete.
+- [ ] **Cross-screen consistency** — if the result appears in more than one place (list + detail, header + form, summary + report), assert it in all relevant places.
+- [ ] **Persistence** — for any save/submit: verify the value survives a reload or navigation away and back.
 
 ## Coverage Matrix
 
@@ -105,7 +136,20 @@ Links acceptance criterion → scenarios (by title). Traceability is **bidirecti
 
 **Copy [assets/modelo-cenarios.md](assets/modelo-cenarios.md) and fill it in.** Save to `docs/scenarios/<demand-name>.md` (kebab-case), or follow the project convention if there is one — check with Glob using `docs/**/*.md` first. After saving, report the path. If the user only wants to see it in chat, present it without saving.
 
-The **form** is rigid (Gherkin, `[negative]`/`[positive]` prefix, one `When`, `.md` structure); the **judgment** (which scenarios, impact analysis) is free.
+Every generated BDD file MUST start with this frontmatter block:
+
+```markdown
+---
+last-reviewed: <today's date YYYY-MM-DD>
+covers:
+  - <path to page object>
+  - <path to helper or API client>
+---
+```
+
+`covers` lists every implementation file whose behavior this BDD contracts. After saving, add a row to [`docs/scenarios/_index.md`](../../docs/scenarios/_index.md) mapping the operation name, trigger keywords, file name, and `last-reviewed` date. Without this row, rule #19 in CLAUDE.md cannot find the oracle.
+
+The **form** is rigid (Gherkin, `[negative]`/`[positive]` prefix, one `When`, `.md` structure, frontmatter + `_index.md` entry); the **judgment** (which scenarios, impact analysis) is free.
 
 ## Example
 

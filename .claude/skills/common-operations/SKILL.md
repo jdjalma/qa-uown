@@ -75,10 +75,50 @@ for (const data of testData) {
 
 ---
 
+## Authentication
+
+> **BDD spec (acceptance contract):** [`docs/scenarios/login.md`](../../docs/scenarios/login.md)
+> The BDD defines the observable behavior a correct login must satisfy. The page objects and helpers are the implementation; the BDD is the spec. Any change to the login flow must be reflected in the BDD first.
+
+### Agent portals (Origination, Servicing, AMS) — username/password
+
+```typescript
+import { loginToPortal, loginToPortalWithOptions } from '@helpers/index.js';
+
+// Standard — 'manager' role by default
+await loginToPortal(page, env.originationUrl, env);
+
+// Explicit role or waitUntil
+await loginToPortalWithOptions(page, env.originationUrl, env, 'merchant', 'networkidle');
+
+// LoginPage directly (only when testing login behavior itself — CT-02, CT-03)
+const loginPage = new LoginPage(page);
+await loginPage.login(credentials.email, credentials.password);
+```
+
+### Website portal — OTP login
+
+```typescript
+// Step 1: submit email or phone → triggers OTP dispatch
+await websitePage.loginWithEmailOrPhone(customerEmail);
+
+// Step 2: retrieve OTP from email (IMAP) and enter it
+const otp = await emailHelper.getLatestOtp();
+await websitePage.enterVerificationCode(otp);
+```
+
+> Relevant BDD scenarios: CT-04 (email OTP) · CT-05 (phone OTP) · CT-06 (resend) · CT-07 (invalid code)
+
+---
+
 ## Operation Index
+
+> **Convention:** every entry in this table MUST have a corresponding BDD file in `docs/scenarios/` registered in `docs/scenarios/_index.md`. When adding a new canonical operation here, create the BDD file first (via `test-scenarios` skill) and add the `_index.md` row before adding the table entry. No entry without a BDD = oracle gap.
 
 | Operation | Key Points | Recipe |
 |-----------|-----------|--------|
+| **Login — agent portals** | `loginToPortal(page, url, env, role)` · roles: `manager` (default) / `merchant` | BDD: [login.md](../../docs/scenarios/login.md) |
+| **Login — Website (OTP)** | `loginWithEmailOrPhone()` → `enterVerificationCode()` · OTP via IMAP | BDD: [login.md](../../docs/scenarios/login.md) |
 | Drive to FUNDED | pre-qual -> signed -> funding -> funded -> wait SVC account | [cookbook](references/cookbook.md#drive-to-funded-most-common-pattern) |
 | CC Payment (API) | Synchronous — SUCCESS immediately, no sweep needed | [cookbook](references/cookbook.md#cc-payment-arrangement-api) |
 | CC Payment (UI) | One-time card: `input[type="month"]` requires `YYYY-MM` | [cookbook](references/cookbook.md#cc-payment-arrangement---one-time-card-ui) |
