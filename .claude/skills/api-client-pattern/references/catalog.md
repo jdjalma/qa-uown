@@ -284,6 +284,16 @@ async searchApplicationStatus(
 
 > See [[application-lifecycle]] pitfall #31 for the auth model of `LosExternalMerchantController` (body-field credentials, not bearer token).
 
+## SvcPayoffClient — getProrateAmount (added 2026-06-26)
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `getProrateAmount` | `getProrateAmount(accountPk: number, onDate: string): Promise<ApiResponse<number>>` | GET `/uown/svc/getProrateAmount/{accountPk}?onDate={YYYY-MM-DD}` — returns the prorated payoff amount as a plain `number` (USD). `onDate` must be ISO format `YYYY-MM-DD`. **Read-only** — does NOT create an `uown_sv_activity_log` entry. Cross-check oracle for CT-02/CT-03 (displayed value must match response within $0.01). |
+
+**Usage note:** Always convert the MM/DD/YYYY displayed date to `YYYY-MM-DD` before calling. Float comparison: `Math.abs(displayed - api) < 0.01`. No body needed — pure GET. Confirmed sandbox account 17307: `?onDate=2026-07-26` → `705.39`; `?onDate=2026-08-25` → `1410.77`.
+
+---
+
 ## SvcPayoffClient — response extension (2026-05-22)
 
 **Response interface extension:** `src/api/responses/svc-payoff.response.ts`

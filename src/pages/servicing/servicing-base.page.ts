@@ -1,3 +1,4 @@
+import type { Locator } from '@playwright/test';
 import { BasePage } from '../base.page.js';
 import { SELECTORS } from '../../selectors/common.selectors.js';
 
@@ -498,6 +499,140 @@ export class ServicingBasePage extends BasePage {
 
     // Submit and wait for spinner to clear
     await this.clickAndWaitForSpinner(this.submitPaymentButton);
+  }
+
+  // ── Prorated Amount Modal (#calculator on the Account Summary Bar) ──────
+  // Source: docs/knowledge-base/scheduled-payments.md §5 + BR-23 (DOM-confirmed via MCP,
+  // last_verified 2026-06-26). The calc fires when a day is CLICKED in the React Day Picker
+  // calendar (rdp-*) — blur/pressSequentially do NOT trigger onChange. See setProratedDate JSDoc.
+  // The operation is read-only (BR-ACC-5 — no log, no mutation).
+
+  /** Returns the Prorated Amount modal container Locator (for visibility / header-text asserts). */
+  getProratedModal(): Locator {
+    return this.page.locator(SELECTORS.proratedModal);
+  }
+
+  /** Opens the Prorated Amount modal via the calculator icon and waits for it to render. */
+  async openProratedAmountModal(): Promise<void> {
+    await this.page.locator(SELECTORS.calculatorIcon).click();
+    await this.getProratedModal().waitFor({ state: 'visible' });
+  }
+
+  /** Current value of the "AS OF:" date field (MM/DD/YYYY). */
+  async getProratedDateValue(): Promise<string> {
+    return this.page.locator(SELECTORS.proratedDateInput).inputValue();
+  }
+
+  /**
+   * Sets the "AS OF:" date by navigating the React Day Picker calendar and clicking the target day.
+   *
+   * Root cause (DOM-confirmed MCP 2026-06-26, account 17306, sandbox):
+   * The proratedDate input uses React Day Picker (rdp-* classes). RDP fires Formik's
+   * onChange ONLY when a calendar day-button is clicked — pressSequentially plus any blur
+   * mechanism (Tab, el.blur(), click-outside, native HTMLInputElement setter + dispatchEvent)
+   * does NOT trigger onChange. Therefore the previous implementation (pressSequentially + modal
+   * container click) never fired GET /uown/svc/getProrateAmount.
+   *
+   * Algorithm:
+   *   1. Click the input to open the RDP calendar (opens at the month of the current value).
+   *   2. Navigate prev/next until the target month/year is visible (up to 24 months).
+   *   3. Click the day span inside the target button.rdp-day — click bubbles to the button,
+   *      RDP fires onChange → calendar closes → GET /uown/svc/getProrateAmount starts.
+   *
+   * @param mmddyyyy Target date in MM/DD/YYYY format, e.g. "07/26/2026"
+   */
+  async setProratedDate(mmddyyyy: string): Promise<void> {
+    const [mm, dd, yyyy] = mmddyyyy.split('/');
+    const targetMonth = parseInt(mm, 10); // 1–12
+    const targetDay   = parseInt(dd, 10); // 1–31
+    const targetYear  = parseInt(yyyy, 10);
+
+    // Step 1: Open the RDP calendar by clicking the date input
+    await this.page.locator(SELECTORS.proratedDateInput).click();
+
+    // Step 2: Wait for the calendar to render
+    const calendarLabel = this.page.locator(SELECTORS.proratedCalendarLabel);
+    await calendarLabel.waitFor({ state: 'visible', timeout: 5_000 });
+
+    // Step 3: Navigate to the target month/year
+    const MONTHS: Record<string, number> = {
+      January: 1, February: 2, March: 3, April: 4,
+      May: 5, June: 6, July: 7, August: 8,
+      September: 9, October: 10, November: 11, December: 12,
+    };
+
+    for (let attempt = 0; attempt < 24; attempt++) {
+      const labelText = ((await calendarLabel.textContent()) ?? '').trim(); // e.g. "July 2026"
+      const [monthName, yearStr] = labelText.split(' ');
+      const calMonth = MONTHS[monthName] ?? 0;
+      const calYear  = parseInt(yearStr, 10);
+
+      if (calMonth === targetMonth && calYear === targetYear) break;
+
+      const goForward =
+        targetYear > calYear || (targetYear === calYear && targetMonth > calMonth);
+
+      const prevLabel = labelText;
+      if (goForward) {
+        await this.page.locator(SELECTORS.proratedCalendarNextMonth).click();
+      } else {
+        await this.page.locator(SELECTORS.proratedCalendarPrevMonth).click();
+      }
+      // Wait for the calendar label to update before the next iteration
+      await this.page.waitForFunction(
+        ({ sel, prev }: { sel: string; prev: string }) => {
+          const el = document.querySelector(sel);
+          return !!el && (el.textContent ?? '').trim() !== prev;
+        },
+        { sel: SELECTORS.proratedCalendarLabel, prev: prevLabel },
+        { timeout: 3_000 },
+      );
+    }
+
+    // Step 4: Click the target day.
+    // button.rdp-day contains a bare-number <span>; :not(.rdp-day_outside) excludes overflow
+    // days from the adjacent month that share the same day number.
+    const daySpan = this.page
+      .locator(SELECTORS.proratedCalendarContainer)
+      .locator('button.rdp-day:not(.rdp-day_outside) span')
+      .filter({ hasText: new RegExp(`^${targetDay}$`) });
+    await daySpan.click();
+    // RDP fires onChange → calendar closes automatically → API call (getProrateAmount) starts.
+  }
+
+  /** Raw trimmed text of the result field ("-" before any calc, "$x,xxx.xx" after). */
+  async getProratedResultText(): Promise<string> {
+    return ((await this.page.locator(SELECTORS.proratedResultField).textContent()) ?? '').trim();
+  }
+
+  /**
+   * Waits until the result field shows a currency value (contains a digit, not "-"/empty),
+   * optionally requiring it to DIFFER from a previously-captured value (recalculation case —
+   * the old amount is itself a currency string, so a plain "has a digit" wait would return
+   * the stale value). Returns the final trimmed text.
+   */
+  async waitForProratedResult(
+    options: { notEqualTo?: string; timeoutMs?: number } = {},
+  ): Promise<string> {
+    const { notEqualTo, timeoutMs = 30_000 } = options;
+    await this.page.waitForFunction(
+      ({ s, prev }: { s: string; prev: string | null }) => {
+        const el = document.querySelector(s);
+        const t = (el?.textContent ?? '').trim();
+        if (!t || t === '-' || !/\d/.test(t)) return false;
+        if (prev !== null && t === prev) return false;
+        return true;
+      },
+      { s: SELECTORS.proratedResultField, prev: notEqualTo ?? null },
+      { timeout: timeoutMs },
+    );
+    return this.getProratedResultText();
+  }
+
+  /** Closes the Prorated Amount modal via CLOSE and waits for it to detach. */
+  async closeProratedAmountModal(): Promise<void> {
+    await this.page.locator(SELECTORS.proratedCloseButton).click();
+    await this.getProratedModal().waitFor({ state: 'hidden' });
   }
 
   async isTopBarVisible(): Promise<boolean> {

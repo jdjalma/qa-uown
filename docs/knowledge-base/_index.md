@@ -1,7 +1,7 @@
 <!-- GERADO por scripts/docs-tooling.mjs — NÃO editar à mão. Rode: node scripts/docs-tooling.mjs index -->
 # Índice — docs/knowledge-base
 
-> Manifesto gerado a partir do frontmatter (ver `docs/_docs-conventions.md`). 40 arquivos.
+> Manifesto gerado a partir do frontmatter (ver `docs/_docs-conventions.md`). 41 arquivos.
 > Consumidores: leia este índice primeiro para localizar o arquivo canônico por tópico antes de abrir os docs.
 
 | Arquivo | Título | Status | Volatilidade | Verificado | Cobre |
@@ -13,6 +13,7 @@
 | [merchants-config-columns-export.md](merchants-config-columns-export.md) | Merchants Page — Config Columns & Export | snapshot | volatile | 2026-06-15 | merchants, config-columns, csv-export, gds-fields |
 | [modification-report-agent-name-bug.md](modification-report-agent-name-bug.md) | Modification Report — Agent Name Bug (Issue #1315) | stable | stable | 2026-06-18 | modification-report, agent-username-attribution, lead-status-change, system-vs-agent, threadlocal-corruption |
 | [multi-select-filters-mmh-modreport-funding.md](multi-select-filters-mmh-modreport-funding.md) | Multi-Select Filters — MMH, Modification Report, Funding Queue | stable | volatile | 2026-06-18 | filters, multi-select, mmh, modification-report, funding-queue, csv-export |
+| [new-application-customer-form-flow.md](new-application-customer-form-flow.md) | Nova Aplicação — Formulário do Cliente (Customer Form Flow) | snapshot | volatile | 2026-06-26 | new-application, customer-form, apply-portal, sendApplication, blocked-state, form-validation, shortCode |
 | [new-york-gowsign-template.md](new-york-gowsign-template.md) | New York (NY) GowSign Lease/Rental-Purchase Template | snapshot | volatile | 2026-06-18 | gowsign, esign, new-york, epo, template-rendering |
 | [npm-segment-tam-score-snapshot-routing.md](npm-segment-tam-score-snapshot-routing.md) | 1313 — npm_segment / tam_score snapshot: env & engine routing | stable | volatile | 2026-06-21 | npm-segment, tam-score, gds-snapshot, uwdata |
 | [origination-customer-lead-detail-page.md](origination-customer-lead-detail-page.md) | Origination Customer / Lead Detail Page | snapshot | volatile | 2026-06-25 | origination-customer-page, lead-detail, lead-status, internal-status, agent-actions, modify-lease, cancel-lease, send-to-signed, blacklist-lead, documents-lease-panel, activity-log, pii-display, session-replay |

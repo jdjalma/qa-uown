@@ -1046,6 +1046,32 @@ export const SELECTORS = {
   svcDocumentsRowDownloadTrigger: '#download',
   svcDocumentsRowEditTrigger: '#edit',
   svcDocumentsRowResendTrigger: '#resend',
+
+  // ── Servicing — Prorated Amount modal (#calculator on Account Summary Bar) ──
+  // Source: docs/knowledge-base/scheduled-payments.md §5 + BR-23 (DOM-confirmed via
+  // Playwright MCP, last_verified 2026-06-25). The result field carries CSS-module
+  // hashed classes (index-module_inputField__readOnly__BsDDX / index-module_boldFont__R-JxG);
+  // matched via substring on BOTH classes so a webpack rebuild hash change does not break it.
+  calculatorIcon: '#calculator',
+  proratedModal: '.modal.show .prorated-amount_proratedContainer__lm_Ez',
+  proratedDateInput: 'input#proratedDate',
+  proratedResultField: '.modal.show [class*="inputField__readOnly"][class*="boldFont"]',
+  // CLOSE button — the shared modal footer hardcodes form="paymentModal"; scoped to the
+  // visible modal so it cannot collide with another modal's submit button.
+  proratedCloseButton: '.modal.show button[type="submit"][form="paymentModal"]',
+  // React Day Picker (rdp) calendar — appears when proratedDateInput is focused.
+  // Root cause (DOM-confirmed MCP 2026-06-26, account 17306): RDP fires onChange ONLY when a
+  // calendar day-button is clicked — pressSequentially + any blur (Tab / el.blur() / click)
+  // does NOT trigger onChange. The calendar must be navigated and a day clicked explicitly.
+  // RDP library class names (rdp-*) are stable — no hash suffix. The container class
+  // (calendarSelect) uses a CSS-module hash matched via prefix substring.
+  proratedCalendarContainer: '[class*="calendarSelect"]',
+  proratedCalendarLabel: '[class*="calendarSelect"] h2.rdp-caption_label',
+  proratedCalendarPrevMonth: '[class*="calendarSelect"] button[aria-label="Go to previous month"]',
+  proratedCalendarNextMonth: '[class*="calendarSelect"] button[aria-label="Go to next month"]',
+  // Account Summary Bar — current account status, surfaced as the value of the "New Status"
+  // <select>. Read-only UI signal used to assert the account is unchanged after a read-only op.
+  svcAccountNewStatusSelect: 'select[name="New Status"]',
 } as const;
 
 /**

@@ -388,6 +388,7 @@ Entry format:
 | `docs/knowledge-base/alabama-gowsign-template.md` | 2026-06-17 | env:qa2; lead:16649; code:src/data/state-merchant-matrix.ts#expectedProvider; db:uown_gow_sign_template; db:uown_esign_document |
 | `docs/knowledge-base/merchants-config-columns-export.md` | 2026-06-15 | env:qa1; gitlab:task-1309; db:uown_merchant |
 | `docs/knowledge-base/multi-select-filters-mmh-modreport-funding.md` | 2026-06-18 | env:qa2; gitlab:task-1319 |
+| `docs/knowledge-base/new-application-customer-form-flow.md` | 2026-06-26 | env:sandbox |
 | `docs/knowledge-base/new-york-gowsign-template.md` | 2026-06-18 | env:qa2; lead:16651; code:src/data/state-merchant-matrix.ts#expectedProvider; db:uown_esign_document |
 | `docs/knowledge-base/npm-segment-tam-score-snapshot-routing.md` | 2026-06-21 | env:qa2; db:uown_los_uwdata; db:uown_sv_uwdata; mr:svc!1469 (migration V20260603054943_1.53.0) |
 | `docs/knowledge-base/origination-customer-lead-detail-page.md` | 2026-06-25 | env:stg; lead:7218178; code:src/pages/origination/customer.page.ts |

@@ -505,6 +505,13 @@ test.describe(`New Application - ${testData.state}/${testData.merchant}`, { tag:
     });
 
     await test.step('Test merchant portal quick search methods', async () => {
+      // Ensure we are on the origination portal before quick search — the signing
+      // flow (GowSign "Thank You" page on secure-stg.uownleasing.com) may still be
+      // the active page if prior navigation landed back on the contract domain.
+      if (!page.url().includes(env.originationUrl.replace(/\/$/, ''))) {
+        await page.goto(`${env.originationUrl}customers/${ctx.leadPk}`, { waitUntil: 'domcontentloaded' });
+        await page.waitForLoadState('networkidle').catch(() => {});
+      }
       const searchPage = new SearchPage(page);
       await searchPage.testQuickSearchMethods({
         leadPk: ctx.leadPk,

@@ -11,6 +11,20 @@ export class SvcPayoffClient extends BaseClient {
     return this.get<number>(`/uown/svc/getPayoffAmount/${accountPk}`);
   }
 
+  /**
+   * Returns the prorated payoff amount for the given account as of the given date.
+   * Backs the Prorated Amount calculator modal (#calculator on the Account Summary Bar).
+   * Read-only — no activity log / mutation (BR-ACC-5). Source: docs/knowledge-base/
+   * scheduled-payments.md BR-23.
+   * @param onDate ISO date string YYYY-MM-DD (NOT the MM/DD/YYYY shown in the UI field).
+   */
+  async getProrateAmount(
+    accountPk: number | string,
+    onDate: string,
+  ): Promise<ApiResponse<number>> {
+    return this.get<number>(`/uown/svc/getProrateAmount/${accountPk}?onDate=${onDate}`);
+  }
+
   async getAccountSummary(accountPk: number | string): Promise<ApiResponse<AccountSummaryResponse>> {
     return this.get<AccountSummaryResponse>(`/uown/svc/getAccountSummary/${accountPk}`);
   }

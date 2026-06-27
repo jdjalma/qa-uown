@@ -684,6 +684,72 @@
       ]
     },
     {
+      "file": "new-application-customer-form-flow.md",
+      "path": "docs/knowledge-base/new-application-customer-form-flow.md",
+      "title": "Nova Aplicação — Formulário do Cliente (Customer Form Flow)",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "volatile",
+      "last_verified": "2026-06-26",
+      "covers": [],
+      "sources": [
+        {
+          "type": "env",
+          "value": "sandbox"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Domínio e URL do Formulário",
+          "anchor": "domínio-e-url-do-formulário"
+        },
+        {
+          "heading": "Estrutura do Formulário (3 Etapas)",
+          "anchor": "estrutura-do-formulário-3-etapas"
+        },
+        {
+          "heading": "Comportamentos Confirmados",
+          "anchor": "comportamentos-confirmados"
+        },
+        {
+          "heading": "State auto-fill",
+          "anchor": "state-auto-fill"
+        },
+        {
+          "heading": "SSN — campo mascarado",
+          "anchor": "ssn-campo-mascarado"
+        },
+        {
+          "heading": "Datas de pagamento",
+          "anchor": "datas-de-pagamento"
+        },
+        {
+          "heading": "Botão Next / Submit",
+          "anchor": "botão-next-submit"
+        },
+        {
+          "heading": "Comportamento de Estado Bloqueado (NJ, VT, MN, ME)",
+          "anchor": "comportamento-de-estado-bloqueado-nj-vt-mn-me"
+        },
+        {
+          "heading": "Erro de Sandbox — sendApplication",
+          "anchor": "erro-de-sandbox-sendapplication"
+        },
+        {
+          "heading": "Fluxo de Aprovação (Pendente — não testável em sandbox)",
+          "anchor": "fluxo-de-aprovação-pendente-não-testável-em-sandbox"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Referências",
+          "anchor": "referências"
+        }
+      ]
+    },
+    {
       "file": "new-york-gowsign-template.md",
       "path": "docs/knowledge-base/new-york-gowsign-template.md",
       "title": "New York (NY) GowSign Lease/Rental-Purchase Template",

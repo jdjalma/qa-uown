@@ -80,6 +80,7 @@ const scope = sidechain.length > 0 ? sidechain : entries;
 
 // ---- Scan transcript ----
 let usedPlaywright = false;
+let ranPlaywrightTest = false;  // npx playwright test via Bash
 let readIndex = false;
 let readBddFile = false;
 let lastText = "";
@@ -90,9 +91,17 @@ for (const entry of scope) {
   const content = Array.isArray(msg.content) ? msg.content : [];
 
   for (const block of content) {
-    // Playwright tool calls
+    // MCP Playwright browser tool calls
     if (block.type === "tool_use" && PLAYWRIGHT_TOOLS.includes(block.name)) {
       usedPlaywright = true;
+    }
+
+    // Bash tool calls running playwright test (counts as portal interaction)
+    if (block.type === "tool_use" && block.name === "Bash") {
+      const cmd = String(block.input?.command ?? "");
+      if (/playwright\s+test/i.test(cmd)) {
+        ranPlaywrightTest = true;
+      }
     }
 
     // Read tool calls
@@ -109,9 +118,11 @@ for (const entry of scope) {
   }
 }
 
+const portalInteraction = usedPlaywright || ranPlaywrightTest;
+
 // No portal interaction → nothing to enforce
-if (!usedPlaywright) {
-  allow(`no playwright tools used — BDD oracle not required`);
+if (!portalInteraction) {
+  allow(`no portal interaction (playwright tools or test run) — BDD oracle not required`);
 }
 
 // ---- Verdict ----
@@ -123,21 +134,25 @@ if (!readIndex) {
   );
 }
 
-if (readBddFile && !/Oracle:/i.test(lastText)) {
+const oracleDeclared = /Oracle:/i.test(lastText);
+const unvalidatedDeclared = /\[UNVALIDATED/i.test(lastText);
+
+if (readBddFile && !oracleDeclared && !unvalidatedDeclared) {
   problems.push(
-    `a BDD scenario file was read but the output does not contain "Oracle:" — ` +
-    `validate the oracle checkpoints and include "Oracle: CT-XX — PASS/FAIL" in the response`
+    `a BDD scenario file was read but the output contains neither "Oracle:" nor "[UNVALIDATED" — ` +
+    `either validate the oracle checkpoints and include "Oracle: CT-XX — PASS/FAIL", ` +
+    `or append "[UNVALIDATED — no BDD oracle registered for this operation]" if no portal operation was performed in this turn`
   );
 }
 
 if (problems.length === 0) {
   allow(
-    `playwright used; index read=${readIndex}; bdd file read=${readBddFile}; oracle declared=${/Oracle:/i.test(lastText)}`
+    `portal interaction detected; indexRead=${readIndex}; bddRead=${readBddFile}; oracleDeclared=${oracleDeclared}; unvalidatedDeclared=${unvalidatedDeclared}; ranTest=${ranPlaywrightTest}`
   );
 }
 
 log(
-  `BLOCK — playwright=true; indexRead=${readIndex}; bddRead=${readBddFile}; oracleDeclared=${/Oracle:/i.test(lastText)}`
+  `BLOCK — mcp=${usedPlaywright}; ranTest=${ranPlaywrightTest}; indexRead=${readIndex}; bddRead=${readBddFile}; oracleDeclared=${oracleDeclared}; unvalidatedDeclared=${unvalidatedDeclared}`
 );
 
 console.log(

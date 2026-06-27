@@ -20,6 +20,7 @@
  * Viewport: 1440x900 (agent-facing portal — Bootstrap d-lg-block ≥992px).
  */
 import { ServicingBasePage } from './servicing-base.page.js';
+import { SELECTORS } from '../../selectors/common.selectors.js';
 import { dismissCustomerInfoConfirmation } from '../../helpers/servicing-dialogs.helpers.js';
 import { parseMoney } from '../../helpers/common.helpers.js';
 
@@ -216,5 +217,15 @@ export class ServicingAccountSummaryPage extends ServicingBasePage {
   async readMoneyByLabel(labelSelector: string, timeoutMs = 10_000): Promise<number> {
     const text = await this.readTextByLabel(labelSelector, timeoutMs);
     return parseMoney(text);
+  }
+
+  /**
+   * Reads the current account status surfaced in the Account Summary Bar via the value of
+   * the "New Status" <select>. Stable UI signal (confirmed selector, KB scheduled-payments.md
+   * §Account Summary Bar) used to assert the account is unchanged after a read-only operation
+   * such as the Prorated Amount calculation.
+   */
+  async getAccountStatusFromSummaryBar(): Promise<string> {
+    return this.page.locator(SELECTORS.svcAccountNewStatusSelect).inputValue();
   }
 }

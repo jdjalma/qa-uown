@@ -7,6 +7,7 @@
 | Operation | Trigger keywords | BDD file | Last reviewed |
 |---|---|---|---|
 | login | login, authenticate, log in, sign in, fazer login, enter credentials, access portal, open origination, open servicing, open ams, navigate to dashboard, open website portal | [login.md](login.md) | 2026-06-26 |
+| new-application | new application, create application, nova aplicação, criar aplicação, new app form, origination form, send application, submit application, customer application form, invite link, application link, fill application, preencher aplicação, customer submits application | [new-application.md](new-application.md) | 2026-06-26 |
 | prorated-amount | prorated amount, calculator, prorated, prorate, getProrateAmount, AS OF, payoff amount calculator, calculadora proporcional | [prorated-amount.md](prorated-amount.md) | 2026-06-26 |
 
 ---

@@ -152,6 +152,7 @@
 | 141 | **Customer Journey: JourneyStatus.ABANDONED + several fields never set in code (R1.53.0) — asserting = false-fail.**… | [03-pitfalls-138-141.md](pitfalls/03-pitfalls-138-141.md) |
 | 142 | **SeonWidgetComponent.closeSeonWidget() (real X via frameLocator) does NOT dismiss the widget in sandbox** — reproduced 2x; cancel UX non-trivial; no cancel note in lead_notes; OBSERVATION S3/P2 (confirm with dev/PO). | [03-pitfalls-138-141.md](pitfalls/03-pitfalls-138-141.md) |
 | 143 | **pre-write-validate.sh Rule 1 blocks legitimate standalone components (*.component.ts / *.controls.ts) in src/pages/**  — the hook requires `extends` on every `export class`; workaround: `class X {}; export { X }` (no export keyword in the declaration).** | [03-pitfalls-138-141.md](pitfalls/03-pitfalls-138-141.md) |
+| 144 | **`input#proratedDate` uses React Day Picker (RDP) — pressSequentially + any blur does NOT trigger onChange; result field stays `-`.** Fix: click the input, navigate the calendar with prev/next buttons, click `button.rdp-day span`. Confirmed via MCP 2026-06-26 (account 17306). | [03-pitfalls-138-141.md](pitfalls/03-pitfalls-138-141.md) |
 
 
 ---

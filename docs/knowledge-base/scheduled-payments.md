@@ -599,4 +599,17 @@ File: `src/pages/servicing/scheduled-payment.page.ts`
 3. **PayNearMe Link button:** visible in Send Invite modal UI but handler/source not found in `servicing/components/account-summary/index.tsx` or `customer.tsx`. Likely comes from the compiled `InviteModal` in `@uownleasing/common-ui` package (source not available). API endpoint and success toast unknown.
 4. **"ConfirmForPaidOutEarly" modal:** triggered when `#makePayment` is clicked on a non-ACTIVE account. Content, buttons, and behavior not yet investigated.
 5. **Make Payment API endpoint:** the modal's Submit button action and payload structure were not captured via network (modal not submitted during this investigation to avoid side effects on sandbox data).
-6. **Prorated Amount triggering via Playwright:** the `onChange` fires when the Formik field receives a complete valid date via native React events. `pressSequentially` + blur via UI click triggers the API call (`GET /uown/svc/getProrateAmount`). Verified via network request #33 in this session.
+6. **Prorated Amount triggering via Playwright — RESOLVED (2026-06-26):** The `input#proratedDate` field is rendered by **React DatePicker (RDP)**. The `onChange` fires when the user selects a day in the calendar popup — not on a generic blur event. To trigger it in Playwright, use the **native HTMLInputElement value setter + dispatchEvent** pattern (same as `fillArrangementSchedule` for the arrangement date fields):
+
+   ```typescript
+   await this.page.evaluate((val) => {
+     const el = document.querySelector('input#proratedDate') as HTMLInputElement;
+     const nativeSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+     if (nativeSetter) nativeSetter.call(el, val);
+     el.dispatchEvent(new Event('input', { bubbles: true }));
+     el.dispatchEvent(new Event('change', { bubbles: true }));
+     el.blur();
+   }, mmddyyyy);
+   ```
+
+   This triggers the RDP `onChange` and fires `GET /uown/svc/getProrateAmount/{accountPk}?onDate={YYYY-MM-DD}` automatically. Verified: diff $0.00 between displayed value and API response (CT-02 `$705.39`, CT-03 `$1,410.77`, account 17307, sandbox, 2026-06-26). See `application-lifecycle` pitfall #144 + `src/pages/servicing/servicing-base.page.ts` → `setProratedDate`.

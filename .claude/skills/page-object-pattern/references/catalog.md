@@ -79,6 +79,26 @@
  - **Arrangement Type is an explicit React Select** (`label[for="paymentArrangementType"]`, options `NORMAL` | `SETTLEMENT`) — NOT backend-derived. Selector `SELECTORS.arrangementTypeDropdown` (label-scoped). The old `makeCcPaymentArrangement` JSDoc claiming "UI does NOT expose an explicit arrangementType field; backend derives it from amount" was WRONG (corrected 2026-06-01 via DOM-first dev3). See [[application-lifecycle]] pitfall #82.
  - Frequency dropdown options: `Weekly` | `BiWeekly` | `Monthly` | `SemiMonthly` — use **exact regex** match ("Weekly" substring also matches "BiWeekly")
 
+### ServicingBasePage — Prorated Amount modal (added 2026-06-26)
+
+New methods on `src/pages/servicing/servicing-base.page.ts` for the `#calculator` Prorated Amount modal:
+
+| Method | Purpose |
+|--------|---------|
+| `openProratedAmountModal()` | Clicks `#calculator` svg in the Account Summary Bar and waits for the modal container to become visible |
+| `setProratedDate(mmddyyyy)` | Sets the AS OF date field using the **native HTMLInputElement value setter + dispatchEvent** pattern — RDP field does NOT respond to `fill()` or `pressSequentially`; uses `Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set` + `dispatchEvent('input')` + `dispatchEvent('change')` + `el.blur()`. Same pattern as `fillArrangementSchedule`. |
+| `getProratedResultText()` | Returns the raw text content of the read-only result field (`"-"` or `"$x,xxx.xx"`) |
+| `waitForProratedResult({ notEqualTo? })` | Polls until the result field changes from `"-"` (or from a prior known value) — used after `setProratedDate` to wait for the API to respond |
+| `closeProratedAmountModal()` | Clicks the CLOSE button and waits for the modal to transition to hidden |
+| `getProratedDateValue()` | Returns the current value of `input#proratedDate` (AS OF field) |
+| `getProratedModal()` | Returns the `Locator` for the modal container (`.modal.show .prorated-amount_proratedContainer__lm_Ez`) |
+
+**Selectors added to `src/selectors/common.selectors.ts` (6 new):** `proratedCalculatorIcon`, `proratedAmountModal`, `proratedDateInput`, `proratedResultField`, `proratedCloseButton`, `proratedModalContainer`.
+
+**Key pitfall:** `input#proratedDate` is a React DatePicker (RDP) field with `type="search"` + `maxlength=10`. `fill()` and `pressSequentially` + blur do NOT trigger `onChange`. Use `setProratedDate` exclusively — do NOT inline `page.fill` in tests. See [[application-lifecycle]] pitfall #144.
+
+---
+
 ## DueDateMovesHistoryPage - /#502
 
 - **Location:** `src/pages/servicing/due-date-moves-history.page.ts`
