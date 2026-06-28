@@ -28,27 +28,32 @@ If a portal state-changing operation has no entry in this table, the rule is the
 
 ## Protocol: staleness check (run before every oracle)
 
-Before executing any oracle, run:
+Before executing any oracle, run the SHA-range form, reading `last-reviewed-sha` from the BDD frontmatter:
 
 ```bash
-git log --after="<last-reviewed from BDD frontmatter>" -- <each file in covers>
+git log <last-reviewed-sha>..HEAD -- <each file in covers>
 ```
 
-- **No output** → BDD is current. Proceed.
-- **Output (commits exist)** → prepend `[BDD MAY BE STALE — <file> changed after last review on <date>]` to the oracle report. Still run the oracle, but flag all PASS results as unconfirmed until the BDD is re-reviewed.
+- **No output** → no covered file changed since the reviewed commit. BDD is current. Proceed.
+- **Output (commits exist)** → a covered file changed after the review point → prepend `[BDD MAY BE STALE — <file> changed since <last-reviewed-sha>]` to the oracle report. Still run the oracle, but flag all PASS results as unconfirmed until the BDD is re-reviewed.
+
+> **SHA range, not `--after=<date>`:** a date boundary has day granularity and depends on the committer
+> timezone, so a same-day commit may or may not be caught. `<sha>..HEAD` is exact — it lists precisely the
+> commits that touched a covered file between the review point and now. When re-reviewing, bump BOTH
+> `last-reviewed` (human-readable date) and `last-reviewed-sha` (the HEAD at review time) in the frontmatter.
 
 ## Protocol: oracle checkpoint fails
 
 When any checkpoint in the oracle table returns FAIL:
 
 1. **Inspect the real DOM** (via MCP Playwright snapshot) to confirm the behavior is what the portal actually shows.
-2. **Check git log** for the `covers` files — was this file changed intentionally after `last-reviewed`?
-   - Yes, intentional change → BDD is stale. Update the BDD and `last-reviewed` before reporting.
+2. **Check git log** for the `covers` files — was this file changed intentionally since `last-reviewed-sha`?
+   - Yes, intentional change → BDD is stale. Update the BDD and bump `last-reviewed` + `last-reviewed-sha` before reporting.
    - No change or unintentional → report as `[BUG]` following the bug-classification rules.
 3. Never report a FAIL as a confirmed bug without ruling out BDD staleness first.
 
 ## Adding a new BDD file
 
-1. Create `.claude/oracles/<operation>.md` with frontmatter `last-reviewed` + `covers`.
+1. Create `.claude/oracles/<operation>.md` with frontmatter `last-reviewed` + `last-reviewed-sha` (HEAD at creation) + `covers`.
 2. Add a row to this table.
 3. The operation is now covered by rule #19 for all agents.

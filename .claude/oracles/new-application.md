@@ -1,5 +1,6 @@
 ---
 last-reviewed: 2026-06-26
+last-reviewed-sha: dc1773c
 covers:
   - src/pages/origination/new-application-filters.page.ts
   - src/selectors/common.selectors.ts
@@ -114,7 +115,7 @@ Feature: Nova Aplicação — Cliente Submete Formulário de Aplicação
 ## Oracles
 
 > **Verificação de desatualização (executar antes de qualquer Oracle):**
-> `git log --after="2026-06-26" -- src/pages/origination/new-application-filters.page.ts src/selectors/common.selectors.ts`
+> `git log dc1773c..HEAD -- src/pages/origination/new-application-filters.page.ts src/selectors/common.selectors.ts`
 > Saída não vazia → prefixar o relatório com `[BDD MAY BE STALE]`.
 
 ### Oracle: CT-01 — Send desabilitado sem merchant

@@ -47,7 +47,8 @@ escrito. O resultado cai em um de três caminhos:
 
 ```markdown
 ---
-last-reviewed: 2026-06-28              # data da última revisão (dispara staleness)
+last-reviewed: 2026-06-28              # data legível (humano)
+last-reviewed-sha: 7805e73             # HEAD na revisão — boundary EXATO do staleness
 covers:                                # arquivos cuja mudança pode invalidar este BDD
   - src/api/clients/application.client.ts
   - src/pages/origination/customer.page.ts
@@ -62,7 +63,7 @@ covers:                                # arquivos cuja mudança pode invalidar e
 ## Cenários                       # Gherkin Given/When/Then, um Scenario por CT
 
 ## Oracles                        # checkpoints verificáveis por CT
-  > staleness check embutido (git log --after=<last-reviewed> -- <covers>)
+  > staleness check embutido (git log <last-reviewed-sha>..HEAD -- <covers>)
   ### Oracle: CT-01 — ...
   | Checkpoint | Como verificar |
 

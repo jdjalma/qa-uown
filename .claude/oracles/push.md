@@ -1,5 +1,6 @@
 ---
 last-reviewed: 2026-06-28
+last-reviewed-sha: 7805e73
 covers:
   - .gitignore
 ---
@@ -69,7 +70,7 @@ Feature: Git Push
 ## Oracles
 
 > **Staleness check (run before any Oracle):**
-> `git log --after="2026-06-28" -- .gitignore`
+> `git log 7805e73..HEAD -- .gitignore`
 > Non-empty output → prepend `[BDD MAY BE STALE]` to this oracle report.
 
 ### Oracle: CT-01 — Push succeeded and remote is up to date

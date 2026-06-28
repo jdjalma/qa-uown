@@ -1,5 +1,6 @@
 ---
 last-reviewed: 2026-06-28
+last-reviewed-sha: 7805e73
 covers:
   - src/api/clients/application.client.ts
   - src/api/bodies/application.body.ts
@@ -118,7 +119,7 @@ Feature: Send Application — criação de lead via API
 ## Oracles
 
 > **Verificação de desatualização (executar antes de qualquer Oracle):**
-> `git log --after="2026-06-28" -- src/api/clients/application.client.ts src/api/bodies/application.body.ts src/helpers/api-setup.helpers.ts src/helpers/merchant-config.helper.ts src/pages/origination/customer.page.ts src/pages/origination/program-details.page.ts src/pages/origination/error-log.page.ts src/selectors/common.selectors.ts`
+> `git log 7805e73..HEAD -- src/api/clients/application.client.ts src/api/bodies/application.body.ts src/helpers/api-setup.helpers.ts src/helpers/merchant-config.helper.ts src/pages/origination/customer.page.ts src/pages/origination/program-details.page.ts src/pages/origination/error-log.page.ts src/selectors/common.selectors.ts`
 > Saída não vazia → prefixar o relatório com `[BDD MAY BE STALE]`.
 
 ### Oracle: CT-01 — Lead aprovado criado

@@ -1,5 +1,6 @@
 ---
 last-reviewed: 2026-06-26
+last-reviewed-sha: dc1773c
 covers:
   - src/pages/servicing/servicing-base.page.ts
   - src/api/clients/svc-payoff.client.ts
@@ -64,7 +65,7 @@ Feature: Calculadora de Valor Proporcional
 ## Oracles
 
 > **Verificação de desatualização (executar antes de qualquer Oracle):**
-> `git log --after="2026-06-26" -- src/pages/servicing/servicing-base.page.ts src/api/clients/svc-payoff.client.ts`
+> `git log dc1773c..HEAD -- src/pages/servicing/servicing-base.page.ts src/api/clients/svc-payoff.client.ts`
 > Saída não vazia → prefixar o relatório com `[BDD MAY BE STALE]`.
 
 ### Oracle: CT-01 — Modal abre com título, data pré-preenchida e traço inicial

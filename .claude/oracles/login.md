@@ -1,5 +1,6 @@
 ---
 last-reviewed: 2026-06-26
+last-reviewed-sha: dc1773c
 covers:
   - src/pages/login.page.ts
   - src/pages/website/website-base.page.ts
@@ -84,8 +85,8 @@ Feature: Login — Portal Website (OTP por e-mail ou SMS)
 ## Oracles
 
 > **Verificação de desatualização (executar antes de qualquer Oracle):**
-> Portais de agente: `git log --after="2026-06-26" -- src/pages/login.page.ts src/helpers/auth.helpers.ts`
-> Portal Website: `git log --after="2026-06-26" -- src/pages/website/website-base.page.ts src/helpers/auth.helpers.ts`
+> Portais de agente: `git log dc1773c..HEAD -- src/pages/login.page.ts src/helpers/auth.helpers.ts`
+> Portal Website: `git log dc1773c..HEAD -- src/pages/website/website-base.page.ts src/helpers/auth.helpers.ts`
 > Saída não vazia → prefixar o relatório com `[BDD MAY BE STALE]`.
 
 ### Oracle: CT-01 — Login bem-sucedido (portais de agente)
