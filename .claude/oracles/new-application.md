@@ -32,7 +32,7 @@ covers:
 | AC-08 | Cliente vê formulário de 3 etapas ao abrir link; Next desabilitado sem campos obrigatórios | CT-07 + CT-08 |
 | AC-09 | Botão Next desabilitado e erros inline quando campos obrigatórios estão vazios | CT-08 |
 | AC-10 | Estado bloqueado (NJ, VT, MN, ME) → recusa exibida **após** submissão completa das 3 etapas | CT-07 |
-| AC-11 | Aprovação gera link de contrato (`providerURL`) + e-mail de aprovação ao cliente | ⚠️ Pendente |
+| AC-11 | Aprovação exibe tela de congratulações e envia e-mail de confirmação ao cliente; `providerURL` retorna `null` no fluxo do cliente — link de contrato é gerado pelo agente no Origination em etapa posterior | CT-09 |
 
 ## Cenários — Parte 1: Agente (Portal de Originação)
 
@@ -190,7 +190,3 @@ Feature: Nova Aplicação — Cliente Submete Formulário de Aplicação
 | `providerURL` nulo neste fluxo | `providerURL: null` — contrato é gerado pelo agente, não exposto ao cliente na tela |
 | Status do lead no Origination | Lead com `authorizationNumber` = leadPk fica "Approved" na tabela |
 
-## Itens Pendentes
-
-- **AC-10 correção documentada:** a recusa para estados bloqueados NÃO é imediata no Step 1. O cliente preenche as 3 etapas completas; a rejeição aparece apenas após `POST /uown/los/sendApplication`. Nenhum bloqueio visual ocorre durante o preenchimento do formulário.
-- **`providerURL`:** retorna `null` no fluxo do cliente (`sendApplication`). O link de contrato/assinatura é gerado em etapa posterior pelo agente no Origination — não exposto ao cliente na tela de aprovação.

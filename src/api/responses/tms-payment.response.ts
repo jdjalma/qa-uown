@@ -16,6 +16,12 @@
 export interface TmsCreditCardPaymentResponseBody {
   /** `uown_sv_credit_card_transaction.pk` — primary handle for DB assertions. */
   creditCardTransactionPk?: number;
+  /** Payment gateway reference ID. */
+  gatewayTransactionId?: string;
+  /** Masked card number echoed back. */
+  ccNumber?: string;
+  /** Error message (present on failure states). */
+  error?: string;
   /** Persisted amount echoed back (may be returned as string by vendor). */
   amount?: number | string;
   status?: string;
@@ -28,11 +34,25 @@ export interface TmsCreditCardPaymentResponseBody {
 
 /** `POST /payments/ach` happy-path response (HTTP 200). */
 export interface TmsAchPaymentResponseBody {
-  /** `uown_sv_achpayment.pk` — primary handle for DB assertions. */
+  /** Wire field name per TMS doc (`AchPaymentResponse.id`). */
+  id?: number;
+  /** `uown_sv_achpayment.pk` — internal alias; prefer `id` for doc-contract assertions. */
   achPaymentPk?: number;
   amount?: number | string;
   status?: string;
   postingDate?: string;
+  customerFirstName?: string;
+  customerLastName?: string;
+  /** CHECKING | SAVINGS */
+  bankAccountType?: string;
+  /** SCHEDULED | RERUN | RERUN_NSF | REQUEST | REFUND */
+  achProcessType?: string;
+  returnCode?: string;
+  returnCodeDescription?: string;
+  settlementId?: string;
+  settlementTimestamp?: string;
+  maskedAccountNumber?: string;
+  maskedRoutingNumber?: string;
   accountPk?: number;
   bankAccountPk?: number;
   paymentPK?: number;

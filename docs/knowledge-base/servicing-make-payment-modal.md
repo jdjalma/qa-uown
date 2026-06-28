@@ -1,12 +1,12 @@
 ---
 title: Servicing — Make Payment Modal (CC / ACH / Check) + Charge-Fee Suppression
 domain: knowledge-base
-status: hypothesis
+status: snapshot
 volatility: volatile
-last_verified: 2026-06-25
+last_verified: 2026-06-28
 sources:
-  - env: source-audit (no live env)
-  - code: servicing FE @ R1.50.2 (2026-04-07, stale)
+  - env: sandbox
+  - account: 17298 (Sanjay James, ACTIVE, NY, Tire Agent 13m)
   - code: svc backend @ R1.53.0
 covers:
   - make-payment-modal
@@ -21,7 +21,9 @@ covers:
 promoted_to: []
 ---
 
-> ⚠️ **Source-grounded draft — NOT yet live-verified.** Produced by the multi-agent code+backend audit `servicing-doc-gap-audit` (2026-06-25). The local servicing **frontend** checkout is branch **R1.50.2 (2026-04-07)** — stale vs the sandbox deploy (see memory `local-servicing-fe-stale-r1502`); the **backend** (svc) is R1.53.0. Claims are tagged `[confirmed-source]` (read in code), `[inferred]`, or `[needs-live]` (UI/visual claim to verify in sandbox). `status: hypothesis` until the Live-Verify Checklist at the bottom is run. This is an execution/investigation record, NOT a source of test patterns (rule #16).
+> ✅ **Live-verified in sandbox 2026-06-28** via Playwright MCP (account 17298). Claims upgraded from `[needs-live]` to `[confirmed]` where observed. Remaining `[needs-live]` items (post-payment refresh, activity log text, toast wording) require a live payment submission to confirm — see Gaps. Source-code claims retain `[confirmed-source]` tag. This is an execution/investigation record, NOT a source of test patterns (rule #16).
+
+> ✅ **ACH path also live-verified end-to-end in stg 2026-06-28** (a real ACH submit) — oracle [`servicing-ach-payment.md`](../../.claude/oracles/servicing-ach-payment.md), all 8 CT PASS (acct 622660). Confirms the remaining `[needs-live]` items for the **ACH** branch: post-payment **toast "Payment successful."**, the **refresh asymmetry** (getACHPayments+getAccountSummary+getAlertsForAccount, **no** getCCTransactions → BR-08), the **synchronous** `uown_sv_achpayment` PENDING (achType=ACHDebit, achProcessType=REQUEST) + `ADDED : ACHPayment[...]` activity log, and that **BR-05 no-bank-data** is enforced at the UI (Submit disabled) ahead of the backend error. The CC/Check/charge-fee branches remain as noted above.
 
 # Servicing — Make Payment Modal (single CC / ACH / Check payment)
 

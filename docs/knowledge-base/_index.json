@@ -195,6 +195,68 @@
       ]
     },
     {
+      "file": "cc-ach-contract-complete-page.md",
+      "path": "docs/knowledge-base/cc-ach-contract-complete-page.md",
+      "title": "CC/ACH — Página de Pagamento do Contrato (`/complete`)",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "volatile",
+      "last_verified": "2026-06-28",
+      "covers": [],
+      "sources": [
+        {
+          "type": "env",
+          "value": "stg"
+        },
+        {
+          "type": "lead",
+          "value": "7218254 (Stephanie Bell, TireAgent OW90218-0001, CA, $1921.50/13m)"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "O que é",
+          "anchor": "o-que-é"
+        },
+        {
+          "heading": "Como obter a URL (precondição)",
+          "anchor": "como-obter-a-url-precondição"
+        },
+        {
+          "heading": "Config-driven pelo merchant (chave!)",
+          "anchor": "config-driven-pelo-merchant-chave"
+        },
+        {
+          "heading": "Formulário CC (live — seletores reais)",
+          "anchor": "formulário-cc-live-seletores-reais"
+        },
+        {
+          "heading": "Formulário ACH (live — quando \"Require Bank Info Before Signing\" ON)",
+          "anchor": "formulário-ach-live-quando-require-bank-info-before-signing-on"
+        },
+        {
+          "heading": "Equivalente via API",
+          "anchor": "equivalente-via-api"
+        },
+        {
+          "heading": "Submit do pagamento — fluxo + logs gerados (live stg 2026-06-28, lead 7218256)",
+          "anchor": "submit-do-pagamento-fluxo-logs-gerados-live-stg-2026-06-28-lead-7218256"
+        },
+        {
+          "heading": "Caminhos negativos + estado da URL (live stg 2026-06-28)",
+          "anchor": "caminhos-negativos-estado-da-url-live-stg-2026-06-28"
+        },
+        {
+          "heading": "Pendências",
+          "anchor": "pendências"
+        },
+        {
+          "heading": "Oráculo relacionado",
+          "anchor": "oráculo-relacionado"
+        }
+      ]
+    },
+    {
       "file": "ccbin-employment-financial-step.md",
       "path": "docs/knowledge-base/ccbin-employment-financial-step.md",
       "title": "CCBIN Field — Employment & Financial Step",
@@ -282,6 +344,81 @@
         },
         {
           "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "funding-signed-to-funding.md",
+      "path": "docs/knowledge-base/funding-signed-to-funding.md",
+      "title": "Funding — SIGNED to FUNDING transition (live discovery)",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "volatile",
+      "last_verified": "2026-06-28",
+      "covers": [
+        "funding-queue",
+        "settlement",
+        "los-svc-import",
+        "svc"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "stg"
+        },
+        {
+          "type": "lead",
+          "value": "7218271"
+        },
+        {
+          "type": "db",
+          "value": "uown_los_lead, uown_funding_transaction, uown_funding_modification, uown_sv_account, uown_los_lead_notes"
+        },
+        {
+          "type": "api",
+          "value": "POST /uown/los/settleApplication, POST /uown/los/getApplicationStatus"
+        },
+        {
+          "type": "code",
+          "value": "src/api/clients/settlement.client.ts"
+        },
+        {
+          "type": "code",
+          "value": "src/helpers/api-setup.helpers.ts"
+        },
+        {
+          "type": "code",
+          "value": "src/pages/origination/funding.page.ts"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "What FUNDING is",
+          "anchor": "what-funding-is"
+        },
+        {
+          "heading": "Three triggers move SIGNED → FUNDING",
+          "anchor": "three-triggers-move-signed-funding"
+        },
+        {
+          "heading": "Live walkthrough (stg 2026-06-28, lead 7218271, settle path)",
+          "anchor": "live-walkthrough-stg-2026-06-28-lead-7218271-settle-path"
+        },
+        {
+          "heading": "Findings / business rules",
+          "anchor": "findings-business-rules"
+        },
+        {
+          "heading": "UI surfaces (live, stg 2026-06-28, lead 7218271)",
+          "anchor": "ui-surfaces-live-stg-2026-06-28-lead-7218271"
+        },
+        {
+          "heading": "Connections with what we already knew",
+          "anchor": "connections-with-what-we-already-knew"
+        },
+        {
+          "heading": "Gaps / to investigate",
           "anchor": "gaps-to-investigate"
         }
       ]
@@ -1839,6 +1976,175 @@
       ]
     },
     {
+      "file": "prorated-amount-calculator.md",
+      "path": "docs/knowledge-base/prorated-amount-calculator.md",
+      "title": "Prorated Amount Calculator (Calculadora de Valor Proporcional)",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "stable",
+      "last_verified": "2026-06-28",
+      "covers": [
+        "epo"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "sandbox"
+        },
+        {
+          "type": "account",
+          "value": "17298 (ACTIVE, NY, activated 2026-06-24, EPO Balance $805.64)"
+        },
+        {
+          "type": "code",
+          "value": "src/api/clients/svc-payoff.client.ts"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Available Operations",
+          "anchor": "available-operations"
+        },
+        {
+          "heading": "Flow and States",
+          "anchor": "flow-and-states"
+        },
+        {
+          "heading": "DOM Selectors",
+          "anchor": "dom-selectors"
+        },
+        {
+          "heading": "Business Rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Logic and Exceptions",
+          "anchor": "logic-and-exceptions"
+        },
+        {
+          "heading": "Connections with What Was Already Known",
+          "anchor": "connections-with-what-was-already-known"
+        },
+        {
+          "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "protection-plan.md",
+      "path": "docs/knowledge-base/protection-plan.md",
+      "title": "Protection Plan (Buddy \"Uown Protection Plus\") — offer gate, panels, cross-coverage",
+      "domain": "knowledge-base",
+      "status": "stable",
+      "volatility": "volatile",
+      "last_verified": "2026-06-28",
+      "covers": [
+        "buddy-insurance",
+        "buddy-insurance"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "qa2"
+        },
+        {
+          "type": "lead",
+          "value": "16801"
+        },
+        {
+          "type": "lead",
+          "value": "16805"
+        },
+        {
+          "type": "account",
+          "value": "11204"
+        },
+        {
+          "type": "db",
+          "value": "uown_los_protection_plan"
+        },
+        {
+          "type": "db",
+          "value": "uown_sv_protection_plan"
+        },
+        {
+          "type": "db",
+          "value": "uown_los_activity_log"
+        },
+        {
+          "type": "code",
+          "value": "src/data/merchant-config-contract.ts#offerInsurance"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Offer Gate (when is the plan offered?)",
+          "anchor": "offer-gate-when-is-the-plan-offered"
+        },
+        {
+          "heading": "Price",
+          "anchor": "price"
+        },
+        {
+          "heading": "The two portal panels (the \"important plan info\")",
+          "anchor": "the-two-portal-panels-the-important-plan-info"
+        },
+        {
+          "heading": "Origination — `/customers/{leadPk}` → \"Protection Plan\" card",
+          "anchor": "origination-customersleadpk-protection-plan-card"
+        },
+        {
+          "heading": "Servicing — `/customer-information/{accountPk}`",
+          "anchor": "servicing-customer-informationaccountpk"
+        },
+        {
+          "heading": "Key nuance — Status ≠ enrolled",
+          "anchor": "key-nuance-status-enrolled"
+        },
+        {
+          "heading": "Activity log (opt-in)",
+          "anchor": "activity-log-opt-in"
+        },
+        {
+          "heading": "Cross-coverage (`already_covered`) — refined",
+          "anchor": "cross-coverage-already_covered-refined"
+        },
+        {
+          "heading": "Candidate product bug — opt-out logged as \"Error initiating\"",
+          "anchor": "candidate-product-bug-opt-out-logged-as-error-initiating"
+        },
+        {
+          "heading": "SV table population (how data gets to Servicing)",
+          "anchor": "sv-table-population-how-data-gets-to-servicing"
+        },
+        {
+          "heading": "Available Operations",
+          "anchor": "available-operations"
+        },
+        {
+          "heading": "Channel 2 — Customer Website portal enroll (confirmed live)",
+          "anchor": "channel-2-customer-website-portal-enroll-confirmed-live"
+        },
+        {
+          "heading": "Connections with What Was Already Known",
+          "anchor": "connections-with-what-was-already-known"
+        },
+        {
+          "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
       "file": "scheduled-payments.md",
       "path": "docs/knowledge-base/scheduled-payments.md",
       "title": "Scheduled Payments (Due Amounts)",
@@ -2743,20 +3049,20 @@
       "path": "docs/knowledge-base/servicing-make-payment-modal.md",
       "title": "Servicing — Make Payment Modal (CC / ACH / Check) + Charge-Fee Suppression",
       "domain": "knowledge-base",
-      "status": "hypothesis",
+      "status": "snapshot",
       "volatility": "volatile",
-      "last_verified": "2026-06-25",
+      "last_verified": "2026-06-28",
       "covers": [
         "allocation"
       ],
       "sources": [
         {
           "type": "env",
-          "value": "source-audit (no live env)"
+          "value": "sandbox"
         },
         {
-          "type": "code",
-          "value": "servicing FE @ R1.50.2 (2026-04-07, stale)"
+          "type": "account",
+          "value": "17298 (Sanjay James, ACTIVE, NY, Tire Agent 13m)"
         },
         {
           "type": "code",
@@ -3694,6 +4000,68 @@
         {
           "heading": "Gaps / To Investigate",
           "anchor": "gaps-to-investigate"
+        }
+      ]
+    },
+    {
+      "file": "terms-of-agreement-page.md",
+      "path": "docs/knowledge-base/terms-of-agreement-page.md",
+      "title": "Terms of Agreement — Página de Revisão do Contrato (Consumer Portal)",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "volatile",
+      "last_verified": "2026-06-28",
+      "covers": [],
+      "sources": [
+        {
+          "type": "env",
+          "value": "stg"
+        },
+        {
+          "type": "lead",
+          "value": "5ARIwnGc (TireAgent OW90218-0001, CA, $462/13m, planId WK13)"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "O que é",
+          "anchor": "o-que-é"
+        },
+        {
+          "heading": "Máquina de estados (live stg 2026-06-28)",
+          "anchor": "máquina-de-estados-live-stg-2026-06-28"
+        },
+        {
+          "heading": "Estado A — Revisita pós-CC/ACH (\"SIGN CONTRACT\")",
+          "anchor": "estado-a-revisita-pós-ccach-sign-contract"
+        },
+        {
+          "heading": "Estado B — Terms of Agreement (após clicar \"SIGN CONTRACT\")",
+          "anchor": "estado-b-terms-of-agreement-após-clicar-sign-contract"
+        },
+        {
+          "heading": "Estado C — Validação de checkboxes (ambos os tipos de merchant)",
+          "anchor": "estado-c-validação-de-checkboxes-ambos-os-tipos-de-merchant"
+        },
+        {
+          "heading": "Estado D — PP overlay visível",
+          "anchor": "estado-d-pp-overlay-visível"
+        },
+        {
+          "heading": "Page Object",
+          "anchor": "page-object"
+        },
+        {
+          "heading": "Seletores confirmados (stg live 2026-06-28)",
+          "anchor": "seletores-confirmados-stg-live-2026-06-28"
+        },
+        {
+          "heading": "Oracle relacionado",
+          "anchor": "oracle-relacionado"
+        },
+        {
+          "heading": "Notas",
+          "anchor": "notas"
         }
       ]
     },

@@ -180,6 +180,8 @@ export const SELECTORS = {
   ccCvc: '#cvc',
   ccExpMonthInput: '#ccExpMonth input',
   ccExpYearInput: '#ccExpYear input',
+  /** Contract /complete page — single expiration field (MM/YYYY). Live stg 2026-06-28. */
+  ccExpDate: '#ccExpDate',
   // One-time card form fields (payment arrangement modal — shown after "Use one-time card information" radio)
   otCardFirstName: "input[placeholder='First Name']",
   otCardLastName: "input[placeholder='Last Name']",
@@ -193,6 +195,8 @@ export const SELECTORS = {
   bankAccountCustomerFirst: '#bankAccountCustomerFirstName',
   bankAccountCustomerLast: '#bankAccountCustomerLastName',
   bankAccountTypeInput: '#bankAccountType input',
+  /** Contract /complete page — Account Type react-select (Checking/Savings). Index-robust. Live stg 2026-06-28. */
+  bankAccountTypeSelect: '[id^="react-select-"][id$="-input"]',
   /** Make Payment modal — <select> listing existing bank accounts on file (servicing portal). Empty until an option is chosen, which is required for Submit to enable. */
   existingBankAccountSelect: 'select[name="bankAccountPk"]',
 
@@ -301,6 +305,8 @@ export const SELECTORS = {
   // ── Contract Page ─────────────────────────────────────────────────
   contractViewDocumentLink: "[class*='appComplete_appComplete__link']",
   contractCheckbox: 'input[type="checkbox"]',
+  /** Contract /complete page (CC/ACH payment) — submit button. Live stg 2026-06-28. */
+  completeApplicationSubmit: '#completeApplication-submit',
 
   // ── Payment Program (completeApplication redesign — Task #1233) ──
   paymentProgramContainer: "[class*='paymentProgramModal__paymentProgramContainer']",
@@ -411,7 +417,14 @@ export const SELECTORS = {
   modifyLeaseWarningContinue:
     ".modal.show button:has-text('Continue'), [role='dialog'] button:has-text('Continue')",
   modifyLeaseSaveButton: ".modal.show button:has-text('SAVE'), .modal.show button:has-text('Save')",
-  activityLogEntry: "xpath=//div[contains(@class,'card')]//div[contains(text(),'Activity') or contains(text(),'activity')]/../..//div[contains(@class,'card-body')]//div[@role='row'] | //div[contains(@class,'card')]//div[contains(text(),'Activity')]/../..//tr",
+  // Activity log on the Origination customer page renders as the "Notes" card
+  // (NOT "Activity") — a react-data-table with columns Date | Type | User ID | Notes.
+  // Anchor on the card TITLE "Notes" (excluding the in-table "Notes" column header via
+  // not(ancestor rdt_Table) so the union doesn't double-count), then take the body rows
+  // (.rdt_TableBody excludes the head row). DOM-first verified live (stg 2026-06-28,
+  // /customers/7218271): 10 body rows, no dups. See .claude/oracles/funding.md CT-05b.
+  activityLogEntry:
+    "xpath=//div[normalize-space(text())='Notes'][not(ancestor::*[contains(@class,'rdt_Table')])]/ancestor::div[.//div[contains(@class,'rdt_TableBody')]][1]//div[contains(@class,'rdt_TableBody')]//div[contains(@class,'rdt_TableRow')]",
 
   // ── Cancellation ─────────────────────────────────────────────────
   merchantOfferInsuranceCheckbox: "#checkbox-offerInsurance, #offerInsurance, input[name='offerInsurance']",

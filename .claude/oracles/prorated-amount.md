@@ -22,7 +22,7 @@ covers:
 | AC-06 | Mudar a data recalcula com valor diferente (sem cache da data anterior) | CT-03 |
 | AC-07 | CLOSE fecha o modal; dados do account permanecem iguais | CT-04 |
 | AC-08 | Operação não cria entrada em `uown_sv_activity_log` | CT-02 + CT-04 |
-| AC-09 | Data inválida ou incompleta não dispara cálculo | ⚠️ Pendente |
+| AC-09 | Data inválida ou incompleta não dispara cálculo | CT-05 |
 
 ## Cenários
 
@@ -60,6 +60,22 @@ Feature: Calculadora de Valor Proporcional
     Then o modal não é mais exibido
     And a barra de resumo do account mostra os mesmos status e dados de antes do modal ser aberto
     And nenhuma entrada de activity log foi adicionada para este account
+
+  Scenario: [negative] CT-05 — Data incompleta não dispara cálculo e exibe erro inline
+    Given o modal de Prorated Amount está aberto para um lease ativo
+    And um cálculo válido já foi exibido para uma data anterior
+    When o agente digita uma data incompleta (ex: "12/31") no campo "AS OF:" e sai do campo
+    Then o campo "AS OF:" reverte para a data de hoje
+    And uma mensagem de erro "Invalid date" é exibida inline abaixo do campo
+    And nenhuma chamada à API getProrateAmount é realizada
+    And o valor no campo de resultado permanece igual ao último cálculo válido
+
+  Scenario: [negative] CT-05b — Data com mês/dia inválidos é bloqueada na digitação
+    Given o modal de Prorated Amount está aberto para um lease ativo
+    When o agente tenta digitar uma data com mês inválido (ex: "13/45/2026") no campo "AS OF:"
+    Then o campo rejeita os caracteres que tornariam a data inválida
+    And o campo exibe o valor anterior válido sem alterar
+    And nenhuma chamada à API getProrateAmount é realizada
 ```
 
 ## Oracles
@@ -79,7 +95,7 @@ Feature: Calculadora de Valor Proporcional
 | Checkpoint | Como verificar |
 |---|---|
 | Resultado não é traço | Campo de resultado mostra string com `$` — nunca `"-"` ou vazio |
-| Valor correto para a data | Comparar texto do campo com `GET /uown/svc/getProrateAmount/{accountPk}?onDate={data-ISO}` (tolerância ±$0.01) |
+| Valor correto para a data | Comparar texto do campo com `GET /uown/svc/getProrateAmount/{accountPk}?onDate={data-ISO}` (tolerância ±$0.01). **Nota:** API retorna texto decimal simples (ex: `"131.18"`), sem envelope JSON e sem `$` |
 | Campo "AS OF:" retém a data inserida | `input#proratedDate` value = data digitada pelo agente |
 | Cálculo disparado sem botão | Log de rede: `GET /uown/svc/getProrateAmount/...` aparece após seleção da data no picker |
 | Sem entrada em activity log | `SELECT COUNT(*) FROM uown_sv_activity_log WHERE account_id = {accountPk}` — mesmo count antes e depois |
@@ -91,6 +107,22 @@ Feature: Calculadora de Valor Proporcional
 | Novo valor correto | Comparar com `GET /uown/svc/getProrateAmount/{accountPk}?onDate={nova-data-ISO}` (tolerância ±$0.01) |
 | Data posterior → valor maior | Valor numérico da data posterior > valor numérico da data anterior (acúmulo diário, BR-ACC-4) |
 
+### Oracle: CT-05 — Data inválida/parcial não dispara cálculo
+
+> Mecanismo descoberto via discovery 2026-06-28 (sandbox, account 17298). Detalhe completo em `docs/knowledge-base/prorated-amount-calculator.md`.
+
+**Pré-condição:** modal aberto, algum cálculo já exibido (ex: $131.18 para 07/27/2026).
+
+| Checkpoint | Como verificar |
+|---|---|
+| Data parcial → reset | Digitar "12/31" e sair do campo: `input#proratedDate` value = data de hoje (campo reverteu) |
+| Erro inline aparece | `div.index-module_inputField__textError__5fU9J` presente no DOM com texto "Invalid date" |
+| API não disparou | Log de rede: ausência de novo `GET /uown/svc/getProrateAmount/...` após a entrada inválida |
+| Resultado anterior retido | Campo `div.index-module_inputField__readOnly__BsDDX` mantém o último valor calculado (não vira `"-"`) |
+| Erro limpa após seleção válida | Após clicar uma data válida no calendar picker, `div.index-module_inputField__textError__5fU9J` desaparece do DOM |
+
+> **Nota CT-05b (bloqueio no keypress):** ao tentar digitar mês > 12 (ex: "13/..."), o handler `onKeyPress` filtra caracteres inválidos durante a digitação; o campo permanece no valor anterior. Nenhum erro inline é exibido neste caso — a rejeição é silenciosa a nível de tecla.
+
 ### Oracle: CT-04 — Fechar modal não altera o account
 | Checkpoint | Como verificar |
 |---|---|
@@ -98,8 +130,22 @@ Feature: Calculadora de Valor Proporcional
 | Dados do account iguais | Status, Next Payment e Program Type na barra de resumo = valores capturados antes de abrir o modal |
 | Sem entrada em activity log | `SELECT COUNT(*) FROM uown_sv_activity_log WHERE account_id = {accountPk}` — mesmo count antes e depois de fechar |
 
-## Itens Pendentes
+## Dados de Teste Confirmados (sandbox)
 
-- **AC-09 — Data inválida:** o que acontece ao digitar data parcial (`12/31`) ou inválida (`13/45/2026`) e sair do campo? A API dispara? O resultado permanece `"-"`? Há erro inline? Executar `/discovery` no modal com entradas inválidas antes de escrever o cenário.
-- **Permissão `customer_information`:** visibilidade do ícone `#calculator` para agentes sem essa permissão é inferida — não confirmada via teste de perfil. Credenciais de perfil restrito só autenticam em QA1/QA2/STG.
-- **Dados de teste:** account 17298 no sandbox retornou `"-"` para todos os cálculos. Confirmar qual estado (ACTIVE + EPO receivable presente) produz valor real antes de executar CT-02 e CT-03.
+| Account PK | Status | State | Ativado em | EPO Balance | Resultado exemplo |
+|---|---|---|---|---|---|
+| **17298** | ACTIVE | NY | 2026-06-24 | $805.64 | $131.18 para 07/27/2026 |
+
+> **Regra:** account ACTIVE + data **posterior** à data de ativação → valor real. Data anterior à ativação → resultado `"-"` (API retorna 200 mas sem valor). O account 17298 anteriormente retornava `"-"` porque estava em estado CLOSED durante uma discovery anterior (revertido para ACTIVE em 2026-06-25).
+
+## Notas de Implementação
+
+- **Como o onChange é disparado:** a API `getProrateAmount` só é chamada ao **clicar uma data no calendar picker** — não ao digitar no campo de texto. O `onKeyPress` valida cada caractere antes de inserir. Testes automatizados devem usar `page.click()` em um `gridcell` do calendar, não `fill()` no input.
+- Selector do resultado: `div.index-module_inputField__readOnly__BsDDX.index-module_boldFont__R-JxG`
+- Selector do erro inline: `div.index-module_inputField__textError__5fU9J`
+
+## Descobertas Complementares (discovery 2026-06-28)
+
+- **Resposta da API (BR-07 — confirmado via network capture):** o endpoint retorna **texto decimal simples** sem envelope JSON — ex.: `"131.18"` para datas válidas e `"0.00"` para datas pré-ativação. O componente exibe `"-"` quando o valor recebido é `"0.00"`. Evidência: requests #49 (2026-07-27 → `131.18`) e #53 (2026-06-01 → `0.00`) capturados via `browser_network_request` em sandbox, account 17298.
+
+- **Permissão `customer_information` (BR-08 — confirmado via source code):** o `div#calculator` é renderizado **incondicionalmente** dentro do componente `AccountSummary` — sem nenhum `{hasXxxPermission && (...)}`. Compare: `makePayment` é gated por `hasPaymentPermission` (linha 332) e `invitation` por `hasViewSendInvitePermission` (linha 346); a calculadora não tem gate equivalente. Todos os agentes com acesso à página Customer Information (`customer_information`) veem o ícone. Evidência: `/home/jose/projects/uown/servicing/components/account-summary/index.tsx` linhas 321–331 (render incondicional) vs 332–358 (renders condicionais).

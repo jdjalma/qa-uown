@@ -1207,15 +1207,28 @@ export class OriginationCustomerPage extends OriginationBasePage {
   }
 
   /**
-   * Retrieves activity log entries from the Activity card on the customer page.
-   * Returns an array of text content from each log row.
+   * Retrieves activity log entries from the **Notes** card on the Origination
+   * customer page (`/customers/{leadPk}`). The card renders as a react-data-table
+   * with columns Date | Type | User ID | Notes; each returned string is the
+   * concatenated row text (e.g. "06/28/2026 5:01:12 a.m. EST STATUS_CHANGE SYSTEM
+   * Funding Status is updated from READY_TO_FUND to FUNDING"). Returns the first
+   * page of rows (the card paginates 10/page, Date DESC).
+   *
+   * The card lazy-renders: scroll the "Notes" heading into view and wait for the
+   * first row before reading. DOM-first verified live (stg 2026-06-28). The legacy
+   * selector keyed on an "Activity" card returned [] here — see oracle funding.md CT-05b.
    */
   async getActivityLogEntries(): Promise<string[]> {
-    const entries: string[] = [];
+    // Trigger the lazy render: bring the Notes card into view, then await its rows.
+    await this.page.getByText('Notes', { exact: true }).first()
+      .scrollIntoViewIfNeeded().catch(() => {});
     const rows = this.page.locator(SELECTORS.activityLogEntry);
+    await rows.first().waitFor({ state: 'visible', timeout: 8_000 }).catch(() => {});
+
+    const entries: string[] = [];
     const count = await rows.count().catch(() => 0);
     for (let i = 0; i < count; i++) {
-      const text = (await rows.nth(i).textContent())?.trim() || '';
+      const text = (await rows.nth(i).textContent())?.replace(/\s+/g, ' ').trim() || '';
       if (text) entries.push(text);
     }
     return entries;

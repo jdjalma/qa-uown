@@ -98,7 +98,8 @@ Canonical example: `src/api/clients/los-partner-application.client.ts` (WI-525).
 | `SvcEmailClient` | `api.svcEmail` | svc | Email CRUD |
 | `SvcPayoffClient` | `api.svcPayoff` | svc | Payoff, settlement, servicing info |
 | `SvcPhoneClient` | `api.svcPhone` | svc | Opt-out/DNC/DNT flags |
-| `TmsAuditClient` | `api.tmsAudit` | tms | Account summary (v1 + legacy) |
+| `TmsAuditClient` | `api.tmsAudit` | tms | Account/payoff/payment-methods reads; moveDueDates; PayNearMe; contactPreferences; activity-logs |
+| `TmsPaymentClient` | `api.tmsPayment` | tms | CC / ACH / PaymentArrangement (external Five9/IVR surface) |
 | `LosPartnerApplicationClient` | `api.losPartnerApp` | los | Partner app search (X-API-Version) |
 | `CorrespondenceClient` | `api.correspondence` | los | Email queue triggers |
 

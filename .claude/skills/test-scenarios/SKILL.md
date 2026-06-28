@@ -149,6 +149,12 @@ covers:
 
 `covers` lists every implementation file whose behavior this BDD contracts. After saving, add a row to [`.claude/oracles/_index.md`](../../.claude/oracles/_index.md) mapping the operation name, trigger keywords, file name, and `last-reviewed` date. Without this row, rule #19 in CLAUDE.md cannot find the oracle.
 
+### Oracle file scope rule: one file = one feature
+
+Each oracle file must cover **one feature** (one product capability, one page, one API operation). The primary smell for mixing is the `covers:` list: if the same feature-specific page-object appears in two different oracle files, those files are mixing features and one file should be split or the page-object removed from the wrong one.
+
+**Acceptable exception — UI-vs-API split of the SAME feature:** when one oracle covers the UI flow (e.g., filling in the application form via browser) and a sibling oracle covers the API seed path that produces the same lead (e.g., `POST /uown/los/sendApplication`), they will share common artifacts (`common.selectors.ts`, a shared API client) in their `covers:` lists. This is not mixing — it is a deliberate UI-vs-API split of the same feature. Document the split explicitly in both files so future reviewers can see it was intentional.
+
 The **form** is rigid (Gherkin, `[negative]`/`[positive]` prefix, one `When`, `.md` structure, frontmatter + `_index.md` entry); the **judgment** (which scenarios, impact analysis) is free.
 
 ## Example

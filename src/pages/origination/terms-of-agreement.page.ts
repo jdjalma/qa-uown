@@ -256,8 +256,9 @@ export class TermsOfAgreementPage extends BasePage {
   }
 
   async getSummary(): Promise<TermsSummary> {
-    const desc = '.terms-of-agreement-form_termsOfAgreement__form__container__body__description__rotPG';
-    const span = '.terms-of-agreement-form_termsOfAgreement__form__container__body__span__pVs0U';
+    // Prefix-based [class*=] avoids coupling to the webpack hash suffix (e.g. __rotPG, __pVs0U)
+    const desc = '[class*="termsOfAgreement__form__container__body__description"]';
+    const span = '[class*="termsOfAgreement__form__container__body__span"]';
 
     const spans = this.page.locator(span);
     const descs = this.page.locator(desc);

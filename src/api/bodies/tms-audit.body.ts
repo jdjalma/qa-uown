@@ -34,3 +34,17 @@ export interface AddLogNoteLegacyBody {
   /** Note body persisted on `uown_sv_activity_log.notes`. */
   logNote: string;
 }
+
+/** Body for `POST /uown/tms/v1/accounts/{accountId}/contactPreferences`. */
+export interface TmsContactPreferencesBody {
+  /** Phone number (numeric — Java Long on wire). REQUIRED. */
+  phoneNumber: number;
+  /** TCPA do-not-call flag. */
+  doNotCall?: boolean;
+  /** TCPA do-not-text flag. */
+  doNotText?: boolean;
+  /** AI opt-out flag. */
+  optOutAi?: boolean;
+  /** Reason for opt-out (0–500 chars). */
+  optOutReason?: string;
+}

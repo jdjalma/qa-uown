@@ -311,26 +311,100 @@ Two new optional fields added to the payoff/servicing-info response shape:
 - `settlementAmountBreakdown` mirrors what `SettlementBreakdownModal.getBreakdownRows` reads from the DOM — divergence between API and UI is a rendering bug, not a data bug.
 - `calculateSettlement` from `settlement.helpers.ts` is the independent correctness oracle — compare all three: API response, UI modal, helper formula.
 
-## TmsAuditClient — account summary methods (2026-05-22)
+## TmsAuditClient — full method catalog (updated 2026-06-28 vs readme.io)
 
-Location: `src/api/clients/tms-audit.client.ts`. Host: TMS. Fixture: `api.tmsAudit` (verify in `base-test.ts`).
+Location: `src/api/clients/tms-audit.client.ts`. Host: TMS (auth: `env.tmsApiKey` via `tmsHeaders`). Fixture: `api.tmsAudit`.
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `getAccountSummary` | `getAccountSummary(accountPk): Promise<ApiResponse<TmsAccountSummaryResponse>>` | GET `/uown/tms/v1/accounts/{accountPk}/summary` — v1 endpoint (R1.52.0). Returns `TmsAccountSummaryResponse` with `numberOfDueDateMoves` + `lastScheduleMovedDate`. Auth: TMS API key. |
-| `getAccountSummaryLegacy` | `getAccountSummaryLegacy(accountPk): Promise<ApiResponse<TmsAccountSummaryResponse>>` | GET `/uown/tms/getAccountSummary/{accountPk}` — legacy `TmsController` endpoint. Same response shape. Use for backward-compat CTs only. |
+| `getAccountSummary` | `getAccountSummary(accountId)` | GET `/uown/tms/v1/accounts/{id}/summary` — full `TmsAccountSummaryResponse` including balance/status/EPO fields. |
+| `getAccountSummaryLegacy` | `getAccountSummaryLegacy(accountPk)` | GET `/uown/tms/getAccountSummary/{pk}` — legacy `TmsController`. Same shape. Backward-compat CTs only. |
+| `getPayoffAmount` | `getPayoffAmount(accountId)` | GET `/uown/tms/v1/accounts/{id}/payoff` — returns `TmsPayoffResponse { accountPk, amount }`. |
+| `getPayoffAmountLegacy` | `getPayoffAmountLegacy(accountPk)` | GET `/uown/tms/getPayoffAmount/{pk}` — legacy endpoint. |
+| `getBankAccounts` | `getBankAccounts(accountId)` | GET `/uown/tms/v1/accounts/{id}/payment-methods/bank-accounts` — returns `TmsBankAccountOnFileItem[]`. |
+| `getCreditCards` | `getCreditCards(accountId)` | GET `/uown/tms/v1/accounts/{id}/payment-methods/credit-cards` — returns `TmsCreditCardOnFileItem[]`. |
+| `getAutopayCreditCard` | `getAutopayCreditCard(accountId)` | GET `/uown/tms/v1/accounts/{id}/payment-methods/credit-cards/autopay` — single autopay card or 404. |
+| `getBankAccountsLegacy` | `getBankAccountsLegacy(accountPk)` | GET `/uown/tms/getBankAccounts/{pk}` — legacy. |
+| `moveDueDates` | `moveDueDates(accountId, moveNumberOfDays, fromDueDate?)` | POST `/uown/tms/v1/accounts/{id}/due-dates/move?moveNumberOfDays=N` — external TMS endpoint (no body; query params only). Different from `AccountClient.moveDueDatesByDays` (SVC internal). Returns `TmsMoveDueDatesResponse`. |
+| `sendPayNearMePaymentLink` | `sendPayNearMePaymentLink(accountId, deliveryChannel[], amountOverride?)` | POST `/uown/tms/v1/accounts/{id}/paynearme/send` — query params only (`deliveryChannel=SMS\|EMAIL`). Returns `TmsPayNearMeDeliveryResult[]`. |
+| `updateContactPreferences` | `updateContactPreferences(accountId, body: TmsContactPreferencesBody)` | POST `/uown/tms/v1/accounts/{id}/contactPreferences` — TCPA/AI opt-out. Returns `TmsContactPreferencesResponse`. |
+| `addActivityLog` | `addActivityLog(accountId, body: AddActivityLogBody)` | POST `/uown/tms/v1/accounts/{id}/activity-logs` — appends to `uown_sv_activity_log`. |
+| `addLogNoteLegacy` | `addLogNoteLegacy(body: AddLogNoteLegacyBody)` | POST `/uown/tms/addLogNote` — legacy. |
 
-**Response interface (`src/api/responses/tms-audit.response.ts`):**
+**Response interfaces (`src/api/responses/tms-audit.response.ts`):**
+
+| Interface | Key fields |
+|-----------|-----------|
+| `TmsAccountSummaryResponse` | `accountPk`, `customerFullName`, `accountStatus`, `nextPaymentDueAmount`, `nextDueDate`, `contractBalance`, `pastDueAmount`, `epoBalance`, `customerPaymentFrequency`, `eligibleForPromotionalPayOff`, `numberOfDueDateMoves`, `lastScheduleMovedDate` |
+| `TmsBankAccountOnFileItem` | `id`, `maskedAccountNumber`, `maskedRoutingNumber`, `bankName`, `bankAccountType` (CHECKING/SAVINGS), `isActive`, `lastUsedDate` |
+| `TmsCreditCardOnFileItem` | `id`, `maskedCardNumber`, `cardType`, `expirationDate`, `isAutoPay`, `isValidCard`, `lastUsedDate` |
+| `TmsPayoffResponse` | `accountPk`, `amount` |
+| `TmsMoveDueDatesResponse` | `accountPk`, `adjustedFromDate`, `offset`, `adjustedToDate`, `adjustedDues` |
+| `TmsPayNearMeDeliveryResult` | `smartLink`, `deliveryChannel`, `recipientAddress`, `deliveryReferenceId`, `amountDue` |
+| `TmsContactPreferencesResponse` | `accountPk`, `phoneNumber`, `doNotCall`, `doNotText`, `optOutAi`, `optOutAiReason` |
+
+**Body interfaces (`src/api/bodies/tms-audit.body.ts`):**
 
 | Interface | Fields |
 |-----------|--------|
-| `TmsAccountSummaryResponse` | `accountPk?: number \| string`, `accountStatus?: string`, `customerPaymentFrequency?: string`, `nextDueDate?: string`, `numberOfDueDateMoves?: number \| null`, `lastScheduleMovedDate?: string \| null`, `[key: string]: unknown` |
+| `AddActivityLogBody` | `uuid: string`, `logType?: string`, `logNote: string` |
+| `AddLogNoteLegacyBody` | `uuid: string`, `accountPk: number\|string`, `logType?: string`, `logNote: string` |
+| `TmsContactPreferencesBody` | `phoneNumber: number`, `doNotCall?`, `doNotText?`, `optOutAi?`, `optOutReason?` |
 
 **Key field notes:**
-- `numberOfDueDateMoves` sources from `uown_sv_sched_summary.due_date_moves` (integer).
-- `lastScheduleMovedDate` is `row_created_timestamp` of the latest `uown_due_date_moves` row. Serializes as Java `LocalDateTime` without TZ offset (e.g. `"2026-05-22T12:05:20.756016"`). Server TZ in qa1 is ~+3h vs UTC — compare against DB using `expectWithinTzWindow` from `datetime.helpers.ts`, not direct equality.
-- `null` for both fields when no moves exist (backend early-return path).
-- Field spelling is `lastScheduleMovedDate` (with trailing "d") — canonical per dev Marcos 2026-05-22; do NOT "fix" to match the issue title.
+- `lastScheduleMovedDate` spelling is canonical (trailing "d") — per dev Marcos 2026-05-22; do NOT "fix".
+- `lastScheduleMovedDate` serializes as Java `LocalDateTime` without TZ offset. Compare against DB via `expectWithinTzWindow`.
+- `moveDueDates` vs `AccountClient.moveDueDatesByDays`: the former hits `/uown/tms/v1/...` (Five9/IVR external surface, TMS key); the latter hits `/uown/svc/...` (internal, LOS key). Both mutate future receivables.
+- `sendPayNearMePaymentLink`: all parameters go in the URL query string — there is no request body.
+
+## TmsPaymentClient — payment endpoints (svc#509, updated 2026-06-28 vs readme.io)
+
+Location: `src/api/clients/tms-payment.client.ts`. Host: TMS (auth: `env.tmsApiKey`). Fixture: `api.tmsPayment`.
+
+Auth: `injectAuth: false / injectApiKey: false` — TMS key injected per-request via `tmsHeaders` / `postRawTms`.
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `postCreditCardPayment` | `postCreditCardPayment(accountId, body: TmsCreditCardPaymentRequest)` | POST `/uown/tms/v1/accounts/{id}/payments/credit-card` — typed happy-path. |
+| `postCreditCardPaymentRaw` | `postCreditCardPaymentRaw(accountId, body: unknown)` | Same URL, opaque body — for CT-7/CT-8a/CT-8b negatives. |
+| `postAchPayment` | `postAchPayment(accountId, body: TmsAchPaymentRequest)` | POST `/uown/tms/v1/accounts/{id}/payments/ach` — typed happy-path. |
+| `postAchPaymentRaw` | `postAchPaymentRaw(accountId, body: unknown)` | Same URL, opaque body — for CT-9 negatives. |
+| `postPaymentArrangement` | `postPaymentArrangement(accountId, body: TmsLegacyPaymentArrangementRequest)` | POST `/uown/tms/v1/accounts/{id}/paymentArrangements` — **legacy shape** (post-revert commit 56b878299). New shape (`creditLines[]`/`achLines[]`) = HTTP 200 + 0 transactions (silent no-op; CT-10). |
+| `postPaymentArrangementRaw` | `postPaymentArrangementRaw(accountId, body: unknown)` | Same URL, opaque — CT-10. |
+
+**Request body interfaces (`src/api/bodies/tms-payment.body.ts`):**
+
+| Interface | Key fields |
+|-----------|-----------|
+| `TmsCreditCardPaymentRequest` | `amount`, `postingDate`, `allocationStrategy?` (DEFAULT/REGULAR_RECEIVABLES/EPO_ONLY), `chargeFee?` (default true), `comment?`, `card?: TmsCardDetails` |
+| `TmsCardDetails` | `creditCardId?` OR keyed: `ccNumber`, `ccExp` (MM/YY), `cvc`, `ccFirstName?`, `ccLastName?`, `billingAddress?`, `autoPay?`, `exclusiveCardMode?` |
+| `TmsAchPaymentRequest` | `amount`, `postingDate`, `allocationStrategy?`, `comments?`, `bankAccount?: TmsBankAccountDetails` |
+| `TmsBankAccountDetails` | `bankAccountId?` OR keyed: `routingNumber`, `accountNumber`, `bankName?`, `accountHolderFirstName?`, `accountHolderLastName?`, `designateAutoPay?`, `exclusiveBankInstrument?` |
+| `TmsLegacyPaymentArrangementRequest` | `creditCardTransactions?: TmsLegacyCcLine[]`, `achPayments?: TmsLegacyAchLine[]`, `arrangementType?`, `paymentArrangement?` |
+
+**Wire-contract pitfalls (svc#509):**
+- `card` field on CC request accepts both `"card"` and `"ccInfo"` aliases (`@JsonAlias`). Internal `CardDetails` fields have NO aliases — sending `creditCardPk` = silent ignore + 400.
+- `comments` (ACH) vs `comment` (CC) — note the plural; swapping causes a silent null (OBSERVATION-3).
+- `chargeFee` defaults to `true` server-side (`@Builder.Default`) — omitting it is safe; sending `false` is a fee-waiver.
+- `exclusiveCardMode` / `exclusiveBankInstrument` — `@AssertTrue` bean-validation; the server evaluates, callers rarely send explicitly.
+
+**Response interfaces (`src/api/responses/tms-payment.response.ts`):**
+
+| Interface | Key fields |
+|-----------|-----------|
+| `TmsCreditCardPaymentResponseBody` | `creditCardTransactionPk?`, `gatewayTransactionId?`, `ccNumber?`, `error?`, `amount?`, `status?`, `postingDate?` |
+| `TmsAchPaymentResponseBody` | `id?` (wire), `achPaymentPk?` (alias), `amount?`, `status?`, `customerFirstName?`, `customerLastName?`, `bankAccountType?`, `achProcessType?`, `returnCode?`, `returnCodeDescription?`, `settlementId?`, `settlementTimestamp?`, `maskedAccountNumber?`, `maskedRoutingNumber?` |
+| `TmsPaymentArrangementResponseBody` | `paymentArrangementPk?`, `creditCardTransactions?`, `achPayments?` |
+| `TmsValidationErrorBody` | `status?`, `error?`, `message?`, `errors[]?`, `timestamp?`, `path?` |
+
+**Builders:**
+
+| Function | Purpose |
+|----------|---------|
+| `buildTmsCcOnFileBody(opts)` | CC payment with card-on-file (`creditCardId`) |
+| `buildTmsCcKeyedBody(opts)` | CC payment with PAN + exp + cvc |
+| `buildTmsAchKeyedBody(opts)` | ACH with keyed routing + account number |
+| `buildTmsAchOnFileBody(opts)` | ACH with bank-account-on-file (`bankAccountId`) |
 
 ## AMS Merchants endpoint — GET /uown/merchants (2026-05-22)
 

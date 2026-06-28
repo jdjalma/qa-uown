@@ -33,3 +33,5 @@ export type { MerchantProgramSectionRow } from './merchant-programs-section.page
 export { MerchantLocationFilterPO } from './merchant-location-filter.po.js';
 export { RebatePage } from './rebate.page.js';
 export { MerchantListPage } from './merchant-list.page.js';
+export { ContractCompletePage } from './contract-complete.page.js';
+export type { CreditCardInput, BankAccountInput } from './contract-complete.page.js';

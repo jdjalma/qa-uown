@@ -78,6 +78,12 @@ export interface TmsCardDetails {
   autoPay?: boolean;
   /** Nested billing address (keyed branch). */
   billingAddress?: TmsBillingAddress;
+  /**
+   * Exclusive card mode — enforced by `@AssertTrue isExclusiveCardMode`:
+   * exactly one of `creditCardId` OR keyed fields must be present.
+   * Sent by the backend if the client includes it; usually omitted.
+   */
+  exclusiveCardMode?: boolean;
   /** Escape hatch for CT-08b: legacy fields with NO alias (e.g. `creditCardPk`). */
   [key: string]: unknown;
 }
@@ -105,6 +111,12 @@ export interface TmsBankAccountDetails {
   accountHolderLastName?: string;
   /** Designate as auto-pay (renamed from legacy `isAutoPay` — NO alias). Default `false`. */
   designateAutoPay?: boolean;
+  /**
+   * Exclusive bank instrument — enforced by `@AssertTrue isExclusiveBankInstrument`:
+   * exactly one of `bankAccountId` OR keyed fields must be present.
+   * Usually omitted by callers; validated server-side.
+   */
+  exclusiveBankInstrument?: boolean;
   /** Escape hatch for CT-09 (legacy `bankData.*` fields). */
   [key: string]: unknown;
 }
