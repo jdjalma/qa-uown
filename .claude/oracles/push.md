@@ -1,8 +1,7 @@
 ---
-last-reviewed: 2026-06-27
+last-reviewed: 2026-06-28
 covers:
-  - CLAUDE.md
-  - .claude/settings.json
+  - .gitignore
 ---
 
 # Git Push
@@ -70,7 +69,7 @@ Feature: Git Push
 ## Oracles
 
 > **Staleness check (run before any Oracle):**
-> `git log --after="2026-06-27" -- CLAUDE.md .claude/settings.json`
+> `git log --after="2026-06-28" -- .gitignore`
 > Non-empty output → prepend `[BDD MAY BE STALE]` to this oracle report.
 
 ### Oracle: CT-01 — Push succeeded and remote is up to date
