@@ -19,7 +19,7 @@ promoted_to: []
 > Charter: Explore the Alabama GowSign lease-purchase contract signing in qa2 with Playwright MCP to discover the rendered contract's title (Alabama vs Texas leak), EPO-section parity with the Texas reference, dynamic-variable resolution, and AL-specific clauses — for both 13m and 16m.
 > Origin: GitLab uown/backend — "UOWN | SVC | Add AL - Alabama GowSign Template" (Gustavo Martins) + the AL/TX ambiguity in the ticket ("EPO Section same as Texas — TX_2025_SAC_16_MONTHS.docx").
 > Overall confidence: **high** for routing, title/state-scoping, and the 13m rendering defect (DB + UI + backend log, fresh data 2026-06-17). **gap** for the 16m render (blocked by the Kornerstone CC wall).
-> Env: **qa2**. Lead driven this run: **16649** (TerraceFinance, customer state AL, 13m). Sibling: [[16m-lease-and-gowsign-signwell-routing-qa2]], scenarios `docs/scenarios/ohio-gowsign-template.md`. Skill base: [[gowsign-knowledge]].
+> Env: **qa2**. Lead driven this run: **16649** (TerraceFinance, customer state AL, 13m). Sibling: [[16m-lease-and-gowsign-signwell-routing-qa2]], scenarios `.claude/oracles/ohio-gowsign-template.md`. Skill base: [[gowsign-knowledge]].
 
 ## Purpose
 

@@ -189,7 +189,7 @@ A silent brand skip = a violation.
 
 ### Template routing by CUSTOMER state — Daniel's clone `OL90205-0079_clone` (qa2, 2026-06-22)
 
-> **CORRECTION of the old note "INSTORE → store-state CA template" (resolves Open Question Q1 in SPEC `docs/scenarios/ohio-scenario3-contract-validation-spec.md`):** the clone routes the GowSign template by **CUSTOMER state**, NOT by the store state CA. Customer OH → `OH_2025_SAC_16_MONTHS`. `[CONFIRMED]` in qa2 (leads 16865/16866/16867) — contradicts the documented rule "INSTORE routes by merchant state". Before trusting the INSTORE→merchant-state rule for this clone, **assert the selected template** (`assertSelectedTemplateForLead`). Cross-link: [[gowsign-knowledge]] OH render facts, [[volatile-knowledge-registry]] §17 (GowSign state-routing).
+> **CORRECTION of the old note "INSTORE → store-state CA template" (resolves Open Question Q1 in SPEC `.claude/oracles/ohio-scenario3-contract-validation-spec.md`):** the clone routes the GowSign template by **CUSTOMER state**, NOT by the store state CA. Customer OH → `OH_2025_SAC_16_MONTHS`. `[CONFIRMED]` in qa2 (leads 16865/16866/16867) — contradicts the documented rule "INSTORE routes by merchant state". Before trusting the INSTORE→merchant-state rule for this clone, **assert the selected template** (`assertSelectedTemplateForLead`). Cross-link: [[gowsign-knowledge]] OH render facts, [[volatile-knowledge-registry]] §17 (GowSign state-routing).
 
 ---
 

@@ -3,7 +3,7 @@
  *
  * SPEC:      docs/taskTestingUown/RU05.26.1.52.0_addGdsDataFieldsConfigColumnsMerchant_1309/
  *            RU05.26.1.52.0_addGdsDataFieldsConfigColumnsMerchant_1309-spec.md
- * Gherkin:   docs/scenarios/1309-add-gds-data-fields-config-columns-merchants.md
+ * Gherkin:   .claude/oracles/1309-add-gds-data-fields-config-columns-merchants.md
  * Discovery: docs/knowledge-base/merchants-config-columns-export.md
  *
  * Feature (Origination /merchant): the Config Columns panel gains 3 new options —

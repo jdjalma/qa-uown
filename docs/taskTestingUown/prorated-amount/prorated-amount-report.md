@@ -6,7 +6,7 @@
 ## Informacoes da Tarefa
 
 - **Tarefa:** Prorated Amount Calculator — Servicing Portal
-- **Spec BDD:** `docs/scenarios/prorated-amount.md` (CT-01 a CT-04)
+- **Spec BDD:** `.claude/oracles/prorated-amount.md` (CT-01 a CT-04)
 - **Implementador:** qa-implementer
 - **Validador:** qa-validator (2026-06-26)
 - **Ciclo de validacao:** 2/3

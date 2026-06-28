@@ -9,7 +9,7 @@
  *
  * SPEC (authoritative): docs/taskTestingUown/RU05.26.1.53.0_merchantSettingsSnapshotTracking/
  *                       RU05.26.1.53.0_merchantSettingsSnapshotTracking-spec.md
- * Scenarios:            docs/scenarios/merchant-settings-snapshot.md
+ * Scenarios:            .claude/oracles/merchant-settings-snapshot.md
  * Discovery:            docs/knowledge-base/underwriting-and-funding-test-data-paths.md
  *
  * Strategy: Hybrid — API setup + DB validation (the snapshot is a backend audit

@@ -8,7 +8,7 @@
  *
  * Ground truth (DB-confirmed live, read as authoritative — Rule #16):
  *  - docs/knowledge-base/sticky-recover-cancel-sweep.md
- *  - docs/scenarios/sticky-cancel-sweep-scenarios.md
+ *  - .claude/oracles/sticky-cancel-sweep-scenarios.md
  *
  * ─────────────────────────────────────────────────────────────────────────────
  * SANDBOX-ONLY. Sticky tables are populated only in sandbox; qa2/dev2 have the

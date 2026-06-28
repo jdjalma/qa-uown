@@ -620,29 +620,30 @@ export class OriginationCustomerPage extends OriginationBasePage {
 
     await this.waitForSpinner();
 
-    // Scope to the Lease panel header. Live DOM (qa1 lead 11839) confirms the
-    // header literal text is "Lease" — NOT "Documents". The CSS-module class
-    // contains the substring "documents" (`documentsItemHeader__`) but the
-    // rendered text content is the single word "Lease".
-    const leaseHeader = this.page
-      .locator(SELECTORS.leasePanelHeader)
-      .filter({ hasText: /Lease/i })
+    // DOM contract (verified via live stg inspection — lead 7218239, 2026-06-27,
+    // MCP browser_evaluate + full modal content audit):
+    //
+    // The settlement modal (#customer-lease-modal containing #isConfirmedForSettlement)
+    // is ONLY opened by the "Request Funding" button in the customer summary bar.
+    //
+    // Clicking the `contractItem__titleButton__` (lease document title link) opens a
+    // different variant of the same modal that has #customer-lease-modal and
+    // #settleLeaseForm but does NOT include #isConfirmedForSettlement — it renders
+    // a view/edit form for the LEASE_MOD document without the settlement confirmation
+    // section. This caused the 30s timeout at confirmCheckbox.waitFor.
+    //
+    // Fix history:
+    //   - v1–v4: used contractItem__titleButton__ in Documents panel → wrong modal variant,
+    //            no #isConfirmedForSettlement. Fails in stg with LEASE_MOD document present.
+    //   - v5 (current): click "Request Funding" summary button → correct settlement modal.
+    const requestFundingBtn = this.page
+      .getByRole('button', { name: 'Request Funding' })
       .first();
 
-    // The contract rows live in the next sibling block (.mb-5) of the Lease header.
-    // We click the title button of the first contract row (LEASE / LEASE_MOD).
-    const leaseTitleButton = leaseHeader
-      .locator('xpath=following-sibling::*[1]')
-      .locator(SELECTORS.leasePanelContractTitleButton)
-      .first();
-
-    // Single wait with a generous budget — MN16/KS3015 contracts can take
-    // longer to render. No reload loop: reloading mid-render restarts the
-    // race instead of resolving it.
-    await leaseTitleButton.waitFor({ state: 'visible', timeout: 30_000 });
-    await leaseTitleButton.scrollIntoViewIfNeeded();
-    await leaseTitleButton.click();
-    console.log('[Settle] Clicked lease document title button');
+    await requestFundingBtn.waitFor({ state: 'visible', timeout: 30_000 });
+    await requestFundingBtn.scrollIntoViewIfNeeded();
+    await requestFundingBtn.click();
+    console.log('[Settle] Clicked Request Funding button (opens settlement modal with #isConfirmedForSettlement)');
 
     // 2. Wait for the settlement modal
     const modal = this.page.locator('#customer-lease-modal, #customer-overview-modal');
@@ -652,6 +653,20 @@ export class OriginationCustomerPage extends OriginationBasePage {
     await this.waitForSpinner();
     await this.page.locator(`${SELECTORS.spinnerBorder}, ${SELECTORS.spinnerGrow}`).first()
       .waitFor({ state: 'hidden', timeout: 30_000 }).catch(() => {});
+
+    // 3b. Early-exit: merchants with is_signed_to_funding=true auto-progress SIGNED → FUNDING
+    // on e-sign completion (EsignRedirectService). By the time this method is called the lead
+    // is already in FUNDING and the modal shows "not eligible to be settled" instead of the
+    // confirmation checkbox. Detect this condition and close the modal gracefully — no manual
+    // settlement is needed when the backend already handled it.
+    const notEligibleMsg = modal.locator(':has-text("not eligible to be settled")');
+    const isAlreadyPastSettlement = await notEligibleMsg.isVisible({ timeout: 2_000 }).catch(() => false);
+    if (isAlreadyPastSettlement) {
+      console.log('[Settle] Lead is already past settlement (is_signed_to_funding=true merchant) — skipping settlement step');
+      await modal.locator(SELECTORS.modalClose).first().click().catch(() => {});
+      await modal.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
+      return;
+    }
 
     // 4. Check the settlement confirmation checkbox
     const confirmCheckbox = this.page.locator(SELECTORS.isConfirmedForSettlement);

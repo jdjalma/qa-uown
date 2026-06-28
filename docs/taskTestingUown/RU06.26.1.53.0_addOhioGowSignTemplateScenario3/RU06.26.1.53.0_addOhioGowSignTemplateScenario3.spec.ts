@@ -5,7 +5,7 @@
  * (AC2 content parity, AC3 calculated values, AC4 dynamic-data population;
  *  Scenario-4 state overlap = OH).
  *
- * SPEC: docs/scenarios/ohio-scenario3-contract-validation-spec.md (8 CTs).
+ * SPEC: .claude/oracles/ohio-scenario3-contract-validation-spec.md (8 CTs).
  *
  * STRATEGY — hybrid (Rule #14, UI-first):
  *   1. API setup  → approve ONE FRESH lead PER FREQUENCY on the Daniel's clone

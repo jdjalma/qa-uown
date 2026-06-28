@@ -7,7 +7,7 @@
  * off the lease on any given date. A wrong figure is a customer-facing financial error,
  * so the displayed value is cross-checked against the system's own endpoint.
  *
- * BDD oracle (rule #19): docs/scenarios/prorated-amount.md (CT-01 → CT-04).
+ * BDD oracle (rule #19): .claude/oracles/prorated-amount.md (CT-01 → CT-04).
  *
  * Scenarios:
  *   CT-01 — Modal opens: header "Prorated Amount", "AS OF:" pre-filled with today

@@ -77,7 +77,7 @@ for (const data of testData) {
 
 ## Authentication
 
-> **BDD spec (acceptance contract):** [`docs/scenarios/login.md`](../../docs/scenarios/login.md)
+> **BDD spec (acceptance contract):** [`.claude/oracles/login.md`](../../.claude/oracles/login.md)
 > The BDD defines the observable behavior a correct login must satisfy. The page objects and helpers are the implementation; the BDD is the spec. Any change to the login flow must be reflected in the BDD first.
 
 ### Agent portals (Origination, Servicing, AMS) — username/password
@@ -113,12 +113,12 @@ await websitePage.enterVerificationCode(otp);
 
 ## Operation Index
 
-> **Convention:** every entry in this table MUST have a corresponding BDD file in `docs/scenarios/` registered in `docs/scenarios/_index.md`. When adding a new canonical operation here, create the BDD file first (via `test-scenarios` skill) and add the `_index.md` row before adding the table entry. No entry without a BDD = oracle gap.
+> **Convention:** every entry in this table MUST have a corresponding BDD file in `.claude/oracles/` registered in `.claude/oracles/_index.md`. When adding a new canonical operation here, create the BDD file first (via `test-scenarios` skill) and add the `_index.md` row before adding the table entry. No entry without a BDD = oracle gap.
 
 | Operation | Key Points | Recipe |
 |-----------|-----------|--------|
-| **Login — agent portals** | `loginToPortal(page, url, env, role)` · roles: `manager` (default) / `merchant` | BDD: [login.md](../../docs/scenarios/login.md) |
-| **Login — Website (OTP)** | `loginWithEmailOrPhone()` → `enterVerificationCode()` · OTP via IMAP | BDD: [login.md](../../docs/scenarios/login.md) |
+| **Login — agent portals** | `loginToPortal(page, url, env, role)` · roles: `manager` (default) / `merchant` | BDD: [login.md](../../.claude/oracles/login.md) |
+| **Login — Website (OTP)** | `loginWithEmailOrPhone()` → `enterVerificationCode()` · OTP via IMAP | BDD: [login.md](../../.claude/oracles/login.md) |
 | Drive to FUNDED | pre-qual -> signed -> funding -> funded -> wait SVC account | [cookbook](references/cookbook.md#drive-to-funded-most-common-pattern) |
 | CC Payment (API) | Synchronous — SUCCESS immediately, no sweep needed | [cookbook](references/cookbook.md#cc-payment-arrangement-api) |
 | CC Payment (UI) | One-time card: `input[type="month"]` requires `YYYY-MM` | [cookbook](references/cookbook.md#cc-payment-arrangement---one-time-card-ui) |

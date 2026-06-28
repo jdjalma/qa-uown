@@ -143,4 +143,4 @@ Da estrutura de código (`src/helpers/api-setup.helpers.ts` e `src/api/clients/a
 - `ccbin-employment-financial-step.md` — detalhes do campo CCBIN e card visualization (task #1322)
 - `src/helpers/api-setup.helpers.ts` — helper `sendApplicationToCustomer` + extração do shortCode
 - `src/api/clients/application.client.ts` — `canContinueApplication`, `getMissingFields`
-- `docs/scenarios/new-application.md` — BDD oracle com checkpoints para CT-01 a CT-08
+- `.claude/oracles/new-application.md` — BDD oracle com checkpoints para CT-01 a CT-08

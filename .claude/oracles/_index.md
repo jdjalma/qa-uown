@@ -8,6 +8,7 @@
 |---|---|---|---|
 | login | login, authenticate, log in, sign in, fazer login, enter credentials, access portal, open origination, open servicing, open ams, navigate to dashboard, open website portal | [login.md](login.md) | 2026-06-26 |
 | new-application | new application, create application, nova aplicação, criar aplicação, new app form, origination form, send application, submit application, customer application form, invite link, application link, fill application, preencher aplicação, customer submits application | [new-application.md](new-application.md) | 2026-06-26 |
+| send-application | sendApplication, createPreQualifiedApplication, create lead via api, seed lead, precondition lead, pre-qualified application, criar lead via api, precondição de lead, POST /uown/los/sendApplication | [send-application.md](send-application.md) | 2026-06-28 |
 | prorated-amount | prorated amount, calculator, prorated, prorate, getProrateAmount, AS OF, payoff amount calculator, calculadora proporcional | [prorated-amount.md](prorated-amount.md) | 2026-06-26 |
 | commit | git commit, commit files, stage and commit, criar commit, fazer commit, commit message, git add + commit | [commit.md](commit.md) | 2026-06-27 |
 | push | git push, push to remote, push branch, enviar para o remote, push origin, fazer push | [push.md](push.md) | 2026-06-27 |
@@ -16,9 +17,14 @@
 
 ## Protocol: operation not listed here
 
-If the requested operation has no entry in this table:
-- **Ad-hoc request (user or orchestrator):** proceed with the action, then append `[UNVALIDATED — no BDD oracle registered for this operation. Consider adding one.]` to the response.
-- **QA pipeline context (qa-planner / qa-implementer writing or modifying a test):** STOP. Create the BDD file via the `test-scenarios` skill before implementing. No test code is written without an oracle.
+If a portal state-changing operation has no entry in this table, the rule is the SAME for every context — ad-hoc request (user or orchestrator) OR QA pipeline (qa-planner / qa-implementer). There is no "proceed and warn" path: **nothing reaches a validated state without an oracle.**
+
+1. **STOP** — do not perform the operation yet.
+2. **Author the BDD** via the `test-scenarios` skill. Ground the checkpoints in the canonical business rules; if the expected behavior is unknown, run a `discovery` pass first (UI → API → DB, rule #18).
+3. **Register** it: create `.claude/oracles/<operation>.md` (frontmatter `last-reviewed` + `covers`) and add a row to the table above.
+4. **THEN perform** the operation and validate every checkpoint → report `Oracle: CT-XX — PASS/FAIL`.
+
+> The `[UNVALIDATED — no BDD oracle registered]` tag is **retired** (decision 2026-06-27). An unlisted operation is never a reason to proceed unvalidated; it is the trigger to create the missing oracle first. This unifies the old ad-hoc and QA-pipeline branches into one rule.
 
 ## Protocol: staleness check (run before every oracle)
 
@@ -43,6 +49,6 @@ When any checkpoint in the oracle table returns FAIL:
 
 ## Adding a new BDD file
 
-1. Create `docs/scenarios/<operation>.md` with frontmatter `last-reviewed` + `covers`.
+1. Create `.claude/oracles/<operation>.md` with frontmatter `last-reviewed` + `covers`.
 2. Add a row to this table.
 3. The operation is now covered by rule #19 for all agents.

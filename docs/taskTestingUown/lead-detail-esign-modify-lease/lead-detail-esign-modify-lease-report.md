@@ -187,7 +187,7 @@ Valida a secao E-Sign / Sign do Origination Lead Detail apos uma modificacao de 
 
 **Status:** **SKIPPED**
 
-> Motivo: `pending discovery — see docs/scenarios/lead-detail-esign-modify-lease.md §Pending`
+> Motivo: `pending discovery — see .claude/oracles/lead-detail-esign-modify-lease.md §Pending`
 
 ---
 
@@ -195,7 +195,7 @@ Valida a secao E-Sign / Sign do Origination Lead Detail apos uma modificacao de 
 
 **Status:** **SKIPPED**
 
-> Motivo: `pending discovery — see docs/scenarios/lead-detail-esign-modify-lease.md §Pending`
+> Motivo: `pending discovery — see .claude/oracles/lead-detail-esign-modify-lease.md §Pending`
 
 ---
 

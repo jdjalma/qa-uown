@@ -13,7 +13,7 @@
  *   S6  Customer signs the LEASE_MOD contract → lead + contract SIGNED,
  *       stays SIGNED (UOWN isSignedToFunding=false), signing activity log.  [P0]
  *
- * Pending discovery (skipped — see docs/scenarios/lead-detail-esign-modify-lease.md §Pending):
+ * Pending discovery (skipped — see .claude/oracles/lead-detail-esign-modify-lease.md §Pending):
  *   S1  E-Sign hidden in SIGNED (code contradicts premise — needs DOM discovery).
  *   S4/S5  chargeProcessingFeeBeforeEsign checkbox (render unconfirmed; merchant
  *       preflight forces the flag true on standard merchants).
@@ -56,7 +56,7 @@ test.use({ viewport: { width: 1440, height: 900 } });
 const TAGS = ['@regression', '@e2e', '@origination', '@priority-high'];
 
 const PENDING_REASON =
-  'pending discovery — see docs/scenarios/lead-detail-esign-modify-lease.md §Pending';
+  'pending discovery — see .claude/oracles/lead-detail-esign-modify-lease.md §Pending';
 
 // ── Local DB helper (domain table — not an activity-log table) ───────────────
 /** Count of esign documents attached to the lead — idempotency oracle for S3. */

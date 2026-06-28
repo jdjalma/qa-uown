@@ -8,7 +8,7 @@ Shows the complete path: **scenarios file** (output of `/test-scenarios`) + **re
 
 ## 1. Input: the scenarios file
 
-`docs/scenarios/discount-coupon-application.md` (summarized):
+`.claude/oracles/discount-coupon-application.md` (summarized):
 
 ```gherkin
 # language: en
@@ -56,7 +56,7 @@ Coverage matrix from the file:
 # Test report — Discount coupon application
 
 > Demand: Discount coupon application in the cart
-> Scenarios source: docs/scenarios/discount-coupon-application.md
+> Scenarios source: .claude/oracles/discount-coupon-application.md
 > Version/environment tested: staging version of the day · Test date: 06/03/2026 · Tested by: QA
 
 ## Verdict
@@ -113,5 +113,5 @@ When the purchase is below the coupon's minimum order value, the system alerts t
 ---
 
 ## For those who want to go deeper (technical detail)
-- Full scenarios and coverage matrix: docs/scenarios/discount-coupon-application.md
+- Full scenarios and coverage matrix: .claude/oracles/discount-coupon-application.md
 ````

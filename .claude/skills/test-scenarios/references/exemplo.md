@@ -9,7 +9,7 @@
 **Demand:**
 > As a customer, I want to apply a discount coupon in the cart to pay less. Coupons can be expired or have a minimum purchase amount.
 
-**Generated file** (`docs/scenarios/discount-coupon-application.md`):
+**Generated file** (`.claude/oracles/discount-coupon-application.md`):
 
 ````markdown
 # Test Scenarios — Discount coupon application
@@ -110,7 +110,7 @@ When a required rule **is not** in the knowledge base: do not guess — record t
 **Demand:**
 > As a customer, I want to pay in installments at checkout.
 
-**Generated file** (`docs/scenarios/checkout-installments.md`):
+**Generated file** (`.claude/oracles/checkout-installments.md`):
 
 ````markdown
 # Test Scenarios — Installments at checkout

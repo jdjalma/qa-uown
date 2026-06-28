@@ -223,7 +223,7 @@ UW_APPROVED → CC_AUTH_PASSED → CONTRACT_CREATED → SIGNED → SETTLED → F
 | [ADRs](docs/adrs/) | Architecture Decision Records (ADR-001..009) |
 | [API Reference](docs/api-reference/) | UOWN TMS Service API mirror (OpenAPI 3.0.1) |
 | [Knowledge Base](docs/knowledge-base/) | Per-feature investigation notes (from `/discovery`) |
-| [Scenarios](docs/scenarios/) | BDD scenarios per demand (from `/test-scenarios`) |
+| [Scenarios](.claude/oracles/) | BDD scenarios per demand (from `/test-scenarios`) |
 | [CLAUDE.md](CLAUDE.md) | AI agent instructions and project context |
 
 ## Key Conventions

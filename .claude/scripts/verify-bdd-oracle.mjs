@@ -2,9 +2,9 @@
 // SubagentStop / Stop hook — BDD oracle enforcement (rule #19).
 //
 // If the agent used any mcp__playwright__browser_* tool (portal interaction),
-// it MUST have read docs/scenarios/_index.md before stopping.
+// it MUST have read .claude/oracles/_index.md before stopping.
 //
-// If it also read a docs/scenarios/*.md BDD file (oracle content), the final
+// If it also read a .claude/oracles/*.md BDD file (oracle content), the final
 // output MUST contain "Oracle:" confirming the checkpoints were validated.
 //
 // Blocks at most once per stop cycle (stop_hook_active guard — no infinite loop).
@@ -107,8 +107,8 @@ for (const entry of scope) {
     // Read tool calls
     if (block.type === "tool_use" && block.name === "Read") {
       const fp = String(block.input?.file_path ?? "");
-      if (/docs\/scenarios\/_index\.md$/.test(fp)) readIndex = true;
-      if (/docs\/scenarios\/[^/]+\.md$/.test(fp) && !/_index\.md$/.test(fp)) readBddFile = true;
+      if (/\.claude\/oracles\/_index\.md$/.test(fp)) readIndex = true;
+      if (/\.claude\/oracles\/[^/]+\.md$/.test(fp) && !/_index\.md$/.test(fp)) readBddFile = true;
     }
 
     // Final assistant text
@@ -130,29 +130,28 @@ const problems = [];
 
 if (!readIndex) {
   problems.push(
-    `docs/scenarios/_index.md was NOT read — the oracle index is required after any portal interaction`
+    `.claude/oracles/_index.md was NOT read — the oracle index is required after any portal interaction`
   );
 }
 
 const oracleDeclared = /Oracle:/i.test(lastText);
-const unvalidatedDeclared = /\[UNVALIDATED/i.test(lastText);
 
-if (readBddFile && !oracleDeclared && !unvalidatedDeclared) {
+if (readBddFile && !oracleDeclared) {
   problems.push(
-    `a BDD scenario file was read but the output contains neither "Oracle:" nor "[UNVALIDATED" — ` +
-    `either validate the oracle checkpoints and include "Oracle: CT-XX — PASS/FAIL", ` +
-    `or append "[UNVALIDATED — no BDD oracle registered for this operation]" if no portal operation was performed in this turn`
+    `a BDD oracle file was read but the output does not contain "Oracle:" — ` +
+    `validate every checkpoint and include "Oracle: CT-XX — PASS/FAIL" in the response ` +
+    `(the "[UNVALIDATED]" escape was retired on 2026-06-27 — an unlisted operation must have its oracle created and registered first, rule #19(b))`
   );
 }
 
 if (problems.length === 0) {
   allow(
-    `portal interaction detected; indexRead=${readIndex}; bddRead=${readBddFile}; oracleDeclared=${oracleDeclared}; unvalidatedDeclared=${unvalidatedDeclared}; ranTest=${ranPlaywrightTest}`
+    `portal interaction detected; indexRead=${readIndex}; bddRead=${readBddFile}; oracleDeclared=${oracleDeclared}; ranTest=${ranPlaywrightTest}`
   );
 }
 
 log(
-  `BLOCK — mcp=${usedPlaywright}; ranTest=${ranPlaywrightTest}; indexRead=${readIndex}; bddRead=${readBddFile}; oracleDeclared=${oracleDeclared}; unvalidatedDeclared=${unvalidatedDeclared}`
+  `BLOCK — mcp=${usedPlaywright}; ranTest=${ranPlaywrightTest}; indexRead=${readIndex}; bddRead=${readBddFile}; oracleDeclared=${oracleDeclared}`
 );
 
 console.log(
@@ -161,10 +160,10 @@ console.log(
     reason:
       `[hook verify-bdd-oracle] BDD oracle protocol not fulfilled (rule #19): ${problems.join("; ")}. ` +
       `Required steps: ` +
-      `(1) Read docs/scenarios/_index.md to check if the operation is listed. ` +
+      `(1) Read .claude/oracles/_index.md to check if the operation is listed. ` +
       `(2) If listed: read the BDD file, run the staleness check (git log command in each Oracle section), ` +
       `validate every checkpoint, and include "Oracle: CT-XX — PASS/FAIL" in the response. ` +
-      `(3) If NOT listed: append "[UNVALIDATED — no BDD oracle registered for this operation]" to the response. ` +
+      `(3) If NOT listed: STOP, create the BDD oracle via the test-scenarios skill, register it in .claude/oracles/_index.md, then perform the operation and include "Oracle: CT-XX — PASS/FAIL". (The "[UNVALIDATED]" escape was retired 2026-06-27.) ` +
       `Do this before stopping.`,
   })
 );

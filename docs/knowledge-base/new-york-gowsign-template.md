@@ -18,7 +18,7 @@ promoted_to: []
 > Charter: Explore the New York GowSign contract signing in qa2 with Playwright MCP to discover provider routing, the rendered contract title (NY vs other-state leak), dynamic-variable resolution, and the EPO clauses — for the 13-month term (NY has no 16m template).
 > Origin: GitLab uown/backend — "UOWN | SVC | Add New York GowSign Template" (Fernando Martins) — Signwell → GowSign migration.
 > Overall confidence: **high** for routing, title/state-scoping, dynamic values, and the `epoDays` render defect (DB `request` + rendered iframe + backend log, fresh data 2026-06-18, lead 16651). **gap** for partner-portal reach (PayTomorrow) and the Signwell baseline diff.
-> Env: **qa2**. Lead driven this run: **16651** (TireAgent `OW90218-0001`, customer state NY, 13m). Siblings: [[16m-lease-and-gowsign-signwell-routing-qa2]], [[alabama-gowsign-template]], scenarios `docs/scenarios/ohio-gowsign-template.md`. Skill base: [[gowsign-knowledge]].
+> Env: **qa2**. Lead driven this run: **16651** (TireAgent `OW90218-0001`, customer state NY, 13m). Siblings: [[16m-lease-and-gowsign-signwell-routing-qa2]], [[alabama-gowsign-template]], scenarios `.claude/oracles/ohio-gowsign-template.md`. Skill base: [[gowsign-knowledge]].
 
 ## Purpose
 

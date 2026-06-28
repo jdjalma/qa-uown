@@ -1,7 +1,7 @@
 # Test report — <demand name>
 
 > Demand: <ticket / user story / feature name>
-> Scenarios source: docs/scenarios/<demand>.md
+> Scenarios source: .claude/oracles/<demand>.md
 > Version/environment tested: <in plain words> · Test date: <mm/dd/yyyy> · Tested by: <name / team>
 
 ## Verdict
@@ -63,5 +63,5 @@ Each behavior verified and its result:
 ---
 
 ## For those who want to go deeper (technical detail)
-- Full scenarios and coverage matrix: docs/scenarios/<demand>.md
+- Full scenarios and coverage matrix: .claude/oracles/<demand>.md
 - <evidence, technical observations, links — all detail goes here, not above>

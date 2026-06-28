@@ -31,7 +31,7 @@ Converts a demand (user story, ticket, requirement) into test scenarios **via UI
 [ ] Self-validation per scenario (rules + quality)
 [ ] Final matrix + .md saved and path reported
 [ ] Frontmatter added (last-reviewed + covers list)
-[ ] Row added to docs/scenarios/_index.md (operation, keywords, filename, last-reviewed)
+[ ] Row added to .claude/oracles/_index.md (operation, keywords, filename, last-reviewed)
 ```
 
 ## Rules
@@ -134,7 +134,7 @@ Links acceptance criterion → scenarios (by title). Traceability is **bidirecti
 
 ## Output
 
-**Copy [assets/modelo-cenarios.md](assets/modelo-cenarios.md) and fill it in.** Save to `docs/scenarios/<demand-name>.md` (kebab-case), or follow the project convention if there is one — check with Glob using `docs/**/*.md` first. After saving, report the path. If the user only wants to see it in chat, present it without saving.
+**Copy [assets/modelo-cenarios.md](assets/modelo-cenarios.md) and fill it in.** Save to `.claude/oracles/<demand-name>.md` (kebab-case), or follow the project convention if there is one — check with Glob using `docs/**/*.md` first. After saving, report the path. If the user only wants to see it in chat, present it without saving.
 
 Every generated BDD file MUST start with this frontmatter block:
 
@@ -147,7 +147,7 @@ covers:
 ---
 ```
 
-`covers` lists every implementation file whose behavior this BDD contracts. After saving, add a row to [`docs/scenarios/_index.md`](../../docs/scenarios/_index.md) mapping the operation name, trigger keywords, file name, and `last-reviewed` date. Without this row, rule #19 in CLAUDE.md cannot find the oracle.
+`covers` lists every implementation file whose behavior this BDD contracts. After saving, add a row to [`.claude/oracles/_index.md`](../../.claude/oracles/_index.md) mapping the operation name, trigger keywords, file name, and `last-reviewed` date. Without this row, rule #19 in CLAUDE.md cannot find the oracle.
 
 The **form** is rigid (Gherkin, `[negative]`/`[positive]` prefix, one `When`, `.md` structure, frontmatter + `_index.md` entry); the **judgment** (which scenarios, impact analysis) is free.
 

@@ -13,8 +13,7 @@
       "Task",
       "mcp__playwright__*",
       "mcp__postman__*",
-      "mcp__figma__*",
-      "mcp__ide__*"
+"mcp__ide__*"
     ],
     "deny": [
       "Bash(git reset --hard*)",
@@ -35,8 +34,7 @@
   "autoMemoryEnabled": true,
   "enabledMcpjsonServers": [
     "playwright",
-    "postman",
-    "figma"
+    "postman"
   ],
   "enableAllProjectMcpServers": true,
   "hooks": {
