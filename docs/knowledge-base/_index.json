@@ -1589,7 +1589,7 @@
       "domain": "knowledge-base",
       "status": "snapshot",
       "volatility": "volatile",
-      "last_verified": "2026-06-25",
+      "last_verified": "2026-06-28",
       "covers": [
         "merchant-config",
         "merchant-management",
@@ -1606,8 +1606,16 @@
           "value": "stg"
         },
         {
+          "type": "env",
+          "value": "sandbox"
+        },
+        {
           "type": "merchant",
           "value": "OW90218-0001"
+        },
+        {
+          "type": "merchant",
+          "value": "OW90337-0001"
         },
         {
           "type": "code",
@@ -1644,8 +1652,8 @@
           "anchor": "settings-values"
         },
         {
-          "heading": "GDS Data (collapsible section)",
-          "anchor": "gds-data-collapsible-section"
+          "heading": "GDS Data (sub-seção dentro de Settings)",
+          "anchor": "gds-data-sub-seção-dentro-de-settings"
         },
         {
           "heading": "Contact",

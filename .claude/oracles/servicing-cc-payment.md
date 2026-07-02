@@ -34,7 +34,7 @@ Kount fingerprint iframe (`tst.kaptcha.com`) carrega quando o modal abre.
 ## Feature: Pagamento com cartão de crédito no portal Servicing
 
 ```gherkin
-Feature: Servicing — CC Payment via Make Payment modal
+Feature: Servicing — Pagamento CC via modal Make Payment
 
   Background:
     Given o agente está autenticado no portal Servicing (sandbox)
@@ -153,7 +153,7 @@ Feature: Servicing — CC Payment via Make Payment modal
 
 ### Oracle
 
-> **Staleness check** — execute antes de cada validação:
+> **Verificação de desatualização** — execute antes de cada validação:
 > ```bash
 > git log ff4f0fc83eced3e87cc79391d6c1fa8d67102ac3..HEAD -- docs/knowledge-base/servicing-make-payment-modal.md docs/business-rules/05-pagamentos.md
 > ```
@@ -187,7 +187,7 @@ Feature: Servicing — CC Payment via Make Payment modal
 
 ## Resultado da validação — 2026-06-28 (sandbox, account 17298)
 
-> Staleness check: `git log ff4f0fc83eced3e87cc79391d6c1fa8d67102ac3..HEAD -- ...` → output vazio. BDD corrente.
+> Verificação de desatualização: `git log ff4f0fc83eced3e87cc79391d6c1fa8d67102ac3..HEAD -- ...` → output vazio. BDD corrente.
 
 | CT | Checkpoint | Resultado | Evidência |
 |----|-----------|-----------|-----------|

@@ -66,64 +66,64 @@ covers:
 ## Cenários
 
 ```gherkin
-Feature: Servicing — one-off ACH payment via Make Payment modal
+Feature: Servicing — pagamento ACH único via modal Make Payment
   As a servicing agent
-  In order to collect a bank-debit payment against an active lease
-  The agent must post a single ACH payment from the account's Make Payment modal
+  In order to cobrar um débito bancário em um lease ativo
+  The agent must postar um pagamento ACH único via modal Make Payment da conta
 
   Background:
-    Given the agent is logged into the Servicing portal with payment permission
-    And an ACTIVE lease account is open on its customer-information page
+    Given o agente está autenticado no portal Servicing com permissão de pagamento
+    And uma conta de lease ATIVA está aberta na página customer-information
 
-  Scenario: [negative] CT-02 — Inactive account blocks the payment modal
-    Given the open account is not ACTIVE (e.g. CANCELLED or PAID_OUT)
-    When the agent clicks the Make Payment (circle-dollar) icon
-    Then the message "No further payments can be made." is shown
-    And the Make Payment modal does not open
+  Scenario: [negativo] CT-02 — Conta inativa bloqueia o modal de pagamento
+    Given a conta aberta não está ATIVA (ex: CANCELLED ou PAID_OUT)
+    When o agente clica no ícone Make Payment (circle-dollar)
+    Then a mensagem "No further payments can be made." é exibida
+    And o modal Make Payment não abre
 
-  Scenario: [negative] CT-06 — ACH without bank data is rejected
-    Given the Make Payment modal is open with payment type "ACH Payment"
-    And no bank account is selected and no one-time bank fields are filled
-    When the agent submits the payment
-    Then the error "Error Creating ACH payment: No bank data" is shown
-    And no ACH payment is posted to the account
+  Scenario: [negativo] CT-06 — ACH sem dados bancários é rejeitado
+    Given o modal Make Payment está aberto com tipo de pagamento "ACH Payment"
+    And nenhuma conta bancária está selecionada e nenhum campo de banco avulso está preenchido
+    When o agente submete o pagamento
+    Then o erro "Error Creating ACH payment: No bank data" é exibido
+    And nenhum pagamento ACH é postado na conta
 
-  Scenario: [positive] CT-01 — Make Payment modal opens for an active account
-    Given the agent has payment permission
-    When the agent clicks the Make Payment (circle-dollar) icon on the Account Summary bar
-    Then the Make Payment modal opens titled for the account
-    And it offers the payment types "ACH Payment", "Credit Card Payment", and "Check"
+  Scenario: [positivo] CT-01 — Modal Make Payment abre para conta ativa
+    Given o agente possui permissão de pagamento
+    When o agente clica no ícone Make Payment (circle-dollar) na barra Account Summary
+    Then o modal Make Payment abre com o título referente à conta
+    And oferece os tipos de pagamento "ACH Payment", "Credit Card Payment" e "Check"
 
-  Scenario: [positive] CT-03 — ACH section renders with prefilled amount and bank source
-    Given the Make Payment modal is open
-    When the agent selects payment type "ACH Payment"
-    Then the Total Payment Amount field is prefilled with the account's next payment due amount
-    And a bank source is offered: the "use existing bank information" option when a bank is on file, otherwise one-time bank fields (institution, account number, routing number)
+  Scenario: [positivo] CT-03 — Seção ACH renderiza com valor pré-preenchido e origem do banco
+    Given o modal Make Payment está aberto
+    When o agente seleciona o tipo de pagamento "ACH Payment"
+    Then o campo Total Payment Amount está pré-preenchido com o valor do próximo vencimento da conta
+    And uma origem de banco é oferecida: a opção "use existing bank information" quando há banco em arquivo, caso contrário campos de banco avulso (instituição, número da conta, routing)
 
-  Scenario: [positive] CT-04 — Submitting a valid ACH payment posts it as PENDING
-    Given the agent selected "ACH Payment", entered an amount of $100.00, and chose a bank source
-    When the agent submits the payment
-    Then a success message is shown with no "error" text
-    And the account gains a pending ACH payment of exactly $100.00 awaiting the next ACH sweep
+  Scenario: [positivo] CT-04 — Submeter pagamento ACH válido o posta como PENDING
+    Given o agente selecionou "ACH Payment", informou um valor de $100.00 e escolheu uma origem bancária
+    When o agente submete o pagamento
+    Then uma mensagem de sucesso é exibida sem texto de "error"
+    And a conta ganha um pagamento ACH pendente de exatamente $100.00 aguardando o próximo ACH sweep
 
-  Scenario: [side-effect] CT-05 — The ACH submit writes a synchronous activity log
-    Given a valid ACH payment of $100.00 was just submitted
-    When the account activity log is read
-    Then it contains an entry "ADDED : ACHPayment[...status=PENDING...amount=100...]" for this account
-    And no entry indicates a failure of the ACH creation
+  Scenario: [efeito-colateral] CT-05 — O submit ACH escreve um activity log síncrono
+    Given um pagamento ACH válido de $100.00 foi submetido
+    When o activity log da conta é consultado
+    Then contém uma entrada "ADDED : ACHPayment[...status=PENDING...amount=100...]" para esta conta
+    And nenhuma entrada indica falha na criação do ACH
 
-  Scenario: [positive] CT-07 — ACH creation defaults are applied
-    Given an ACH payment is created with auto-pay and account type left unset
-    When the resulting ACH payment record is read
-    Then auto-pay defaults to false
-    And the account type defaults to CHECKING
-    And the customer name is populated automatically when it was left empty
+  Scenario: [positivo] CT-07 — Defaults de criação ACH são aplicados
+    Given um pagamento ACH é criado com auto-pay e account type não definidos
+    When o registro de pagamento ACH resultante é consultado
+    Then auto-pay padrão é false
+    And o account type padrão é CHECKING
+    And o nome do cliente é preenchido automaticamente quando estava vazio
 
-  Scenario: [side-effect] CT-08 — Post-ACH refresh updates the ACH-side views only
-    Given a valid ACH payment was just submitted
-    When the page refreshes after the submit
-    Then the ACH payments list, account summary, and alerts reflect the new payment
-    And the credit-card transactions view is not re-fetched by the ACH submit
+  Scenario: [efeito-colateral] CT-08 — Refresh pós-ACH atualiza apenas as views do lado ACH
+    Given um pagamento ACH válido foi submetido
+    When a página atualiza após o submit
+    Then a lista de pagamentos ACH, o account summary e os alertas refletem o novo pagamento
+    And a view de transações de cartão de crédito não é re-buscada pelo submit ACH
 ```
 
 ## Oracles

@@ -143,7 +143,7 @@ Lead 97422 signed com sucesso na instância GowSign-DEV (doc COMPLETED, assinatu
 | 74 | 138 | Config: Merchant configurations working (checkboxes, pr | ✅ Pass | Config coherent: 38 checkboxes load persisted state (10 checked), 35 inputs populated, programs assigned incl. 13mo SAC + KW-16 (16m), Valid States 47 chips, ba |
 | 75 | 139 | Config: State Configs active and program assignments co | ✅ Pass | Grid de State Configs coerente; pencil→edição inline. Alterado Alabama processing_fee 40→42 (createOrUpdateStateConfigurations 200, DB persistido), depois rever |
 | 76 | 140 | Merchant Portal: Login → main flows working (apply, sta | ✅ Pass | Manager login OK; Overview KPIs render (Applications 4, Approval Rate 100%); /leads search page (Lead#/Account# cols, Filters, CSV); /funding Funding Queue rend |
-| 77 | 144 | Email/CSV/Download CSV: Flows working end-to-end (gener | ✅ Pass | Download CSV: leads-results.csv 5.5KB + merchant-report.csv ~1MB baixados de fato. Email CSV: modal→djalmapsico@gmail.com→SEND→POST /uown/emailCSV 200 + toast d |
+| 77 | 144 | Email/CSV/Download CSV: Flows working end-to-end (gener | ✅ Pass | Download CSV: leads-results.csv 5.5KB + merchant-report.csv ~1MB baixados de fato. Email CSV: modal→fintechgroup777@gmail.com→SEND→POST /uown/emailCSV 200 + toast d |
 
 ### Servicing (47 cenários — ✅42 / 🟡4 / ❌0 / ➖1)
 
@@ -166,7 +166,7 @@ Lead 97422 signed com sucesso na instância GowSign-DEV (doc COMPLETED, assinatu
 | 15 | 39 | Search Page | ✅ Pass | Filters panel shows SSN/Email/Account PK/Phone/Customer Name/Last CC digits + From/To MM/DD/YYYY; From=01/01/2020 search returned 16953 records (~16951 expected |
 | 16 | 40 | Customer Information Page | ✅ Pass | Header renders Account #17230, Ref L97413, Borrower Carol, Status ACTIVE, Next Payment $355.70, Next Due 06/21/2026, Merchant Everly, 2 Items, Program 13 months |
 | 17 | 92 | Account Search: Account Sale (bulk) | 🟡 Partial | /account-sale é página de upload em massa (.xlsx/.xls/.pdf) de contas + Rating Letter + Sale Date → marca contas SOLD em massa. Commit externo irreversível; par |
-| 18 | 93 | Account Search: Email CSV | ✅ Pass | /search Email CSV: modal pede email; enviado para djalmapsico@gmail.com via POST /uown/emailCSV 200. CSV enfileirado. |
+| 18 | 93 | Account Search: Email CSV | ✅ Pass | /search Email CSV: modal pede email; enviado para fintechgroup777@gmail.com via POST /uown/emailCSV 200. CSV enfileirado. |
 | 19 | 94 | Account: Employment / Third Party Info | ✅ Pass | Employment section (employer HECHINGER) and Third Party Information section both render. |
 | 20 | 95 | Account: Credit Card (add/view all/set default) | ✅ Pass | CC masked ****0055 + 'Set as default payment?' field visible; 'Add a Credit Card' modal and 'All Credit Cards' (View All) modal opened and closed without saving |
 | 21 | 96 | Account: Delinquency & Servicing Actions panel | ✅ Pass | Delinquency & Servicing Actions panel renders Amount Past Due $0.00, # of Due Date Moved 0, Autopay ACH/CC, Date of Next Call. |

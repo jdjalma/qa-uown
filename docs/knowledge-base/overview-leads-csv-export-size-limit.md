@@ -53,7 +53,7 @@ Prevents the Origination pod crash (#1321): the Download CSV path fetches **all*
   `"This export is too large to download directly. Please use Email CSV instead. Estimated size: {X.X} MB (limit: 48 MB)."`
 - **Runtime guard:** if a download is somehow triggered while blocked, `onDownload` re-checks and shows the **same text as an error toast**, returning `false` (no file). *Evidence: `showToast("error", …)` path in the page's download handler.*
 - **Email CSV modal** (`[confirmed]` — opened live): title **"Which email should we send this CSV file to?"**, an **Email** textbox (placeholder `Enter your email...`), **CANCEL** and **Send** buttons; **Send is disabled until an email is entered**.
-- **Email CSV success toast:** not captured — lives in a shared modal chunk and observing it requires actually sending an email (side effect, not exercised). `[gap]`
+- **Email CSV success toast:** **"You should receive an email shortly."** `[confirmed — sandbox 2026-06-28, MCP Playwright, /leads page]`
 
 ## Size-based vs row-count `[confirmed]`
 
@@ -142,6 +142,6 @@ On **sandbox**, the framework's `admin` role resolves to `DEFAULT_ADMIN_USERNAME
 ## Gaps / To Investigate
 
 - ~~**G1**: Disabled-state could **not be visually reproduced** on QA2 or sandbox.~~ **RESOLVED (CT-08 PASS, sandbox 2026-06-18/19).** Reproduced visually with account `jmendes.gow` + table-panel range 01/01/2022→12/31/2026 (**79,605 rows**, est. 55.4 MB > 48 MB): Download CSV disabled, exact tooltip rendered, Email CSV enabled. See "Sandbox high-volume repro" section above.
-- **G2**: **Email CSV success toast** text not captured (separate chunk; observing it sends a real email — side effect avoided).
+- ~~**G2**: **Email CSV success toast** text not captured (separate chunk; observing it sends a real email — side effect avoided).~~ **RESOLVED (2026-06-28, sandbox):** Toast text = **"You should receive an email shortly."** Confirmed live via MCP Playwright after clicking Send with `fintechgroup777@gmail.com` on `/leads` (3 results in table). Modal closed and toast appeared immediately.
 - **G3**: Not verified which estimator variant the Leads page invokes at runtime (`searchResults/count` inferred from its listing shape); both variants are bundled. Threshold/message are identical regardless.
 - **G4 (CT-09)**: No ready-to-use no-download-permission account with a **known password** exists on QA2/sandbox. The permission name + role mapping are now confirmed (above); execution still needs a provisioned account (recipe above) and an AMS user/role page-object.

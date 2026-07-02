@@ -6,37 +6,37 @@ covers:
   - origination/domain/stores/customer.tsx
 ---
 
-# Oracle: Edit Primary Applicant (Origination Portal)
+# Oracle: Editar Primary Applicant (Portal Origination)
 
-> Operation: click the edit pencil on the Primary Applicant card of `/customers/{leadPk}` in the Origination portal, change one or more fields, and save.
+> Operação: clicar no lápis de edição no card Primary Applicant de `/customers/{leadPk}` no portal Origination, alterar um ou mais campos, e salvar.
 
-## Pre-conditions
+## Pré-condições
 
-- Lead must be in a **pre-signing status** (e.g. UW_APPROVED, NEW, APPROVED). Leads in post-signing states (FUNDING, FUNDED, SIGNED) do **not** expose the edit pencil — fields are rendered read-only.
-- Agent must have `create_or_update_primary_customer_info` permission (controls pencil visibility).
-- Sub-permissions `dob` and `ssn` gate those specific fields (same as Servicing counterpart).
+- O lead precisa estar em **status pré-assinatura** (ex: UW_APPROVED, NEW, APPROVED). Leads em estados pós-assinatura (FUNDING, FUNDED, SIGNED) **não** exibem o lápis de edição — os campos são renderizados somente leitura.
+- O agente precisa ter a permissão `create_or_update_primary_customer_info` (controla a visibilidade do lápis).
+- As sub-permissões `dob` e `ssn` controlam esses campos específicos (mesmo comportamento do equivalente em Servicing).
 
 ## Checkpoints
 
 ### Oracle
 
-| CT | Description | Expected |
+| CT | Descrição | Esperado |
 |---|---|---|
-| CT-01 | Pencil icon visible in Primary Applicant card header (pre-signing lead) | `<span id="PrimaryApplicant-edit">` with `data-icon="pen"` SVG is present and visible |
-| CT-02 | Clicking pencil enters edit mode | All 7 readOnly `inputField__readOnly` divs replaced by `<input>` elements; `readOnlyFields` count = 0; CANCEL and SAVE buttons appear |
-| CT-03 | Middle Name field appears only in edit mode | `#applicantMiddleName` input visible in edit mode; not rendered in read view |
-| CT-04 | Fields pre-populated with current values | `#applicantFirstName`, `#applicantLastName`, `#applicantDOB`, `#applicantSSN` have existing values on form open |
-| CT-05 | CANCEL restores read mode with no network call | Clicking CANCEL: inputs disappear, readOnly divs return, no POST to `createOrUpdatePrimaryCustomerInfo` fired |
-| CT-06 | SAVE triggers `POST /uown/los/createOrUpdatePrimaryCustomerInfo` | Network: POST to `/uown/los/createOrUpdatePrimaryCustomerInfo` returns 200; payload contains `primaryCustomerInformation.leadPk` |
-| CT-07 | Panel refreshes after SAVE with updated values | `GET /uown/los/getPrimaryCustomerInfo/{leadPk}` fires after POST 200; panel returns to read mode showing new values |
-| CT-08 | Success toast appears | Toast "success" variant displayed after save [gap — exact message not confirmed; observe on execution] |
-| CT-09 | No activity log entry created (Origination differs from Servicing) | **No** DATA_CHANGE entry is written to `uown_los_activity_log` after a Primary Applicant edit in the Origination portal. The only log created during the flow is the automatic REVIEW ("Lead has been reviewed") on page open. This is a confirmed behavioral difference vs the Servicing portal, which writes DATA_CHANGE on every panel edit. `[confirmed stg 2026-06-29 lead 7218266]` |
-| CT-10 | No pencil on post-signing lead | For leads in FUNDING/FUNDED/SIGNED status, Primary Applicant card header has **no** `pen` SVG — only `chevron-down` |
+| CT-01 | Ícone de lápis visível no header do card Primary Applicant (lead pré-assinatura) | `<span id="PrimaryApplicant-edit">` com SVG `data-icon="pen"` presente e visível |
+| CT-02 | Clicar no lápis entra em modo de edição | As 7 divs `readOnly` `inputField__readOnly` são substituídas por elementos `<input>`; contagem de `readOnlyFields` = 0; botões CANCEL e SAVE aparecem |
+| CT-03 | Campo Middle Name aparece somente em modo de edição | Input `#applicantMiddleName` visível em modo de edição; não renderizado na view de leitura |
+| CT-04 | Campos pré-preenchidos com os valores atuais | `#applicantFirstName`, `#applicantLastName`, `#applicantDOB`, `#applicantSSN` têm os valores existentes ao abrir o formulário |
+| CT-05 | CANCEL restaura o modo de leitura sem chamada de rede | Ao clicar em CANCEL: inputs desaparecem, divs readOnly retornam, nenhum POST para `createOrUpdatePrimaryCustomerInfo` é disparado |
+| CT-06 | SAVE dispara `POST /uown/los/createOrUpdatePrimaryCustomerInfo` | Rede: POST para `/uown/los/createOrUpdatePrimaryCustomerInfo` retorna 200; payload contém `primaryCustomerInformation.leadPk` |
+| CT-07 | Painel atualiza após SAVE com os valores novos | `GET /uown/los/getPrimaryCustomerInfo/{leadPk}` dispara após o POST 200; painel volta ao modo de leitura exibindo os novos valores |
+| CT-08 | Toast de sucesso aparece | Toast variante "success" exibido após salvar `[gap — mensagem exata não confirmada; observar na execução]` |
+| CT-09 | Nenhuma entrada de activity log é criada (Origination difere de Servicing) | **Nenhuma** entrada DATA_CHANGE é gravada em `uown_los_activity_log` após uma edição do Primary Applicant no portal Origination. O único log criado durante o fluxo é o REVIEW automático ("Lead has been reviewed") na abertura da página. Essa é uma diferença comportamental confirmada em relação ao portal Servicing, que grava DATA_CHANGE em toda edição de painel. `[confirmed stg 2026-06-29 lead 7218266]` |
+| CT-10 | Nenhum lápis em lead pós-assinatura | Para leads em status FUNDING/FUNDED/SIGNED, o header do card Primary Applicant **não** tem SVG `pen` — apenas `chevron-down` |
 
-### Staleness check command
+### Comando de verificação de obsolescência
 
 ```bash
 git log cd2d2c8bfd07cf5275f605c259a88838168e6a09..HEAD -- origination/pages/customers/\[leadPk\].tsx origination/domain/stores/customer.tsx
 ```
 
-> Run from the root of the origination app repo. No output = BDD current. Output = prepend `[BDD MAY BE STALE]`.
+> Rodar a partir da raiz do repo da app origination. Sem output = BDD atual. Com output = prefixar `[BDD MAY BE STALE]`.

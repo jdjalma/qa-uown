@@ -7,163 +7,163 @@ covers:
 
 # Git Commit
 
-> Claude stages files and runs `git commit`. Before staging, Claude prepares the diff: removes task-specific references (ticket IDs, issue numbers, inline "added for task X" comments) that rot over time, while preserving every rule, learning, or pitfall extracted during the work in its canonical location (skill, knowledge-base, pitfalls doc). The oracle verifies preparation quality, commit correctness, message compliance, absence of sensitive content, and no hook bypass.
+> Claude realiza o staging dos arquivos e executa `git commit`. Antes do staging, Claude prepara o diff: remove referências específicas de tarefas (IDs de tickets, números de issues, comentários inline "adicionado para tarefa X") que ficam obsoletos com o tempo, enquanto preserva cada regra, aprendizado ou pitfall extraído durante o trabalho em sua localização canônica (skill, knowledge-base, docs de pitfalls). O oracle verifica a qualidade da preparação, a correção do commit, a conformidade da mensagem, a ausência de conteúdo sensível e a não-omissão de hooks.
 
-## Acceptance Criteria
+## Critérios de Aceitação
 
-| ID | Criterion | Oracle |
+| ID | Critério | Oracle |
 |---|---|---|
-| AC-01 | A new commit SHA appears in `git log` after `git commit` completes | CT-01 |
-| AC-02 | Commit message follows `type(scope): description` pattern | CT-02 |
-| AC-03 | All intended files appear in `git show --stat HEAD` and no unintended files are included | CT-03 |
-| AC-04 | No sensitive file (`.env`, `*.pem`, credentials) is present in the commit | CT-04 |
-| AC-05 | `--no-verify` was NOT used — pre-commit hooks ran without bypass | CT-05 |
-| AC-06 | Before staging, the diff was reviewed and task-specific references (ticket IDs, issue numbers, "added for task X" inline comments) were removed from code and docs | CT-06 |
-| AC-07 | Any rule, learning, or pitfall extracted during the task was persisted to its canonical location (skill pitfall, knowledge-base doc, or SKILL.md) before committing | CT-07 |
+| AC-01 | Um novo SHA de commit aparece no `git log` após `git commit` concluir | CT-01 |
+| AC-02 | A mensagem de commit segue o padrão `type(scope): description` | CT-02 |
+| AC-03 | Todos os arquivos pretendidos aparecem em `git show --stat HEAD` e nenhum arquivo não pretendido está incluído | CT-03 |
+| AC-04 | Nenhum arquivo sensível (`.env`, `*.pem`, credenciais) está presente no commit | CT-04 |
+| AC-05 | `--no-verify` NÃO foi usado — os pre-commit hooks foram executados sem bypass | CT-05 |
+| AC-06 | Antes do staging, o diff foi revisado e referências específicas de tarefas (IDs de tickets, números de issues, comentários inline "adicionado para tarefa X") foram removidas do código e docs | CT-06 |
+| AC-07 | Qualquer regra, aprendizado ou pitfall extraído durante a tarefa foi persistido em sua localização canônica (pitfall de skill, doc de knowledge-base, ou SKILL.md) antes do commit | CT-07 |
 
-## Scenarios
+## Cenários
 
 ```gherkin
 Feature: Git Commit
   As the QA automation system
-  In order to persist code changes with traceability and without exposing secrets
-  Claude must commit only the intended files with a compliant message and no hook bypass
+  In order to persistir mudanças de código com rastreabilidade e sem expor segredos
+  Claude must realizar commit apenas dos arquivos pretendidos com uma mensagem conforme e sem bypass de hooks
 
   Background:
-    Given Claude has staged a set of files using `git add`
+    Given Claude realizou o staging de um conjunto de arquivos usando `git add`
 
-  Scenario: [negative] CT-06 — Diff contains task-specific references that were not removed
-    Given the diff includes inline comments such as "// added for task #123", "// fix for issue #456", or "// TODO: remove after ticket X is closed"
-    When `git diff HEAD` is inspected before push
-    Then those references appear in the committed code or docs
-    And the codebase now contains comments that will rot as the task closes and the context is lost
+  Scenario: [negativo] CT-06 — O diff contém referências específicas de tarefas que não foram removidas
+    Given o diff inclui comentários inline como "// adicionado para tarefa #123", "// fix para issue #456", ou "// TODO: remover após fechar ticket X"
+    When `git diff HEAD` é inspecionado antes do push
+    Then essas referências aparecem no código ou docs comitados
+    And a codebase agora contém comentários que ficarão obsoletos quando a tarefa for encerrada e o contexto for perdido
 
-  Scenario: [negative] CT-07 — Learning extracted during the task was not persisted before committing
-    Given a non-obvious rule or pitfall was discovered during the work (e.g. a hidden validation, an unexpected timeout, a broken selector pattern)
-    When the commit diff is inspected
-    Then no corresponding entry exists in `.claude/skills/application-lifecycle/references/pitfalls/`, `docs/knowledge-base/`, or the relevant SKILL.md
-    And the learning exists only in the conversation context and will be lost after the session ends
+  Scenario: [negativo] CT-07 — Aprendizado extraído durante a tarefa não foi persistido antes do commit
+    Given uma regra ou pitfall não óbvio foi descoberto durante o trabalho (ex: uma validação oculta, um timeout inesperado, um padrão de seletor quebrado)
+    When o diff do commit é inspecionado
+    Then nenhuma entrada correspondente existe em `.claude/skills/application-lifecycle/references/pitfalls/`, `docs/knowledge-base/`, ou no SKILL.md relevante
+    And o aprendizado existe apenas no contexto da conversa e será perdido após o encerramento da sessão
 
-  Scenario: [negative] CT-04a — Commit includes a sensitive file
-    Given a file named `.env` or with extension `.pem` was staged
-    When `git show --name-only HEAD` is inspected after the commit
-    Then the sensitive file appears in the commit diff
-    And the commit must be reverted before the branch is pushed
+  Scenario: [negativo] CT-04a — O commit inclui um arquivo sensível
+    Given um arquivo chamado `.env` ou com extensão `.pem` foi incluído no staging
+    When `git show --name-only HEAD` é inspecionado após o commit
+    Then o arquivo sensível aparece no diff do commit
+    And o commit deve ser revertido antes do push da branch
 
-  Scenario: [negative] CT-05 — Pre-commit hook was bypassed
-    Given the commit was run with the `--no-verify` flag
-    When the Bash command used is inspected
-    Then `--no-verify` is present in the command without explicit user authorization
+  Scenario: [negativo] CT-05 — O pre-commit hook foi burlado
+    Given o commit foi executado com a flag `--no-verify`
+    When o comando Bash usado é inspecionado
+    Then `--no-verify` está presente no comando sem autorização explícita do usuário
 
-  Scenario: [negative] CT-02a — Commit message does not follow project convention
-    Given a commit was created with a free-form message such as "fix stuff" or "updates"
-    When `git log -1 --pretty=%s` is inspected
-    Then the subject line does not match the pattern `type(scope): description`
+  Scenario: [negativo] CT-02a — A mensagem de commit não segue a convenção do projeto
+    Given um commit foi criado com uma mensagem livre como "fix stuff" ou "updates"
+    When `git log -1 --pretty=%s` é inspecionado
+    Then a linha de assunto não casa o padrão `type(scope): description`
 
-  Scenario: [positive] CT-01 — Commit created successfully with a new SHA
-    Given Claude staged the intended files
-    When `git commit` completes without error
-    Then `git log -1 --pretty=%H` shows a SHA not present before the commit
-    And `git status` reports "nothing to commit, working tree clean"
+  Scenario: [positivo] CT-01 — Commit criado com sucesso com um novo SHA
+    Given Claude realizou o staging dos arquivos pretendidos
+    When `git commit` conclui sem erro
+    Then `git log -1 --pretty=%H` exibe um SHA que não existia antes do commit
+    And `git status` reporta "nothing to commit, working tree clean"
 
-  Scenario: [positive] CT-02b — Commit message follows project convention
-    Given Claude ran `git commit` with a structured message
-    When `git log -1 --pretty=%s` is inspected
-    Then the subject line matches `type(scope): description` where type is one of feat, fix, wip, chore, docs, refactor, or test
-    And `git log -1 --pretty=%B` contains the `Co-Authored-By: Claude` trailer
+  Scenario: [positivo] CT-02b — A mensagem de commit segue a convenção do projeto
+    Given Claude executou `git commit` com uma mensagem estruturada
+    When `git log -1 --pretty=%s` é inspecionado
+    Then a linha de assunto casa `type(scope): description` onde o tipo é um de feat, fix, wip, chore, docs, refactor, ou test
+    And `git log -1 --pretty=%B` contém o trailer `Co-Authored-By: Claude`
 
-  Scenario: [positive] CT-03 — Commit contains exactly the intended files
-    Given Claude staged a specific set of files before committing
-    When `git show --stat HEAD` is inspected
-    Then every staged file appears in the diff output
-    And no file outside the staged set appears in the diff output
+  Scenario: [positivo] CT-03 — O commit contém exatamente os arquivos pretendidos
+    Given Claude realizou o staging de um conjunto específico de arquivos antes do commit
+    When `git show --stat HEAD` é inspecionado
+    Then cada arquivo em staging aparece no output do diff
+    And nenhum arquivo fora do conjunto em staging aparece no output do diff
 
-  Scenario: [positive] CT-04b — Commit contains no sensitive files
-    Given Claude reviewed the staged files before committing
-    When `git show --name-only HEAD` is inspected
-    Then no file matching `.env`, `*.pem`, `*credentials*`, or `*secret*` appears in the output
+  Scenario: [positivo] CT-04b — O commit não contém arquivos sensíveis
+    Given Claude revisou os arquivos em staging antes do commit
+    When `git show --name-only HEAD` é inspecionado
+    Then nenhum arquivo casando `.env`, `*.pem`, `*credentials*`, ou `*secret*` aparece no output
 
-  Scenario: [positive] CT-06b — Diff reviewed and task references removed before staging
-    Given the diff contained inline comments referencing a task ID or issue number
-    When Claude reviews and cleans the diff before running `git add`
-    Then `git diff HEAD` contains no patterns such as `// .*#\d+`, `// added for task`, `// fix for issue`, or `// TODO:.*ticket`
-    And the code intent is expressed through naming and structure, not through task-specific annotations
+  Scenario: [positivo] CT-06b — Diff revisado e referências de tarefas removidas antes do staging
+    Given o diff continha comentários inline referenciando um ID de tarefa ou número de issue
+    When Claude revisa e limpa o diff antes de executar `git add`
+    Then `git diff HEAD` não contém padrões como `// .*#\d+`, `// added for task`, `// fix for issue`, ou `// TODO:.*ticket`
+    And a intenção do código é expressa por nomenclatura e estrutura, não por anotações específicas de tarefas
 
-  Scenario: [positive] CT-07b — Knowledge extracted during the task is present in the commit
-    Given a non-obvious rule or pitfall was discovered during the work
-    When the commit diff is inspected
-    Then a corresponding entry appears in `.claude/skills/application-lifecycle/references/pitfalls/`, `docs/knowledge-base/`, or the relevant SKILL.md
-    And the rule is expressed as a reusable, context-free statement that future agents can apply without the original task context
+  Scenario: [positivo] CT-07b — Conhecimento extraído durante a tarefa está presente no commit
+    Given uma regra ou pitfall não óbvio foi descoberto durante o trabalho
+    When o diff do commit é inspecionado
+    Then uma entrada correspondente aparece em `.claude/skills/application-lifecycle/references/pitfalls/`, `docs/knowledge-base/`, ou no SKILL.md relevante
+    And a regra é expressa como uma afirmação reutilizável e sem contexto que agentes futuros podem aplicar sem o contexto original da tarefa
 ```
 
 ## Oracles
 
-> **Staleness check (run before any Oracle):**
+> **Verificação de desatualização (executar antes de qualquer Oracle):**
 > `git log 7805e73..HEAD -- .gitignore`
-> Non-empty output → prepend `[BDD MAY BE STALE]` to this oracle report.
+> Saída não vazia → prefixar o relatório com `[BDD MAY BE STALE]`.
 
-### Oracle: CT-01 — Commit created with new SHA
+### Oracle: CT-01 — Commit criado com novo SHA
 
-| Checkpoint | Expected value | How to verify |
+| Checkpoint | Valor esperado | Como verificar |
 |---|---|---|
-| New SHA in log | A SHA that did not exist before the commit | `git log -1 --pretty=%H` |
-| Working tree clean | "nothing to commit, working tree clean" | `git status` |
-| Commit count increased | Previous count + 1 | `git rev-list HEAD --count` |
+| Novo SHA no log | Um SHA que não existia antes do commit | `git log -1 --pretty=%H` |
+| Working tree limpa | "nothing to commit, working tree clean" | `git status` |
+| Contagem de commits aumentou | Contagem anterior + 1 | `git rev-list HEAD --count` |
 
-### Oracle: CT-02a / CT-02b — Commit message
+### Oracle: CT-02a / CT-02b — Mensagem de commit
 
-| Checkpoint | Expected value | How to verify |
+| Checkpoint | Valor esperado | Como verificar |
 |---|---|---|
-| Subject line format | Matches `^(feat\|fix\|wip\|chore\|docs\|refactor\|test)(\([a-z0-9-]+\))?: .+` | `git log -1 --pretty=%s` |
-| No trailing period | Subject does not end with `.` | `git log -1 --pretty=%s` |
-| Co-author trailer present | Body contains `Co-Authored-By: Claude` | `git log -1 --pretty=%B` |
+| Formato da linha de assunto | Casa `^(feat\|fix\|wip\|chore\|docs\|refactor\|test)(\([a-z0-9-]+\))?: .+` | `git log -1 --pretty=%s` |
+| Sem ponto final | A linha de assunto não termina com `.` | `git log -1 --pretty=%s` |
+| Trailer de co-autor presente | Body contém `Co-Authored-By: Claude` | `git log -1 --pretty=%B` |
 
-### Oracle: CT-03 — Commit contains exactly the intended files
+### Oracle: CT-03 — O commit contém exatamente os arquivos pretendidos
 
-| Checkpoint | Expected value | How to verify |
+| Checkpoint | Valor esperado | Como verificar |
 |---|---|---|
-| All staged files present | Every file in the original `git add` list appears in the commit | `git show --stat HEAD` |
-| No unintended files | No extra file outside the staged set | `git show --name-only HEAD` |
+| Todos os arquivos em staging presentes | Cada arquivo na lista original do `git add` aparece no commit | `git show --stat HEAD` |
+| Nenhum arquivo não pretendido | Nenhum arquivo extra fora do conjunto em staging | `git show --name-only HEAD` |
 
-### Oracle: CT-04a / CT-04b — No sensitive files in commit
+### Oracle: CT-04a / CT-04b — Nenhum arquivo sensível no commit
 
-| Checkpoint | Expected value | How to verify |
+| Checkpoint | Valor esperado | Como verificar |
 |---|---|---|
-| No `.env` file | `.env` absent from the commit | `git show --name-only HEAD \| grep -E '(^\.env$\|\.env\.)' → empty` |
-| No PEM / key / credential file | No `*.pem`, `*.key`, `*.cert`, `*credentials*`, `*secret*` | `git show --name-only HEAD \| grep -iE '\.(pem\|key\|cert)$\|credentials\|secret' → empty` |
+| Nenhum arquivo `.env` | `.env` ausente do commit | `git show --name-only HEAD \| grep -E '(^\.env$\|\.env\.)' → vazio` |
+| Nenhum arquivo PEM / key / credential | Nenhum `*.pem`, `*.key`, `*.cert`, `*credentials*`, `*secret*` | `git show --name-only HEAD \| grep -iE '\.(pem\|key\|cert)$\|credentials\|secret' → vazio` |
 
-### Oracle: CT-05 — No hook bypass
+### Oracle: CT-05 — Nenhum bypass de hook
 
-| Checkpoint | Expected value | How to verify |
+| Checkpoint | Valor esperado | Como verificar |
 |---|---|---|
-| `--no-verify` absent in commit command | Bash call for `git commit` does not contain `--no-verify` | Inspect Bash tool call in transcript |
-| Hook output present | Terminal output from `git commit` shows hook execution (no "hooks skipped" message) | Terminal output of `git commit` |
+| `--no-verify` ausente no comando de commit | Chamada Bash para `git commit` não contém `--no-verify` | Inspecionar chamada Bash no transcript |
+| Output do hook presente | Output do terminal de `git commit` exibe execução do hook (sem mensagem "hooks skipped") | Output do terminal de `git commit` |
 
-### Oracle: CT-06 / CT-06b — Task references removed from diff
+### Oracle: CT-06 / CT-06b — Referências de tarefas removidas do diff
 
-| Checkpoint | Expected value | How to verify |
+| Checkpoint | Valor esperado | Como verificar |
 |---|---|---|
-| No ticket/issue ID in comments | Diff contains no `// .*#\d+`, `// added for task`, `// fix for issue`, `// handles the case from` | `git diff HEAD \| grep -iE '//.*#[0-9]+\|added for task\|fix for issue\|handles the case from'` → empty |
-| No TODO referencing a ticket | No `// TODO:.*ticket`, `// TODO:.*issue`, `// TODO:.*task` in diff | `git diff HEAD \| grep -iE 'TODO.*ticket\|TODO.*issue\|TODO.*task'` → empty |
-| Code intent expressed without task context | Naming, structure, and canonical doc (pitfall/KB) carry the meaning — not inline task refs | Manual review of the diff |
+| Nenhum ID de ticket/issue em comentários | Diff não contém `// .*#\d+`, `// added for task`, `// fix for issue`, `// handles the case from` | `git diff HEAD \| grep -iE '//.*#[0-9]+\|added for task\|fix for issue\|handles the case from'` → vazio |
+| Nenhum TODO referenciando um ticket | Nenhum `// TODO:.*ticket`, `// TODO:.*issue`, `// TODO:.*task` no diff | `git diff HEAD \| grep -iE 'TODO.*ticket\|TODO.*issue\|TODO.*task'` → vazio |
+| Intenção do código expressa sem contexto de tarefa | Nomenclatura, estrutura e doc canônico (pitfall/KB) carregam o significado — não refs de tarefas inline | Revisão manual do diff |
 
-### Oracle: CT-07 / CT-07b — Knowledge persisted before commit
+### Oracle: CT-07 / CT-07b — Conhecimento persistido antes do commit
 
-| Checkpoint | Expected value | How to verify |
+| Checkpoint | Valor esperado | Como verificar |
 |---|---|---|
-| Pitfall entry present (if applicable) | If a non-obvious constraint was found, a new numbered entry exists in `.claude/skills/application-lifecycle/references/pitfalls/` | `git show --name-only HEAD \| grep pitfalls` → non-empty when pitfall was added |
-| Knowledge-base doc present (if applicable) | If a feature behavior was discovered, a doc exists in `docs/knowledge-base/` | `git show --name-only HEAD \| grep knowledge-base` → non-empty when KB was updated |
-| Rule is context-free | The added entry makes sense without reading the original task — no reference to a specific ticket or account PK | Read the added pitfall/KB entry |
-| No "discovered during task X" phrasing | The entry does not contain "this was found in task #", "issue #", or "during the work on ticket" | `git diff HEAD \| grep -iE 'found in task|during.*task|issue #|ticket #'` → empty |
+| Entrada de pitfall presente (se aplicável) | Se uma restrição não óbvia foi encontrada, uma nova entrada numerada existe em `.claude/skills/application-lifecycle/references/pitfalls/` | `git show --name-only HEAD \| grep pitfalls` → não vazio quando pitfall foi adicionado |
+| Doc de knowledge-base presente (se aplicável) | Se um comportamento de feature foi descoberto, um doc existe em `docs/knowledge-base/` | `git show --name-only HEAD \| grep knowledge-base` → não vazio quando KB foi atualizado |
+| Regra sem contexto específico | A entrada adicionada faz sentido sem ler a tarefa original — sem referência a um ticket específico ou account PK | Ler a entrada de pitfall/KB adicionada |
+| Sem fraseado "descoberto durante tarefa X" | A entrada não contém "encontrado na tarefa #", "issue #", ou "durante o trabalho no ticket" | `git diff HEAD \| grep -iE 'found in task|during.*task|issue #|ticket #'` → vazio |
 
-## Coverage matrix
+## Matriz de cobertura
 
-| Acceptance Criterion | Scenario(s) | Status |
+| Critério de Aceitação | Cenário(s) | Status |
 |---|---|---|
-| AC-01 — New commit SHA in log | CT-01: [positive] Commit created with new SHA | Covered |
-| AC-02 — Message follows `type(scope)` convention | CT-02b: [positive] Message compliant; CT-02a: [negative] Message non-compliant | Covered |
-| AC-03 — Exactly the intended files in commit | CT-03: [positive] Commit contains exactly the intended files | Covered |
-| AC-04 — No sensitive files | CT-04b: [positive] No sensitive files; CT-04a: [negative] Sensitive file detected | Covered |
-| AC-05 — No hook bypass | CT-05: [negative] Hook bypassed without authorization | Covered |
-| AC-06 — Task references removed from diff | CT-06b: [positive] Task references removed; CT-06: [negative] Task refs left in code | Covered |
-| AC-07 — Knowledge persisted to canonical location | CT-07b: [positive] Knowledge in commit; CT-07: [negative] Learning not persisted | Covered |
+| AC-01 — Novo SHA de commit no log | CT-01: [positivo] Commit criado com novo SHA | Coberto |
+| AC-02 — Mensagem segue convenção `type(scope)` | CT-02b: [positivo] Mensagem conforme; CT-02a: [negativo] Mensagem não conforme | Coberto |
+| AC-03 — Exatamente os arquivos pretendidos no commit | CT-03: [positivo] Commit contém exatamente os arquivos pretendidos | Coberto |
+| AC-04 — Nenhum arquivo sensível | CT-04b: [positivo] Nenhum arquivo sensível; CT-04a: [negativo] Arquivo sensível detectado | Coberto |
+| AC-05 — Nenhum bypass de hook | CT-05: [negativo] Hook burlado sem autorização | Coberto |
+| AC-06 — Referências de tarefas removidas do diff | CT-06b: [positivo] Referências de tarefas removidas; CT-06: [negativo] Refs de tarefas mantidas no código | Coberto |
+| AC-07 — Conhecimento persistido em localização canônica | CT-07b: [positivo] Conhecimento no commit; CT-07: [negativo] Aprendizado não persistido | Coberto |

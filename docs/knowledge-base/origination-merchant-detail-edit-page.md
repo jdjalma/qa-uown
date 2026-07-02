@@ -3,10 +3,12 @@ title: Origination Merchant Detail / Edit Page
 domain: knowledge-base
 status: snapshot
 volatility: volatile
-last_verified: 2026-06-25
+last_verified: 2026-06-28
 sources:
   - env: stg
+  - env: sandbox
   - merchant: OW90218-0001
+  - merchant: OW90337-0001
   - code: src/pages/origination/merchant-edit.page.ts
   - code: src/pages/origination/merchant-setting.page.ts
   - code: src/data/merchant-config-contract.ts
@@ -26,7 +28,7 @@ The canonical **per-merchant configuration** screen. Every behavior that varies 
 
 ## Layout
 
-Sections (cards): **Merchant Information** · **Settings** · **Contact** · **Programs** (Add / Delete All) · **Notes** (activity log: Date, Type, User ID, Notes + Log Activity). Top actions: `CANCEL`, `SAVE`, **`GDS Data`**. **Correction (code audit 2026-06-25):** `GDS Data` is an **inline collapsible section with its own SAVE** (per `merchant-setting.page.ts` `expandGdsDataSection()`), **not a modal**. `[confirmed via code]`
+Sections (cards): **Merchant Information** · **Settings** · **Contact** · **Programs** (Add / Delete All) · **Notes** (activity log: Date, Type, User ID, Notes + Log Activity). Top actions: `CANCEL`, `SAVE`. **Correction (code audit 2026-06-25):** `GDS Data` is an **inline collapsible section inside Settings** (its setters call `expandGdsDataSection()` first in `merchant-setting.page.ts`), **not a modal and not a separate top-level button** — the GDS Data button/section lives inside the Settings card, not in the header bar. `[confirmed sandbox 2026-06-28]`
 
 ## Merchant Information
 
@@ -34,15 +36,27 @@ Merchant Code\*, Merchant Name\*, Location Name\*, Legal Name\*, Peak Campaign I
 
 ## Settings — toggles (checkboxes)
 
-Active · Accepting New Application · Deleted · Remove Merchant from User Profile · **Require Intellicheck Id Verification** · **Require SEON Id Verification** · **Require Credit Card Before Signing** · **Require Bank Info Before Signing** · Require Bank Validation · Verify Phone Before Signing · Hold Deposit · Charge Processing Fee · Charge Processing Fee at Sign · **Allow Change to Expired** · **Move from Signed to Funding** · Check UW for Verification · Post Message · **Record Signing Flow** · **Return Lambda Score** · **Use LexisNexis** · **Use Neuro ID** · **Two Day Funding Exception** · **Five Day Funding Exception** · **Use Webhook** · Allow Purchase Option · **Offer Protection Plan** · **Auto Deny Application** · **Require Plaid Verification** · Funding on Hold · Epo 10% · Epo 5% · **Is Fraud Check Required** · Verify Phone · Verify Email · Verify IP · **Use Neustar** · **Use Sentilink**. `[confirmed]`
+**UPDATE 2026-06-28 (sandbox, OW90337-0001):** Checkboxes are now grouped into **7 collapsible sub-sections** (chevron ∨ to expand/collapse). Previously documented as a flat list — that was the old layout. `[confirmed sandbox 2026-06-28]`
+
+| Sub-seção | Checkboxes |
+|---|---|
+| **Status** | Active · Accepting New Application · Deleted · Remove Merchant from User Profile |
+| **Requirements** | Require Intellicheck Id Verification · Require SEON Id Verification · **Require Credit Card Before Signing** · **Require Bank Info Before Signing** · Require Bank Validation · Verify Phone Before Signing |
+| **Fee** | Hold Deposit · Charge Processing Fee · Charge Processing Fee at Sign |
+| **Status Change** | **Allow Change to Expired** · **Move from Signed to Funding** |
+| **Others** | Check UW for Verification · Post Message · **Record Signing Flow** · **Return Lambda Score** · **Use LexisNexis** · **Use Neuro ID** · **Two Day Funding Exception** · **Five Day Funding Exception** · **Use Webhook** · Allow Purchase Option · **Offer Protection Plan** · **Auto Deny Application** · **Require Plaid Verification** · Funding on Hold |
+| **EPO** | Epo 10% · Epo 5% |
+| **Fraud** | **Is Fraud Check Required** · Verify Phone · Verify Email · Verify IP · **Use Neustar** · **Use Sentilink** |
+
+> Note: `[bold]` = item appears in `merchant-config-contract.ts` preflight. Sub-section grouping is UI-only (no change to underlying fields).
 
 ## Settings — values
 
 Webhook URL\* · CC Processing Fee · Merchant Type · Lending Category · **eSign Mode\*** · Referral Fee · Platform Fee\* · Platform Fee Type\* · Buyout Fee\* · Minimum Lease Amount\* · Default Months At Employer · Default Loan Amount\* · Merged Report Frequency · Merged Report Emails · Funding Report Frequency\* · Funding Report Emails\* · **Valid States\*** · Tax Exempted States · Termination Reason. `[confirmed]`
 
-### GDS Data (collapsible section)
+### GDS Data (sub-seção dentro de Settings)
 
-**Correction (code audit 2026-06-25):** **UW Pipeline**, **Fraud Threshold**, and **Max Approval Amount** live **inside the collapsible GDS Data section** (its setters call `expandGdsDataSection()` first in `merchant-setting.page.ts`), with its own SAVE — not in the main Settings-values area. The GDS Data field set itself was not fully expanded in this pass (gap).
+**Correction (code audit 2026-06-25, confirmed sandbox 2026-06-28):** **UW Pipeline**, **Fraud Threshold**, and **Max Approval Amount** live **inside the GDS Data sub-section within Settings**, which has its own SAVE. Also confirmed: these 3 columns now appear as **default checked** in the Merchants list page (`/merchant`) table in sandbox (previously documented as "not yet deployed in QA1 as of 2026-06-15" in `merchants-config-columns-export.md`). `[confirmed sandbox 2026-06-28]`
 
 ## Contact
 

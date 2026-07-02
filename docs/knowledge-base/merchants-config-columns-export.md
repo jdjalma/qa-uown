@@ -149,7 +149,7 @@ CSV column order matches the order of columns in Config Columns (top-to-bottom).
 - **BR-02**: CSV generation is client-side, columns = checked Config Columns at click time `[confirmed]`
 - **BR-03**: Active filter defaults to "Active" — `isActive: true` sent on page load and on CSV export `[confirmed]`
 - **BR-04**: The `isActive` parameter in the export API matches the current filter state `[confirmed]`
-- **BR-05** (Task #1309 — not yet deployed): When UW Pipeline, Fraud Threshold, Max Approval Amount are added to Config Columns, they should be **auto-checked by default when exporting Active merchants** (`isActive: true`) `[assumed — per ticket requirement]`
+- **BR-05** (Task #1309 — **confirmed deployed in sandbox 2026-06-28**): UW Pipeline, Fraud Threshold, Max Approval Amount are now **default checked columns** in the sandbox Merchants list table. Behavior for export (auto-checked for Active merchants) is `[inferred]` — not re-tested this pass. `[confirmed via sandbox observation 2026-06-28]`
 - **BR-06**: Filters panel has a "Search" button — filter is not applied on change, must click Search `[confirmed]`
 
 ## Connections with What Was Already Known

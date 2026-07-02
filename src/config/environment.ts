@@ -5,7 +5,7 @@ import { RUN_ID } from '@helpers/worker-id.helper.js';
 
 export type UserRole = 'admin' | 'manager' | 'readonly' | 'merchant' | 'supervisor' | 'agent';
 
-export const VALID_ENVS = ['sandbox', 'qa1', 'qa2', 'stg', 'dev1', 'dev2', 'dev3'] as const;
+export const VALID_ENVS = ['sandbox', 'qa1', 'qa2', 'qa3', 'stg', 'dev1', 'dev2', 'dev3'] as const;
 export type EnvName = (typeof VALID_ENVS)[number];
 
 export interface Credentials {
@@ -40,6 +40,7 @@ export interface EnvironmentConfig {
 const DB_ENV_SUFFIXES: Record<EnvName, string> = {
   qa1: 'QA1',
   qa2: 'QA2',
+  qa3: 'QA3',
   stg: 'STG',
   dev1: 'DEV1',
   dev2: 'DEV2',

@@ -6,37 +6,37 @@ covers:
   - origination/domain/stores/customer.tsx
 ---
 
-# Oracle: Edit Primary Contact (Origination Portal)
+# Oracle: Editar Primary Contact (Portal Origination)
 
-> Operation: click the edit pencil on the Primary Contact card (`#PrimaryContact-edit`) of `/customers/{leadPk}` in the Origination portal — covers Address (Line 1/2, City, State, ZIP), Primary Email, Mobile Phone, do-not-contact flags, and communication preferences — change one or more fields, and save. Distinct card/operation from [[origination-edit-primary-applicant]] (name/DOB/SSN/license), which sits in the same page but has its own pencil and endpoint.
+> Operação: clicar no lápis de edição no card Primary Contact (`#PrimaryContact-edit`) de `/customers/{leadPk}` no portal Origination — cobre Address (Line 1/2, City, State, ZIP), Primary Email, Mobile Phone, flags de do-not-contact, e preferências de comunicação — alterar um ou mais campos, e salvar. Card/operação distinta de [[origination-edit-primary-applicant]] (nome/DOB/SSN/licença), que fica na mesma página mas tem seu próprio lápis e endpoint.
 
-## Pre-conditions
+## Pré-condições
 
-- Pre-signing/post-signing pencil gating analogous to Primary Applicant is plausible but NOT verified for this card in this session — treat as `[HYPOTHESIS]` until observed on a FUNDING/FUNDED/SIGNED lead.
-- Agent must have permission to edit contact info (exact permission key not confirmed; assumed analogous to `create_or_update_primary_customer_info`).
+- O gating de lápis pré-assinatura/pós-assinatura análogo ao Primary Applicant é plausível mas NÃO verificado para este card nesta sessão — tratar como `[HYPOTHESIS]` até ser observado em um lead FUNDING/FUNDED/SIGNED.
+- O agente precisa ter permissão para editar dados de contato (chave de permissão exata não confirmada; presume-se análoga a `create_or_update_primary_customer_info`).
 
 ## Checkpoints
 
 ### Oracle
 
-| CT | Description | Expected |
+| CT | Descrição | Esperado |
 |---|---|---|
-| CT-01 | Pencil icon visible in Primary Contact card header | `<span id="PrimaryContact-edit">` SVG present; the card header also has a separate chevron-collapse control — clicking the wrong icon collapses the card instead of entering edit mode |
-| CT-02 | Clicking pencil enters edit mode | Address Line 1/2, City, ZIP, Primary Email, Mobile Phone become `<input>` textboxes; State becomes a combobox; Preferred communication channel / Preferred language become comboboxes; CANCEL and SAVE buttons appear |
-| CT-03 | Fields pre-populated with current values | All fields show existing values on form open `[confirmed stg 2026-06-30 lead 7218266]` |
-| CT-04 | CANCEL restores read mode with no network call | Clicking CANCEL: inputs disappear, read-only divs return, no POST to `createOrUpdatePrimaryCustomerContactInfo` fired `[confirmed stg 2026-06-30 lead 7218266]` |
-| CT-05 | SAVE triggers `POST /uown/los/createOrUpdatePrimaryCustomerContactInfo` | Network: POST returns 200; payload contains `leadAddresses[].addressInfo`, `leadEmails[].emailInfo`, `leadPhones[].phoneInfo`, `leadPk` `[confirmed stg 2026-06-30 lead 7218266]` |
-| CT-06 | Panel refreshes after SAVE with updated values | `GET /uown/los/getPrimaryCustomerContactInfo/{leadPk}` fires after POST 200; panel returns to read mode showing new values `[confirmed stg 2026-06-30 lead 7218266]` |
-| CT-07 | DB persists the change | `uown_los_address` row for the lead's customer shows the new `street_address1`/`city`/`state`/`zip_code` and a bumped `row_updated_timestamp` `[confirmed stg 2026-06-30 lead 7218266, address pk 6863041: streetAddress1 "3579 Cherry Ave" → "482 Magnolia Court"]` |
-| CT-08 | Activity log entry IS created (differs from Primary Applicant) | A `DATA_CHANGE` entry IS written to `uown_los_activity_log` after a Primary Contact edit — confirmed behavioral DIFFERENCE vs the Primary Applicant card on the same page ([[origination-edit-primary-applicant]] CT-09), which writes none. `[confirmed stg 2026-06-30 lead 7218266: "UPDATED : Address[ zipCode9 changed from null to 93721 ]"]` |
-| CT-08b | `[OBSERVATION]` Log message content does not name the field actually edited | The DATA_CHANGE note text references `zipCode9` (null → 93721) even though the field the user changed and that persisted was `streetAddress1`; the note never mentions `streetAddress1`. Single observation, not isolated/reproduced against an edit of only one field — not classified as a bug. Re-check if Primary Contact is tested again, ideally changing one field at a time. |
-| CT-09 | UI "Notes" activity panel does not auto-refresh after save | The on-page Notes grid still showed the same top-10 rows immediately after SAVE; the new DATA_CHANGE row was visible via DB query but not in the rendered grid without a manual reload `[confirmed stg 2026-06-30 lead 7218266]` |
-| CT-10 | Success toast appears | `[gap — not confirmed this session; toast timing not captured]` |
+| CT-01 | Ícone de lápis visível no header do card Primary Contact | SVG `<span id="PrimaryContact-edit">` presente; o header do card também tem um controle separado de chevron-collapse — clicar no ícone errado colapsa o card em vez de entrar em modo de edição |
+| CT-02 | Clicar no lápis entra em modo de edição | Address Line 1/2, City, ZIP, Primary Email, Mobile Phone viram textboxes `<input>`; State vira um combobox; Preferred communication channel / Preferred language viram comboboxes; botões CANCEL e SAVE aparecem |
+| CT-03 | Campos pré-preenchidos com os valores atuais | Todos os campos mostram os valores existentes ao abrir o formulário `[confirmed stg 2026-06-30 lead 7218266]` |
+| CT-04 | CANCEL restaura o modo de leitura sem chamada de rede | Ao clicar em CANCEL: inputs desaparecem, divs somente-leitura retornam, nenhum POST para `createOrUpdatePrimaryCustomerContactInfo` é disparado `[confirmed stg 2026-06-30 lead 7218266]` |
+| CT-05 | SAVE dispara `POST /uown/los/createOrUpdatePrimaryCustomerContactInfo` | Rede: POST retorna 200; payload contém `leadAddresses[].addressInfo`, `leadEmails[].emailInfo`, `leadPhones[].phoneInfo`, `leadPk` `[confirmed stg 2026-06-30 lead 7218266]` |
+| CT-06 | Painel atualiza após SAVE com os valores novos | `GET /uown/los/getPrimaryCustomerContactInfo/{leadPk}` dispara após o POST 200; painel volta ao modo de leitura exibindo os novos valores `[confirmed stg 2026-06-30 lead 7218266]` |
+| CT-07 | O DB persiste a mudança | A linha `uown_los_address` do cliente do lead mostra o novo `street_address1`/`city`/`state`/`zip_code` e um `row_updated_timestamp` atualizado `[confirmed stg 2026-06-30 lead 7218266, address pk 6863041: streetAddress1 "3579 Cherry Ave" → "482 Magnolia Court"]` |
+| CT-08 | Entrada de activity log É criada (difere do Primary Applicant) | Uma entrada `DATA_CHANGE` É gravada em `uown_los_activity_log` após uma edição do Primary Contact — DIFERENÇA comportamental confirmada em relação ao card Primary Applicant na mesma página ([[origination-edit-primary-applicant]] CT-09), que não grava nenhuma. `[confirmed stg 2026-06-30 lead 7218266: "UPDATED : Address[ zipCode9 changed from null to 93721 ]"]` |
+| CT-08b | `[OBSERVATION]` O conteúdo da mensagem de log não nomeia o campo realmente editado | O texto da nota DATA_CHANGE referencia `zipCode9` (null → 93721) mesmo que o campo alterado pelo usuário e persistido tenha sido `streetAddress1`; a nota nunca menciona `streetAddress1`. Observação única, não isolada/reproduzida contra uma edição de apenas um campo — não classificada como bug. Reconferir se o Primary Contact for testado novamente, idealmente alterando um campo por vez. |
+| CT-09 | Painel de atividade "Notes" da UI não atualiza automaticamente após salvar | O grid de Notes na página ainda mostrava as mesmas 10 linhas do topo imediatamente após SAVE; a nova linha DATA_CHANGE era visível via query no DB mas não no grid renderizado sem um reload manual `[confirmed stg 2026-06-30 lead 7218266]` |
+| CT-10 | Toast de sucesso aparece | `[gap — não confirmado nesta sessão; timing do toast não capturado]` |
 
-### Staleness check command
+### Comando de verificação de obsolescência
 
 ```bash
 git log cd2d2c8bfd07cf5275f605c259a88838168e6a09..HEAD -- origination/pages/customers/\[leadPk\].tsx origination/domain/stores/customer.tsx
 ```
 
-> Run from the root of the origination app repo. No output = BDD current. Output = prepend `[BDD MAY BE STALE]`.
+> Rodar a partir da raiz do repo da app origination. Sem output = BDD atual. Com output = prefixar `[BDD MAY BE STALE]`.
