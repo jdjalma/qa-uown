@@ -3,7 +3,7 @@ title: Payment Processing
 domain: business-rules
 status: stable
 volatility: volatile
-last_verified: 2026-06-25
+last_verified: 2026-06-30
 sources:
   - code: src/api/clients/tms-payment.client.ts#TmsPaymentClient
   - code: src/data/test-cards.ts#TEST_CARDS
@@ -19,6 +19,7 @@ sources:
   - svc-source: service/ach/ACHPaymentService.java
   - svc-source: service/ach/AchUpdatePaymentService.java
   - svc-source: service/PaymentArrangementService.java
+  - gitlab: uown/frontend/servicing#519 "Add Reverse Payment Option for Sticky Transactions" — MR !700, merged 2026-06-30
   - env: qa2
   - env: sandbox
 covers: [credit-card, ach, cc-peek, refunds, payment-arrangements, nsf, sweeps, rightfoot, sticky]
@@ -31,6 +32,7 @@ derived_from:
   - servicing-edit-pending-ach-cc-modals
   - servicing-payment-arrangement-creation-flow
   - servicing-paywallet-allocation
+  - sticky-payment-refund
 ---
 
 # Payment Processing
@@ -166,8 +168,9 @@ Same rules as CC/ACH payments:
 | `Check` | **Allowed** (with `reverse_payment` permission) | **NOT available** |
 | `ACH_Payment` | Allowed | Allowed (partial or full) |
 | `CC_Payment` | Allowed | Allowed (partial or full) |
+| `STICKY` (Sticky-recovered CC payment) | **Allowed** (added 2026-06-30, servicing#519, MR !700) — ledger-only, no Sticky API call | Allowed — **Fully Refund only**, no partial; routes server-side to Sticky's Refund API |
 
-**Rule:** Check payments (`Check`) can only be REVERSED — the refund option is hidden in the Servicing portal for this type.
+**Rule:** Check payments (`Check`) can only be REVERSED — the refund option is hidden in the Servicing portal for this type. `STICKY` payments are CC-only by product design (no ACH Sticky) and never expose "Partially Refund" — the modal offers exactly `{Reverse, Fully Refund}` for a `STICKY`/`PAID` row. Source: `.claude/oracles/sticky-reverse-refund.md` Oracle CT-01/CT-02/CT-04, live sandbox 2026-06-30.
 
 **Partial refund:** The option to refund the fee (`refundFee`) is only available on a full refund — on a partial refund, `refundFee` is forced to `false`.
 
@@ -323,6 +326,14 @@ When the refund amount is less than the original payment amount:
 ### Batch Refund
 
 The service accepts a list of payment PKs (comma-separated) and processes each one individually. If one refund fails, the others continue -- failures are collected and returned in the consolidated response.
+
+### CC Refund (Synchronous) vs ACH Refund (Asynchronous)
+
+**Pre-existing behavior, confirmed live 2026-06-30 (not introduced or changed by servicing#519/MR !700) — documented here for the first time:**
+
+- **CC Fully Refund is synchronous** -- completes within the same HTTP request: 3 activity-log lines land in the same second (CREDIT transaction, SALE→REFUNDED transition, "Refund CC Payment complete" summary).
+- **ACH Fully Refund is asynchronous** -- creates a **new `ACHPayment`** record with `status=PENDING, achProcessType=REFUND`; the original payment's `reverse_date` stays `NULL` until that credit ACH settles via sweep/vendor (Profituity) -- same async pattern as ACH payment creation.
+- Evidence: `.claude/oracles/sticky-reverse-refund.md` Oracle CT-06 (account 6042, CC $60.08, synchronous vs account 17300, ACH $164.59, asynchronous).
 
 ### How to Trigger
 

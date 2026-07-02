@@ -72,6 +72,20 @@ For asserting a downloaded CSV's column SET and row count against the portal tot
 
 > Pair with `waitForDownload` (capture) → `saveDownload` (persist) → `parseCsv` (assert) → `deleteDownloadedFile` (cleanup). The `FilteredCsvDownloadControls` component ([[page-object-pattern]]) returns the `Download` from `downloadCsv()` for this chain.
 
+## api-setup.helpers.ts — `provisionActiveAccountWithFrequency` (website#153, added 2026-07-01)
+
+`provisionActiveAccountWithFrequency(api, db, options: ProvisionFrequencyAccountOptions): Promise<ProvisionFrequencyAccountResult>` — provisions a fresh ACTIVE servicing account **born on a caller-chosen starting payment frequency** (`options.startFrequency`, default `'BI_WEEKLY'`). Exists because `createPreQualifiedApplication`/`driveLeadToFunding` cannot set the starting frequency — their internal `sendInvoice` always defaults to `INVOICE_DEFAULTS.PAYMENT_FREQUENCY` (WEEKLY) with no override. Drives BOTH `sendApplication` (`desiredPaymentFrequency`) and `sendInvoice` (`selectedPaymentFrequency`) to the requested value, then advances to FUNDING/ACTIVE. Runs merchant preflight itself (rule #12 — bypasses `createPreQualifiedApplication`); fresh applicant per call (rule #9). `ProvisionFrequencyAccountOptions`: `{ env, startFrequency?, state? ('CA' default), merchant? ('TireAgent' default), orderTotal? ('1500' default), emailPrefix? ('pf153' default) }`. Returns `{ leadPk, leadUuid, accountPk, customerEmail, merchant, applicant, startFrequency }`. Reference script: `src/scripts/provision-payment-frequency-website.ts`.
+
+## database.helpers.ts — payment-frequency DB helpers (website#153, added 2026-07-01)
+
+| Function | Purpose |
+|----------|---------|
+| `getMaxFrequencyModPk(accountPk)` | `Promise<bigint>` — `MAX(pk)` (or `0n`) of `uown_frequency_mods` for the account. Call BEFORE a Save so `waitForFrequencyMod` can poll for a strictly-new row. |
+| `waitForFrequencyMod(accountPk, sincePk, timeoutMs?)` | Polls for a fresh `uown_frequency_mods` row (`pk > sincePk`) after a payment-frequency Save. Returns `{ pk, account_pk, agent, old_frequency, new_frequency, first_due_date, second_due_date, row_created_timestamp } \| null`. |
+| `countFrequencyMods(accountPk)` | `COUNT(*)` of `uown_frequency_mods` for an account — idempotency / repeated-change audit-count assertions (S3/S6). |
+| `getReceivableStatusCounts(accountPk)` | `GROUP BY status, receivable_type` over `uown_sv_receivable` — asserts Rewind/Replay regeneration (§34): exactly one ACTIVE set, prior schedule INACTIVE, no duplicate ACTIVE sets after repeated Saves. |
+| `waitForActivityLogByType(accountPk, logType, sincePk, timeoutMs?)` | Polls for a fresh `uown_sv_activity_log` row (`pk > sincePk`) matching an exact `log_type` (e.g. `FREQUENCY_CHANGE`). **Distinct from `waitForLoginActivityLog`**, whose WHERE clause is hard-filtered to login-flow rows only and will never return a non-login `log_type` — confirmed live 2026-07-01 (a real `FREQUENCY_CHANGE` row existed but `waitForLoginActivityLog` polled past it, producing a false-negative rule-#13 failure). |
+
 ## Key database.helpers.ts Functions (quick reference)
 
 | Function | Purpose |

@@ -75,6 +75,8 @@ Calls `ensureMerchantReady` (rule 12), fills bank info for Kornerstone, avoids t
 
 Cross-links: application-lifecycle pitfalls #77 (screen) and #78 (React Select). Page object catalog in [[page-object-pattern]].
 
+**Reverse now available on `STICKY`/`PAID` rows (servicing#519, MR !700, merged 2026-06-30).** Before this, a Sticky-recovered row only offered "Fully Refund". Reverse is ledger-only (no Sticky API call, `uown_sticky` untouched); Fully Refund is unchanged. Canonical rule: `resolve cc-payments` → `05-pagamentos.md` §13a/§53. Recent investigation: `docs/knowledge-base/sticky-payment-refund.md`. **Automation gap (no code written by this skill — for `qa-implementer`):** no `.spec.ts` exercises this operation yet; `PaymentHistoryPage` has no method to read the Servicing `/customer-information/{accountPk}` "Notes / Activity Log" table (`<table role="table">`, distinct DOM from Origination's `.rdt_Table`) nor the account balance fields (Contract Balance / Amount Past Due / Next Payment — only a Website `ws*` equivalent exists). See `.claude/oracles/sticky-reverse-refund.md` Pendências #2/#3 and [[page-object-pattern]] catalog gap notes.
+
 ## Make Payment via Servicing (modal `#makePayment`, dev3 2026-06-01)
 
 **ACH Make Payment is ASYNCHRONOUS.** When submitting ACH via the `#makePayment` modal, the IMMEDIATE (synchronous) effect is:

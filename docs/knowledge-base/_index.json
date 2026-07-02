@@ -424,6 +424,95 @@
       ]
     },
     {
+      "file": "illinois-gowsign-template.md",
+      "path": "docs/knowledge-base/illinois-gowsign-template.md",
+      "title": "Illinois (IL) GowSign Lease-Purchase Template",
+      "domain": "knowledge-base",
+      "status": "snapshot",
+      "volatility": "volatile",
+      "last_verified": "2026-06-30",
+      "covers": [
+        "epo",
+        "gowsign-routing"
+      ],
+      "sources": [
+        {
+          "type": "env",
+          "value": "stg"
+        },
+        {
+          "type": "lead",
+          "value": "7218276"
+        },
+        {
+          "type": "lead",
+          "value": "7218278"
+        },
+        {
+          "type": "code",
+          "value": "src/data/state-merchant-matrix.ts#expectedProvider"
+        },
+        {
+          "type": "db",
+          "value": "uown_gow_sign_template"
+        },
+        {
+          "type": "db",
+          "value": "uown_esign_document"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "Purpose",
+          "anchor": "purpose"
+        },
+        {
+          "heading": "Available templates (stg, DB-confirmed 2026-06-30)",
+          "anchor": "available-templates-stg-db-confirmed-2026-06-30"
+        },
+        {
+          "heading": "Provider routing for IL — GowSign (matrix is stale)",
+          "anchor": "provider-routing-for-il-gowsign-matrix-is-stale"
+        },
+        {
+          "heading": "Getting the 16-month TERM for IL — the merchant decides (live-proven, stg)",
+          "anchor": "getting-the-16-month-term-for-il-the-merchant-decides-live-proven-stg"
+        },
+        {
+          "heading": "Route A — Kornerstone ONLINE merchant (ABB returns EligibleTerms 16) — IL CONFIRMED",
+          "anchor": "route-a-kornerstone-online-merchant-abb-returns-eligibleterms-16-il-confirmed"
+        },
+        {
+          "heading": "Route A caveat vs AL/NY automated specs",
+          "anchor": "route-a-caveat-vs-alny-automated-specs"
+        },
+        {
+          "heading": "🔴 Automation blocker — NeuroID on the Kornerstone host blocks the IL 16m flow in CI",
+          "anchor": "-automation-blocker-neuroid-on-the-kornerstone-host-blocks-the-il-16m-flow-in-ci"
+        },
+        {
+          "heading": "What IS automatable for IL (no NeuroID)",
+          "anchor": "what-is-automatable-for-il-no-neuroid"
+        },
+        {
+          "heading": "Content checkpoints for the IL 16m template (oracle)",
+          "anchor": "content-checkpoints-for-the-il-16m-template-oracle"
+        },
+        {
+          "heading": "Connections with what was already known",
+          "anchor": "connections-with-what-was-already-known"
+        },
+        {
+          "heading": "Gaps / To Investigate",
+          "anchor": "gaps-to-investigate"
+        },
+        {
+          "heading": "Reproduction assets",
+          "anchor": "reproduction-assets"
+        }
+      ]
+    },
+    {
       "file": "merchant-funding-report-emails.md",
       "path": "docs/knowledge-base/merchant-funding-report-emails.md",
       "title": "Merchant Edit — Funding Report Emails",
@@ -1076,7 +1165,7 @@
       "domain": "knowledge-base",
       "status": "snapshot",
       "volatility": "volatile",
-      "last_verified": "2026-06-25",
+      "last_verified": "2026-06-30",
       "covers": [
         "lead-management",
         "lead-management",
@@ -1100,6 +1189,10 @@
         {
           "type": "lead",
           "value": "7218178"
+        },
+        {
+          "type": "lead",
+          "value": "7218266"
         },
         {
           "type": "code",
@@ -1138,6 +1231,74 @@
         {
           "heading": "Connections with what we already knew",
           "anchor": "connections-with-what-we-already-knew"
+        },
+        {
+          "heading": "Primary Applicant Inline Edit `[confirmed stg 2026-06-29]`",
+          "anchor": "primary-applicant-inline-edit-confirmed-stg-2026-06-29"
+        },
+        {
+          "heading": "BR-PA-01 — Pencil only available on pre-signing leads",
+          "anchor": "br-pa-01-pencil-only-available-on-pre-signing-leads"
+        },
+        {
+          "heading": "BR-PA-02 — Edit mode fields (8 total)",
+          "anchor": "br-pa-02-edit-mode-fields-8-total"
+        },
+        {
+          "heading": "BR-PA-03 — CANCEL has no side effects",
+          "anchor": "br-pa-03-cancel-has-no-side-effects"
+        },
+        {
+          "heading": "BR-PA-04 — SAVE endpoint and refresh",
+          "anchor": "br-pa-04-save-endpoint-and-refresh"
+        },
+        {
+          "heading": "BR-PA-05 — Success toast",
+          "anchor": "br-pa-05-success-toast"
+        },
+        {
+          "heading": "BR-PA-06 — No activity log entry (differs from Servicing)",
+          "anchor": "br-pa-06-no-activity-log-entry-differs-from-servicing"
+        },
+        {
+          "heading": "BR-PA-07 — Pencil trigger mechanics",
+          "anchor": "br-pa-07-pencil-trigger-mechanics"
+        },
+        {
+          "heading": "Primary Contact Inline Edit `[confirmed stg 2026-06-30]`",
+          "anchor": "primary-contact-inline-edit-confirmed-stg-2026-06-30"
+        },
+        {
+          "heading": "BR-PC-01 — Distinct card/endpoint from Primary Applicant",
+          "anchor": "br-pc-01-distinct-cardendpoint-from-primary-applicant"
+        },
+        {
+          "heading": "BR-PC-02 — Edit mode fields",
+          "anchor": "br-pc-02-edit-mode-fields"
+        },
+        {
+          "heading": "BR-PC-03 — CANCEL has no side effects",
+          "anchor": "br-pc-03-cancel-has-no-side-effects"
+        },
+        {
+          "heading": "BR-PC-04 — SAVE endpoint and refresh",
+          "anchor": "br-pc-04-save-endpoint-and-refresh"
+        },
+        {
+          "heading": "BR-PC-05 — Activity log entry IS created (differs from Primary Applicant)",
+          "anchor": "br-pc-05-activity-log-entry-is-created-differs-from-primary-applicant"
+        },
+        {
+          "heading": "BR-PC-06 — `[OBSERVATION]` Log message names the wrong field",
+          "anchor": "br-pc-06-observation-log-message-names-the-wrong-field"
+        },
+        {
+          "heading": "BR-PC-07 — UI Notes grid does not auto-refresh",
+          "anchor": "br-pc-07-ui-notes-grid-does-not-auto-refresh"
+        },
+        {
+          "heading": "BR-PC-08 — Pencil click mechanics differ from Primary Applicant",
+          "anchor": "br-pc-08-pencil-click-mechanics-differ-from-primary-applicant"
         },
         {
           "heading": "Gaps / to investigate",
@@ -3831,7 +3992,7 @@
       "domain": "knowledge-base",
       "status": "stable",
       "volatility": "volatile",
-      "last_verified": "2026-06-21",
+      "last_verified": "2026-06-30",
       "covers": [
         "sticky",
         "sticky",
@@ -3850,6 +4011,14 @@
           "value": "6168 / payment 2190284 / cc 69253 / sticky 31 — REVERSED+REFUNDED live 2026-06-21"
         },
         {
+          "type": "account",
+          "value": "6040 / payment 2192472 / sticky 97 — Reverse (servicing#519) live 2026-06-30"
+        },
+        {
+          "type": "account",
+          "value": "6042 / payment 2192470 / sticky 95 — Fully Refund (regression) live 2026-06-30"
+        },
+        {
           "type": "env",
           "value": "qa2 (modal surface on account 9549; schema present, uown_sticky empty)"
         },
@@ -3864,6 +4033,14 @@
         {
           "type": "gitlab",
           "value": "uown/backend/sticky.io!8 RefundService + StickyRestClient.postRefund + StickyRecoveryStatus(REFUND_SUBMITTED/REFUND_FAILED/REFUNDED)"
+        },
+        {
+          "type": "gitlab",
+          "value": "uown/frontend/servicing#519 \"Add Reverse Payment Option for Sticky Transactions\" — MR !700, merged 2026-06-30"
+        },
+        {
+          "type": "oracle",
+          "value": ".claude/oracles/sticky-reverse-refund.md CT-01/CT-02/CT-04/CT-06/CT-07"
         },
         {
           "type": "db",
@@ -3894,6 +4071,10 @@
         {
           "heading": "Logic and Exceptions (DB contract)",
           "anchor": "logic-and-exceptions-db-contract"
+        },
+        {
+          "heading": "Adjacent finding (not Sticky-specific) — CC Refund is synchronous, ACH Refund is asynchronous",
+          "anchor": "adjacent-finding-not-sticky-specific-cc-refund-is-synchronous-ach-refund-is-asynchronous"
         },
         {
           "heading": "Connections with What Was Already Known",
@@ -4141,6 +4322,74 @@
         {
           "heading": "Cross-references",
           "anchor": "cross-references"
+        }
+      ]
+    },
+    {
+      "file": "website-payment-frequency.md",
+      "path": "docs/knowledge-base/website-payment-frequency.md",
+      "title": "Website — Payment Frequency Change (`/payment-frequency`)",
+      "domain": null,
+      "status": "snapshot",
+      "volatility": "volatile",
+      "last_verified": "2026-07-01",
+      "covers": [
+        "rewind-replay"
+      ],
+      "sources": [
+        {
+          "type": "live",
+          "value": "sandbox lead 98257 / account 17330"
+        },
+        {
+          "type": "live",
+          "value": "sandbox website#153 pipeline, accounts 17330-17376 (discovery + 3 validation cycles)"
+        },
+        {
+          "type": "db",
+          "value": "uown_frequency_mods"
+        },
+        {
+          "type": "db",
+          "value": "uown_sv_activity_log"
+        },
+        {
+          "type": "db",
+          "value": "uown_sv_receivable"
+        },
+        {
+          "type": "api",
+          "value": "POST /uown/svc/changePaymentFrequency"
+        }
+      ],
+      "sections": [
+        {
+          "heading": "What it is for",
+          "anchor": "what-it-is-for"
+        },
+        {
+          "heading": "Available operations",
+          "anchor": "available-operations"
+        },
+        {
+          "heading": "Flow and states (step by step in the UI)",
+          "anchor": "flow-and-states-step-by-step-in-the-ui"
+        },
+        {
+          "heading": "Business rules",
+          "anchor": "business-rules"
+        },
+        {
+          "heading": "Logic and exceptions",
+          "anchor": "logic-and-exceptions"
+        },
+        {
+          "heading": "Connections with what we already knew",
+          "anchor": "connections-with-what-we-already-knew"
+        },
+        {
+          "heading": "Gaps / to investigate",
+          "anchor": "gaps-to-investigate"
         }
       ]
     }

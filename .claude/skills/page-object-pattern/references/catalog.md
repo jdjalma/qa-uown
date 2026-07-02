@@ -561,6 +561,13 @@ YES: dynamic columnIndex resolution via header role=columnheader
 - **PITFALL - `reverseReason` is React Select (`<div>`), NOT native `<select>`:** `selectOption` no-ops/fails. Select via control click + option click. See application-lifecycle pitfall #78.
 - **Activity log:** refund logs to `uown_sv_activity_log` (Servicing action), NOT `uown_los_lead_notes` (LOS).
 - **`#paymentAmount` is conditional:** visible only after "Partially Refund" is chosen.
+- **Update 2026-06-30 (servicing#519, MR !700):** the "Reverse" reverseReason option is now also offered for `STICKY`/`PAID` rows (previously only "Fully Refund"). No code change needed in `PaymentHistoryPage` — existing `setReverseReason('Reverse')` already works on a Sticky row.
+
+### Known gaps in `PaymentHistoryPage` / Servicing page objects (flagged 2026-06-30, servicing#519 pipeline — not yet implemented)
+
+- **No `.spec.ts` exercises the Sticky Reverse/Fully Refund flow.** BDD oracle exists (`.claude/oracles/sticky-reverse-refund.md`, CT-01–CT-07, all confirmed live) but no automated test consumes it yet.
+- **No page-object/selector for the Servicing "Notes / Activity Log" table** at `/customer-information/{accountPk}` (distinct from the Origination "Notes" card already cataloged in `common.selectors.ts`). Real DOM mapped live: `<table role="table">` **semantic** (NOT `.rdt_Table`/divs like Origination), header "Notes", columns Date | Type | User ID | Notes, "Filters" button exposing `input[name="notes"]` (placeholder "Search by notes") and `input[name="userId"]`. Header-click sort (`Date ▲`) was unreliable in live testing — prefer the notes-text filter to isolate a row over pagination/sort.
+- **No page-object for the account balance fields in Servicing** (Contract Balance / Amount Past Due / Next Payment, in the "Servicing Information"/Account Summary panel of `/customer-information/{accountPk}`). Only a Website equivalent exists (prefix `ws*`). Needed to assert AC-09-style "balance reflects the action" checks (e.g. after a Reverse/Refund).
 
 ## MerchantListPage - Origination Merchant list (`/merchant`)
 
@@ -671,6 +678,31 @@ YES: dynamic columnIndex resolution via header role=columnheader
 - `paginationPrevious: '#pagination-previous-page'` — added to `PaginationSelectors` (`common.selectors.ts` + typed in `selector.types.ts`). Pairs with the existing next-page selector for the `goToPreviousPage` methods above.
 
 ---
+
+## PaymentFrequencyPage - Website customer portal `/payment-frequency` (website#153, added 2026-07-01)
+
+- **Location:** `src/pages/website/payment-frequency.page.ts`
+- **Extends:** `WebsiteBasePage`. Exported via `src/pages/website/index.ts`.
+- **Purpose:** self-service "Change your payment schedule" flow — Payment Frequency dropdown, Semi-Monthly First/Second Payment Day pickers, Bi-Weekly "next payday" field, Save + post-Save revalidation wait.
+
+| Method | Description |
+|--------|-------------|
+| `navigateToPaymentFrequency()` | Sidebar Payments → Payment Flexibility → "Change your payment schedule" card → VIEW MY OPTIONS → `/payment-frequency` |
+| `getCurrentFrequency()` | Reads the "Current Frequency" value in the Current Plan card (label + next-sibling read, NOT `.last()` substring match — see pitfall table below) |
+| `listFrequencyOptions()` / `selectFrequency(freq)` | Open/read/select the Payment Frequency react-select |
+| `listFirstPaymentDayOptions()` / `selectFirstPaymentDay(day)` | First Payment Day react-select (Semi-Monthly only, options 1..17) |
+| `listSecondPaymentDayOptions()` / `selectSecondPaymentDay(day)` | Second Payment Day react-select (gap 14-20 from First) |
+| `isNextPaydayFieldVisible()` | True when the "When is your next payday?" field is shown (Bi-Weekly destination) |
+| `pickNextPayday(daysFromToday)` | Sets the next-payday date field. **Uses `calculateDate()` (`MM/DD/YYYY`), NOT `calculateDateISO()`** — see Pitfall #147 below |
+| `isSaveEnabled()` / `clickSave()` | SAVE FREQUENCY button state / click (no wait) |
+| `waitForSuccessToast()` | Waits for the Toastify success toast, returns its text |
+| `waitForFrequencyRevalidation()` | Waits for the post-Save Bootstrap spinner (`SELECTORS.spinnerBorder`) to clear — see Pitfall #148 below |
+| `saveFrequency()` | Full Save flow: `clickSave()` → `waitForSuccessToast()` → `waitForFrequencyRevalidation()` — **always use this over a bare `clickSave()`+`waitForSuccessToast()` when a subsequent read follows** |
+
+- **React-Select contract:** same `.filter__control` / `.filter__option` / `.filter__menu-portal` contract already cataloged for the Origination filter page objects (`SELECTORS.filterControl`/`filterOption`/`filterMenuPortal`) — reused here per rule #2, NOT `getByRole('option')` (the real option rows carry no `role="option"` attribute).
+- **Pitfall #147 — next-payday field is masked `MM/DD/YYYY`, not ISO:** injecting `calculateDateISO()` (`YYYY-MM-DD`) via native-setter corrupts the displayed value (observed `"20/26/0706"` for `"2026-07-06"`) and silently blocks SAVE FREQUENCY. Fix: `calculateDate()` (`MM/DD/YYYY`, matches the field's own `placeholder`). Same component contract as `servicing-base.page.ts`'s `arrangementStartDateInput`/`arrangementEndDateInput`. See [[application-lifecycle]] pitfall #147 and [[selector-hardening]] "React-controlled date/text input".
+- **Pitfall #148 — `saveFrequency()` must wait for the post-Save spinner before any subsequent label read:** after the success toast, a Bootstrap spinner (`.spinner-border`) renders for ~900ms while the Current Plan card unmounts/remounts with the new value. Reading `getCurrentFrequency()` immediately after the toast (without `waitForFrequencyRevalidation()`) can capture the stale value or a transient missing-node state — only surfaces in chained Save loops (repeated-toggle regression tests), not single-Save tests. See [[application-lifecycle]] pitfall #148.
+- **Live-proven:** sandbox 2026-07-01, accounts 17330-17376 (discovery + 3 validation cycles, desktop + mobile-android).
 
 ## SearchPage - Origination quick-search
 

@@ -3,17 +3,20 @@ title: Account Modifications and Adjustments
 domain: business-rules
 status: stable
 volatility: volatile
-last_verified: 2026-06-18
+last_verified: 2026-07-01
 sources:
   - code: src/helpers/settlement.helpers.ts#calculateSettlement
   - db: uown_frequency_mods
   - db: uown_lead_modifications
+  - db: uown_sv_activity_log
   - svc-source: ChangeLeadStatusService.java
   - svc-source: ThreadAttributes.java
   - env: qa2
+  - env: sandbox
 derived_from:
   - knowledge-base/modification-report-agent-name-bug
-covers: [rewind-replay, settlement, invoice-modification, frequency-change, due-date, fpd-adjustment, additional-lease, sweeps, modification-report-agent-attribution]
+  - knowledge-base/website-payment-frequency
+covers: [rewind-replay, settlement, invoice-modification, frequency-change, due-date, fpd-adjustment, additional-lease, sweeps, modification-report-agent-attribution, website-payment-frequency]
 ---
 
 # Account Modifications and Adjustments
@@ -133,7 +136,7 @@ POST /uown/los/modifyInvoiceForLead/{leadPk}
 
 ### What It Is
 
-Service that allows **changing the payment frequency** of a lease (e.g. weekly to bi-weekly) and records an audit trail.
+Service that allows **changing the payment frequency** of a lease (e.g. weekly to bi-weekly) and records an audit trail. Reachable both via the administrative interface AND as a **customer self-service flow** on the Website portal (`/payment-frequency`, sidebar Payments → Payment Flexibility → "Change your payment schedule" → VIEW MY OPTIONS).
 
 ### What It's For
 
@@ -146,17 +149,26 @@ Customers may need to change the frequency to align with their paycheck cycle.
 | `fromFrequency` | Previous frequency (WEEKLY, BI_WEEKLY, etc.) |
 | `toFrequency` | New frequency |
 | `modDate` | Modification date |
-| `agentUsername` | Who made the change |
+| `agentUsername` | Who made the change — for a **customer self-service Save on the Website portal, this is the literal string `"customer portal"`** (NOT `SYSTEM`, NOT the customer's name, NOT a UI username) |
 
 ### How to Trigger
 
-Via the administrative interface or the frequency change endpoint. The `ChangeFrequencyService` automatically calls the audit record.
+Via the administrative interface or the frequency change endpoint. The `ChangeFrequencyService` automatically calls the audit record. **Customer self-service:** `POST /uown/svc/changePaymentFrequency`, payload `{accountPK, newFrequency, firstDueDay, secondDueDay}` (Semi-Monthly destination) or `{accountPK, newFrequency:"BI_WEEKLY", nextPayDate}` (Bi-Weekly destination — no day-of-month fields). Response is the full updated `SchedSummaryInfo` row.
+
+### Website self-service UI rules
+
+- The "Payment Frequency" dropdown **excludes the current frequency** and **never lists Monthly** as an option, regardless of the account's current frequency.
+- Selecting **Semi-Monthly** as the destination reveals two extra pickers: **First Payment Day** (exactly days 1–17) and **Second Payment Day**, whose option set is constrained to a **14–20 day gap** from the selected First Payment Day. Both pickers validate purely by option-set truncation (invalid days are simply absent, not offered-and-rejected).
+- Selecting **Bi-Weekly** as the destination reveals a **"When is your next payday?"** date field instead of the day pickers; only dates from tomorrow through 15 days out are selectable.
+- **Known defect (non-blocking, tracked for PO/dev triage):** for First Payment Day ∈ {14,15,16,17}, the Second Payment Day option set is truncated at calendar day 31 (`first+14`) instead of offering the full `first+14..first+20` range — day 31 does not exist in April/June/September/November/most Februaries, yet SAVE FREQUENCY remains enabled with it selected. Confirmed live for First=17 across 7 independent reproductions (sandbox); the full First=14/15/16 matrix remains unconfirmed.
+- Repeated frequency changes on the same account (verified live up to 6 consecutive Saves / 3 full Bi-Weekly↔Semi-Monthly cycles) do **not** hit any enforced limit — the backend tracks a `frequencyChanges` counter but no gate rejects the Save because of it. There is no product-side "maximum number of changes" as of this writing (2026-07-01); the historical production drift bug (schedule derived to 12/30/2027, ACCT 545697) was traced to a recalculation defect, not a missing counter limit, and was fixed via MR !286 (schedule recalculation logic) rather than a change-count cap.
 
 ### Impact
 
 - The receivables schedule is **regenerated** (Rewind/Replay executed)
 - Installment amounts change (more smaller installments or fewer larger ones)
 - Change history recorded in `uown_frequency_mods`
+- `uown_sv_activity_log` gets a `log_type='FREQUENCY_CHANGE'` row (`created_by='customer portal'` for self-service, `creation_source='USER_ACTION'`, notes e.g. `"Payment frequency changed from BI_WEEKLY to SEMI_MONTHLY"`), plus an `INFORMATION` row from the Rewind/Replay EPO receivable regen side effect
 
 ---
 

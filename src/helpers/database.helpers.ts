@@ -90,6 +90,39 @@ export interface LoginActivityLogRow {
   row_created_timestamp: Date;
 }
 
+// ── Payment-frequency change audit (website#153 — RU07.26.1.54.0) ────────
+// `uown_frequency_mods` = the §41 Payment Frequency Modification audit trail.
+// For a customer self-service change the `agent` column is the literal string
+// 'customer portal' (KB website-payment-frequency RN-07). Columns confirmed
+// live-sandbox 2026-07-01 (row pk=74, account 17330).
+export interface FrequencyModRow {
+  pk: string;
+  account_pk: string;
+  agent: string | null;
+  old_frequency: string | null;
+  new_frequency: string | null;
+  first_due_date: string | null;
+  second_due_date: string | null;
+  row_created_timestamp: Date;
+}
+
+/** `uown_sv_activity_log` row shape for a specific `log_type` poll (website#153 CT-07). */
+export interface FrequencyChangeActivityLogRow {
+  pk: string;
+  log_type: string;
+  created_by: string | null;
+  creation_source: string | null;
+  notes: string | null;
+  row_created_timestamp: Date;
+}
+
+/** One `GROUP BY status, receivable_type` bucket of `uown_sv_receivable`. */
+export interface ReceivableStatusCount {
+  status: string;
+  receivable_type: string;
+  count: number;
+}
+
 // ── Kount + GDS token row shapes (RU05.26.1.51.1 — issue #502) ──────────
 export interface TokenRow {
   pk: number;
@@ -1007,6 +1040,105 @@ export class DatabaseHelpers {
        ORDER BY row_created_timestamp DESC
        LIMIT 1`,
       [accountPk, `%${searchTerm}%`],
+    );
+  }
+
+  // ── Payment-frequency change (website#153) ────────────────────────────
+  // SELECT-only helpers so specs never inline raw SQL against the audit /
+  // receivable tables (rule #13 + [[db-polling-pattern]] projection-drift).
+
+  /**
+   * Highest existing `uown_frequency_mods.pk` for an account — snapshot BEFORE
+   * a Save so `waitForFrequencyMod` can wait for a strictly-new audit row.
+   */
+  async getMaxFrequencyModPk(accountPk: string | number): Promise<bigint> {
+    const val = await this.getSingleString(
+      `SELECT COALESCE(MAX(pk), 0)::text
+         FROM uown_frequency_mods
+        WHERE account_pk = $1`,
+      [accountPk],
+    );
+    return BigInt(val ?? '0');
+  }
+
+  /**
+   * Poll for a fresh `uown_frequency_mods` row (pk > sincePk) after a
+   * payment-frequency Save. Returns the row (agent / old_frequency /
+   * new_frequency / due dates) or null on timeout. Regen is synchronous but
+   * we poll defensively (SPEC anti-flake).
+   */
+  async waitForFrequencyMod(
+    accountPk: string | number,
+    sincePk: bigint,
+    timeoutMs: number = TIMEOUTS.DB_WAIT,
+  ): Promise<FrequencyModRow | null> {
+    return this.pollUntil<FrequencyModRow>(
+      async () => this.queryOne<FrequencyModRow>(
+        `SELECT pk::text, account_pk::text, agent, old_frequency, new_frequency,
+                first_due_date::text, second_due_date::text, row_created_timestamp
+           FROM uown_frequency_mods
+          WHERE account_pk = $1 AND pk > $2
+          ORDER BY pk DESC
+          LIMIT 1`,
+        [accountPk, sincePk.toString()],
+      ),
+      timeoutMs,
+      'waitForFrequencyMod',
+    );
+  }
+
+  /**
+   * Poll for a fresh `uown_sv_activity_log` row (pk > sincePk) matching an
+   * exact `log_type` — e.g. `FREQUENCY_CHANGE` (website#153 CT-07). Distinct
+   * from `waitForLoginActivityLog`, whose WHERE clause is HARD-FILTERED to
+   * login-flow rows only (CORRESPONDENCE verification-code / INTERNAL "Login
+   * Success") and therefore can never return a non-login log_type — confirmed
+   * live 2026-07-01 (qa-validator, account 17339): the FREQUENCY_CHANGE row
+   * existed in the DB (pk 11011499, correct notes/created_by) but
+   * `waitForLoginActivityLog` polled it away because of that filter, causing
+   * a false-negative "activity log must be written" failure (S1/CT-04..09).
+   */
+  async waitForActivityLogByType(
+    accountPk: string | number,
+    logType: string,
+    sincePk: bigint,
+    timeoutMs: number = TIMEOUTS.DB_WAIT,
+  ): Promise<FrequencyChangeActivityLogRow | null> {
+    return this.pollUntil<FrequencyChangeActivityLogRow>(
+      async () => this.queryOne<FrequencyChangeActivityLogRow>(
+        `SELECT pk::text, log_type, created_by, creation_source, notes, row_created_timestamp
+           FROM uown_sv_activity_log
+          WHERE account_pk = $1 AND pk > $2 AND log_type = $3
+          ORDER BY pk DESC
+          LIMIT 1`,
+        [accountPk, sincePk.toString(), logType],
+      ),
+      timeoutMs,
+      'waitForActivityLogByType',
+    );
+  }
+
+  /** COUNT(*) of `uown_frequency_mods` for an account (idempotency / S6 audit-count). */
+  async countFrequencyMods(accountPk: string | number): Promise<number> {
+    return this.getSingleNumber(
+      `SELECT COUNT(*) FROM uown_frequency_mods WHERE account_pk = $1`,
+      [accountPk],
+    );
+  }
+
+  /**
+   * `GROUP BY status, receivable_type` over `uown_sv_receivable` — used to
+   * assert Rewind/Replay regeneration (§34): exactly one ACTIVE set, prior
+   * schedule INACTIVE, ACTIVE REGULAR_PAYMENT count == numOfPayments config.
+   */
+  async getReceivableStatusCounts(accountPk: string | number): Promise<ReceivableStatusCount[]> {
+    return this.query<ReceivableStatusCount>(
+      `SELECT status, receivable_type, COUNT(*)::int AS count
+         FROM uown_sv_receivable
+        WHERE account_pk = $1
+        GROUP BY status, receivable_type
+        ORDER BY status, receivable_type`,
+      [accountPk],
     );
   }
 

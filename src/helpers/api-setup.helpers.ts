@@ -12,8 +12,10 @@ import type { TestInfo } from '@playwright/test';
 import type { ApiClients, TestContext } from '@support/base-test.js';
 import type { MerchantInfo, ApplicantInfo, OrderInfo } from '@api/bodies/index.js';
 import { buildSendApplicationBody } from '@api/bodies/index.js';
+import { buildTestData } from './test-data.helpers.js';
 import { sleep } from './common.helpers.js';
 import { ensureMerchantReady } from './merchant-config.helper.js';
+import type { DatabaseHelpers } from './database.helpers.js';
 
 /**
  * The API may return a contract URL with the wrong host
@@ -551,4 +553,168 @@ export async function setupApplicationViaApi(
   await reconcilePortalLeadPk(api, merchant, result, testInfo, ctx);
 
   return result;
+}
+
+// ── Fresh ACTIVE account on a chosen payment frequency (website#153) ────────
+//
+// createPreQualifiedApplication / driveLeadToFunding cannot set the STARTING
+// payment frequency: their internal sendInvoice always defaults to
+// INVOICE_DEFAULTS.PAYMENT_FREQUENCY (WEEKLY) and exposes no override. The
+// account's real plan is driven by the invoice's `selectedPaymentFrequency`,
+// so this helper mirrors the proven provisioning sequence
+// (`src/scripts/provision-payment-frequency-website.ts`, live-sandbox 2026-07-01)
+// but drives BOTH sendApplication (`desiredPaymentFrequency`) AND sendInvoice
+// (`selectedPaymentFrequency`) to the requested frequency, then advances the
+// lead to an ACTIVE servicing account (born at FUNDING).
+//
+// Merchant preflight runs (rule #12) since this path bypasses
+// createPreQualifiedApplication. Fresh applicant per call (rule #9).
+
+export interface ProvisionFrequencyAccountOptions {
+  /** Environment name (e.g. 'sandbox'). Required — used by buildTestData. */
+  env: string;
+  /** Starting payment frequency for the funded account. Default 'BI_WEEKLY'. */
+  startFrequency?: string;
+  /** Customer state. Default 'CA' (TireAgent ONLINE routes by customer state). */
+  state?: string;
+  /** Merchant key from merchants.ts. Default 'TireAgent'. */
+  merchant?: string;
+  /** Order total passed to buildTestData. Default '1500'. */
+  orderTotal?: string;
+  /** Plus-address prefix for the per-run customer email. Default 'pf153'. */
+  emailPrefix?: string;
+}
+
+export interface ProvisionFrequencyAccountResult {
+  /** Lead primary key (numeric, as string) — reconciled to the portal value. */
+  leadPk: string;
+  /** Lead UUID (accountNumber). */
+  leadUuid: string;
+  /** Servicing account primary key (uown_sv_account.pk). */
+  accountPk: string;
+  /** Customer email (OTP login identifier; code read from uown_login_attempt). */
+  customerEmail: string;
+  /** Merchant used (for downstream API calls). */
+  merchant: MerchantInfo;
+  /** Fresh applicant generated for this account. */
+  applicant: ApplicantInfo;
+  /** Starting frequency the account was funded on. */
+  startFrequency: string;
+}
+
+export async function provisionActiveAccountWithFrequency(
+  api: ApiClients,
+  db: DatabaseHelpers,
+  options: ProvisionFrequencyAccountOptions,
+): Promise<ProvisionFrequencyAccountResult> {
+  const {
+    env,
+    startFrequency = 'BI_WEEKLY',
+    state = 'CA',
+    merchant: merchantName = 'TireAgent',
+    orderTotal = '1500',
+    emailPrefix = 'pf153',
+  } = options;
+
+  // Unique per-run customer email (plus-addressing). OTP is read from
+  // uown_login_attempt.code (DB), so no real mailbox is required — but a unique
+  // address per run avoids DataMismatchStep on sendApplication (rule #9).
+  const runId = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
+  const customerEmail = `fintechgroup777+${emailPrefix}${runId}@gmail.com`;
+
+  const { merchant, applicant } = buildTestData({
+    env,
+    state,
+    merchant: merchantName,
+    orderTotal,
+    realistic: true,
+    emailOverride: customerEmail,
+  });
+
+  // Merchant preflight (rule #12) — this path bypasses createPreQualifiedApplication.
+  await ensureMerchantReady(api, merchant.number);
+
+  // 1. sendApplication with the desired starting frequency (no order = pre-qual).
+  const appBody = buildSendApplicationBody(merchant, applicant, undefined, {
+    desiredPaymentFrequency: startFrequency,
+  });
+  const appResp = await api.application.sendApplication(appBody);
+  expect(
+    appResp.ok,
+    `sendApplication ${appResp.status}: ${JSON.stringify(appResp.body).slice(0, 200)}`,
+  ).toBeTruthy();
+  const rawLeadPk = String((appResp.body as Record<string, unknown>).authorizationNumber ?? '');
+  const leadUuid = String((appResp.body as Record<string, unknown>).accountNumber ?? rawLeadPk);
+  expect(rawLeadPk, 'leadPk from sendApplication').toBeTruthy();
+
+  // 2. Approval + approvedAmount (+ reconcile portal leadPk).
+  await sleep(5_000);
+  const statusResp = await api.application.getApplicationStatus(merchant, leadUuid);
+  expect(statusResp.ok, `getApplicationStatus ${statusResp.status}`).toBeTruthy();
+  const status = extractApprovalStatus(statusResp.body);
+  expect(status?.toLowerCase(), `Expected APPROVED but got: ${status}`).toContain('approved');
+  const approvedAmount = statusResp.body.approvedAmount ?? 0;
+  expect(approvedAmount, 'approvedAmount should be positive').toBeGreaterThan(0);
+  const leadPk = statusResp.body.leadPk ? String(statusResp.body.leadPk) : rawLeadPk;
+
+  // 3. sendInvoice with the desired frequency — this sets the account's plan.
+  const invoiceResp = await api.invoice.sendInvoice(merchant, leadUuid, {
+    orderTotal: String(approvedAmount),
+    selectedPaymentFrequency: startFrequency,
+  });
+  expect(invoiceResp.ok, `sendInvoice ${invoiceResp.status}`).toBeTruthy();
+
+  // 4. getMissingFields (shortCode + planId) → resolves merchantProgramPk.
+  const detailsList = (invoiceResp.body?.paymentDetailsList ?? []) as Array<{ redirectUrl?: string }>;
+  const redirectUrl = detailsList[0]?.redirectUrl ?? '';
+  if (redirectUrl) {
+    const url = new URL(redirectUrl);
+    const shortCode = url.pathname.split('/').filter(Boolean)[0] ?? '';
+    const planId = url.searchParams.get('planId') ?? '';
+    if (shortCode) {
+      const missingResp = await api.application.getMissingFields(
+        shortCode,
+        planId ? { planId } : undefined,
+      );
+      expect(missingResp.ok, `getMissingFields ${missingResp.status}`).toBeTruthy();
+    }
+  }
+
+  // 5. submitApplication → CONTRACT_CREATED.
+  const submitResp = await api.application.submitApplication(
+    Number(leadPk), applicant.firstName, applicant.lastName,
+  );
+  expect(
+    submitResp.ok,
+    `submitApplication ${submitResp.status}: ${JSON.stringify(submitResp.body).slice(0, 200)}`,
+  ).toBeTruthy();
+
+  // 6. SIGNED → settle → FUNDING (account born at FUNDING per funded.md CT-04/CT-11).
+  const signedResp = await api.lead.changeLeadStatus(
+    merchant, Number(leadPk), 'SIGNED', 'Automated - SIGNED (pf153 provisioning)',
+  );
+  expect(signedResp.ok, `changeLeadStatus SIGNED ${signedResp.status}`).toBeTruthy();
+  const settleResp = await api.settlement.settleApplication(merchant, leadUuid);
+  expect(settleResp.ok, `settleApplication ${settleResp.status}`).toBeTruthy();
+  await sleep(3_000);
+  const fundingResp = await api.lead.updateFundingStatus([Number(leadPk)], 'FUNDING');
+  expect(fundingResp.ok, `updateFundingStatus ${fundingResp.status}`).toBeTruthy();
+
+  // 7. Poll for the servicing account (created from the lead).
+  const accountPk = await db.waitForAccountByLeadPk(leadPk, 60_000);
+  expect(accountPk, 'uown_sv_account must be created from lead').toBeTruthy();
+
+  console.log(
+    `[Setup] provisioned ACTIVE ${startFrequency} account: leadPk=${leadPk} accountPk=${accountPk} email=${customerEmail}`,
+  );
+
+  return {
+    leadPk,
+    leadUuid,
+    accountPk: accountPk!,
+    customerEmail,
+    merchant,
+    applicant,
+    startFrequency,
+  };
 }

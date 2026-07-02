@@ -813,7 +813,7 @@
       "domain": "business-rules",
       "status": "stable",
       "volatility": "volatile",
-      "last_verified": "2026-06-25",
+      "last_verified": "2026-06-30",
       "covers": [
         "cc-payments",
         "ach-payments",
@@ -855,6 +855,10 @@
         "svc-source: service/ach/ACHPaymentService.java",
         "svc-source: service/ach/AchUpdatePaymentService.java",
         "svc-source: service/PaymentArrangementService.java",
+        {
+          "type": "gitlab",
+          "value": "uown/frontend/servicing#519 \"Add Reverse Payment Option for Sticky Transactions\" — MR !700, merged 2026-06-30"
+        },
         {
           "type": "env",
           "value": "qa2"
@@ -1056,6 +1060,10 @@
         {
           "heading": "Batch Refund",
           "anchor": "batch-refund"
+        },
+        {
+          "heading": "CC Refund (Synchronous) vs ACH Refund (Asynchronous)",
+          "anchor": "cc-refund-synchronous-vs-ach-refund-asynchronous"
         },
         {
           "heading": "How to Trigger",
@@ -1413,7 +1421,7 @@
       "domain": "business-rules",
       "status": "stable",
       "volatility": "volatile",
-      "last_verified": "2026-06-18",
+      "last_verified": "2026-07-01",
       "covers": [
         "rewind-replay",
         "settlement",
@@ -1438,11 +1446,19 @@
           "type": "db",
           "value": "uown_lead_modifications"
         },
+        {
+          "type": "db",
+          "value": "uown_sv_activity_log"
+        },
         "svc-source: ChangeLeadStatusService.java",
         "svc-source: ThreadAttributes.java",
         {
           "type": "env",
           "value": "qa2"
+        },
+        {
+          "type": "env",
+          "value": "sandbox"
         }
       ],
       "sections": [
@@ -1545,6 +1561,10 @@
         {
           "heading": "How to Trigger",
           "anchor": "how-to-trigger"
+        },
+        {
+          "heading": "Website self-service UI rules",
+          "anchor": "website-self-service-ui-rules"
         },
         {
           "heading": "Impact",

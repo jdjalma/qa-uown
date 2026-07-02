@@ -1,7 +1,7 @@
 <!-- GERADO por scripts/docs-tooling.mjs — NÃO editar à mão. Rode: node scripts/docs-tooling.mjs index -->
 # Índice — docs/knowledge-base
 
-> Manifesto gerado a partir do frontmatter (ver `docs/_docs-conventions.md`). 46 arquivos.
+> Manifesto gerado a partir do frontmatter (ver `docs/_docs-conventions.md`). 48 arquivos.
 > Consumidores: leia este índice primeiro para localizar o arquivo canônico por tópico antes de abrir os docs.
 
 | Arquivo | Título | Status | Volatilidade | Verificado | Cobre |
@@ -11,6 +11,7 @@
 | [cc-ach-contract-complete-page.md](cc-ach-contract-complete-page.md) | CC/ACH — Página de Pagamento do Contrato (`/complete`) | snapshot | volatile | 2026-06-28 | cc-ach-contract-complete-page, contract-complete, cc-form, ach-form, submit-application, getMissingFields, contract-url, missingDataPanel, missingDataForm |
 | [ccbin-employment-financial-step.md](ccbin-employment-financial-step.md) | CCBIN Field — Employment & Financial Step | snapshot | stable | 2026-06-15 | ccbin-field, employment-financial-step, credit-card-bin-visualization, autofill, completion-indicator |
 | [funding-signed-to-funding.md](funding-signed-to-funding.md) | Funding — SIGNED to FUNDING transition (live discovery) | snapshot | volatile | 2026-06-28 | funding-queue, settlement, los-svc-import, svc |
+| [illinois-gowsign-template.md](illinois-gowsign-template.md) | Illinois (IL) GowSign Lease-Purchase Template | snapshot | volatile | 2026-06-30 | illinois-gowsign-template, il-2025-sac, il-2025-sac-16-months, epo-section, neuroid-gate, state-routing |
 | [merchant-funding-report-emails.md](merchant-funding-report-emails.md) | Merchant Edit — Funding Report Emails | stable | stable | 2026-06-15 | merchants, funding-report, email-validation |
 | [merchants-config-columns-export.md](merchants-config-columns-export.md) | Merchants Page — Config Columns & Export | snapshot | volatile | 2026-06-15 | merchants, config-columns, csv-export, gds-fields |
 | [modification-report-agent-name-bug.md](modification-report-agent-name-bug.md) | Modification Report — Agent Name Bug (Issue #1315) | stable | stable | 2026-06-18 | modification-report, agent-username-attribution, lead-status-change, system-vs-agent, threadlocal-corruption |
@@ -18,7 +19,7 @@
 | [new-application-customer-form-flow.md](new-application-customer-form-flow.md) | Nova Aplicação — Formulário do Cliente (Customer Form Flow) | snapshot | volatile | 2026-06-26 | new-application, customer-form, apply-portal, sendApplication, blocked-state, form-validation, shortCode |
 | [new-york-gowsign-template.md](new-york-gowsign-template.md) | New York (NY) GowSign Lease/Rental-Purchase Template | snapshot | volatile | 2026-06-18 | gowsign, esign, new-york, epo, template-rendering |
 | [npm-segment-tam-score-snapshot-routing.md](npm-segment-tam-score-snapshot-routing.md) | 1313 — npm_segment / tam_score snapshot: env & engine routing | stable | volatile | 2026-06-21 | npm-segment, tam-score, gds-snapshot, uwdata |
-| [origination-customer-lead-detail-page.md](origination-customer-lead-detail-page.md) | Origination Customer / Lead Detail Page | snapshot | volatile | 2026-06-25 | origination-customer-page, lead-detail, lead-status, internal-status, agent-actions, modify-lease, cancel-lease, send-to-signed, blacklist-lead, documents-lease-panel, activity-log, pii-display, session-replay |
+| [origination-customer-lead-detail-page.md](origination-customer-lead-detail-page.md) | Origination Customer / Lead Detail Page | snapshot | volatile | 2026-06-30 | origination-customer-page, lead-detail, lead-status, internal-status, agent-actions, modify-lease, cancel-lease, send-to-signed, blacklist-lead, documents-lease-panel, activity-log, pii-display, session-replay, primary-applicant-edit, primary-contact-edit |
 | [origination-esign-section-lead-detail.md](origination-esign-section-lead-detail.md) | Origination Lead Detail — E-Sign / Sign Section (Modify Lease) | snapshot | volatile | 2026-06-26 | esign-section, lead-detail, modify-lease, lease-mod, contract-created, esign-provider, chargeProcessingFeeBeforeEsign, documents-panel, activity-log, action-bar |
 | [origination-funding-queue-page.md](origination-funding-queue-page.md) | Origination Funding Queue Page | snapshot | volatile | 2026-06-25 | funding-queue, csv-export, multi-select-filters, lead-status |
 | [origination-lead-detail-actions-and-invoice.md](origination-lead-detail-actions-and-invoice.md) | Origination Lead-Detail Actions & Invoice/Lease Creation | stable | volatile | 2026-06-25 | lead-management, cancellation, approval-change, invoice-modification, settlement, lead-status |
@@ -48,7 +49,8 @@
 | [servicing-paywallet-allocation.md](servicing-paywallet-allocation.md) | Servicing — PayWallet (pw) Salary-Allocation Flow | hypothesis | volatile | 2026-06-25 | paywallet, pw-allocation, salary-deduction, employer-search, affordability, allocation-lifecycle |
 | [servicing-permissions-matrix.md](servicing-permissions-matrix.md) | Servicing — Permission/Role Matrix, BFF Route-Gate & PII Masking | hypothesis | volatile | 2026-06-25 | servicing-permissions, role-matrix, bff-route-gate, pii-masking, restricted-view, restricted-modify, permission-anomalies |
 | [servicing-search-quick-search.md](servicing-search-quick-search.md) | Servicing — Search Page & Quick Search | snapshot | volatile | 2026-06-25 | servicing-search, quick-search, search-filters, account-sale, email-csv, getAccountsByCriteria, simpleSearch, rating-letter, merchant-location-cascade |
-| [sticky-payment-refund.md](sticky-payment-refund.md) | Sticky Payment Refund | stable | volatile | 2026-06-21 | sticky-refund, reverse-payment, payment-history, sticky-recovery, cc-payments, payments |
+| [sticky-payment-refund.md](sticky-payment-refund.md) | Sticky Payment Refund | stable | volatile | 2026-06-30 | sticky-refund, reverse-payment, payment-history, sticky-recovery, cc-payments, payments |
 | [sticky-recover-cancel-sweep.md](sticky-recover-cancel-sweep.md) | Sticky Recover Cancel Sweep | stable | volatile | 2026-06-21 | sticky-recovery, sticky-recover-cancel-sweep, scheduled-task-sweep, account-status-transition, activity-log, cc-payments, payments |
 | [terms-of-agreement-page.md](terms-of-agreement-page.md) | Terms of Agreement — Página de Revisão do Contrato (Consumer Portal) | snapshot | volatile | 2026-06-28 | terms-of-agreement, contract-complete, toa-page, protection-plus-flow, see-protection-benefits, sign-contract-button, missingDataPanel |
 | [underwriting-and-funding-test-data-paths.md](underwriting-and-funding-test-data-paths.md) | Underwriting Decision & Funding — Test-Data Setup Paths | stable | volatile | 2026-06-16 | uw-denied, funding-without-snapshot, merchant-settings-snapshot, test-data-paths |
+| [website-payment-frequency.md](website-payment-frequency.md) | Website — Payment Frequency Change (`/payment-frequency`) | snapshot | volatile | 2026-07-01 | website-payment-frequency, payment-flexibility, semi-monthly, bi-weekly, first-payment-day, second-payment-day, frequency-mods, rewind-replay |
