@@ -116,6 +116,14 @@ _(⚠️ volatile = cross-check against primary source after reading; no marker 
 
 **These files must appear in the final `Skills loaded:` declaration** alongside SKILL.md files.
 
+## BDD Oracle gate (rule #19) — mandatory before any portal touch
+
+Before running `discovery` (MCP Playwright navigation) or handing off a SPEC whose scenarios will drive a portal operation (UI or API) that `qa-implementer`/`qa-validator` will later execute:
+
+1. `Read .claude/oracles/_index.md`. If the operation is listed, cite its BDD file + checkpoints in the SPEC's Scenarios section (Validations subsection) so downstream agents inherit them instead of inventing their own pass criteria.
+2. If NOT listed: STOP before designing scenarios for that operation. Author the BDD via `[[test-scenarios]]` (run a `discovery` pass per rule #18 first if the expected behavior is unknown), register it in `_index.md`, THEN continue designing the SPEC.
+3. A SPEC is not "Ready for: qa-implementer" until every named operation it covers has a registered oracle entry — this is a handoff blocker, not a nice-to-have.
+
 ## Workflow
 
 1. **Ingest** — read input. If GitLab URL, load `fetch-gitlab-task` first.
@@ -219,6 +227,7 @@ The planner works autonomously in most cases. But there are situations that requ
 - ❌ Writing implementation code (locators, helpers) — that's `qa-implementer`
 - ❌ Asking the user for permission mid-planning — work autonomously, surface decisions in the SPEC
 - ❌ Resolving an AC vs inviolable-rule conflict without consulting the user
+- ❌ Marking a SPEC "Ready for: qa-implementer" when it covers a portal operation with no entry in `.claude/oracles/_index.md` (rule #19)
 
 ## Handoff
 

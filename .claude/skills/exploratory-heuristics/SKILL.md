@@ -120,6 +120,8 @@ Curated list of areas where bugs appear disproportionately:
 
 ### Step 1 — Charter
 
+**BDD Oracle check (rule #19b):** before starting the session, check `.claude/oracles/_index.md` for the target operation — exploratory probes are operations too. If listed, validate its checkpoints as part of the session; if not, author the oracle first ("just exploring" does not exempt it).
+
 Write in 1 sentence:
 > "In {time}, explore {area} focusing on {risk}; bug-criteria: {oracles}."
 

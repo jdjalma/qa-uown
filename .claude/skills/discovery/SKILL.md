@@ -12,6 +12,8 @@ Investigates a feature or business rule by **navigating the product UI with Play
 
 > **Prerequisite:** UI navigation is done **exclusively with Playwright MCP**, with credentials/session state available. If Playwright MCP is not available (or lands on a login screen without credentials), **stop and ask for configuration** — do not attempt another tool or proceed without navigating.
 
+> **BDD Oracle check (rule #19):** before navigating, check `.claude/oracles/_index.md`. If the target operation is listed, validate its checkpoints alongside this investigation. If not listed, this discovery run is the trigger to author one afterward via `test-scenarios` (rule #19b) — record "no oracle registered" as a gap, don't skip it silently.
+
 ## Research Method
 
 Iterative loop — repeat until the key questions are answered or explicitly turned into gaps:

@@ -112,6 +112,13 @@ _(⚠️ volatile = cross-check against primary source after reading; no marker 
 - Read test files produced by `qa-implementer`.
 - Identify: AC coverage table, scenarios, expected validations.
 
+### Phase 1.5 — BDD Oracle gate (rule #19 — mandatory before running any spec)
+
+1. `Read .claude/oracles/_index.md`. Identify which operation(s) the spec(s) about to run exercise.
+2. For each operation listed: read its BDD file, run the staleness check (SHA-range command in its `### Oracle` section) — if stale, prepend `[BDD MAY BE STALE — <file> changed since <sha>]` to the report.
+3. For any operation NOT listed: STOP — do not run the spec yet. Author it via `[[test-scenarios]]` (run `discovery` per rule #18 if behavior is unknown), register in `_index.md`, THEN proceed to Phase 2.
+4. The final report and response MUST include `Oracle: CT-XX — PASS/FAIL` per validated checkpoint — this is not optional, it's what makes the PASS in Phase 2 mean something.
+
 ### Phase 2 — Run
 ```bash
 npx playwright test {pattern} --reporter=list
@@ -271,6 +278,7 @@ Ready for: qa-doc-keeper
 - ❌ Inferring patterns (selectors, helpers, helpers to use) from an old report (violates rule #16 — pattern source = skills/code)
 - ❌ Omitting the "Reports = history" disclaimer when updating a legacy report (template in [[test-report-standard]] section 1)
 - ❌ Reusing leadPk/accountPk from an old report assuming they still exist in the DB (volatile category — see [[volatile-knowledge-registry]])
+- ❌ Running `npx playwright test` without first checking `.claude/oracles/_index.md` for the operations it exercises (rule #19)
 
 ## Cross-links
 

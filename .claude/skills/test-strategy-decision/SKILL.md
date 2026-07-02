@@ -27,6 +27,10 @@ disable-model-invocation: true
 
 ## Procedure
 
+### Step 0 — BDD Oracle pre-check (rule #19)
+
+Before deciding the level, check `.claude/oracles/_index.md` for the scenario's operation. If an oracle exists, its UI-vs-API split may already dictate the exercise level. If not, flag oracle authorship as a SPEC dependency before implementation starts.
+
 ### Step 1 — Decide the level (UI / API / DB / hybrid)
 
 Checklist question per scenario:

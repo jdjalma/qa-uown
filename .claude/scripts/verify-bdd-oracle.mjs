@@ -26,6 +26,12 @@ const PLAYWRIGHT_TOOLS = [
   "mcp__playwright__browser_press_key",
   "mcp__playwright__browser_select_option",
   "mcp__playwright__browser_file_upload",
+  "mcp__playwright__browser_evaluate",
+  "mcp__playwright__browser_wait_for",
+  "mcp__playwright__browser_hover",
+  "mcp__playwright__browser_drag",
+  "mcp__playwright__browser_drop",
+  "mcp__playwright__browser_run_code_unsafe",
 ];
 
 function log(msg) {
@@ -96,10 +102,17 @@ for (const entry of scope) {
       usedPlaywright = true;
     }
 
-    // Bash tool calls running playwright test (counts as portal interaction)
+    // MCP claude-in-chrome browser automation (separate surface, same portal-interaction risk)
+    if (block.type === "tool_use" && /^mcp__claude-in-chrome__/.test(block.name)) {
+      usedPlaywright = true;
+    }
+
+    // Bash tool calls running playwright test, OR a script that hits a portal
+    // UI/API directly (src/scripts/*.ts probes, provisioning scripts) — both
+    // count as portal interaction under rule #19.
     if (block.type === "tool_use" && block.name === "Bash") {
       const cmd = String(block.input?.command ?? "");
-      if (/playwright\s+test/i.test(cmd)) {
+      if (/playwright\s+test|(?:npx\s+tsx|ts-node|node)\s+\S*src\/scripts\//i.test(cmd)) {
         ranPlaywrightTest = true;
       }
     }

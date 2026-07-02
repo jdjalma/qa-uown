@@ -62,6 +62,7 @@ BasePage
 - [ ] `test.step` to group logical actions in tests
 - [ ] `ctx` object to share state between steps (same test only)
 - [ ] `testData` fixture with `buildTestData` for data setup
+- [ ] Operation has a registered BDD oracle in `.claude/oracles/_index.md` (rule #19) — if not, author one first via `test-scenarios`
 
 ---
 

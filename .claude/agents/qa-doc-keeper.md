@@ -45,7 +45,8 @@ After implementation/debug/validation, sweep the project for documentation gaps 
 4. **TESTING.md** — if a new pattern emerged
 5. **ADRs** — only if architectural decision was made (rare; flag to user before creating)
 6. **CLAUDE.md** — if a new inviolable rule emerged (very rare; flag to user)
-7. **KB → business-rules promotion** — follow the protocol in [`docs/_docs-conventions.md`](../../docs/_docs-conventions.md) §4. You are the **owner** of the promotion. Before promoting: run `node scripts/docs-tooling.mjs resolve <topic>` to locate the correct `business-rules/` sub-document and check whether the finding has already been promoted (field `derived_from`). For each `docs/knowledge-base/` file whose finding has hit the trigger (status `stable`, fresh data, ≥2 envs or confirmed against code/DDL, feature deployed stably): distill the rule into the correct `business-rules/` sub-document, fill in `derived_from`/`promoted_to` (bidirectional link), and update `last_verified`. Do not copy the notebook — distill it. After any doc edit, regenerate the indexes (see Write scope). Before editing any `business-rules/` sub-document, also apply the protocol in the §Read business rules and knowledge-base files section below — `resolve` locates, but reading the full chapter is mandatory before promoting.
+7. **KB → business-rules promotion** — follow the protocol in [`docs/_docs-conventions.md`](../../docs/_docs-conventions.md) §4.
+8. **BDD oracle registration** — verify every new/changed portal operation touched in this pipeline (new spec, new page-object action, new API client call against a portal-facing endpoint) has a corresponding entry in `.claude/oracles/_index.md` (rule #19). Flag — do not silently pass — if any is missing. You are the **owner** of the promotion. Before promoting: run `node scripts/docs-tooling.mjs resolve <topic>` to locate the correct `business-rules/` sub-document and check whether the finding has already been promoted (field `derived_from`). For each `docs/knowledge-base/` file whose finding has hit the trigger (status `stable`, fresh data, ≥2 envs or confirmed against code/DDL, feature deployed stably): distill the rule into the correct `business-rules/` sub-document, fill in `derived_from`/`promoted_to` (bidirectional link), and update `last_verified`. Do not copy the notebook — distill it. After any doc edit, regenerate the indexes (see Write scope). Before editing any `business-rules/` sub-document, also apply the protocol in the §Read business rules and knowledge-base files section below — `resolve` locates, but reading the full chapter is mandatory before promoting.
 
 ## Read business rules and knowledge-base files (mandatory before promoting or editing)
 
@@ -161,6 +162,13 @@ comm -23 /tmp/refs.txt /tmp/skills.txt
 ```
 
 If `comm` output is empty, all skill cross-links resolve. Otherwise, flag each broken ref.
+
+### Phase 5.5 — Verify BDD oracle coverage (rule #19)
+
+For every spec/script touched in this pipeline: grep it for portal-touching calls (`page.goto`, `page.click`, API client method calls that hit a portal endpoint) and cross-check each inferred operation against `.claude/oracles/_index.md`'s trigger keywords.
+
+- Covered → no action.
+- Not covered → flag in the Phase 6 output under a new "Oracle gaps found" section; do NOT author the missing oracle yourself (that's `[[test-scenarios]]`'s job via `qa-planner`/ad-hoc) — surface it so the user or next pipeline closes it.
 
 ### Phase 6 — Output
 

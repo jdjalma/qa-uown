@@ -12,6 +12,8 @@ disable-model-invocation: true
 >
 > **Who consults it:** `qa-planner`, `qa-implementer`, `qa-debugger`, `/qa-flow`, and direct analyses.
 
+> **BDD Oracle (rule #19):** creating/advancing an application is a registered operation (`.claude/oracles/new-application.md`). Validate every checkpoint before considering the sequence complete — it is not exempt as "just setup" when it IS the operation under test.
+
 > **Authority boundary** (`docs/_docs-conventions.md` §7): this skill covers **HOW TO TEST** — canonical sequence, pitfalls catalog, helpers list. The **canonical product behavior** (lease state machine, `LeadStatus` enums, UW rules) does NOT live here — it is single-sourced in `docs/business-rules/02-originacao-pipeline.md` + `06-conta-ciclo-vida.md` and `src/helpers/api-setup.helpers.ts`. To resolve a topic, run `node scripts/docs-tooling.mjs resolve pipeline` (or `account-lifecycle`, `underwriting`). Recent investigations: `docs/knowledge-base/underwriting-and-funding-test-data-paths.md`. **Do not duplicate product rules here** — they drift.
 
 > Full step details: [references/canonical-sequence-detail.md](references/canonical-sequence-detail.md)

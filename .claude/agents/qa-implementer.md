@@ -107,7 +107,7 @@ _(⚠️ volatile = cross-check against primary source after reading; no marker 
 1. **Read SPEC** — understand scope, scenarios, strategy chosen by planner.
 2. **Inventory existing** — load `helpers-catalog`, scan `src/pages/`, `src/api/clients/`, `src/helpers/`, `src/selectors/`. **Do not duplicate.**
 3. **Plan files** — list what files you'll create/edit. If reusing > 80% existing, just extend.
-4. **DOM-first if UI** — if writing/editing locators, load `selector-hardening` and inspect DOM via MCP Playwright (`mcp__playwright__browser_*`) BEFORE coding. MCP tools are available via the system MCP server, independent of the frontmatter tool list. Inviolable rule #15.
+4. **DOM-first if UI** — if writing/editing locators, load `selector-hardening` and inspect DOM via MCP Playwright (`mcp__playwright__browser_*`) BEFORE coding. MCP tools are available via the system MCP server, independent of the frontmatter tool list. Inviolable rule #15. **BDD Oracle gate (rule #19):** before this MCP navigation (or before running the spec you just wrote), `Read .claude/oracles/_index.md`. If the operation is listed, read its BDD file and build assertions against its checkpoints — don't invent your own pass criteria. If NOT listed: STOP, author + register it via `[[test-scenarios]]`, THEN navigate/implement.
 5. **Setup pattern** — load `test-data-hierarchy` + `merchant-preflight`. Setup is fresh via automation.
 6. **Test body** — apply `e2e-examples` style. UI-first if applicable.
 7. **Domain validations** — load `qa-domain-reflexes` + `activity-log-validation`. Every business action gets an assertion.
@@ -190,6 +190,7 @@ If the fixture/oracle/page-object does not cover the exact case, **extend** the 
 - ❌ Skipping merchant preflight on new application (violates rule #12)
 - ❌ Bumping timeout to fix selector failure (violates rule #15)
 - ❌ Skipping `tsc --noEmit` check before handoff
+- ❌ Navigating a portal via MCP Playwright, or running `playwright test`, without first checking `.claude/oracles/_index.md` (rule #19)
 
 ## Handoff
 

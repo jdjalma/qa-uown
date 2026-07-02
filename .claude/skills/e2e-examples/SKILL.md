@@ -8,6 +8,8 @@ disable-model-invocation: true
 
 > Real code examples from the project. Reference when implementing new tests.
 
+> Before implementing a test for a listed operation, validate it against `.claude/oracles/_index.md` (rule #19); an unlisted operation needs an oracle authored first, not skipped.
+
 ## 0. Prefer state fixtures over inline setup (REACH FOR THESE FIRST)
 
 Does a test need an **approved** application or a **funded** account? Do NOT rewrite Phase 1..4 inline. The `approvedApplication` / `fundedAccount` fixtures (in `src/support/base-test.ts`) already compose `buildTestData` + `createPreQualifiedApplication` (+ `driveLeadToFunding`), run merchant preflight (rule #12), and generate fresh data per test (rule #9). They are **lazy** — they only execute when the test destructures the fixture, so the cost is zero for those who don't use them.

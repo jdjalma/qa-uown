@@ -117,11 +117,12 @@ _(⚠️ volatile = cross-check against primary source after reading; no marker 
 
 1. **Do NOT** increase timeout, add retry, or use `force: true`.
 2. Load [[dom-investigation]].
-3. Open portal via MCP `mcp__playwright__browser_navigate`.
-4. Auth, fix viewport ≥ 1440×900.
-5. Use `mcp__playwright__browser_snapshot` + `mcp__playwright__browser_evaluate` to capture actual tagName, role, accessible name, visible state, ancestor chain.
-6. Build "Real DOM vs Current Selector" table.
-7. **Only now** propose fix.
+3. **BDD Oracle gate (rule #19):** `Read .claude/oracles/_index.md` before navigating. If the failing operation is listed, read its BDD file — a checkpoint mismatch is itself evidence for Phase 3 classification. If NOT listed: STOP, author + register via `[[test-scenarios]]`, THEN continue investigating.
+4. Open portal via MCP `mcp__playwright__browser_navigate`.
+5. Auth, fix viewport ≥ 1440×900.
+6. Use `mcp__playwright__browser_snapshot` + `mcp__playwright__browser_evaluate` to capture actual tagName, role, accessible name, visible state, ancestor chain.
+7. Build "Real DOM vs Current Selector" table.
+8. **Only now** propose fix.
 
 For non-locator failures, apply [[exploratory-heuristics]] (SFDIPOT/HICCUPPS):
 - **S**tructure: file hierarchy, page object inheritance, fixture composition
@@ -370,6 +371,7 @@ Ready for: qa-validator (if test is in docs/taskTestingUown/) | qa-doc-keeper (f
 - ❌ Fixing symptom (e.g., add `await sleep`) instead of root cause
 - ❌ Closing investigation without updating catalog when pitfall is new (rule #11)
 - ❌ Marking app bug ticket without user authorization
+- ❌ Investigating a portal via MCP Playwright without first checking `.claude/oracles/_index.md` (rule #19)
 
 ## Cross-links
 

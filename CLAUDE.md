@@ -55,12 +55,12 @@ When you receive a task, classify the **signal** and dispatch to agents. No slas
 
 | Signal | Dispatch chain |
 |--------|---------------|
-| New feature / new test request, GitLab URL, AC list | `qa-planner` → `qa-implementer` → `qa-validator` → `qa-doc-keeper` |
-| "Test X is failing / flaky", trace/screenshot, timeout error | `qa-debugger` → (`qa-validator` if test is in `docs/taskTestingUown/`) → `qa-doc-keeper` |
-| "Refactor page object Y" / "this is duplicated" | `qa-implementer` (refactor mode) → `qa-doc-keeper` |
+| New feature / new test request, GitLab URL, AC list | `qa-planner` → `qa-implementer` → `qa-validator` → `qa-doc-keeper`. **BDD Oracle applies (rule #19)** once `qa-implementer`/`qa-validator` execute the new spec against a portal. |
+| "Test X is failing / flaky", trace/screenshot, timeout error | `qa-debugger` → (`qa-validator` if test is in `docs/taskTestingUown/`) → `qa-doc-keeper`. **BDD Oracle applies (rule #19)** — `qa-debugger`'s DOM-first portal navigation (rule #15) is itself a listed operation. |
+| "Refactor page object Y" / "this is duplicated" | `qa-implementer` (refactor mode) → `qa-doc-keeper`. **BDD Oracle applies (rule #19)** if verification re-runs spec(s) exercising the page object. |
 | "Update docs" / "catalog this helper" / "add ADR" | `qa-doc-keeper` |
-| "Audit selectors" / "find dead code" | `qa-debugger` with `selector-hardening` skill in audit mode → `qa-doc-keeper` |
-| Setup data / new merchant / new test account | `qa-implementer` (data subset) → `qa-doc-keeper` |
+| "Audit selectors" / "find dead code" | `qa-debugger` with `selector-hardening` skill in audit mode → `qa-doc-keeper`. **BDD Oracle applies (rule #19)** — live-DOM verification during the audit is a portal operation. |
+| Setup data / new merchant / new test account | `qa-implementer` (data subset) → `qa-doc-keeper`. **BDD Oracle applies (rule #19)** — merchant preflight/account creation touches the portal (UI or API). |
 | **"Run existing test" / "execute spec" / "rodar o teste X"** | **BDD oracle check FIRST** (read `_index.md` → staleness check → validate oracles) → `qa-validator` → `qa-doc-keeper`. NEVER dispatch directly to `npx playwright test` without oracle pre-check. |
 | **"Create a lease" / "crie um novo lease" / perform a portal operation manually** | **Not the same as running a test.** Read `_index.md` → if operation listed, read BDD → perform operation via MCP Playwright → validate oracle → report PASS/FAIL. |
 | Ambiguous request | Default to `qa-planner` — it will scope and propose |
